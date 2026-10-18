@@ -28,8 +28,9 @@ Each milestone ends with a working, deployed app.
 
 - Split a route into stages by hand
 - Stage dates and weather with wind
+- OSM hotel extract on R2 (first part of the pipeline)
 - Hotels at stage ends
-- Booking links
+- Booking.com links
 - Automatic updates on edit
 
 ## 5. Data pipeline

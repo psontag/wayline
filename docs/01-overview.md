@@ -19,7 +19,7 @@ Planning a multi-day trip in an unknown region takes a lot of manual work:
 |---|---|
 | Multi-day planner | Input: region or start point, days, km per day, max climbing per day, hotel budget. Output: several trip proposals, split into daily stages. Routes follow signposted cycling routes. One-way trips and loops. |
 | Stage alternatives | Several options per day, e.g. shorter, longer, or a different town. The following stages adjust. |
-| Hotels | Well-rated hotels within budget at each stage end. Link to a booking site with dates and place filled in. |
+| Hotels | Hotels at each stage end. Booking.com link with dates, budget and minimum rating filled in. |
 | Weather | Forecast per stage for the time you ride there, including wind direction relative to the route. Up to 14 days ahead. |
 | Train stations | Start and end points can be train stations. |
 | Route planning | A to B with presets: fast, scenic, quiet. |

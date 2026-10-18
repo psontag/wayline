@@ -9,7 +9,7 @@ Browser (React SPA)
  ├─ UI: map, stage editor, elevation, weather
  ├─ Web Worker: planner (generation, stages, scoring, GPX)
  └─ calls → Cloudflare Worker (API gateway)
-              ├─ external APIs: routing, weather, hotels
+              ├─ external APIs: routing, weather
               ├─ cache: Cache API, D1, R2
               ├─ storage: trips in D1
               └─ protected by Cloudflare Access
@@ -41,7 +41,7 @@ Each external data type has an interface in our own domain types. Adapters trans
 |---|---|
 | `RoutingProvider` | BRouter, OpenRouteService |
 | `WeatherProvider` | Open-Meteo |
-| `LodgingProvider` | Google Places |
+| `LodgingProvider` | OSM hotels on R2 |
 | `TransitProvider` | OSM stations, bahn.de links (live connections later) |
 | `RouteNetworkSource` | Preprocessed OSM data on R2 |
 
@@ -70,13 +70,13 @@ Three cache levels:
 
 1. **Browser**: memory and IndexedDB. Merges duplicate requests in flight.
 2. **Worker Cache API**: free, fast, per data center. Entries can be evicted at any time.
-3. **Durable storage**: R2 for large data (route geometry), D1 for small JSON (weather, hotel IDs).
+3. **Durable storage**: R2 for large data (route geometry), D1 for small JSON (weather).
 
 KV is not used. The free plan allows only about 1,000 writes per day.
 
 In the browser, two layers have separate jobs:
 
-- **Planner with `CacheStore`** caches provider data: route legs, weather, hotel IDs.
+- **Planner with `CacheStore`** caches provider data: route legs, weather.
 - **TanStack Query** caches what the UI shows: trips from the API and derived stage data from the planner, keyed by the stored trip input.
 
 Query never calls external providers. Provider data is cached only once.
@@ -89,8 +89,6 @@ Cache keys contain the provider, profile version and schema version. Changing an
 |---|---|---|
 | Route leg | provider, profile, rounded coordinates | 30 days |
 | Weather | grid cell (~0.1°), date | 1–3 hours |
-| Hotel IDs | geohash cell (~5 km) | long, see `03-data-sources.md` |
-| Hotel details | place ID | short, see `03-data-sources.md` |
 | Geodata | dataset version | permanent |
 
 Routes are built from legs between fixed points: stations, towns and junctions in the cycling route network. Different trip proposals share many legs, so most requests hit the cache.
@@ -105,7 +103,7 @@ The Worker enforces per provider:
 
 ## Geodata
 
-A weekly GitHub Action loads OSM data (Geofabrik extracts) for signed cycling routes, towns and train stations. It writes FlatGeobuf or PMTiles files to R2 under a versioned path. The browser loads only the parts it needs for the current map area. No live calls to Overpass.
+A weekly GitHub Action loads OSM data (Geofabrik extracts) for signed cycling routes, towns, train stations and hotels. It writes FlatGeobuf or PMTiles files to R2 under a versioned path. The browser loads only the parts it needs for the current map area. No live calls to Overpass.
 
 ## Auth and storage
 

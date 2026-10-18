@@ -44,7 +44,7 @@ The graph is stored as static files on R2 and loaded in the browser for the regi
 4. **Route the candidates.** Each graph edge becomes a leg, routed by the routing provider. This gives real geometry, elevation and surface. Legs are shared between candidates and cached.
 5. **Filter.** Drop candidates that break max ascent or the surface limit.
 6. **Cut into stages.** See below.
-7. **Find hotels** at each stage end. See "Hotel check" below.
+7. **Find hotels** at each stage end from the OSM hotel data.
 8. **Rank** by score and pick 3–5 diverse proposals.
 9. **Add weather** if the start date is within 14 days.
 
@@ -81,7 +81,6 @@ Presets map to custom BRouter profiles, and to the closest OpenRouteService prof
 Rough estimate for a 4-day trip:
 
 - Routing: 20–60 legs per candidate, many shared. Mostly cache hits after the first runs in a region.
-- Hotels: one area search per candidate town. Ratings only for shown proposals.
 - Weather: one call per stage.
 
 ## Ascent estimate
@@ -90,8 +89,4 @@ The pipeline computes ascent per graph edge from a free elevation model (Coperni
 
 ## Hotel check
 
-Checking hotels with Google for every candidate town would use up the free quota. So it happens in three steps:
-
-1. **Pipeline:** count OSM hotels and guest houses per town node. Only towns with at least one count as stage end candidates. Free.
-2. **Proposals:** search Google for hotel IDs at each stage end, using the cheapest field mask. Place IDs are cached per town.
-3. **Hotel list:** load ratings (Enterprise tier) only when the user opens the hotel list for a stage end.
+The pipeline counts OSM hotels per town node. Only towns with at least one hotel are stage end candidates. Ratings and availability are checked by the user on Booking.com.

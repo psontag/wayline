@@ -32,7 +32,7 @@ Trip
 | `kmPerDay` | Target distance per stage |
 | `maxAscentPerDay` | Meters |
 | `hotelBudget` | Price range |
-| `minHotelRating` | e.g. 4.0 |
+| `minHotelRating` | Booking.com score, e.g. 8.0 |
 
 ### Stage
 
@@ -63,14 +63,14 @@ Route between two consecutive points of a stage.
 
 ### Hotel
 
-`placeId`, name, coordinates, rating, price level, booking link. Only `placeId` is stored in the trip. The rest is loaded when needed (see `03-data-sources.md`).
+OSM id, name, coordinates, stars and website if known. Only the OSM id is stored in the trip. The booking link is built from the hotel, the stage date and the settings.
 
 ## Stored vs derived
 
 A saved trip stores only user input and choices:
 
 - trip fields and settings
-- per stage: start, end, via points, hotel `placeId`
+- per stage: start, end, via points, hotel OSM id
 
 Everything else is derived and cached: legs, stats, weather, hotel details, dates. This keeps saved trips small and always consistent.
 

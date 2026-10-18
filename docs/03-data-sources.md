@@ -9,8 +9,8 @@ All limits are for free plans. Check them again before relying on them. They cha
 | Cycling routes, towns, stations | OpenStreetMap (Geofabrik extracts) | Free | Pipeline |
 | Routing | BRouter, OpenRouteService as fallback | Free | Worker |
 | Weather | Open-Meteo | Free | Worker |
-| Hotels | Google Places API (New) | Free quota, then paid | Worker |
-| Booking | Booking.com search link | Free | Browser (link only) |
+| Hotels | OpenStreetMap | Free | Pipeline |
+| Ratings, prices, booking | Booking.com search link | Free | Browser (link only) |
 | Train connections | bahn.de link | Free | Browser (link only) |
 | Map tiles | OpenFreeMap | Free | Browser |
 | Hosting | Cloudflare | Free | — |
@@ -22,7 +22,7 @@ Used for:
 - Signed cycling routes: route relations with `route=bicycle` (EuroVelo, D-Routen, long-distance and regional routes).
 - Towns and villages: `place=*`.
 - Train stations: `railway=station`, `railway=halt`.
-- Hotels without ratings, as fallback: `tourism=hotel`.
+- Hotels: `tourism=hotel`, `tourism=guest_house`, `tourism=motel`.
 - Scenic features: rivers, lakes, forests, nature parks, viewpoints.
 
 The pipeline downloads Geofabrik extracts (Germany first). It builds static files and uploads them to R2. No runtime calls to Overpass.
@@ -57,49 +57,31 @@ Fallback router. Has a built-in round trip option.
 - Several locations in one request. One call can cover a whole stage.
 - No API key.
 
-## Hotels: Google Places API (New)
+## Hotels
 
-Used to find hotels at stage ends and show their rating.
+Hotels come from OSM. Ratings, prices and availability come from Booking.com through a search link.
 
-> **Open decision.** Google's terms (section 3.2.3 (e)) forbid using Places data with or near a non-Google map. Wayline uses a MapLibre map. Using Google Places requires a Google map or a different hotel source.
+Google Places is not used. Its terms (section 3.2.3 (e)) forbid using Places data with or near a non-Google map, and Wayline uses MapLibre.
 
-### Cost
+### OSM hotels
 
-Free quota is per SKU and per month:
+- Tags: `tourism=hotel`, `tourism=guest_house`, `tourism=motel`.
+- The pipeline extracts them with name, location, stars (`stars=*`) and website if present.
+- Stored on R2 with the other geodata. No runtime API calls.
+- Hotels in OSM are fairly complete in Germany, but not everywhere.
 
-| Tier | Free calls per month |
+### Booking.com links
+
+No API. Booking.com's API is only for partners.
+
+| Link | Prefilled |
 |---|---|
-| Essentials | 10,000 |
-| Pro | 5,000 |
-| Enterprise | 1,000 |
+| Per stop | Town, check-in and check-out dates, budget, minimum rating |
+| Per hotel | Hotel name and town, dates |
 
-The field mask sets the tier. `rating`, `userRatingCount` and `priceLevel` are Enterprise fields. So any search that returns ratings counts against the 1,000 limit.
+Booking applies the rating and price filters. Wayline does not show ratings or prices itself.
 
-Approach:
-
-1. Search hotels in an area with IDs only (cheap tier).
-2. Get ratings only for hotels the user actually sees.
-3. Set a monthly budget cap in the Google Cloud console.
-
-### Caching rules
-
-Google's terms limit what we can store:
-
-- `place_id`: may be stored without time limit.
-- Latitude and longitude: up to 30 days.
-- Other content (name, rating, photos): no general caching exception.
-
-So: store place IDs per area long term. Store coordinates up to 30 days. Fetch details when needed and keep them only briefly.
-
-Check the current Places API policies before implementing.
-
-### Budget filter
-
-Google's `priceLevel` is often missing for hotels. The budget filter is approximate. Real prices are on the booking site.
-
-## Booking
-
-Each hotel gets a Booking.com search link with name, place and dates filled in. No API. Booking.com's API is only for partners.
+Open: confirm which filters Booking's search URL supports.
 
 ## Trains
 
