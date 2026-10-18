@@ -4,30 +4,37 @@ about: A piece of work an agent can implement in one PR
 labels: task
 ---
 
-## Goal
+## Summary
 
-What should work when this is done. One or two sentences.
+Plain language. No technical terms.
 
-## Context
+- **Why:** why we do this
+- **Before:** how it works today
+- **After:** how it will work
+- **Solves:** which problem goes away
+
+## For agents
+
+### Context
 
 - Docs: `docs/...`
 - Design: `design/canvas/...`
 - Related: #
 
-## Scope
+### Scope
 
 - [ ] ...
 
-## Out of scope
+### Out of scope
 
 - ...
 
-## Acceptance criteria
+### Acceptance criteria
 
 - [ ] ...
 - [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test` pass
 - [ ] UI changes checked in light and dark, screenshots in the PR
 
-## Depends on
+### Depends on
 
 - #

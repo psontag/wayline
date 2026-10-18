@@ -19,6 +19,17 @@ Board columns: Backlog → Ready → In progress → In review → Done.
 - **In review**: PR open.
 - **Done**: PR merged.
 
+## Writing issues and PRs
+
+Every epic, task and PR starts with a **Summary** in plain language, for the owner:
+
+- **Why:** why we do this
+- **Before:** how it works today
+- **After:** how it will work
+- **Solves:** which problem goes away
+
+No technical terms in the summary. Technical details go below, under **For agents**.
+
 ## Labels
 
 | Label | Meaning |
@@ -37,7 +48,7 @@ Board columns: Backlog → Ready → In progress → In review → Done.
    - Questions for the owner: comment and add `needs-human`.
    - Questions for another agent: comment on that agent's issue or PR and link back.
 5. **Record** decisions made during the work as issue comments.
-6. **Open a PR** with `Closes #<n>`. Fill in the PR template. UI changes need screenshots. Move the issue to In review.
+6. **Open a PR** with `Closes #<n>`. Fill in the PR template, starting with the plain-language summary. UI changes need screenshots. Move the issue to In review.
 7. **Stop** after the PR. The owner reviews and merges.
 
 Screenshots go into the PR. Mockups referenced from issues live in `design/`.

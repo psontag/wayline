@@ -44,7 +44,7 @@ Follow `docs/07-design-system.md`. Mockups are in `design/`.
 
 Private repo `psontag/wayline`. Use the `gh` CLI for issues, PRs and other GitHub actions.
 
-Work is tracked in issues, milestones and the project board. Follow the agent workflow in `docs/11-tracking.md`: claim the issue, ask and record decisions in comments, open a PR with `Closes #<n>`.
+Work is tracked in issues, milestones and the project board. Issues and PRs start with a plain-language summary (why, before, after, solves); technical details come after, for agents. Follow the agent workflow in `docs/11-tracking.md`: claim the issue, ask and record decisions in comments, open a PR with `Closes #<n>`.
 
 ## Docs
 
