@@ -56,7 +56,8 @@ Other tokens:
 - Tailwind CSS v4. Only our tokens exist as classes, e.g. `bg-surface`, `p-4`, `text-muted`.
 - Components are based on Radix UI primitives, in the style of shadcn/ui. The code lives in `packages/ui` and is ours to change.
 - Icons: Lucide only. No emoji.
-- Font: Inter, system fonts as fallback.
+- Font: Manrope, system fonts as fallback. Tabular numbers for all stats.
+- Look: cool greys, tight corners (4–6 px), one pastel accent (peach). Dark text on pastel fills. Light mode routes get a deeper outline.
 
 ## Dark mode
 
