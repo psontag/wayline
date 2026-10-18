@@ -76,14 +76,24 @@ Google Places is not used. Its terms (section 3.2.3 (e)) forbid using Places dat
 
 No API. Booking.com's API is only for partners.
 
-| Link | Prefilled |
+One link per stop. Hotel-specific links don't work: Booking doesn't find hotels by name in the search URL. Per hotel, Wayline links to the hotel's website from OSM if there is one.
+
+```
+https://www.booking.com/searchresults.html
+  ?ss=Kronach
+  &checkin=2027-06-13&checkout=2027-06-14
+  &group_adults=1&no_rooms=1
+  &nflt=review_score%3D80%3Bprice%3DEUR-80-140-1
+```
+
+| Parameter | Meaning |
 |---|---|
-| Per stop | Town, check-in and check-out dates, budget, minimum rating |
-| Per hotel | Hotel name and town, dates |
+| `ss` | Town name |
+| `checkin`, `checkout` | Stage date and next day |
+| `group_adults`, `no_rooms` | 1 and 1 |
+| `nflt` | Filters, joined with `;`: `review_score=70/80/90`, `price=EUR-<min>-<max>-1` |
 
 Booking applies the rating and price filters. Wayline does not show ratings or prices itself.
-
-Open: confirm which filters Booking's search URL supports.
 
 ## Trains
 
