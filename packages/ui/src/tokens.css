@@ -4,49 +4,49 @@
  * "--*: initial" removes all Tailwind defaults, so only these tokens exist
  * as classes. "static" emits every token, even when no class uses it yet.
  *
- * Colors use light-dark(light, dark). The value follows color-scheme, which
- * is set below from data-theme or the system setting. Any element with
- * data-theme forces its subtree into that theme.
+ * Colors hold the light values here. The dark values are set below, from
+ * data-theme or the system setting. Any element with data-theme forces its
+ * subtree into that theme. No light-dark(): Safari supports it only from 17.5.
  */
 @theme static {
   --*: initial;
 
   /* Colors */
-  --color-bg: light-dark(#f6f7f9, #101216);
-  --color-surface: light-dark(#ffffff, #171a20);
-  --color-surface-raised: light-dark(#ffffff, #1e222a);
-  --color-text: light-dark(#15181d, #edeff3);
-  --color-text-muted: light-dark(#5a616c, #a0a7b3);
-  --color-border: light-dark(#e1e4ea, #2a2f38);
-  --color-accent: light-dark(#ffb088, #ffb088);
-  --color-on-accent: light-dark(#3b1503, #2a0f02);
-  --color-success: light-dark(#2f9e6b, #5ccb97);
-  --color-warning: light-dark(#b7791f, #f2cf7e);
-  --color-danger: light-dark(#c2412d, #ff8f7d);
-  --color-focus-ring: light-dark(#b4532a, #ffb088);
-  --color-hover: light-dark(#eef0f4, #20242c);
-  --color-active: light-dark(#e4e7ec, #2a2f38);
-  --color-selected: light-dark(#ffede3, #2d211b);
-  --color-selected-border: light-dark(#b4532a, #ffb088);
-  --color-scrim: light-dark(rgb(16 18 22 / 0.35), rgb(0 0 0 / 0.55));
-  --color-inverse: light-dark(#15181d, #edeff3);
-  --color-on-inverse: light-dark(#edeff3, #15181d);
-  --color-inverse-accent: light-dark(#ffb088, #b4532a);
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-text: #15181d;
+  --color-text-muted: #5a616c;
+  --color-border: #e1e4ea;
+  --color-accent: #ffb088;
+  --color-on-accent: #3b1503;
+  --color-success: #2f9e6b;
+  --color-warning: #b7791f;
+  --color-danger: #c2412d;
+  --color-focus-ring: #b4532a;
+  --color-hover: #eef0f4;
+  --color-active: #e4e7ec;
+  --color-selected: #ffede3;
+  --color-selected-border: #b4532a;
+  --color-scrim: rgb(16 18 22 / 0.35);
+  --color-inverse: #15181d;
+  --color-on-inverse: #edeff3;
+  --color-inverse-accent: #ffb088;
 
   /* Terrain */
-  --color-terrain-paved: light-dark(#7e8ba3, #aeb9cc);
-  --color-terrain-gravel: light-dark(#e8b850, #f2cf7e);
-  --color-terrain-unpaved: light-dark(#b98e73, #d9b49c);
+  --color-terrain-paved: #7e8ba3;
+  --color-terrain-gravel: #e8b850;
+  --color-terrain-unpaved: #b98e73;
 
   /* Map */
-  --color-route: light-dark(#ff9a73, #ffa67f);
-  --color-route-casing: light-dark(#b4532a, #101216);
-  --color-route-dimmed: light-dark(#c3c8d0, #4b5260);
-  --color-route-selected: light-dark(#ff9a73, #ffa67f);
-  --color-stage-a: light-dark(#ffc7ae, #c98c72);
-  --color-stage-b: light-dark(#c9bde6, #8f82b8);
-  --color-marker: light-dark(#15181d, #edeff3);
-  --color-via-point: light-dark(#b4532a, #ffb088);
+  --color-route: #ff9a73;
+  --color-route-casing: #b4532a;
+  --color-route-dimmed: #c3c8d0;
+  --color-route-selected: #ff9a73;
+  --color-stage-a: #ffc7ae;
+  --color-stage-b: #c9bde6;
+  --color-marker: #15181d;
+  --color-via-point: #b4532a;
 
   /* Spacing: 4 px steps. Also used for widths and heights. */
   --spacing-0: 0px;
@@ -119,10 +119,8 @@
   --tracking-wide: 0.06em;
 
   /* Shadow */
-  --shadow-sm: 0 1px 2px light-dark(rgb(16 18 22 / 0.12), rgb(0 0 0 / 0.4));
-  --shadow-md:
-    0 1px 2px light-dark(rgb(16 18 22 / 0.08), rgb(0 0 0 / 0.4)),
-    0 4px 12px light-dark(rgb(16 18 22 / 0.06), rgb(0 0 0 / 0.3));
+  --shadow-sm: 0 1px 2px rgb(16 18 22 / 0.12);
+  --shadow-md: 0 1px 2px rgb(16 18 22 / 0.08), 0 4px 12px rgb(16 18 22 / 0.06);
 
   /* Z-index */
   --z-index-map: 0;
@@ -150,12 +148,117 @@
     color-scheme: light dark;
   }
 
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-bg: #101216;
+      --color-surface: #171a20;
+      --color-surface-raised: #1e222a;
+      --color-text: #edeff3;
+      --color-text-muted: #a0a7b3;
+      --color-border: #2a2f38;
+      --color-accent: #ffb088;
+      --color-on-accent: #2a0f02;
+      --color-success: #5ccb97;
+      --color-warning: #f2cf7e;
+      --color-danger: #ff8f7d;
+      --color-focus-ring: #ffb088;
+      --color-hover: #20242c;
+      --color-active: #2a2f38;
+      --color-selected: #2d211b;
+      --color-selected-border: #ffb088;
+      --color-inverse: #edeff3;
+      --color-on-inverse: #15181d;
+      --color-inverse-accent: #b4532a;
+      --color-terrain-paved: #aeb9cc;
+      --color-terrain-gravel: #f2cf7e;
+      --color-terrain-unpaved: #d9b49c;
+      --color-route: #ffa67f;
+      --color-route-casing: #101216;
+      --color-route-dimmed: #4b5260;
+      --color-route-selected: #ffa67f;
+      --color-stage-a: #c98c72;
+      --color-stage-b: #8f82b8;
+      --color-marker: #edeff3;
+      --color-via-point: #ffb088;
+      --color-scrim: rgb(0 0 0 / 0.55);
+      --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+      --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+    }
+  }
+
   [data-theme="light"] {
     color-scheme: light;
+    --color-bg: #f6f7f9;
+    --color-surface: #ffffff;
+    --color-surface-raised: #ffffff;
+    --color-text: #15181d;
+    --color-text-muted: #5a616c;
+    --color-border: #e1e4ea;
+    --color-accent: #ffb088;
+    --color-on-accent: #3b1503;
+    --color-success: #2f9e6b;
+    --color-warning: #b7791f;
+    --color-danger: #c2412d;
+    --color-focus-ring: #b4532a;
+    --color-hover: #eef0f4;
+    --color-active: #e4e7ec;
+    --color-selected: #ffede3;
+    --color-selected-border: #b4532a;
+    --color-inverse: #15181d;
+    --color-on-inverse: #edeff3;
+    --color-inverse-accent: #ffb088;
+    --color-terrain-paved: #7e8ba3;
+    --color-terrain-gravel: #e8b850;
+    --color-terrain-unpaved: #b98e73;
+    --color-route: #ff9a73;
+    --color-route-casing: #b4532a;
+    --color-route-dimmed: #c3c8d0;
+    --color-route-selected: #ff9a73;
+    --color-stage-a: #ffc7ae;
+    --color-stage-b: #c9bde6;
+    --color-marker: #15181d;
+    --color-via-point: #b4532a;
+    --color-scrim: rgb(16 18 22 / 0.35);
+    --shadow-sm: 0 1px 2px rgb(16 18 22 / 0.12);
+    --shadow-md:
+      0 1px 2px rgb(16 18 22 / 0.08), 0 4px 12px rgb(16 18 22 / 0.06);
   }
 
   [data-theme="dark"] {
     color-scheme: dark;
+    --color-bg: #101216;
+    --color-surface: #171a20;
+    --color-surface-raised: #1e222a;
+    --color-text: #edeff3;
+    --color-text-muted: #a0a7b3;
+    --color-border: #2a2f38;
+    --color-accent: #ffb088;
+    --color-on-accent: #2a0f02;
+    --color-success: #5ccb97;
+    --color-warning: #f2cf7e;
+    --color-danger: #ff8f7d;
+    --color-focus-ring: #ffb088;
+    --color-hover: #20242c;
+    --color-active: #2a2f38;
+    --color-selected: #2d211b;
+    --color-selected-border: #ffb088;
+    --color-inverse: #edeff3;
+    --color-on-inverse: #15181d;
+    --color-inverse-accent: #b4532a;
+    --color-terrain-paved: #aeb9cc;
+    --color-terrain-gravel: #f2cf7e;
+    --color-terrain-unpaved: #d9b49c;
+    --color-route: #ffa67f;
+    --color-route-casing: #101216;
+    --color-route-dimmed: #4b5260;
+    --color-route-selected: #ffa67f;
+    --color-stage-a: #c98c72;
+    --color-stage-b: #8f82b8;
+    --color-marker: #edeff3;
+    --color-via-point: #ffb088;
+    --color-scrim: rgb(0 0 0 / 0.55);
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
   }
 
   @media (prefers-reduced-motion: reduce) {

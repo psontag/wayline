@@ -5,9 +5,8 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    // Browsers with native light-dark(). Older targets make the CSS minifier
-    // rewrite it, which breaks themes forced on a subtree with data-theme.
-    cssTarget: ["chrome123", "edge123", "firefox120", "safari17.5"],
+    // Tailwind v4 baseline.
+    cssTarget: ["chrome111", "edge111", "firefox128", "safari16.4"],
   },
   // The MapLibre worker uses ES module imports.
   worker: { format: "es" },
