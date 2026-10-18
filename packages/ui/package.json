@@ -1,0 +1,20 @@
+{
+  "name": "@wayline/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./i18n": "./src/i18n/index.ts",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "peerDependencies": {
+    "i18next": "^26.4.2"
+  },
+  "devDependencies": {
+    "i18next": "26.4.2"
+  }
+}
