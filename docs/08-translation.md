@@ -16,13 +16,17 @@ i18next with react-i18next. It also works in React Native.
 
 ## Files
 
+App strings:
+
 ```
-packages/ui/src/i18n/
+apps/web/src/i18n/
   en/
     common.json
     tripEditor.json
     ...
 ```
+
+`packages/ui` holds only component strings, e.g. labels of shared components.
 
 Keys are typed. A wrong key is a TypeScript error.
 

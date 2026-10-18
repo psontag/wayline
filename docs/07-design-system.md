@@ -13,17 +13,29 @@ All UI looks the same: same colors, spacing, sizes and components. Light and dar
 
 Tokens are CSS variables in `packages/ui/src/tokens.css`. Each color token has a light and a dark value.
 
-Color tokens are semantic. They name the purpose, not the color:
+Color tokens are semantic. They name the purpose, not the color.
 
 | Token | Use |
 |---|---|
 | `bg`, `surface`, `surface-raised` | Page, panels, popovers |
 | `text`, `text-muted` | Text |
 | `border` | Lines and outlines |
-| `accent`, `accent-text` | Primary actions, selection |
+| `accent`, `on-accent` | Primary actions, text on accent |
 | `success`, `warning`, `danger` | Status |
-| `route-1` … `route-5` | Proposal and stage colors on the map |
-| `surface-paved`, `surface-gravel`, `surface-unpaved` | Surface colors in the elevation profile |
+| `focus-ring` | Keyboard focus |
+| `hover`, `active`, `selected` | Interaction states |
+| `scrim` | Behind dialogs and sheets |
+| `terrain-paved`, `terrain-gravel`, `terrain-unpaved` | Surface colors in the elevation profile |
+
+Map tokens:
+
+| Token | Use |
+|---|---|
+| `route`, `route-casing` | Route line and its outline |
+| `route-dimmed` | Unselected proposals |
+| `route-selected` | Selected proposal or stage |
+| `stage-a`, `stage-b` | Stages alternate between these two |
+| `marker`, `via-point` | Stops and via points |
 
 Other tokens:
 
@@ -32,33 +44,42 @@ Other tokens:
 | Spacing | 4 px scale: 1, 2, 3, 4, 6, 8, 12, 16 |
 | Radius | `sm`, `md`, `lg` |
 | Font size | `xs`, `sm`, `base`, `lg`, `xl` |
+| Font weight | `normal`, `medium`, `semibold` |
+| Line height | `tight`, `normal` |
 | Shadow | `sm`, `md` |
+| Z-index | `map`, `panel`, `sheet`, `popover`, `dialog`, `toast` |
+| Motion duration | `fast`, `normal` |
+| Breakpoints | `sm`, `md`, `lg` |
 
 ## Styling
 
-- Tailwind CSS v4. The default theme is removed. Only our tokens exist as classes, e.g. `bg-surface`, `p-4`, `text-muted`.
+- Tailwind CSS v4. Only our tokens exist as classes, e.g. `bg-surface`, `p-4`, `text-muted`.
 - Components are based on Radix UI primitives, in the style of shadcn/ui. The code lives in `packages/ui` and is ours to change.
-- Icons: Lucide only.
+- Icons: Lucide only. No emoji.
 - Font: Inter, system fonts as fallback.
 
 ## Dark mode
 
-- Default follows the system setting. The user can override it.
+- Default follows the system setting. The user can override it in Settings.
 - The choice is stored in local storage and set as `data-theme` on `<html>`.
 - Only token values change. Components never check the theme.
-- The map has a light and a dark base style. Route lines, markers, the elevation profile and the weather strip use the same tokens.
+
+## Map
+
+- Base styles: OpenFreeMap Positron (light) and Dark.
+- Map and chart colors come from a `useThemeTokens()` hook. It reads the resolved CSS variables and re-applies them on theme change.
+- When the base style swaps, our own layers are added again.
+- OSM attribution is shown in both themes.
 
 ## Enforcement
 
 | Rule | How |
 |---|---|
-| No hex, rgb or px values outside `tokens.css` | Stylelint |
-| No arbitrary Tailwind values like `p-[13px]` or `bg-[#123]` | ESLint Tailwind plugin |
-| No colors outside our tokens | Default Tailwind palette is removed |
+| Only our tokens exist | Tailwind `@theme` resets the defaults (`--*: initial`, including spacing) and defines only our tokens |
+| No unknown or arbitrary classes | `eslint-plugin-better-tailwindcss` with `no-unregistered-classes`. If it misses arbitrary values, add a rule against `[` in classes. |
 | Apps don't style raw elements like `<button>` | ESLint rule: use `packages/ui` components |
-| Every component works in both themes | Storybook story per component, shown in light and dark |
-| No visual regressions | Playwright screenshots of stories in both themes in CI |
-| Readable contrast | Contrast check of token pairs in both themes in CI |
+| Readable contrast | Vitest test over token pairs in both themes |
+| Every component works in both themes | `/dev/components` page in the app shows every component in light and dark |
 
 ## Units and formats
 
@@ -85,3 +106,5 @@ The same thing always has the same name in the UI. Translations use one fixed te
 | Proposal | A generated trip before it is saved |
 | Stop | Place where a stage ends |
 | Via point | Point the user adds to change a route |
+| Day loop | A one-day ride that ends where it starts |
+| Multi-day loop | A multi-day trip that ends where it starts |

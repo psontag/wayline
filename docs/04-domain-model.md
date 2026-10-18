@@ -7,7 +7,7 @@ Trip
  ├─ settings
  └─ Stage[]
      ├─ start: Place
-     ├─ end: Place
+     ├─ end: Stop
      ├─ via: Place[]
      ├─ hotel: Hotel?
      └─ Leg[]
@@ -18,7 +18,9 @@ Trip
 | Field | Description |
 |---|---|
 | `id`, `name`, `owner` | |
-| `kind` | `one-way`, `loop`, `route`, `round-trip` |
+| `schemaVersion` | Version of the stored trip format |
+| `updatedAt` | Used for the conflict check on save (HTTP 409, `CONFLICT`) |
+| `kind` | `one-way`, `multi-day-loop`, `route`, `day-loop` |
 | `startDate` | Optional. Without it, no dates or weather. |
 | `settings` | See below |
 | `stages` | Ordered list. A single route is a trip with one stage. |
@@ -32,22 +34,32 @@ Trip
 | `kmPerDay` | Target distance per stage |
 | `maxAscentPerDay` | Meters |
 | `hotelBudget` | Price range |
-| `minHotelRating` | Booking.com score, e.g. 8.0 |
+| `startTime` | Daily start time. Default 09:00. |
+| `avgSpeed` | Default 18 km/h. Used for weather timing. |
+
+The hotel rating filter (none, 7+, 8+, 9+) is a user preference, not a trip setting. It sits next to the Booking.com link.
 
 ### Stage
 
 | Field | Description |
 |---|---|
-| `start`, `end` | Places. The end of one stage is the start of the next. |
+| `start` | Place. The end of the previous stage, or the trip start. |
+| `end` | Stop |
 | `via` | User-set via points |
 | `hotel` | Selected hotel at the end. Empty on the last stage. |
-| `legs` | Derived |
-| `stats` | Derived: distance, ascent, descent, surface mix |
-| `weather` | Derived, if the date is within the forecast range |
+| `legs` | Stored, see below |
+| `stats` | Distance, ascent, descent, surface mix |
 
 ### Place
 
-A point with a type: `station`, `town`, `junction`, `hotel`, `custom`. Stations and towns come from our OSM data.
+A snapshot: coordinates, name and type (`station`, `town`, `junction`, `hotel`, `custom`). The OSM id is stored only as a hint.
+
+### Stop
+
+A place at a stage end, plus a `locked` flag.
+
+- Picking a stop or a hotel locks it.
+- Automatic re-cutting never moves locked stops.
 
 ### Leg
 
@@ -56,41 +68,51 @@ Route between two consecutive points of a stage.
 | Field | Description |
 |---|---|
 | `from`, `to` | Coordinates |
-| `geometry` | Line with elevation |
+| `geometry` | Encoded line with elevation |
 | `distance`, `ascent`, `descent` | |
 | `surface` | Share per surface type |
-| `provider`, `profile` | Used for the cache key |
+| `provider`, `profileHash` | Used for the cache key |
 
 ### Hotel
 
-OSM id, name, coordinates, stars and website if known. Only the OSM id is stored in the trip. The booking link is built from the hotel, the stage date and the settings.
+A snapshot: OSM id, name, coordinates, stars and website if known.
 
 ## Stored vs derived
 
-A saved trip stores only user input and choices:
+A saved trip stores:
 
 - trip fields and settings
-- per stage: start, end, via points, hotel OSM id
+- per stage: start, stop, via points, hotel snapshot
+- legs: encoded geometry with elevation, stats, provider, profileHash
 
-Everything else is derived and cached: legs, stats, weather, hotel details, dates. This keeps saved trips small and always consistent.
+Opening a trip never calls the router. Legs are recomputed only on edit or on an explicit "Re-route".
+
+Derived when shown: dates, weather, booking links.
 
 ## What updates when
 
 | Change | Recomputed |
 |---|---|
 | Move or add a via point | Legs and stats of that stage |
-| Move a stage end | Legs and stats of this and the next stage, hotel suggestions at the new end |
-| Select a different hotel | Stage end moves to the hotel. Same as moving a stage end. |
-| Change start date | All dates and weather |
-| Change profile | All legs |
-| Add or remove a stage | Stages from that point on, dates and weather after it |
+| Move a stop | Legs and stats of this and the next stage. The stop is locked. |
+| Select a hotel | Stop moves to the hotel and is locked. Same as moving a stop. |
+| Change start date | Dates and weather |
+| Change profile | Nothing until "Re-route" |
+| Add or remove a stage | Re-cuts unlocked stops only |
+
+After an edit, the UI shows downstream changes, e.g. "Day 3 now ends in Lichtenfels".
 
 Stage dates: `startDate + stage index`.
 
-Weather per stage uses the expected time at each point, based on the start time and an average speed.
+Weather per stage uses the expected time at each point, from `startTime` and `avgSpeed`.
 
 ## Storage
 
-D1 table `trips`: `id`, `owner`, `updated_at`, `data` (trip as JSON). The trip is always loaded and saved as a whole, so one JSON column is enough.
+D1 table `trips`: `id`, `owner`, `updated_at`, `data` (trip as JSON). The trip is always loaded and saved as a whole. The D1 row limit is 2 MB, which is enough.
 
 D1 table `shares`: `trip_id`, `email`.
+
+Schema versions:
+
+- `domain` has a zod schema per version and migration functions between them.
+- The Worker migrates on read. The next save writes the new version.
