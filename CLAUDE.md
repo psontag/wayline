@@ -23,7 +23,7 @@ Applies to docs, code comments, commit messages and PR descriptions.
 
 ## UI
 
-Follow `docs/07-design-system.md`.
+Follow `docs/07-design-system.md`. Mockups are in `design/`.
 
 - Use components from `packages/ui`. Add a new component there instead of styling inline.
 - Use only design tokens. No raw colors, sizes or arbitrary Tailwind values.

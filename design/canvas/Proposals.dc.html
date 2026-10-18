@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Proposals</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+@keyframes wl-pulse{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.wl-skel{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 100%; height: 900px; display: flex; flex-direction: column; background: {{c.bg}}; color: {{c.text}}; font-family: Manrope, system-ui, sans-serif; font-size: 14px; overflow: hidden">
+
+<header style="height: 56px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 16px; background: {{c.surface}}; border-bottom: 1px solid {{c.border}}">
+<a href="TripList.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; font-size: 17px; letter-spacing: -0.02em">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 18c4-1 5-6 9-6s5 5 9 4" stroke="{{c.route}}" stroke-width="3" stroke-linecap="round"></path><circle cx="3" cy="18" r="2" fill="{{c.text}}"></circle><circle cx="21" cy="16" r="2" fill="{{c.text}}"></circle></svg>
+wayline</a>
+<div style="width: 1px; height: 24px; background: {{c.border}}"></div>
+<a href="NewTrip.dc.html" style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: {{c.muted}}; text-decoration: none">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+New trip</a>
+<span style="font-weight: 700; font-size: 15px">Proposals</span>
+<div style="flex: 1"></div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; font-weight: 600">
+<span style="padding: 5px 10px; border-radius: 999px; background: {{c.hover}}">One-way</span>
+<span style="padding: 5px 10px; border-radius: 999px; background: {{c.hover}}">Franconia</span>
+<span style="padding: 5px 10px; border-radius: 999px; background: {{c.hover}}">4 days</span>
+<span style="padding: 5px 10px; border-radius: 999px; background: {{c.hover}}">80 km per day</span>
+<span style="padding: 5px 10px; border-radius: 999px; background: {{c.hover}}">Max 800 m</span>
+<span style="padding: 5px 10px; border-radius: 999px; background: {{c.hover}}">Touring</span>
+</div>
+<a href="NewTrip.dc.html" style="font-weight: 700; font-size: 13px; height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; display: flex; align-items: center; text-decoration: none">Edit</a>
+</header>
+
+<div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap">
+
+<div style="flex: 999 1 640px; min-width: 0; height: 100%; position: relative; background: {{c.mapLand}}; overflow: hidden">
+<svg width="100%" height="100%" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map with three numbered trip proposals in Franconia. Proposal 2 is highlighted." style="display: block">
+<rect x="0" y="0" width="900" height="600" fill="{{c.mapLand}}"></rect>
+<path d="M150 60 C230 30 290 80 270 140 C250 200 170 190 140 150 C120 120 110 80 150 60 Z" fill="{{c.mapForest}}"></path>
+<path d="M460 40 C560 10 690 40 700 110 C710 170 600 200 520 190 C450 180 400 80 460 40 Z" fill="{{c.mapForest}}"></path>
+<path d="M660 420 C740 390 860 420 870 480 C880 540 760 555 700 540 C640 525 610 450 660 420 Z" fill="{{c.mapForest}}"></path>
+<path d="M0 500 C120 480 200 440 300 370 C380 315 520 330 640 360 C720 380 820 405 900 380" fill="none" stroke="{{c.mapWater}}" stroke-width="8" stroke-linecap="round"></path>
+<path d="M0 330 L900 450" fill="none" stroke="{{c.mapRoad}}" stroke-width="3"></path>
+<path d="M260 0 L380 600" fill="none" stroke="{{c.mapRoad}}" stroke-width="2.5"></path>
+<path d="M600 0 L700 600" fill="none" stroke="{{c.mapRoad}}" stroke-width="2.5"></path>
+
+<path d="M100 460 C200 470 300 380 380 360 C470 340 560 380 640 380 C700 380 740 440 780 500" fill="none" stroke="{{c.casingDim}}" stroke-width="8" stroke-linecap="round"></path>
+<path d="M100 460 C200 470 300 380 380 360 C470 340 560 380 640 380 C700 380 740 440 780 500" fill="none" stroke="{{c.routeDim}}" stroke-width="5" stroke-linecap="round"></path>
+<path d="M100 460 C120 380 180 300 240 240 C300 180 280 100 360 80 C440 60 520 120 600 140 C680 160 720 250 780 300 C820 340 800 430 780 500" fill="none" stroke="{{c.casingDim}}" stroke-width="8" stroke-linecap="round"></path>
+<path d="M100 460 C120 380 180 300 240 240 C300 180 280 100 360 80 C440 60 520 120 600 140 C680 160 720 250 780 300 C820 340 800 430 780 500" fill="none" stroke="{{c.routeDim}}" stroke-width="5" stroke-linecap="round"></path>
+<path d="M100 460 C150 410 170 360 220 330 C270 300 300 230 330 170 C380 140 430 210 480 190 C520 175 540 170 560 180 C600 230 580 290 610 320 C640 350 640 360 650 370 C690 410 710 450 780 500" fill="none" stroke="{{c.casing}}" stroke-width="11" stroke-linecap="round"></path>
+<path d="M100 460 C150 410 170 360 220 330 C270 300 300 230 330 170 C380 140 430 210 480 190 C520 175 540 170 560 180 C600 230 580 290 610 320 C640 350 640 360 650 370 C690 410 710 450 780 500" fill="none" stroke="{{c.route}}" stroke-width="7" stroke-linecap="round"></path>
+
+<rect x="88" y="448" width="24" height="24" rx="5" fill="{{c.text}}"></rect>
+<path d="M95 454 h10 v8 h-10 z M97 465 l-2 3 M103 465 l2 3" stroke="{{c.bg}}" stroke-width="1.6" fill="none" stroke-linecap="round"></path>
+<rect x="768" y="488" width="24" height="24" rx="5" fill="{{c.text}}"></rect>
+<path d="M775 494 h10 v8 h-10 z M777 505 l-2 3 M783 505 l2 3" stroke="{{c.bg}}" stroke-width="1.6" fill="none" stroke-linecap="round"></path>
+
+<circle cx="470" cy="352" r="15" fill="{{c.surface}}" stroke="{{c.routeDim}}" stroke-width="3"></circle>
+<text x="470" y="357.5" text-anchor="middle" font-size="14" font-weight="800" fill="{{c.text}}" font-family="Manrope, sans-serif">1</text>
+<circle cx="440" cy="196" r="17" fill="{{c.accent}}" stroke="{{c.casing}}" stroke-width="3"></circle>
+<text x="440" y="202" text-anchor="middle" font-size="15" font-weight="800" fill="{{c.onAccent}}" font-family="Manrope, sans-serif">2</text>
+<circle cx="440" cy="72" r="15" fill="{{c.surface}}" stroke="{{c.routeDim}}" stroke-width="3"></circle>
+<text x="440" y="77.5" text-anchor="middle" font-size="14" font-weight="800" fill="{{c.text}}" font-family="Manrope, sans-serif">3</text>
+
+<text x="60" y="495" font-size="13" font-weight="600" fill="{{c.text}}" font-family="Manrope, sans-serif">Bamberg</text>
+<text x="790" y="535" font-size="13" font-weight="600" fill="{{c.text}}" font-family="Manrope, sans-serif">Bayreuth</text>
+</svg>
+<div style="position: absolute; right: 12px; bottom: 8px; font-size: 11px; color: {{c.muted}}">© OpenStreetMap · OpenFreeMap</div>
+</div>
+
+<aside style="flex: 1 1 400px; max-width: 440px; height: 100%; box-sizing: border-box; background: {{c.surface}}; border-left: 1px solid {{c.border}}; display: flex; flex-direction: column; min-width: 0">
+
+<sc-if value="{{generating}}" hint-placeholder-val="{{ true }}">
+<div role="status" aria-live="polite" style="padding: 14px 16px; border-bottom: 1px solid {{c.border}}; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="font-weight: 700">Routing proposal 3 of 4</span>
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 700; border: none; background: transparent; color: {{c.text}}; text-decoration: underline; padding: 0; cursor: pointer">Cancel</button>
+</div>
+<div style="height: 6px; border-radius: 3px; background: {{c.hover}}; overflow: hidden"><div style="width: 68%; height: 100%; background: {{c.accent}}"></div></div>
+<span style="font-size: 12px; color: {{c.muted}}">Network loaded · 412 paths searched · stages cut</span>
+</div>
+</sc-if>
+
+<sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 14px 16px; border-bottom: 1px solid {{c.border}}; display: flex; align-items: center; justify-content: space-between">
+<span style="font-weight: 700">4 proposals</span>
+<span style="font-size: 12px; color: {{c.muted}}">Hover to compare, click to open</span>
+</div>
+</sc-if>
+
+<sc-if value="{{noResult}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 24px 20px; display: flex; flex-direction: column; gap: 14px">
+<span style="width: 40px; height: 40px; border-radius: 999px; background: {{c.accentSoft}}; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20l6-10 4 6 3-4 5 8z"></path></svg></span>
+<span style="font-weight: 800; font-size: 18px">No trip fits these limits</span>
+<span style="color: {{c.muted}}; line-height: 1.5">Every path through Franconia climbs more than 800 m on at least one day. The closest proposal needs 940 m on day 2.</span>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<button type="button" style="font: inherit; font-weight: 700; height: 40px; border-radius: 4px; border: none; background: {{c.accent}}; color: {{c.onAccent}}; cursor: pointer">Allow up to 950 m per day</button>
+<button type="button" style="font: inherit; font-weight: 700; height: 40px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; cursor: pointer">Plan 5 days instead</button>
+<a href="NewTrip.dc.html" style="font-weight: 700; font-size: 13px; text-align: center; padding: 8px 0">Change the inputs</a>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{hasCards}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1; min-height: 0; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{proposals}}" as="p" hint-placeholder-count="3">
+<a href="TripEditor.dc.html" style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 6px; border: 1px solid {{p.borderColor}}; background: {{p.bg}}; text-decoration: none; color: {{c.text}}">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 28px; height: 28px; flex: none; border-radius: 999px; background: {{p.badgeBg}}; color: {{p.badgeText}}; font-weight: 800; display: flex; align-items: center; justify-content: center">{{p.n}}</span>
+<div style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+<span style="font-weight: 700; font-size: 15px">{{p.name}}</span>
+<span style="font-size: 12px; color: {{c.muted}}">{{p.via}}</span>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font-variant-numeric: tabular-nums">
+<div style="display: flex; flex-direction: column"><span style="font-weight: 700">{{p.km}}</span><span style="font-size: 11px; color: {{c.muted}}">Distance</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-weight: 700">{{p.up}}</span><span style="font-size: 11px; color: {{c.muted}}">Ascent</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-weight: 700">{{p.paved}}</span><span style="font-size: 11px; color: {{c.muted}}">Paved</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-weight: 700">{{p.maxDay}}</span><span style="font-size: 11px; color: {{c.muted}}">Longest day</span></div>
+</div>
+<svg width="100%" height="28" viewBox="0 0 400 28" preserveAspectRatio="none" aria-hidden="true" style="display: block"><path d="{{p.spark}}" fill="none" stroke="{{c.muted}}" stroke-width="1.6" vector-effect="non-scaling-stroke"></path></svg>
+<span style="font-size: 12px; color: {{c.muted}}">{{p.stops}}</span>
+</a>
+</sc-for>
+<sc-if value="{{generating}}" hint-placeholder-val="{{ true }}">
+<div class="wl-skel" aria-hidden="true" style="padding: 12px; border-radius: 6px; border: 1px dashed {{c.border}}; display: flex; flex-direction: column; gap: 10px; animation: wl-pulse 1.6s ease-in-out infinite">
+<div style="display: flex; align-items: center; gap: 10px"><span style="width: 28px; height: 28px; border-radius: 999px; background: {{c.hover}}"></span><span style="height: 12px; width: 50%; border-radius: 4px; background: {{c.hover}}"></span></div>
+<span style="height: 10px; width: 80%; border-radius: 4px; background: {{c.hover}}"></span>
+<span style="height: 28px; width: 100%; border-radius: 4px; background: {{c.hover}}"></span>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"state":{"editor":"enum","options":["Generating","Done","No result"],"default":"Generating"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var dark = this.props.dark ?? false;
+    var state = this.props.state ?? 'Generating';
+    var light = {
+      bg: '#F6F7F9', surface: '#FFFFFF', text: '#15181D', muted: '#5A616C', border: '#E1E4EA', hover: '#EEF0F4',
+      accent: '#FFB088', onAccent: '#3B1503', accentSoft: '#FFEDE3',
+      route: '#FF9A73', casing: '#B4532A', casingDim: '#FFFFFF', routeDim: '#BFC5CE',
+      mapLand: '#F1F2F4', mapWater: '#C9E0F5', mapForest: '#E0EEDD', mapRoad: '#FFFFFF'
+    };
+    var darkT = {
+      bg: '#101216', surface: '#171A20', text: '#EDEFF3', muted: '#A0A7B3', border: '#2A2F38', hover: '#20242C',
+      accent: '#FFB088', onAccent: '#2A0F02', accentSoft: '#2D211B',
+      route: '#FFA67F', casing: '#101216', casingDim: '#101216', routeDim: '#4B5260',
+      mapLand: '#171A1F', mapWater: '#1E2E40', mapForest: '#1A2520', mapRoad: '#262A31'
+    };
+    var c = dark ? darkT : light;
+    var all = [
+      { n: 1, name: 'Main valley', via: 'Bamberg → Bayreuth by train both ways', km: '238 km', up: '1,620 m', paved: '91 %', maxDay: '72 km', stops: 'Stops: Lichtenfels · Kulmbach · Bindlach', spark: 'M0 22 L60 20 L120 18 L180 19 L240 14 L300 16 L360 12 L400 10' },
+      { n: 2, name: 'Coburg and Frankenwald', via: 'Bamberg → Bayreuth by train both ways', km: '252 km', up: '2,340 m', paved: '84 %', maxDay: '78 km', stops: 'Stops: Coburg · Kronach · Kulmbach', spark: 'M0 22 L40 18 L80 20 L120 10 L160 14 L200 6 L240 12 L280 16 L320 8 L360 14 L400 12', hl: true },
+      { n: 3, name: 'Northern hills', via: 'Bamberg → Bayreuth by train both ways', km: '271 km', up: '2,780 m', paved: '78 %', maxDay: '81 km', stops: 'Stops: Bad Staffelstein · Ludwigsstadt · Stadtsteinach', spark: 'M0 24 L50 14 L100 18 L150 4 L200 10 L250 2 L300 12 L350 8 L400 14' },
+      { n: 4, name: 'Steigerwald detour', via: 'Bamberg → Bayreuth by train both ways', km: '264 km', up: '2,010 m', paved: '87 %', maxDay: '76 km', stops: 'Stops: Ebrach · Pottenstein · Hollfeld', spark: 'M0 20 L80 16 L160 18 L240 10 L320 14 L400 12' }
+    ];
+    var shown = state === 'Generating' ? all.slice(0, 3) : (state === 'Done' ? all : []);
+    var proposals = shown.map(function (p) {
+      return Object.assign({}, p, {
+        borderColor: p.hl ? c.casing : c.border,
+        bg: p.hl ? c.accentSoft : c.surface,
+        badgeBg: p.hl ? c.accent : c.hover,
+        badgeText: p.hl ? c.onAccent : c.text
+      });
+    });
+    return {
+      c: c, proposals: proposals,
+      generating: state === 'Generating', done: state === 'Done', noResult: state === 'No result',
+      hasCards: state !== 'No result'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B1 · Peach</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1392px; height: 1320px; box-sizing: border-box; padding: 40px; background: #E6E8EC; font-family: Manrope, system-ui, sans-serif; color: #111418; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em">B1 · Peach</h1>
+<p style="margin: 0; font-size: 16px; color: #4A525E; max-width: 860px">Signal with one warm pastel. Peach for actions and routes, dark text on pastel fills. Routes get a deeper outline so they stay visible on a light map.</p>
+</div>
+<div style="display: flex; gap: 32px; align-items: flex-start">
+<dc-import name="Tile" t="{{light}}" hint-size="640px,1180px"></dc-import>
+<dc-import name="Tile" t="{{dark}}" hint-size="640px,1180px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1392,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var base = { direction: 'B1 · Peach', font: 'Manrope, system-ui, sans-serif', numFont: 'Manrope, system-ui, sans-serif', radius: '6px', radiusSm: '4px' };
+    var light = Object.assign({}, base, {
+      theme: 'Light',
+      bg: '#F6F7F9', surface: '#FFFFFF', raised: '#FFFFFF', text: '#15181D', muted: '#5A616C', border: '#E1E4EA',
+      accent: '#FFB088', onAccent: '#3B1503', accentSoft: '#FFEDE3', hover: '#EEF0F4',
+      routeSel: '#FF9A73', onRoute: '#3B1503', routeDim: '#C3C8D0', casing: '#B4532A', marker: '#15181D',
+      paved: '#7E8BA3', gravel: '#F2C66D', unpaved: '#C9A189',
+      mapLand: '#F3F4F6', mapWater: '#C9E0F5', mapForest: '#E0EEDD', mapRoad: '#FFFFFF', mapLabel: '#6B7280'
+    });
+    var dark = Object.assign({}, base, {
+      theme: 'Dark',
+      bg: '#101216', surface: '#171A20', raised: '#1E222A', text: '#EDEFF3', muted: '#A0A7B3', border: '#2A2F38',
+      accent: '#FFB088', onAccent: '#2A0F02', accentSoft: '#2D211B', hover: '#20242C',
+      routeSel: '#FFA67F', onRoute: '#2A0F02', routeDim: '#4B5260', casing: '#101216', marker: '#EDEFF3',
+      paved: '#AEB9CC', gravel: '#F2CF7E', unpaved: '#D9B49C',
+      mapLand: '#171A1F', mapWater: '#1E2E40', mapForest: '#1A2520', mapRoad: '#262A31', mapLabel: '#8B93A0'
+    });
+    return { light: light, dark: dark };
+  }
+}
+</script>
+</body>
+</html>

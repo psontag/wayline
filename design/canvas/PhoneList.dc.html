@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone trip list</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; overflow: auto; background: {{c.bg}}; color: {{c.text}}; font-family: Manrope, system-ui, sans-serif; font-size: 14px; display: flex; flex-direction: column">
+<header style="flex: none; height: 56px; padding: 0 16px; display: flex; align-items: center; gap: 12px; background: {{c.surface}}; border-bottom: 1px solid {{c.border}}">
+<span style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; letter-spacing: -0.02em; flex: 1">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 18c4-1 5-6 9-6s5 5 9 4" stroke="{{c.route}}" stroke-width="3" stroke-linecap="round"></path><circle cx="3" cy="18" r="2" fill="{{c.text}}"></circle><circle cx="21" cy="16" r="2" fill="{{c.text}}"></circle></svg>
+wayline</span>
+<span aria-label="Signed in as P" style="width: 32px; height: 32px; border-radius: 999px; background: {{c.accentSoft}}; font-weight: 800; display: flex; align-items: center; justify-content: center">P</span>
+</header>
+<main style="padding: 20px 16px 32px; display: flex; flex-direction: column; gap: 14px">
+<h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em">Trips</h1>
+<sc-for list="{{trips}}" as="t" hint-placeholder-count="3">
+<a href="PhoneTrip.dc.html" style="display: flex; flex-direction: column; border-radius: 8px; border: 1px solid {{c.border}}; background: {{c.surface}}; overflow: hidden; text-decoration: none">
+<svg width="100%" height="96" viewBox="0 0 300 96" preserveAspectRatio="xMidYMid slice" aria-hidden="true" style="display: block; background: {{c.mapLand}}">
+<path d="M0 72 C60 64 100 48 150 56 C200 64 240 40 300 32" fill="none" stroke="{{c.mapWater}}" stroke-width="5"></path>
+<path d="{{t.path}}" fill="none" stroke="{{c.casing}}" stroke-width="7" stroke-linecap="round"></path>
+<path d="{{t.path}}" fill="none" stroke="{{c.route}}" stroke-width="4" stroke-linecap="round"></path>
+</svg>
+<div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-weight: 800; font-size: 16px">{{t.name}}</span>
+<span style="font-size: 13px; color: {{c.muted}}">{{t.dates}}</span>
+<span style="font-size: 13px; font-variant-numeric: tabular-nums">{{t.stats}}</span>
+</div>
+</a>
+</sc-for>
+<span style="font-size: 12px; color: {{c.muted}}; text-align: center; padding-top: 8px">Plan new trips on a larger screen.</span>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var dark = this.props.dark ?? false;
+    var light = {
+      bg: '#F6F7F9', surface: '#FFFFFF', text: '#15181D', muted: '#5A616C', border: '#E1E4EA',
+      accentSoft: '#FFEDE3', route: '#FF9A73', casing: '#B4532A', mapLand: '#F1F2F4', mapWater: '#C9E0F5'
+    };
+    var darkT = {
+      bg: '#101216', surface: '#171A20', text: '#EDEFF3', muted: '#A0A7B3', border: '#2A2F38',
+      accentSoft: '#2D211B', route: '#FFA67F', casing: '#171A1F', mapLand: '#171A1F', mapWater: '#1E2E40'
+    };
+    var c = dark ? darkT : light;
+    var trips = [
+      { name: 'Franconia, four days', dates: 'Sat 12 Jun – Tue 15 Jun', stats: '252 km · 2,340 m · 4 stages', path: 'M30 80 C70 50 90 60 120 34 C150 16 190 42 210 38 C240 34 250 60 270 76' },
+      { name: 'Lake Constance loop', dates: 'No date yet', stats: '274 km · 1,410 m · 3 stages', path: 'M150 84 C80 84 40 60 60 34 C80 12 140 16 180 20 C230 26 270 50 240 76 C220 90 180 84 150 84' },
+      { name: 'Altmühl valley weekend', dates: 'From Markus · 2 days', stats: '128 km · 760 m', path: 'M30 60 C80 30 130 70 180 50 C220 34 250 40 280 30' }
+    ];
+    return { c: c, trips: trips };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New trip</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="width: 100%; height: 900px; display: flex; flex-direction: column; background: {{c.bg}}; color: {{c.text}}; font-family: Manrope, system-ui, sans-serif; font-size: 14px; overflow: hidden">
+
+<header style="height: 56px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 16px; background: {{c.surface}}; border-bottom: 1px solid {{c.border}}">
+<a href="TripList.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; font-size: 17px; letter-spacing: -0.02em">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 18c4-1 5-6 9-6s5 5 9 4" stroke="{{c.route}}" stroke-width="3" stroke-linecap="round"></path><circle cx="3" cy="18" r="2" fill="{{c.text}}"></circle><circle cx="21" cy="16" r="2" fill="{{c.text}}"></circle></svg>
+wayline</a>
+<div style="width: 1px; height: 24px; background: {{c.border}}"></div>
+<span style="font-weight: 700; font-size: 15px">New trip</span>
+</header>
+
+<div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap">
+
+<div style="flex: 999 1 640px; min-width: 0; height: 100%; position: relative; background: {{c.mapLand}}; overflow: hidden">
+<svg width="100%" height="100%" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of northern Bavaria with the selected region Franconia outlined" style="display: block">
+<rect x="0" y="0" width="900" height="600" fill="{{c.mapLand}}"></rect>
+<path d="M150 60 C230 30 290 80 270 140 C250 200 170 190 140 150 C120 120 110 80 150 60 Z" fill="{{c.mapForest}}"></path>
+<path d="M460 40 C560 10 690 40 700 110 C710 170 600 200 520 190 C450 180 400 80 460 40 Z" fill="{{c.mapForest}}"></path>
+<path d="M660 420 C740 390 860 420 870 480 C880 540 760 555 700 540 C640 525 610 450 660 420 Z" fill="{{c.mapForest}}"></path>
+<path d="M0 500 C120 480 200 440 300 370 C380 315 520 330 640 360 C720 380 820 405 900 380" fill="none" stroke="{{c.mapWater}}" stroke-width="8" stroke-linecap="round"></path>
+<path d="M0 330 L900 450" fill="none" stroke="{{c.mapRoad}}" stroke-width="3"></path>
+<path d="M260 0 L380 600" fill="none" stroke="{{c.mapRoad}}" stroke-width="2.5"></path>
+<path d="M600 0 L700 600" fill="none" stroke="{{c.mapRoad}}" stroke-width="2.5"></path>
+<path d="M60 520 C200 500 300 420 420 380 C540 340 700 380 900 360" fill="none" stroke="{{c.mapNet}}" stroke-width="3" stroke-dasharray="1 0"></path>
+<path d="M120 0 C160 120 260 200 330 260 C400 320 420 420 460 600" fill="none" stroke="{{c.mapNet}}" stroke-width="3"></path>
+<path d="M500 0 C540 100 600 200 640 300 C680 400 760 460 900 520" fill="none" stroke="{{c.mapNet}}" stroke-width="3"></path>
+<rect x="70" y="50" width="760" height="480" rx="14" fill="{{c.regionFill}}" stroke="{{c.casing}}" stroke-width="2.5" stroke-dasharray="8 6"></rect>
+<rect x="62" y="42" width="16" height="16" rx="3" fill="{{c.surface}}" stroke="{{c.casing}}" stroke-width="2.5"></rect>
+<rect x="822" y="42" width="16" height="16" rx="3" fill="{{c.surface}}" stroke="{{c.casing}}" stroke-width="2.5"></rect>
+<rect x="62" y="522" width="16" height="16" rx="3" fill="{{c.surface}}" stroke="{{c.casing}}" stroke-width="2.5"></rect>
+<rect x="822" y="522" width="16" height="16" rx="3" fill="{{c.surface}}" stroke="{{c.casing}}" stroke-width="2.5"></rect>
+<g font-family="Manrope, sans-serif" font-size="13" font-weight="600" fill="{{c.text}}">
+<circle cx="100" cy="460" r="5" fill="{{c.text}}"></circle><text x="112" y="465">Bamberg</text>
+<circle cx="330" cy="140" r="5" fill="{{c.text}}"></circle><text x="342" y="145">Coburg</text>
+<circle cx="560" cy="150" r="5" fill="{{c.text}}"></circle><text x="572" y="155">Kronach</text>
+<circle cx="640" cy="330" r="5" fill="{{c.text}}"></circle><text x="652" y="335">Kulmbach</text>
+<circle cx="780" cy="500" r="5" fill="{{c.text}}"></circle><text x="740" y="490">Bayreuth</text>
+</g>
+</svg>
+<div style="position: absolute; top: 12px; left: 12px; right: 12px; display: flex; gap: 8px; flex-wrap: wrap">
+<label style="flex: 1 1 280px; max-width: 420px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 6px; background: {{c.surface}}; border: 1px solid {{c.border}}; box-shadow: {{c.shadow}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search a place</span>
+<input value="Franconia" style="font: inherit; border: none; outline: none; background: transparent; color: {{c.text}}; flex: 1; min-width: 0">
+</label>
+<div style="display: flex; padding: 3px; gap: 2px; border-radius: 6px; background: {{c.surface}}; border: 1px solid {{c.border}}; box-shadow: {{c.shadow}}">
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 700; height: 32px; padding: 0 12px; border-radius: 4px; border: none; background: {{c.accentSoft}}; color: {{c.text}}">Draw region</button>
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 600; height: 32px; padding: 0 12px; border-radius: 4px; border: none; background: transparent; color: {{c.muted}}">Pick station</button>
+</div>
+</div>
+<div style="position: absolute; left: 12px; bottom: 12px; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: {{c.surface}}; border: 1px solid {{c.border}}; border-radius: 6px; font-size: 12px; color: {{c.muted}}">
+<span style="width: 14px; height: 4px; border-radius: 2px; background: {{c.mapNet}}"></span>Signed cycling routes
+</div>
+<div style="position: absolute; right: 12px; bottom: 8px; font-size: 11px; color: {{c.muted}}">© OpenStreetMap · OpenFreeMap</div>
+</div>
+
+<form style="flex: 1 1 400px; max-width: 440px; height: 100%; box-sizing: border-box; background: {{c.surface}}; border-left: 1px solid {{c.border}}; display: flex; flex-direction: column; min-width: 0; margin: 0">
+<div style="flex: 1; min-height: 0; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px">
+
+<fieldset style="border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="font-size: 13px; font-weight: 700; padding: 0; margin-bottom: 8px">Kind of trip</legend>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{modes}}" as="m" hint-placeholder-count="4">
+<button type="button" onClick="{{m.pick}}" aria-pressed="{{m.pressed}}" style="font: inherit; text-align: left; padding: 10px 12px; border-radius: 6px; border: 1px solid {{m.border}}; background: {{m.bg}}; color: {{c.text}}; cursor: pointer; display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 700">{{m.label}}</span>
+<span style="font-size: 12px; color: {{c.muted}}">{{m.hint}}</span>
+</button>
+</sc-for>
+</div>
+</fieldset>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="nt-days" style="font-size: 13px; font-weight: 700">Days</label>
+<div style="display: flex; align-items: center; height: 40px; border-radius: 4px; border: 1px solid {{c.border}}; overflow: hidden">
+<button type="button" aria-label="Fewer days" style="width: 40px; height: 100%; border: none; border-right: 1px solid {{c.border}}; background: {{c.bg}}; color: {{c.text}}; font: inherit; font-weight: 700">−</button>
+<input id="nt-days" value="4" style="font: inherit; font-weight: 700; text-align: center; flex: 1; min-width: 0; height: 100%; border: none; background: {{c.surface}}; color: {{c.text}}; font-variant-numeric: tabular-nums">
+<button type="button" aria-label="More days" style="width: 40px; height: 100%; border: none; border-left: 1px solid {{c.border}}; background: {{c.bg}}; color: {{c.text}}; font: inherit; font-weight: 700">+</button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="nt-km" style="font-size: 13px; font-weight: 700">Km per day</label>
+<input id="nt-km" value="80 km" style="font: inherit; height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; font-variant-numeric: tabular-nums">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="nt-up" style="font-size: 13px; font-weight: 700">Max ascent per day</label>
+<input id="nt-up" value="800 m" style="font: inherit; height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; font-variant-numeric: tabular-nums">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="nt-budget" style="font-size: 13px; font-weight: 700">Hotel budget</label>
+<select id="nt-budget" style="font: inherit; height: 40px; padding: 0 10px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}"><option>Up to €80</option><option selected="">€80–140</option><option>€140+</option></select>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700">Profile</span>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 3px; gap: 2px; border-radius: 6px; background: {{c.hover}}">
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 700; height: 34px; border-radius: 4px; border: none; background: {{c.surface}}; color: {{c.text}}; box-shadow: 0 1px 2px rgba(0,0,0,0.12)">Touring</button>
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 600; height: 34px; border-radius: 4px; border: none; background: transparent; color: {{c.muted}}">Fast</button>
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 600; height: 34px; border-radius: 4px; border: none; background: transparent; color: {{c.muted}}">Scenic</button>
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 600; height: 34px; border-radius: 4px; border: none; background: transparent; color: {{c.muted}}">Quiet</button>
+</div>
+<span style="font-size: 12px; color: {{c.muted}}">Mostly paved and quiet roads. Some forest and farm tracks.</span>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="nt-date" style="font-size: 13px; font-weight: 700">Start date <span style="font-weight: 500; color: {{c.muted}}">(optional)</span></label>
+<input id="nt-date" value="Sat 12 Jun" style="font: inherit; height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="nt-time" style="font-size: 13px; font-weight: 700">Start time</label>
+<input id="nt-time" value="09:00" style="font: inherit; height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; font-variant-numeric: tabular-nums">
+</div>
+</div>
+</div>
+
+<div style="padding: 16px 20px; border-top: 1px solid {{c.border}}; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<span style="font-size: 12px; color: {{c.muted}}">Starts and ends at train stations</span>
+<a href="Proposals.dc.html" style="font-weight: 800; height: 44px; padding: 0 20px; border-radius: 4px; background: {{c.accent}}; color: {{c.onAccent}}; display: flex; align-items: center; gap: 8px; text-decoration: none">Find trips
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+</div>
+</form>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var dark = this.props.dark ?? false;
+    var light = {
+      bg: '#F6F7F9', surface: '#FFFFFF', text: '#15181D', muted: '#5A616C', border: '#E1E4EA', hover: '#EEF0F4',
+      accent: '#FFB088', onAccent: '#3B1503', accentSoft: '#FFEDE3', route: '#FF9A73', casing: '#B4532A',
+      regionFill: 'rgba(255,176,136,0.10)', mapNet: '#9DB7A0',
+      mapLand: '#F1F2F4', mapWater: '#C9E0F5', mapForest: '#E0EEDD', mapRoad: '#FFFFFF',
+      shadow: '0 1px 2px rgba(16,18,22,0.08), 0 4px 12px rgba(16,18,22,0.06)'
+    };
+    var darkT = {
+      bg: '#101216', surface: '#171A20', text: '#EDEFF3', muted: '#A0A7B3', border: '#2A2F38', hover: '#20242C',
+      accent: '#FFB088', onAccent: '#2A0F02', accentSoft: '#2D211B', route: '#FFA67F', casing: '#FFB088',
+      regionFill: 'rgba(255,176,136,0.08)', mapNet: '#4E6B57',
+      mapLand: '#171A1F', mapWater: '#1E2E40', mapForest: '#1A2520', mapRoad: '#262A31',
+      shadow: '0 1px 2px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3)'
+    };
+    var c = dark ? darkT : light;
+    var current = (this.state && this.state.mode) || 'one-way';
+    var modes = [
+      { id: 'one-way', label: 'One-way trip', hint: 'Train out, train back' },
+      { id: 'multi-day-loop', label: 'Multi-day loop', hint: 'Ends where it starts' },
+      { id: 'route', label: 'Route A to B', hint: 'One route, your points' },
+      { id: 'day-loop', label: 'Day loop', hint: 'One day from a start point' }
+    ].map(function (m) {
+      var on = m.id === current;
+      return Object.assign({}, m, {
+        pressed: on ? 'true' : 'false',
+        border: on ? c.casing : c.border,
+        bg: on ? c.accentSoft : c.surface,
+        pick: function () { self.setState({ mode: m.id }); }
+      });
+    });
+    return { c: c, modes: modes };
+  }
+}
+</script>
+</body>
+</html>

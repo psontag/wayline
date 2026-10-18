@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone stop and hotel picker</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: {{c.mapLand}}; color: {{c.text}}; font-family: Manrope, system-ui, sans-serif; font-size: 14px">
+<div style="position: absolute; inset: 0; background: {{c.scrim}}"></div>
+
+<div role="dialog" aria-label="Stop for day 2" style="position: absolute; left: 0; right: 0; bottom: 0; height: 780px; background: {{c.surface}}; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; overflow: hidden">
+<div style="flex: none; height: 28px; display: flex; align-items: center; justify-content: center"><span style="width: 40px; height: 5px; border-radius: 3px; background: {{c.border}}"></span></div>
+<div style="flex: none; padding: 0 16px 12px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid {{c.border}}">
+<div style="display: flex; flex-direction: column; flex: 1">
+<span style="font-size: 12px; color: {{c.muted}}">Day 2 · Sun 13 Jun · from Coburg</span>
+<span style="font-weight: 800; font-size: 18px">Where to stop</span>
+</div>
+<a href="PhoneTrip.dc.html" aria-label="Close" style="width: 44px; height: 44px; border-radius: 999px; background: {{c.bg}}; display: flex; align-items: center; justify-content: center; text-decoration: none">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+</div>
+
+<div style="flex: 1; min-height: 0; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px">
+<fieldset style="border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Stop town</legend>
+<sc-for list="{{towns}}" as="t" hint-placeholder-count="3">
+<label style="display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 12px; border-radius: 6px; border: 1px solid {{t.border}}; background: {{t.bg}}">
+<input type="radio" name="stop" checked="{{t.checked}}" style="width: 18px; height: 18px; accent-color: {{c.casing}}; margin: 0">
+<div style="display: flex; flex-direction: column; flex: 1">
+<span style="font-weight: 700">{{t.name}}</span>
+<span style="font-size: 12px; color: {{c.muted}}; font-variant-numeric: tabular-nums">{{t.meta}}</span>
+</div>
+<span style="font-size: 12px; font-weight: 700; color: {{c.muted}}">{{t.note}}</span>
+</label>
+</sc-for>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: {{c.muted}}">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+Kronach is locked. Later edits keep it.</span>
+</fieldset>
+
+<section style="display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 800">Hotels in Kronach</h2>
+<sc-for list="{{hotels}}" as="h" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 6px; border: 1px solid {{h.border}}; background: {{h.bg}}">
+<div style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+<span style="font-weight: 700">{{h.name}}</span>
+<span style="font-size: 12px; color: {{c.muted}}">{{h.meta}}</span>
+</div>
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 700; height: 36px; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}">{{h.action}}</button>
+</div>
+</sc-for>
+</section>
+</div>
+
+<div style="flex: none; padding: 12px 16px 24px; border-top: 1px solid {{c.border}}; display: flex; gap: 8px; align-items: center">
+<a href="#" style="flex: 1; height: 48px; border-radius: 4px; background: {{c.accent}}; color: {{c.onAccent}}; font-weight: 800; display: flex; align-items: center; justify-content: center; text-decoration: none">Check prices on Booking.com</a>
+<label style="display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: {{c.muted}}">Rating
+<select style="font: inherit; font-size: 13px; height: 32px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}"><option>Any</option><option>7+</option><option selected="">8+</option><option>9+</option></select></label>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var dark = this.props.dark ?? false;
+    var light = {
+      bg: '#F6F7F9', surface: '#FFFFFF', text: '#15181D', muted: '#5A616C', border: '#E1E4EA',
+      accent: '#FFB088', onAccent: '#3B1503', accentSoft: '#FFEDE3', casing: '#B4532A',
+      mapLand: '#F1F2F4', scrim: 'rgba(16,18,22,0.35)'
+    };
+    var darkT = {
+      bg: '#101216', surface: '#171A20', text: '#EDEFF3', muted: '#A0A7B3', border: '#2A2F38',
+      accent: '#FFB088', onAccent: '#2A0F02', accentSoft: '#2D211B', casing: '#FFB088',
+      mapLand: '#171A1F', scrim: 'rgba(0,0,0,0.55)'
+    };
+    var c = dark ? darkT : light;
+    var towns = [
+      { name: 'Küps', meta: '56 km · 610 m · 2 hotels', note: 'Shorter', on: false },
+      { name: 'Kronach', meta: '64 km · 720 m · 6 hotels', note: 'Current', on: true },
+      { name: 'Steinwiesen', meta: '75 km · 890 m · 1 hotel', note: 'Over max ascent', on: false }
+    ].map(function (t) {
+      return Object.assign({}, t, { checked: t.on, border: t.on ? c.casing : c.border, bg: t.on ? c.accentSoft : c.surface });
+    });
+    var hotels = [
+      { name: 'Hotel Bauerngirgl', meta: '3 stars · 0.4 km from route', action: 'Picked', on: true },
+      { name: 'Hotel Sonne', meta: '3 stars · 0.9 km from route', action: 'Pick', on: false },
+      { name: 'Pension Am Rosenberg', meta: 'No stars listed · 1.6 km from route', action: 'Pick', on: false }
+    ].map(function (h) {
+      return Object.assign({}, h, { border: h.on ? c.casing : c.border, bg: h.on ? c.accentSoft : c.surface });
+    });
+    return { c: c, towns: towns, hotels: hotels };
+  }
+}
+</script>
+</body>
+</html>

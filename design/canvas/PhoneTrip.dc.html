@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone trip view</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: {{c.mapLand}}; color: {{c.text}}; font-family: Manrope, system-ui, sans-serif; font-size: 14px">
+
+<svg width="390" height="844" viewBox="0 0 390 844" role="img" aria-label="Map of the trip. Day 2 from Coburg to Kronach is selected." style="position: absolute; inset: 0; display: block">
+<rect x="0" y="0" width="390" height="844" fill="{{c.mapLand}}"></rect>
+<path d="M40 120 C110 90 170 130 160 190 C150 240 80 240 50 200 C30 170 20 140 40 120 Z" fill="{{c.mapForest}}"></path>
+<path d="M230 260 C300 240 370 270 370 320 C370 370 300 380 260 360 C220 340 200 280 230 260 Z" fill="{{c.mapForest}}"></path>
+<path d="M0 420 C80 400 140 360 200 330 C260 300 320 310 390 290" fill="none" stroke="{{c.mapWater}}" stroke-width="7" stroke-linecap="round"></path>
+<path d="M0 250 L390 380" fill="none" stroke="{{c.mapRoad}}" stroke-width="3"></path>
+<path d="M120 0 L200 844" fill="none" stroke="{{c.mapRoad}}" stroke-width="2"></path>
+<path d="M30 440 C60 380 70 320 100 280" fill="none" stroke="{{c.casingDim}}" stroke-width="7" stroke-linecap="round"></path>
+<path d="M30 440 C60 380 70 320 100 280" fill="none" stroke="{{c.stageA}}" stroke-width="4.5" stroke-linecap="round"></path>
+<path d="M290 230 C320 280 330 330 360 380" fill="none" stroke="{{c.casingDim}}" stroke-width="7" stroke-linecap="round"></path>
+<path d="M290 230 C320 280 330 330 360 380" fill="none" stroke="{{c.stageA}}" stroke-width="4.5" stroke-linecap="round"></path>
+<path d="M100 280 C140 230 170 260 210 240 C240 225 260 220 290 230" fill="none" stroke="{{c.casing}}" stroke-width="10" stroke-linecap="round"></path>
+<path d="M100 280 C140 230 170 260 210 240 C240 225 260 220 290 230" fill="none" stroke="{{c.route}}" stroke-width="6" stroke-linecap="round"></path>
+<circle cx="100" cy="280" r="12" fill="{{c.surface}}" stroke="{{c.text}}" stroke-width="2.5"></circle>
+<text x="100" y="284.5" text-anchor="middle" font-size="12" font-weight="800" fill="{{c.text}}" font-family="Manrope, sans-serif">1</text>
+<circle cx="290" cy="230" r="12" fill="{{c.accent}}" stroke="{{c.casing}}" stroke-width="2.5"></circle>
+<text x="290" y="234.5" text-anchor="middle" font-size="12" font-weight="800" fill="{{c.onAccent}}" font-family="Manrope, sans-serif">2</text>
+<text x="70" y="270" font-size="12" font-weight="600" fill="{{c.text}}" font-family="Manrope, sans-serif">Coburg</text>
+<text x="268" y="210" font-size="12" font-weight="600" fill="{{c.text}}" font-family="Manrope, sans-serif">Kronach</text>
+</svg>
+
+<div style="position: absolute; top: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 8px">
+<a href="PhoneList.dc.html" aria-label="Back to trips" style="width: 44px; height: 44px; flex: none; border-radius: 999px; background: {{c.surface}}; border: 1px solid {{c.border}}; box-shadow: {{c.shadow}}; display: flex; align-items: center; justify-content: center; text-decoration: none">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<div style="flex: 1; min-width: 0; height: 44px; padding: 0 14px; border-radius: 999px; background: {{c.surface}}; border: 1px solid {{c.border}}; box-shadow: {{c.shadow}}; display: flex; flex-direction: column; justify-content: center">
+<span style="font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Franconia, four days</span>
+<span style="font-size: 11px; color: {{c.muted}}">Sat 12 – Tue 15 Jun · 252 km</span>
+</div>
+<button type="button" aria-label="Export GPX" style="width: 44px; height: 44px; flex: none; border-radius: 999px; background: {{c.accent}}; color: {{c.onAccent}}; border: none; box-shadow: {{c.shadow}}; display: flex; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg></button>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0; height: {{sheetH}}; background: {{c.surface}}; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 24px rgba(16,18,22,0.14); display: flex; flex-direction: column; overflow: hidden">
+<button type="button" onClick="{{cycle}}" aria-label="{{sheetLabel}}" style="flex: none; height: 28px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<span style="width: 40px; height: 5px; border-radius: 3px; background: {{c.border}}"></span></button>
+
+<div style="flex: none; padding: 0 16px 12px; display: flex; gap: 8px; overflow-x: auto">
+<sc-for list="{{days}}" as="d" hint-placeholder-count="4">
+<button type="button" onClick="{{d.pick}}" aria-pressed="{{d.pressed}}" style="font: inherit; flex: none; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid {{d.border}}; background: {{d.bg}}; color: {{c.text}}; font-weight: 700; font-size: 13px; cursor: pointer">Day {{d.n}}</button>
+</sc-for>
+</div>
+
+<div style="flex: 1; min-height: 0; overflow: auto; padding: 0 16px 24px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 12px; color: {{c.muted}}">{{stage.date}}</span>
+<span style="font-weight: 800; font-size: 18px">{{stage.from}} → {{stage.to}}</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums">
+<span style="font-weight: 800; font-size: 16px">{{stage.km}}</span>
+<span style="font-size: 12px; color: {{c.muted}}">{{stage.up}}</span>
+</div>
+</div>
+
+<sc-if value="{{notPeek}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; gap: 3px; height: 6px; border-radius: 3px; overflow: hidden">
+<div style="flex: 62; background: {{c.paved}}"></div><div style="flex: 24; background: {{c.gravel}}"></div><div style="flex: 14; background: {{c.unpaved}}"></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<div style="padding: 10px; border-radius: 6px; background: {{c.bg}}; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: {{c.muted}}">Weather</span><span style="font-weight: 700">{{stage.temp}}</span></div>
+<div style="padding: 10px; border-radius: 6px; background: {{c.bg}}; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: {{c.muted}}">Wind</span><span style="font-weight: 700">{{stage.wind}}</span></div>
+</div>
+<a href="PhoneStage.dc.html" style="display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 6px; border: 1px solid {{c.border}}; text-decoration: none">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 20V8M22 20v-6a3 3 0 0 0-3-3H10v9M2 16h20M6 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path></svg>
+<div style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+<span style="font-weight: 700">Stop: {{stage.to}}</span>
+<span style="font-size: 12px; color: {{c.muted}}">{{stage.hotel}}</span>
+</div>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></a>
+<a href="#" style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 44px; border-radius: 4px; background: {{c.accent}}; color: {{c.onAccent}}; font-weight: 800; text-decoration: none">Hotels in {{stage.to}} on Booking.com</a>
+</div>
+</sc-if>
+
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700">Elevation</span>
+<svg width="100%" height="64" viewBox="0 0 360 64" preserveAspectRatio="none" role="img" aria-label="Elevation profile of this stage, highest point at km 23" style="display: block">
+<path d="M0 50 L40 44 L80 40 L120 22 L150 14 L180 24 L220 30 L260 26 L300 38 L360 44 L360 64 L0 64 Z" fill="{{c.hover}}"></path>
+<path d="M0 50 L40 44 L80 40 L120 22" fill="none" stroke="{{c.paved}}" stroke-width="3" vector-effect="non-scaling-stroke"></path>
+<path d="M120 22 L150 14 L180 24" fill="none" stroke="{{c.gravel}}" stroke-width="3" vector-effect="non-scaling-stroke"></path>
+<path d="M180 24 L220 30 L260 26 L300 38 L360 44" fill="none" stroke="{{c.paved}}" stroke-width="3" vector-effect="non-scaling-stroke"></path>
+</svg>
+<a href="#" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; padding: 10px 0">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+Export this stage as GPX</a>
+</div>
+</sc-if>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var dark = this.props.dark ?? false;
+    var light = {
+      bg: '#F6F7F9', surface: '#FFFFFF', text: '#15181D', muted: '#5A616C', border: '#E1E4EA', hover: '#EEF0F4',
+      accent: '#FFB088', onAccent: '#3B1503', accentSoft: '#FFEDE3',
+      route: '#FF9A73', casing: '#B4532A', casingDim: '#FFFFFF', stageA: '#FFC7AE',
+      paved: '#7E8BA3', gravel: '#E8B850', unpaved: '#B98E73',
+      mapLand: '#F1F2F4', mapWater: '#C9E0F5', mapForest: '#E0EEDD', mapRoad: '#FFFFFF',
+      shadow: '0 1px 2px rgba(16,18,22,0.08), 0 4px 12px rgba(16,18,22,0.08)'
+    };
+    var darkT = {
+      bg: '#101216', surface: '#171A20', text: '#EDEFF3', muted: '#A0A7B3', border: '#2A2F38', hover: '#20242C',
+      accent: '#FFB088', onAccent: '#2A0F02', accentSoft: '#2D211B',
+      route: '#FFA67F', casing: '#101216', casingDim: '#101216', stageA: '#C98C72',
+      paved: '#AEB9CC', gravel: '#F2CF7E', unpaved: '#D9B49C',
+      mapLand: '#171A1F', mapWater: '#1E2E40', mapForest: '#1A2520', mapRoad: '#262A31',
+      shadow: '0 1px 2px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3)'
+    };
+    var c = dark ? darkT : light;
+    var st = this.state || {};
+    var sheet = st.sheet || 'half';
+    var sel = st.day || 2;
+    var heights = { peek: '150px', half: '470px', full: '760px' };
+    var next = { peek: 'half', half: 'full', full: 'peek' };
+    var all = {
+      1: { date: 'Day 1 · Sat 12 Jun', from: 'Bamberg', to: 'Coburg', km: '78 km', up: '650 m', temp: '14–21 °C, dry', wind: '60 % tailwind', hotel: 'Hotel Goldener Anker · 3 stars' },
+      2: { date: 'Day 2 · Sun 13 Jun', from: 'Coburg', to: 'Kronach', km: '64 km', up: '720 m', temp: '17–23 °C, dry', wind: '45 % headwind', hotel: 'Hotel Bauerngirgl · 3 stars' },
+      3: { date: 'Day 3 · Mon 14 Jun', from: 'Kronach', to: 'Kulmbach', km: '58 km', up: '540 m', temp: '16–24 °C', wind: 'Mostly crosswind', hotel: 'No hotel picked yet' },
+      4: { date: 'Day 4 · Tue 15 Jun', from: 'Kulmbach', to: 'Bayreuth', km: '52 km', up: '430 m', temp: 'Forecast from 1 Jun', wind: 'Forecast from 1 Jun', hotel: 'Train home from Bayreuth' }
+    };
+    var days = [1, 2, 3, 4].map(function (n) {
+      var on = n === sel;
+      return { n: n, pressed: on ? 'true' : 'false', border: on ? c.casing : c.border, bg: on ? c.accentSoft : c.surface,
+        pick: function () { self.setState({ day: n }); } };
+    });
+    return {
+      c: c, days: days, stage: all[sel],
+      sheetH: heights[sheet],
+      sheetLabel: sheet === 'full' ? 'Collapse sheet' : 'Expand sheet',
+      notPeek: sheet !== 'peek', isFull: sheet === 'full',
+      cycle: function () { self.setState({ sheet: next[sheet] }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

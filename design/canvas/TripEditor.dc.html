@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trip editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="width: 100%; height: 900px; display: flex; flex-direction: column; background: {{c.bg}}; color: {{c.text}}; font-family: Manrope, system-ui, sans-serif; font-size: 14px; overflow: hidden">
+
+<header style="height: 56px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 16px; background: {{c.surface}}; border-bottom: 1px solid {{c.border}}">
+<a href="TripList.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; font-size: 17px; letter-spacing: -0.02em">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 18c4-1 5-6 9-6s5 5 9 4" stroke="{{c.route}}" stroke-width="3" stroke-linecap="round"></path><circle cx="3" cy="18" r="2" fill="{{c.text}}"></circle><circle cx="21" cy="16" r="2" fill="{{c.text}}"></circle></svg>
+wayline</a>
+<div style="width: 1px; height: 24px; background: {{c.border}}"></div>
+<div style="display: flex; flex-direction: column; min-width: 0">
+<span style="font-weight: 700; font-size: 15px">Franconia, four days</span>
+<span style="font-size: 12px; color: {{c.muted}}">One-way · Bamberg → Bayreuth</span>
+</div>
+<button type="button" style="font: inherit; font-weight: 600; font-size: 13px; height: 32px; padding: 0 10px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; display: flex; align-items: center; gap: 6px; cursor: pointer">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+Sat 12 Jun · 09:00</button>
+<div style="flex: 1"></div>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: {{c.muted}}"><span style="width: 8px; height: 8px; border-radius: 999px; background: {{c.success}}"></span>Saved</span>
+<div style="display: flex; gap: 4px">
+<button type="button" aria-label="Undo" style="width: 32px; height: 32px; border-radius: 4px; border: none; background: transparent; color: {{c.text}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg></button>
+<button type="button" aria-label="Redo" style="width: 32px; height: 32px; border-radius: 4px; border: none; background: transparent; color: {{c.muted}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"></path><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"></path></svg></button>
+</div>
+<button type="button" style="font: inherit; font-weight: 600; font-size: 13px; height: 36px; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; display: flex; align-items: center; gap: 6px; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"></path></svg>
+Share</button>
+<button type="button" style="font: inherit; font-weight: 700; font-size: 13px; height: 36px; padding: 0 14px; border-radius: 4px; border: none; background: {{c.accent}}; color: {{c.onAccent}}; display: flex; align-items: center; gap: 6px; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+Export GPX</button>
+<button type="button" aria-label="Trip menu" style="width: 36px; height: 36px; border-radius: 4px; border: none; background: transparent; color: {{c.text}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg></button>
+</header>
+
+<div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap">
+
+<div style="flex: 999 1 640px; min-width: 0; height: 100%; display: flex; flex-direction: column">
+
+<div style="flex: 1; min-height: 0; position: relative; background: {{c.mapLand}}; overflow: hidden">
+<svg width="100%" height="100%" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of the trip from Bamberg to Bayreuth with four stages. Day 2 is selected." style="display: block">
+<rect x="0" y="0" width="900" height="520" fill="{{c.mapLand}}"></rect>
+<path d="M150 60 C230 30 290 80 270 140 C250 200 170 190 140 150 C120 120 110 80 150 60 Z" fill="{{c.mapForest}}"></path>
+<path d="M460 40 C560 10 690 40 700 110 C710 170 600 200 520 190 C450 180 400 80 460 40 Z" fill="{{c.mapForest}}"></path>
+<path d="M660 380 C740 350 860 380 870 440 C880 500 760 515 700 500 C640 485 610 410 660 380 Z" fill="{{c.mapForest}}"></path>
+<path d="M300 380 C350 360 420 380 420 420 C420 460 350 470 310 455 C280 440 270 400 300 380 Z" fill="{{c.mapForest}}"></path>
+<path d="M0 470 C120 450 200 410 300 340 C380 285 520 300 640 330 C720 350 820 375 900 350" fill="none" stroke="{{c.mapWater}}" stroke-width="8" stroke-linecap="round"></path>
+<path d="M560 150 C590 230 600 280 640 330" fill="none" stroke="{{c.mapWater}}" stroke-width="4" stroke-linecap="round"></path>
+<path d="M0 300 L900 420" fill="none" stroke="{{c.mapRoadMajor}}" stroke-width="5"></path>
+<path d="M0 300 L900 420" fill="none" stroke="{{c.mapRoad}}" stroke-width="3"></path>
+<path d="M260 0 L380 520" fill="none" stroke="{{c.mapRoad}}" stroke-width="2.5"></path>
+<path d="M600 0 L700 520" fill="none" stroke="{{c.mapRoad}}" stroke-width="2.5"></path>
+<path d="M0 120 L900 60" fill="none" stroke="{{c.mapRoad}}" stroke-width="2"></path>
+
+<path d="M100 430 C150 380 170 330 220 300 C270 270 300 200 330 140" fill="none" stroke="{{c.casingDim}}" stroke-width="8" stroke-linecap="round"></path>
+<path d="M100 430 C150 380 170 330 220 300 C270 270 300 200 330 140" fill="none" stroke="{{c.stageA}}" stroke-width="5" stroke-linecap="round"></path>
+<path d="M560 150 C600 200 580 260 610 290 C625 305 635 315 640 330" fill="none" stroke="{{c.casingDim}}" stroke-width="8" stroke-linecap="round"></path>
+<path d="M560 150 C600 200 580 260 610 290 C625 305 635 315 640 330" fill="none" stroke="{{c.stageA}}" stroke-width="5" stroke-linecap="round"></path>
+<path d="M640 330 C680 370 700 420 760 470" fill="none" stroke="{{c.casingDim}}" stroke-width="8" stroke-linecap="round"></path>
+<path d="M640 330 C680 370 700 420 760 470" fill="none" stroke="{{c.stageB}}" stroke-width="5" stroke-linecap="round"></path>
+<path d="M330 140 C380 110 430 180 480 160 C520 145 540 140 560 150" fill="none" stroke="{{c.casing}}" stroke-width="11" stroke-linecap="round"></path>
+<path d="M330 140 C380 110 430 180 480 160 C520 145 540 140 560 150" fill="none" stroke="{{c.route}}" stroke-width="7" stroke-linecap="round"></path>
+
+<circle cx="480" cy="160" r="6" fill="{{c.surface}}" stroke="{{c.casing}}" stroke-width="2.5"></circle>
+<circle cx="430" cy="166" r="5" fill="{{c.text}}" stroke="{{c.surface}}" stroke-width="2"></circle>
+
+<circle cx="525" cy="205" r="9" fill="none" stroke="{{c.muted}}" stroke-width="2" stroke-dasharray="3 3"></circle>
+<text x="540" y="222" font-size="12" fill="{{c.mapLabel}}" font-family="Manrope, sans-serif">Küps · 56 km</text>
+<circle cx="600" cy="120" r="9" fill="none" stroke="{{c.muted}}" stroke-width="2" stroke-dasharray="3 3"></circle>
+<text x="614" y="116" font-size="12" fill="{{c.mapLabel}}" font-family="Manrope, sans-serif">Steinwiesen · 75 km</text>
+
+<rect x="88" y="418" width="24" height="24" rx="5" fill="{{c.text}}"></rect>
+<path d="M95 424 h10 v8 h-10 z M97 435 l-2 3 M103 435 l2 3" stroke="{{c.bg}}" stroke-width="1.6" fill="none" stroke-linecap="round"></path>
+<rect x="748" y="458" width="24" height="24" rx="5" fill="{{c.text}}"></rect>
+<path d="M755 464 h10 v8 h-10 z M757 475 l-2 3 M763 475 l2 3" stroke="{{c.bg}}" stroke-width="1.6" fill="none" stroke-linecap="round"></path>
+
+<circle cx="330" cy="140" r="13" fill="{{c.surface}}" stroke="{{c.text}}" stroke-width="2.5"></circle>
+<text x="330" y="145" text-anchor="middle" font-size="13" font-weight="800" fill="{{c.text}}" font-family="Manrope, sans-serif">1</text>
+<circle cx="560" cy="150" r="13" fill="{{c.accent}}" stroke="{{c.casing}}" stroke-width="2.5"></circle>
+<text x="560" y="155" text-anchor="middle" font-size="13" font-weight="800" fill="{{c.onAccent}}" font-family="Manrope, sans-serif">2</text>
+<circle cx="640" cy="330" r="13" fill="{{c.surface}}" stroke="{{c.text}}" stroke-width="2.5"></circle>
+<text x="640" y="335" text-anchor="middle" font-size="13" font-weight="800" fill="{{c.text}}" font-family="Manrope, sans-serif">3</text>
+
+<text x="60" y="465" font-size="13" font-weight="600" fill="{{c.text}}" font-family="Manrope, sans-serif">Bamberg</text>
+<text x="300" y="118" font-size="13" font-weight="600" fill="{{c.text}}" font-family="Manrope, sans-serif">Coburg</text>
+<text x="540" y="135" font-size="13" font-weight="600" fill="{{c.text}}" font-family="Manrope, sans-serif">Kronach</text>
+<text x="660" y="335" font-size="13" font-weight="600" fill="{{c.text}}" font-family="Manrope, sans-serif">Kulmbach</text>
+<text x="780" y="475" font-size="13" font-weight="600" fill="{{c.text}}" font-family="Manrope, sans-serif">Bayreuth</text>
+<text x="230" y="335" font-size="12" fill="{{c.mapLabel}}" font-family="Manrope, sans-serif">Lichtenfels</text>
+</svg>
+
+<div style="position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; flex-direction: column; background: {{c.surface}}; border: 1px solid {{c.border}}; border-radius: 6px; overflow: hidden; box-shadow: {{c.shadow}}">
+<button type="button" aria-label="Zoom in" style="width: 36px; height: 36px; border: none; border-bottom: 1px solid {{c.border}}; background: transparent; color: {{c.text}}; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+<button type="button" aria-label="Zoom out" style="width: 36px; height: 36px; border: none; background: transparent; color: {{c.text}}; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+</div>
+<button type="button" aria-label="Map layers" style="width: 38px; height: 38px; border-radius: 6px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; display: flex; align-items: center; justify-content: center; box-shadow: {{c.shadow}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l10 5-10 5L2 7l10-5z"></path><path d="M2 12l10 5 10-5"></path><path d="M2 17l10 5 10-5"></path></svg></button>
+</div>
+
+<div style="position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; padding: 6px 10px; background: {{c.surface}}; border: 1px solid {{c.border}}; border-radius: 6px; font-size: 12px; color: {{c.muted}}; box-shadow: {{c.shadow}}">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 4px; border-radius: 2px; background: {{c.mapNet}}"></span>Signed cycling routes</span>
+</div>
+
+<div role="status" style="position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: {{c.toastBg}}; color: {{c.toastText}}; border-radius: 6px; font-size: 13px; box-shadow: {{c.shadow}}; white-space: nowrap">
+<span>Day 3 now starts in Kronach and is 58 km.</span>
+<button type="button" style="font: inherit; font-weight: 700; font-size: 13px; border: none; background: transparent; color: {{c.toastAction}}; cursor: pointer; padding: 0">Undo</button>
+</div>
+
+<div style="position: absolute; right: 12px; bottom: 8px; font-size: 11px; color: {{c.muted}}">© OpenStreetMap · OpenFreeMap</div>
+</div>
+
+<div style="height: 236px; flex: none; background: {{c.surface}}; border-top: 1px solid {{c.border}}; padding: 12px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="font-weight: 700">Day 2 · Coburg → Kronach</span>
+<span style="font-size: 12px; color: {{c.muted}}; font-variant-numeric: tabular-nums">23 km · 412 m · 10:17</span>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; font-size: 12px; color: {{c.muted}}">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 4px; border-radius: 2px; background: {{c.paved}}"></span>Paved</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 4px; border-radius: 2px; background: {{c.gravel}}"></span>Gravel</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 4px; border-radius: 2px; background: {{c.unpaved}}"></span>Unpaved</span>
+</div>
+</div>
+<div style="position: relative; height: 84px">
+<svg width="100%" height="84" viewBox="0 0 1000 84" preserveAspectRatio="none" role="img" aria-label="Elevation of day 2. Highest point 412 m at km 23. Mostly paved, gravel from km 18 to 30." style="display: block">
+<path d="M0 64 L60 58 L120 60 L180 48 L240 40 L300 30 L360 20 L420 26 L480 40 L540 44 L600 36 L660 42 L720 52 L780 56 L840 50 L900 58 L1000 62 L1000 84 L0 84 Z" fill="{{c.hover}}"></path>
+<path d="M0 64 L60 58 L120 60 L180 48 L240 40 L280 33" fill="none" stroke="{{c.paved}}" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path>
+<path d="M280 33 L300 30 L360 20 L420 26 L470 38" fill="none" stroke="{{c.gravel}}" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path>
+<path d="M470 38 L480 40 L540 44 L600 36 L660 42 L720 52" fill="none" stroke="{{c.paved}}" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path>
+<path d="M720 52 L780 56 L840 50" fill="none" stroke="{{c.unpaved}}" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path>
+<path d="M840 50 L900 58 L1000 62" fill="none" stroke="{{c.paved}}" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path>
+<path d="M360 0 L360 84" stroke="{{c.text}}" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; border-top: 1px solid {{c.border}}; padding-top: 8px">
+<sc-for list="{{weather}}" as="w" hint-placeholder-count="7">
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-variant-numeric: tabular-nums">
+<span style="font-size: 11px; color: {{c.muted}}">{{w.km}} · {{w.time}}</span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600">
+<sc-if value="{{w.sunny}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+<sc-if value="{{w.cloudy}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H8a5 5 0 1 1 1.4-9.8A6 6 0 0 1 21 12.5 3.5 3.5 0 0 1 17.5 19z"></path></svg></sc-if>
+{{w.temp}}</span>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: {{w.windColor}}">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate({{w.rot}}deg)"><path d="M12 19V5"></path><path d="M5 12l7-7 7 7"></path></svg>
+{{w.wind}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<aside style="flex: 1 1 400px; max-width: 440px; height: 100%; box-sizing: border-box; background: {{c.surface}}; border-left: 1px solid {{c.border}}; display: flex; flex-direction: column; min-width: 0">
+<div style="padding: 16px; border-bottom: 1px solid {{c.border}}; display: flex; flex-direction: column; gap: 10px">
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; font-variant-numeric: tabular-nums">
+<div style="display: flex; flex-direction: column"><span style="font-size: 18px; font-weight: 700">4 days</span><span style="font-size: 12px; color: {{c.muted}}">Stages</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 18px; font-weight: 700">252 km</span><span style="font-size: 12px; color: {{c.muted}}">Distance</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 18px; font-weight: 700">2,340 m</span><span style="font-size: 12px; color: {{c.muted}}">Ascent</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 18px; font-weight: 700">84 %</span><span style="font-size: 12px; color: {{c.muted}}">Paved</span></div>
+</div>
+<a href="#" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: {{c.muted}}; text-decoration: none">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="14" rx="2"></rect><path d="M5 11h14M9 21l-2-4M15 21l2-4"></path></svg>
+Train to Bamberg on bahn.de</a>
+</div>
+
+<div style="flex: 1; min-height: 0; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{stages}}" as="s" hint-placeholder-count="4">
+<div style="border-radius: 6px; border: 1px solid {{s.borderColor}}; background: {{s.cardBg}}; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="width: 24px; height: 24px; flex: none; border-radius: 999px; background: {{s.badgeBg}}; color: {{s.badgeText}}; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center">{{s.n}}</span>
+<div style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+<span style="font-size: 12px; color: {{c.muted}}">Day {{s.n}} · {{s.date}}</span>
+<span style="font-weight: 700; font-size: 15px">{{s.from}} → {{s.to}}</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums">
+<span style="font-weight: 700">{{s.km}}</span>
+<span style="font-size: 12px; color: {{c.muted}}">{{s.up}}</span>
+</div>
+</div>
+
+<sc-if value="{{s.selected}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 3px; height: 6px; border-radius: 3px; overflow: hidden">
+<div style="flex: 62; background: {{c.paved}}"></div>
+<div style="flex: 24; background: {{c.gravel}}"></div>
+<div style="flex: 14; background: {{c.unpaved}}"></div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px">
+<span style="display: flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>17–23 °C, dry</span>
+<span style="display: flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate(180deg)"><path d="M12 19V5"></path><path d="M5 12l7-7 7 7"></path></svg>45 % headwind · 16 km/h</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 6px; background: {{c.bg}}">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="font-size: 13px">Stop: <strong>Kronach</strong></span>
+<button type="button" aria-pressed="true" style="font: inherit; font-size: 12px; font-weight: 700; height: 28px; padding: 0 10px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; display: flex; align-items: center; gap: 6px">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+Locked</button>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<button type="button" style="font: inherit; font-size: 12px; font-weight: 600; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}">Küps · 56 km</button>
+<button type="button" style="font: inherit; font-size: 12px; font-weight: 700; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid {{c.casing}}; background: {{c.accentSoft}}; color: {{c.text}}">Kronach · 64 km</button>
+<button type="button" style="font: inherit; font-size: 12px; font-weight: 600; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}">Steinwiesen · 75 km</button>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 20V8M22 20v-6a3 3 0 0 0-3-3H10v9M2 16h20M6 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path></svg>
+<div style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+<span style="font-weight: 600">Hotel Bauerngirgl</span>
+<span style="font-size: 12px; color: {{c.muted}}">3 stars · 0.4 km from route</span>
+</div>
+<button type="button" style="font: inherit; font-size: 12px; font-weight: 700; border: none; background: transparent; color: {{c.text}}; text-decoration: underline; padding: 0">Change</button>
+</div>
+<div style="display: flex; align-items: center; gap: 8px">
+<a href="#" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; height: 34px; border-radius: 4px; background: {{c.accent}}; color: {{c.onAccent}}; font-weight: 700; font-size: 13px; text-decoration: none">Hotels in Kronach on Booking.com
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M10 14L21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: {{c.muted}}">Rating
+<select style="font: inherit; font-size: 12px; height: 34px; padding: 0 6px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}"><option>Any</option><option>7+</option><option selected="">8+</option><option>9+</option></select></label>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{s.collapsed}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: {{c.muted}}">
+<span style="display: flex; align-items: center; gap: 12px">
+<span>{{s.temp}}</span>
+<span>{{s.wind}}</span>
+</span>
+<span style="display: flex; align-items: center; gap: 4px">{{s.stopLabel}}
+<sc-if value="{{s.locked}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Locked"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></sc-if>
+</span>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</aside>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var dark = this.props.dark ?? false;
+    var light = {
+      bg: '#F6F7F9', surface: '#FFFFFF', text: '#15181D', muted: '#5A616C', border: '#E1E4EA', hover: '#EEF0F4',
+      accent: '#FFB088', onAccent: '#3B1503', accentSoft: '#FFEDE3', success: '#2F9E6B',
+      route: '#FF9A73', casing: '#B4532A', casingDim: '#FFFFFF', stageA: '#FFC7AE', stageB: '#C9BDE6',
+      paved: '#7E8BA3', gravel: '#E8B850', unpaved: '#B98E73',
+      mapLand: '#F1F2F4', mapWater: '#C9E0F5', mapForest: '#E0EEDD', mapRoad: '#FFFFFF', mapRoadMajor: '#E1E4EA', mapLabel: '#5F6672', mapNet: '#9DB7A0',
+      toastBg: '#15181D', toastText: '#EDEFF3', toastAction: '#FFB088', headwind: '#B4532A',
+      shadow: '0 1px 2px rgba(16,18,22,0.08), 0 4px 12px rgba(16,18,22,0.06)'
+    };
+    var darkT = {
+      bg: '#101216', surface: '#171A20', text: '#EDEFF3', muted: '#A0A7B3', border: '#2A2F38', hover: '#20242C',
+      accent: '#FFB088', onAccent: '#2A0F02', accentSoft: '#2D211B', success: '#5CCB97',
+      route: '#FFA67F', casing: '#101216', casingDim: '#101216', stageA: '#C98C72', stageB: '#8F82B8',
+      paved: '#AEB9CC', gravel: '#F2CF7E', unpaved: '#D9B49C',
+      mapLand: '#171A1F', mapWater: '#1E2E40', mapForest: '#1A2520', mapRoad: '#262A31', mapRoadMajor: '#30353E', mapLabel: '#8B93A0', mapNet: '#4E6B57',
+      toastBg: '#EDEFF3', toastText: '#15181D', toastAction: '#B4532A', headwind: '#FFB088',
+      shadow: '0 1px 2px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3)'
+    };
+    var c = dark ? darkT : light;
+    var raw = [
+      { n: 1, date: 'Sat 12 Jun', from: 'Bamberg', to: 'Coburg', km: '78 km', up: '650 m', temp: '21 °C', wind: '60 % tailwind', stopLabel: 'Coburg', locked: true, color: c.stageA },
+      { n: 2, date: 'Sun 13 Jun', from: 'Coburg', to: 'Kronach', km: '64 km', up: '720 m', temp: '23 °C', wind: '45 % headwind', stopLabel: 'Kronach', locked: true, color: c.route, selected: true },
+      { n: 3, date: 'Mon 14 Jun', from: 'Kronach', to: 'Kulmbach', km: '58 km', up: '540 m', temp: '24 °C', wind: 'Crosswind', stopLabel: 'Kulmbach', locked: false, color: c.stageA },
+      { n: 4, date: 'Tue 15 Jun', from: 'Kulmbach', to: 'Bayreuth', km: '52 km', up: '430 m', temp: 'Forecast from 1 Jun', wind: '', stopLabel: 'Bayreuth station', locked: false, color: c.stageB }
+    ];
+    var stages = raw.map(function (s) {
+      return Object.assign({}, s, {
+        selected: !!s.selected,
+        collapsed: !s.selected,
+        cardBg: s.selected ? c.surface : c.surface,
+        borderColor: s.selected ? c.casing : c.border,
+        badgeBg: s.selected ? c.accent : s.color,
+        badgeText: s.selected ? c.onAccent : (dark ? '#101216' : '#15181D')
+      });
+    });
+    var weather = [
+      { km: '0 km', time: '09:00', temp: '17 °C', wind: 'Tail', rot: 0, sunny: true, cloudy: false },
+      { km: '10', time: '09:33', temp: '18 °C', wind: 'Tail', rot: 20, sunny: true, cloudy: false },
+      { km: '20', time: '10:07', temp: '20 °C', wind: 'Cross', rot: 95, sunny: true, cloudy: false },
+      { km: '30', time: '10:40', temp: '21 °C', wind: 'Head', rot: 170, sunny: false, cloudy: true },
+      { km: '40', time: '11:13', temp: '22 °C', wind: 'Head', rot: 185, sunny: false, cloudy: true },
+      { km: '50', time: '11:47', temp: '23 °C', wind: 'Head', rot: 160, sunny: true, cloudy: false },
+      { km: '64', time: '12:33', temp: '23 °C', wind: 'Cross', rot: 250, sunny: true, cloudy: false }
+    ].map(function (w) {
+      return Object.assign({}, w, { windColor: w.wind === 'Head' ? c.headwind : c.muted });
+    });
+    return { c: c, stages: stages, weather: weather };
+  }
+}
+</script>
+</body>
+</html>
