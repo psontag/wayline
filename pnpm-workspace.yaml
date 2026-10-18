@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+  - apps/*
+
+# Only install versions that are at least two weeks old.
+minimumReleaseAge: 20160
+
+allowBuilds:
+  esbuild: true
+  workerd: true
