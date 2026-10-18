@@ -26,7 +26,7 @@ apps/web/src/i18n/
     ...
 ```
 
-`packages/ui` holds only component strings, e.g. labels of shared components.
+`packages/ui` holds only component strings, e.g. labels of shared components. They use the `ui` namespace and the app merges them into its resources.
 
 Keys are typed. A wrong key is a TypeScript error.
 

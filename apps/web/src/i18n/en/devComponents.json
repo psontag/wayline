@@ -1,0 +1,41 @@
+{
+  "title": "Components",
+  "light": "Light",
+  "dark": "Dark",
+  "section": {
+    "buttons": "Buttons",
+    "fields": "Fields",
+    "chips": "Chips and badges",
+    "stats": "Stats and surface",
+    "stages": "Stage cards",
+    "toast": "Toast"
+  },
+  "demo": {
+    "planTrip": "Plan trip",
+    "exportGpx": "Export GPX",
+    "cancel": "Cancel",
+    "undo": "Undo",
+    "redo": "Redo",
+    "share": "Share",
+    "kmPerDay": "Km per day",
+    "profile": "Profile",
+    "rating": "Rating",
+    "ratingAny": "Any",
+    "touring": "Touring",
+    "fast": "Fast",
+    "scenic": "Scenic",
+    "quiet": "Quiet",
+    "oneWay": "One-way",
+    "dayLoop": "Day loop",
+    "draft": "Draft",
+    "stages": "Stages",
+    "stageCount": "{{count}} days",
+    "distance": "Distance",
+    "ascent": "Ascent",
+    "paved": "Paved",
+    "alternative": "{{name}} · {{distance}}",
+    "bookHotels": "Hotels in {{place}} on Booking.com",
+    "toastMessage": "Day 3 now starts in Kronach and is 58 km.",
+    "toastAction": "Undo"
+  }
+}

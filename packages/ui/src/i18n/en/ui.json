@@ -1,0 +1,37 @@
+{
+  "logo": {
+    "wordmark": "wayline"
+  },
+  "theme": {
+    "toggle": "Theme: {{theme}}",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "select": {
+    "placeholder": "Choose"
+  },
+  "surface": {
+    "summary": "Surface: {{paved}} paved, {{gravel}} gravel, {{unpaved}} unpaved",
+    "paved": "Paved",
+    "gravel": "Gravel",
+    "unpaved": "Unpaved"
+  },
+  "stage": {
+    "day": "Day {{day}} · {{date}}",
+    "route": "{{from}} → {{to}}",
+    "stop": "Stop: <strong>{{name}}</strong>",
+    "locked": "Locked",
+    "lock": "Lock",
+    "temperatureRange": "{{min}}–{{max}}",
+    "windWithSpeed": "{{wind}} · {{speed}}",
+    "wind": {
+      "head": "{{share}} headwind",
+      "tail": "{{share}} tailwind",
+      "cross": "{{share}} crosswind"
+    }
+  },
+  "toast": {
+    "close": "Close"
+  }
+}
