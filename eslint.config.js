@@ -1,4 +1,5 @@
 import js from "@eslint/js";
+import betterTailwind from "eslint-plugin-better-tailwindcss";
 import i18next from "eslint-plugin-i18next";
 import reactHooks from "eslint-plugin-react-hooks";
 import { defineConfig, globalIgnores } from "eslint/config";
@@ -39,6 +40,11 @@ const browserGlobals = [
   message: "domain and planner must not use browser or Worker globals.",
 }));
 
+// A bracket or parenthesis group in the utility part (after the last variant)
+// is an arbitrary value, e.g. p-[13px] or w-(--x). Variants like
+// data-[state=on]: stay allowed.
+const arbitraryValue = String.raw`(\[[^\]]*\]|\([^)]*\))[^:]*$`;
+
 export default defineConfig(
   globalIgnores(["**/dist/", "**/.wrangler/", "**/node_modules/"]),
   js.configs.recommended,
@@ -57,7 +63,60 @@ export default defineConfig(
     files: ["apps/web/src/**/*.{ts,tsx}", "packages/ui/src/**/*.{ts,tsx}"],
     extends: [i18next.configs["flat/recommended"]],
     rules: {
-      "i18next/no-literal-string": ["error", { mode: "jsx-only" }],
+      "i18next/no-literal-string": [
+        "error",
+        {
+          mode: "jsx-only",
+          // Only attributes that people read or hear.
+          "jsx-attributes": {
+            include: [
+              "aria-label",
+              "alt",
+              "label",
+              "message",
+              "placeholder",
+              "title",
+              "value",
+            ],
+          },
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}", "packages/ui/src/**/*.{ts,tsx}"],
+    plugins: { "better-tailwindcss": betterTailwind },
+    settings: {
+      "better-tailwindcss": { entryPoint: "packages/ui/src/tokens.css" },
+    },
+    rules: {
+      "better-tailwindcss/no-unknown-classes": "error",
+      "better-tailwindcss/no-conflicting-classes": "error",
+      "better-tailwindcss/no-duplicate-classes": "error",
+      "better-tailwindcss/no-restricted-classes": [
+        "error",
+        {
+          restrict: [
+            {
+              pattern: arbitraryValue,
+              message: "No arbitrary values. Use a design token.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/web/src/**/*.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "JSXOpeningElement[name.name=/^(button|input|select|textarea)$/]",
+          message: "Use a component from @wayline/ui.",
+        },
+      ],
     },
   },
   {

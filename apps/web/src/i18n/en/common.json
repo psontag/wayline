@@ -2,5 +2,9 @@
   "app": {
     "name": "Wayline",
     "tagline": "Plan multi-day bike trips."
+  },
+  "nav": {
+    "map": "Map",
+    "components": "Components"
   }
 }

@@ -1,0 +1,319 @@
+import {
+  Badge,
+  Button,
+  Card,
+  Chip,
+  IconButton,
+  Input,
+  Label,
+  SegmentedControl,
+  Select,
+  StageCard,
+  StatBlock,
+  SurfaceBar,
+  SurfaceLegend,
+  ThemeScope,
+  ThemeToggle,
+  Toast,
+  ToastProvider,
+  ToastViewport,
+  useFormat,
+  type ResolvedTheme,
+} from "@wayline/ui";
+import { Download, ExternalLink, Redo2, Share2, Undo2 } from "lucide-react";
+import { useId, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+
+const stages = [
+  {
+    day: 1,
+    date: new Date(2027, 5, 12),
+    from: "Bamberg",
+    to: "Coburg",
+    distance: 78_000,
+    ascent: 650,
+    surface: { paved: 70, gravel: 18, unpaved: 12 },
+    temperature: { min: 15, max: 21 },
+    wind: { kind: "tail", share: 0.6, speedKmh: 14 },
+    color: "a",
+  },
+  {
+    day: 2,
+    date: new Date(2027, 5, 13),
+    from: "Coburg",
+    to: "Kronach",
+    distance: 64_000,
+    ascent: 720,
+    surface: { paved: 62, gravel: 24, unpaved: 14 },
+    temperature: { min: 17, max: 23 },
+    wind: { kind: "head", share: 0.45, speedKmh: 16 },
+    color: "b",
+  },
+  {
+    day: 3,
+    date: new Date(2027, 5, 14),
+    from: "Kronach",
+    to: "Kulmbach",
+    distance: 58_000,
+    ascent: 540,
+    surface: { paved: 88, gravel: 12, unpaved: 0 },
+    temperature: { min: 16, max: 24 },
+    wind: { kind: "cross", share: 0.5, speedKmh: 9 },
+    color: "a",
+  },
+] as const;
+
+const alternatives = [
+  { name: "Küps", distance: 56_000 },
+  { name: "Kronach", distance: 64_000 },
+  { name: "Steinwiesen", distance: 75_000 },
+];
+
+export function DevComponentsPage() {
+  const { t } = useTranslation("devComponents");
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2">
+      <Column theme="light" title={t("light")} />
+      <Column theme="dark" title={t("dark")} />
+    </div>
+  );
+}
+
+function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
+  const { t } = useTranslation("devComponents");
+  const format = useFormat();
+  const profileLabelId = useId();
+  const [profile, setProfile] = useState("touring");
+  const [selectedDay, setSelectedDay] = useState(2);
+  const [locked, setLocked] = useState<Record<number, boolean>>({
+    1: true,
+    2: true,
+  });
+  const [stop, setStop] = useState("Kronach");
+
+  return (
+    <ThemeScope
+      theme={theme}
+      className="flex min-w-0 flex-col gap-8 p-4 sm:p-6"
+    >
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
+        <ThemeToggle />
+      </div>
+
+      <Section title={t("section.buttons")}>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button variant="primary">{t("demo.planTrip")}</Button>
+          <Button>
+            <Download aria-hidden />
+            {t("demo.exportGpx")}
+          </Button>
+          <Button variant="ghost">{t("demo.cancel")}</Button>
+          <IconButton
+            variant="secondary"
+            label={t("demo.undo")}
+            icon={<Undo2 aria-hidden />}
+          />
+          <IconButton label={t("demo.redo")} icon={<Redo2 aria-hidden />} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button variant="primary" size="sm">
+            <Download aria-hidden />
+            {t("demo.exportGpx")}
+          </Button>
+          <Button size="sm">
+            <Share2 aria-hidden />
+            {t("demo.share")}
+          </Button>
+          <Button variant="ghost" size="sm">
+            {t("demo.cancel")}
+          </Button>
+          <IconButton
+            size="sm"
+            label={t("demo.undo")}
+            icon={<Undo2 aria-hidden />}
+          />
+          <Button variant="primary" disabled>
+            {t("demo.planTrip")}
+          </Button>
+        </div>
+      </Section>
+
+      <Section title={t("section.fields")}>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-0 flex-1 basis-24">
+            <Input
+              label={t("demo.kmPerDay")}
+              defaultValue="80"
+              inputMode="numeric"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label id={profileLabelId}>{t("demo.profile")}</Label>
+            <SegmentedControl
+              aria-labelledby={profileLabelId}
+              value={profile}
+              onValueChange={setProfile}
+              options={[
+                { value: "touring", label: t("demo.touring") },
+                { value: "fast", label: t("demo.fast") },
+                { value: "scenic", label: t("demo.scenic") },
+                { value: "quiet", label: t("demo.quiet") },
+              ]}
+            />
+          </div>
+        </div>
+        <div className="flex max-w-sm flex-col gap-1.5">
+          <Label htmlFor={`${profileLabelId}-rating`}>{t("demo.rating")}</Label>
+          <Select
+            id={`${profileLabelId}-rating`}
+            defaultValue="8"
+            options={ratingOptions(t("demo.ratingAny"))}
+          />
+        </div>
+      </Section>
+
+      <Section title={t("section.chips")}>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {alternatives.map((alt) => (
+            <Chip
+              key={alt.name}
+              selected={alt.name === stop}
+              onClick={() => setStop(alt.name)}
+            >
+              {t("demo.alternative", {
+                name: alt.name,
+                distance: format.distance(alt.distance),
+              })}
+            </Chip>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge>{t("demo.oneWay")}</Badge>
+          <Badge>{t("demo.dayLoop")}</Badge>
+          <Badge tone="accent">{t("demo.draft")}</Badge>
+        </div>
+      </Section>
+
+      <Section title={t("section.stats")}>
+        <Card className="flex flex-col gap-4">
+          <div className="grid grid-cols-4 gap-2">
+            <StatBlock
+              value={t("demo.stageCount", { count: 4 })}
+              label={t("demo.stages")}
+            />
+            <StatBlock
+              value={format.distance(252_000)}
+              label={t("demo.distance")}
+            />
+            <StatBlock
+              value={format.elevation(2340)}
+              label={t("demo.ascent")}
+            />
+            <StatBlock value={format.percent(0.84)} label={t("demo.paved")} />
+          </div>
+          <div className="flex flex-wrap gap-5">
+            <StatBlock
+              size="lg"
+              value={format.distance(78_000)}
+              label={t("demo.distance")}
+            />
+            <StatBlock
+              size="lg"
+              value={format.elevation(650)}
+              label={t("demo.ascent")}
+            />
+            <StatBlock
+              size="lg"
+              value={format.percent(0.86)}
+              label={t("demo.paved")}
+            />
+          </div>
+          <SurfaceBar shares={{ paved: 70, gravel: 18, unpaved: 12 }} />
+          <SurfaceLegend />
+        </Card>
+      </Section>
+
+      <Section title={t("section.stages")}>
+        <div className="flex max-w-panel flex-col gap-2 rounded-md bg-surface p-3">
+          {stages.map((stage) => (
+            <StageCard
+              key={stage.day}
+              {...stage}
+              to={stage.day === 2 ? stop : stage.to}
+              selected={stage.day === selectedDay}
+              onSelect={() => setSelectedDay(stage.day)}
+              locked={locked[stage.day] ?? false}
+              onLockedChange={(value) =>
+                setLocked({ ...locked, [stage.day]: value })
+              }
+              alternatives={alternatives.map((alt) => (
+                <Chip
+                  key={alt.name}
+                  selected={alt.name === stop}
+                  onClick={() => setStop(alt.name)}
+                >
+                  {t("demo.alternative", {
+                    name: alt.name,
+                    distance: format.distance(alt.distance),
+                  })}
+                </Chip>
+              ))}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <Button asChild variant="primary" size="sm" className="flex-1">
+                  <a
+                    href="https://www.booking.com"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t("demo.bookHotels", { place: stop })}
+                    <ExternalLink aria-hidden />
+                  </a>
+                </Button>
+                <div className="w-20 shrink-0">
+                  <Select
+                    size="sm"
+                    aria-label={t("demo.rating")}
+                    defaultValue="8"
+                    options={ratingOptions(t("demo.ratingAny"))}
+                  />
+                </div>
+              </div>
+            </StageCard>
+          ))}
+        </div>
+      </Section>
+
+      <Section title={t("section.toast")}>
+        <ToastProvider>
+          <Toast
+            open
+            duration={Infinity}
+            message={t("demo.toastMessage")}
+            action={{ label: t("demo.toastAction"), onClick: () => undefined }}
+          />
+          <ToastViewport placement="inline" />
+        </ToastProvider>
+      </Section>
+    </ThemeScope>
+  );
+}
+
+function ratingOptions(any: string) {
+  return [
+    { value: "any", label: any },
+    { value: "7", label: "7+" },
+    { value: "8", label: "8+" },
+    { value: "9", label: "9+" },
+  ];
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-md font-bold text-text-muted">{title}</h2>
+      {children}
+    </section>
+  );
+}

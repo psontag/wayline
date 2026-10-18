@@ -2,12 +2,14 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
-  Outlet,
+  lazyRouteComponent,
 } from "@tanstack/react-router";
+import { AppShell } from "./components/AppShell";
+import { DevComponentsPage } from "./pages/DevComponentsPage";
 import { HomePage } from "./pages/HomePage";
 
 const rootRoute = createRootRoute({
-  component: Outlet,
+  component: AppShell,
 });
 
 const homeRoute = createRoute({
@@ -16,7 +18,24 @@ const homeRoute = createRoute({
   component: HomePage,
 });
 
-const routeTree = rootRoute.addChildren([homeRoute]);
+const mapRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/map",
+  // MapLibre is large. Load it only on map pages.
+  component: lazyRouteComponent(() => import("./pages/MapPage"), "MapPage"),
+});
+
+const devComponentsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/dev/components",
+  component: DevComponentsPage,
+});
+
+const routeTree = rootRoute.addChildren([
+  homeRoute,
+  mapRoute,
+  devComponentsRoute,
+]);
 
 export const router = createRouter({ routeTree });
 
