@@ -25,7 +25,7 @@ Used for:
 - Hotels: `tourism=hotel`, `tourism=guest_house`, `tourism=motel`.
 - Scenic features: rivers, lakes, forests, nature parks, viewpoints.
 
-The pipeline downloads Geofabrik extracts (Germany first). It builds static files and uploads them to R2. No runtime calls to Overpass.
+The pipeline downloads Geofabrik extracts (Germany first). It builds static files that are deployed as static assets. No runtime calls to Overpass.
 
 License: ODbL. The map must show OSM attribution.
 
@@ -69,7 +69,7 @@ Google Places is not used. Its terms (section 3.2.3 (e)) forbid using Places dat
 
 - Tags: `tourism=hotel`, `tourism=guest_house`, `tourism=motel`.
 - The pipeline extracts them with name, location, stars (`stars=*`) and website if present.
-- Stored on R2 with the other geodata. No runtime API calls.
+- Deployed as static assets with the other geodata. No runtime API calls.
 - Hotels in OSM are fairly complete in Germany, but not everywhere.
 
 ### Booking.com links
@@ -108,7 +108,7 @@ Later: live connections with a bike filter. `db-vendo-client` / `v6.db.transport
 ## Map
 
 - MapLibre GL JS with OpenFreeMap tiles. Free, no key.
-- Overlay of signed cycling routes as PMTiles on R2.
+- Overlay of signed cycling routes as tiled files in the static assets.
 
 ## Cloudflare free plan
 
@@ -116,6 +116,6 @@ Later: live connections with a bike filter. `db-vendo-client` / `v6.db.transport
 |---|---|
 | Workers | 100,000 requests per day, 10 ms CPU per request |
 | D1 | 5 GB, 5 million rows read and 100,000 rows written per day |
-| R2 | 10 GB, 1 million write and 10 million read operations per month |
+| Static assets | Free and unlimited requests. 20,000 files, 25 MiB per file. |
 | KV | 1,000 writes per day (not used) |
 | Access | Free up to 50 users |

@@ -14,7 +14,7 @@ Vertical slices. Look and feel first. Each slice ends with a working, deployed a
 
 Before: email the BRouter operator.
 
-- BRouter through the Worker, legs cached in R2
+- BRouter through the Worker, legs cached in D1
 - Route on the map with elevation profile
 - Via points
 - GPX export

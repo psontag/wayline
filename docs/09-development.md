@@ -6,7 +6,7 @@
 |---|---|
 | pnpm | Package manager, monorepo workspaces |
 | Vite | Web app dev server and build |
-| Wrangler | Run and deploy the Worker, local D1 and R2 |
+| Wrangler | Run and deploy the Worker, local D1 |
 | Vitest | Unit and integration tests |
 | ESLint, Prettier | Lint and format |
 | GitHub Actions | CI, deploy, data pipeline |
@@ -19,7 +19,7 @@ pnpm dev        # web app and Worker
 pnpm test
 ```
 
-`pnpm dev` runs the web app with Vite and the Worker with `wrangler dev`. D1 and R2 run locally through Wrangler.
+`pnpm dev` runs the web app with Vite and the Worker with `wrangler dev`. D1 runs locally through Wrangler.
 
 ## Providers in development
 
@@ -45,8 +45,8 @@ Local development and tests never call external APIs by default. There are two k
 
 | Environment | Deployed from | Data |
 |---|---|---|
-| Local | — | Local D1 and R2, fake providers |
-| Production | `main` | Production D1 and R2, live providers |
+| Local | — | Local D1, fake providers |
+| Production | `main` | Production D1, live providers |
 
 ## Secrets
 
