@@ -54,8 +54,8 @@ Each provider adapter has two halves. Both live in `packages/providers`.
 |---|---|
 | Routing | BRouter |
 | Weather | Open-Meteo |
-| Hotels | OSM hotels on R2 |
-| Route network | Preprocessed OSM data on R2 |
+| Hotels | OSM hotels in the static geodata |
+| Route network | Preprocessed OSM data in the static geodata |
 
 The planner only depends on interfaces from `packages/providers`.
 
