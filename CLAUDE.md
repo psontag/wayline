@@ -25,6 +25,10 @@ Follow `docs/07-design-system.md`.
 - Use the terms and formats from the design system doc.
 - No literal text in components. Use translation keys (`docs/08-translation.md`).
 
+## GitHub
+
+Private repo `psontag/wayline`. Use the `gh` CLI for issues, PRs and other GitHub actions.
+
 ## Docs
 
 - Docs live in `docs/` and use a two-digit prefix for ordering: `01-overview.md`, `02-...`.
