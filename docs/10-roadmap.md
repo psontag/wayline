@@ -1,52 +1,65 @@
 # Roadmap
 
-Each milestone ends with a working, deployed app.
+Vertical slices. Look and feel first. Each slice ends with a working, deployed app.
 
 ## 1. Base
 
-- Monorepo, CI, deploy to Cloudflare
-- Cloudflare Access login
+- Monorepo, CI
+- Cloudflare Access
 - Design tokens, first components, light and dark mode
 - Translation setup
 - Map page
 
-## 2. Route A to B
+## 2. Route A to B end to end
 
-- Routing through the Worker: BRouter adapter, cache, rate limit
-- ORS fallback
-- Route on the map with distance, ascent and elevation profile
-- Via points by dragging the route
+Before: email the BRouter operator.
+
+- BRouter through the Worker, legs cached in R2
+- Route on the map with elevation profile
+- Via points
 - GPX export
+- Deploy
 
-## 3. Trips
+## 3. Network spike
 
-- Save trips in D1
+Tests the biggest risk early.
+
+- Build the route network for one region
+- Node script that writes proposal GPX files
+
+## 4. Trips
+
+- Save in D1
 - Trip list
-- Share a trip for viewing
+- Autosave
+- Sharing
 
-## 4. Manual multi-day trips
+## 5. Manual multi-day trips
 
-- Split a route into stages by hand
-- Stage dates and weather with wind
-- OSM hotel extract on R2 (first part of the pipeline)
-- Hotels at stage ends
-- Booking.com links
-- Automatic updates on edit
+Before: test which Booking.com URL filters work.
 
-## 5. Data pipeline
-
-- OSM extracts to route network, towns and stations on R2
-- Ascent estimate per edge
-- Hotel count per town
-- Overlay of signed cycling routes on the map
+- Stages with locked stops
+- Weather with wind
+- OSM hotels
+- Booking.com and bahn.de links
+- Undo
 
 ## 6. Trip generator
 
-- Proposals for one-way trips and loops
-- Automatic stage cutting
+- Proposals with progress
 - Stage alternatives
-- Start and end at train stations
 
-## 7. Round trips
+## 7. Day loops
 
 - Loop suggestions for a start point and distance
+
+## Later
+
+- Custom domain
+- ORS fallback
+- Rate limiter and budget
+- Usage page
+- Playwright tests
+- PWA install
+- Live train connections
+- Planning with an LLM

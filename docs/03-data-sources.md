@@ -7,7 +7,7 @@ All limits are for free plans. Check them again before relying on them. They cha
 | Data | Source | Cost | Called from |
 |---|---|---|---|
 | Cycling routes, towns, stations | OpenStreetMap (Geofabrik extracts) | Free | Pipeline |
-| Routing | BRouter, OpenRouteService as fallback | Free | Worker |
+| Routing | BRouter | Free | Worker |
 | Weather | Open-Meteo | Free | Worker |
 | Hotels | OpenStreetMap | Free | Pipeline |
 | Ratings, prices, booking | Booking.com search link | Free | Browser (link only) |
@@ -37,17 +37,18 @@ Main router. Best cycling profiles. Supports custom profiles, so we can write on
 
 - Public server: `brouter.de`. Run by one person.
 - No published usage policy or rate limit. No guarantee.
-- We must keep request volume low: cache every leg, use a strict rate limit.
+- Sends `Access-Control-Allow-Origin: *`. We still call it from the Worker.
+- We must keep request volume low: cache every leg.
+- Custom profiles may get temporary ids on the public server. If a profile is not found, the adapter uploads it again and retries once.
 - MIT license. A Docker image exists. Self-hosting is possible later if the public server is not enough.
 
-Open: confirm that custom profiles and our request volume are fine for the public server.
+Open: email the operator about custom profiles and our request volume.
 
 ### OpenRouteService
 
-Fallback router. Has a built-in round trip option.
+Later, as a fallback router only.
 
 - Free plan with API key: 2,000 directions per day, 40 per minute.
-- Cycling profiles: `cycling-regular`, `cycling-road`, `cycling-mountain`, `cycling-electric`.
 - No custom profiles. Only predefined options.
 
 ## Weather: Open-Meteo
@@ -56,6 +57,7 @@ Fallback router. Has a built-in round trip option.
 - Forecast up to 16 days. Hourly wind speed and direction.
 - Several locations in one request. One call can cover a whole stage.
 - No API key.
+- No shared cache. The browser caches forecasts in IndexedDB.
 
 ## Hotels
 
@@ -96,7 +98,7 @@ Later: live connections with a bike filter. `db-vendo-client` / `v6.db.transport
 ## Map
 
 - MapLibre GL JS with OpenFreeMap tiles. Free, no key.
-- Overlay of signed cycling routes from our own R2 data.
+- Overlay of signed cycling routes as PMTiles on R2.
 
 ## Cloudflare free plan
 
@@ -106,5 +108,4 @@ Later: live connections with a bike filter. `db-vendo-client` / `v6.db.transport
 | D1 | 5 GB, 5 million rows read and 100,000 rows written per day |
 | R2 | 10 GB, 1 million write and 10 million read operations per month |
 | KV | 1,000 writes per day (not used) |
-| Durable Objects | 100,000 requests per day |
 | Access | Free up to 50 users |

@@ -8,14 +8,24 @@ Wayline runs on Cloudflare and in the browser. There are no servers to maintain.
 Browser (React SPA)
  ├─ UI: map, stage editor, elevation, weather
  ├─ Web Worker: planner (generation, stages, scoring, GPX)
- └─ calls → Cloudflare Worker (API gateway)
-              ├─ external APIs: routing, weather
-              ├─ cache: Cache API, D1, R2
-              ├─ storage: trips in D1
-              └─ protected by Cloudflare Access
+ └─ calls → Cloudflare Worker (one hostname, behind Access)
+              ├─ static assets: the SPA
+              ├─ /api: routing, weather, trips
+              ├─ /data/*: geodata from R2
+              └─ storage: trips in D1, route legs and geodata in R2
 
-GitHub Action (weekly) → OSM data → static geodata files → R2
+GitHub Action (monthly or manual) → OSM data → geodata files → R2
 ```
+
+## Hosting
+
+One Worker on one hostname, behind Cloudflare Access. It serves:
+
+- the SPA as static assets
+- `/api`
+- `/data/*`: geodata from R2
+
+`workers.dev` and preview URLs are turned off.
 
 ## Split between browser and Worker
 
@@ -24,92 +34,110 @@ GitHub Action (weekly) → OSM data → static geodata files → R2
 | Role | UI and planner | Gateway, cache, storage |
 | Calls external APIs | Never | Always |
 | CPU work | Heavy (in a Web Worker) | Light |
-| Cache | Per user (memory, IndexedDB) | Shared by all users |
+| Cache | Per user (IndexedDB) | Shared (R2) |
 
 Rules:
 
-- All external API calls go through the Worker. This gives one shared cache, one place for API keys and one place for rate limits.
+- All external API calls go through the Worker.
 - Heavy computation runs in the browser. The free Workers plan allows only about 10 ms CPU time per request.
-- For routing, the Worker stores and returns raw provider responses. The browser parses them. This keeps Worker CPU time low.
-- If the Worker CPU limit becomes a problem, the paid Workers plan ($5/month) removes it.
+- The Worker returns raw provider responses. The browser parses them.
 
-## Provider abstraction
+## Providers
 
-Each external data type has an interface in our own domain types. Adapters translate between a provider's API and our types.
+Each provider adapter has two halves. Both live in `packages/providers`.
 
-| Interface | Providers |
+| Half | Runs in | Does |
+|---|---|---|
+| fetch | Worker | Calls the provider. Returns `{ provider, profileHash, raw }`. |
+| parse | Browser | Turns `raw` into our domain types. |
+
+| Data | Provider |
 |---|---|
-| `RoutingProvider` | BRouter, OpenRouteService |
-| `WeatherProvider` | Open-Meteo |
-| `LodgingProvider` | OSM hotels on R2 |
-| `TransitProvider` | OSM stations, bahn.de links (live connections later) |
-| `RouteNetworkSource` | Preprocessed OSM data on R2 |
+| Routing | BRouter |
+| Weather | Open-Meteo |
+| Hotels | OSM hotels on R2 |
+| Route network | Preprocessed OSM data on R2 |
 
-Cross-cutting behaviour is added with decorators that implement the same interface:
-
-```ts
-const routing: RoutingProvider =
-  new Cached(new RateLimited(new Fallback(brouter, ors)), store)
-```
-
-In the browser, the same interface is implemented by a client that calls the Worker:
-
-```ts
-const routing: RoutingProvider = new GatewayRouting(apiUrl)
-```
-
-The planner only depends on the interfaces. So we can:
-
-- switch a provider by adding an adapter and changing the wiring in the Worker
-- move the planner from the browser to a Worker without code changes
-- swap cache stores
+The planner only depends on interfaces from `packages/providers`.
 
 ## Caching
 
-Three cache levels:
+| Data | Shared cache | Browser cache | Key |
+|---|---|---|---|
+| Route leg | R2, `legs/` prefix, 30-day lifecycle rule | IndexedDB | see below |
+| Weather | none, the Worker passes requests through | IndexedDB, 2 h | 0.1° cell |
+| Geodata | R2 | IndexedDB per dataset version | dataset version |
 
-1. **Browser**: memory and IndexedDB. Merges duplicate requests in flight.
-2. **Worker Cache API**: free, fast, per data center. Entries can be evicted at any time.
-3. **Durable storage**: R2 for large data (route geometry), D1 for small JSON (weather).
+Leg keys:
 
-KV is not used. The free plan allows only about 1,000 writes per day.
+- network legs: dataset version + node ids
+- custom points: coordinates at 5 decimals
+- all legs also carry the provider and a profile content hash
 
-In the browser, two layers have separate jobs:
+Weather: fetch the full forecast once per 0.1° cell.
 
-- **Planner with `CacheStore`** caches provider data: route legs, weather.
-- **TanStack Query** caches what the UI shows: trips from the API and derived stage data from the planner, keyed by the stored trip input.
+Routes are built from legs between fixed points: stations, towns and junctions. Proposals share many legs, so most requests hit the cache.
 
-Query never calls external providers. Provider data is cached only once.
+## Request limits
 
-UI state that should survive a reload, like the selected stage or map position, lives in URL search params (TanStack Router).
+The browser sends at most 3 routing requests at once.
 
-Cache keys contain the provider, profile version and schema version. Changing any of them creates new keys, so the cache never needs manual clearing.
+## Errors
 
-| Data | Key | TTL |
-|---|---|---|
-| Route leg | provider, profile, rounded coordinates | 30 days |
-| Weather | grid cell (~0.1°), date | 1–3 hours |
-| Geodata | dataset version | permanent |
+All API errors have one shape:
 
-Routes are built from legs between fixed points: stations, towns and junctions in the cycling route network. Different trip proposals share many legs, so most requests hit the cache.
+```ts
+{ code, message, retryAfter? }
+```
 
-## Protecting external APIs
+| Code | Meaning |
+|---|---|
+| `PROVIDER_UNAVAILABLE` | External provider failed or timed out |
+| `RATE_LIMITED` | Too many requests. `retryAfter` in seconds. |
+| `NOT_FOUND` | Unknown trip or file |
+| `CONFLICT` | Trip changed since it was loaded |
+| `INVALID` | Request failed validation |
 
-The Worker enforces per provider:
+## API
 
-- **Rate limit**: a token bucket in a Durable Object.
-- **Daily budget**: a request counter. When used up, only cached data is served, or the fallback provider is used.
-- **Fallback**: if the main provider fails or is slow, use the next one.
+- zod schemas in `packages/domain`
+- `@hono/zod-validator` in the Worker
+- typed Hono client `hc<AppType>` in the web app
+
+| Endpoint | Use |
+|---|---|
+| `GET /api/me` | Current user |
+| `GET /api/trips` | Own and shared trips |
+| `GET /api/trips/:id` | Load a trip |
+| `PUT /api/trips/:id` | Save a trip. Fails with `CONFLICT` if `updatedAt` doesn't match. |
+| `DELETE /api/trips/:id` | Delete a trip |
+| `POST /api/route` | Route a leg |
+| `GET /api/weather` | Forecast for a cell |
+| `GET /data/*` | Geodata from R2 |
 
 ## Geodata
 
-A weekly GitHub Action loads OSM data (Geofabrik extracts) for signed cycling routes, towns, train stations and hotels. It writes FlatGeobuf or PMTiles files to R2 under a versioned path. The browser loads only the parts it needs for the current map area. No live calls to Overpass.
+A GitHub Action runs monthly or manually (`workflow_dispatch`). It loads OSM data (Geofabrik extracts) and writes files to R2 under a versioned path.
+
+| File | Format |
+|---|---|
+| `manifest.json` | Points to the current dataset version |
+| Route network graph | One compact file. Kept in IndexedDB per version. |
+| Edge geometry, towns, stations, hotels | Tiled files per map area |
+| Cycling route overlay | PMTiles |
 
 ## Auth and storage
 
-- Cloudflare Access protects the app. Allowed users are listed by email.
+- Cloudflare Access protects the app. Allowed users are an email list.
+- The Worker verifies the `Cf-Access-Jwt-Assertion` JWT and takes `owner` from its email.
 - Trips are stored in D1.
-- Friends can view shared trips.
+- The app checks the `shares` table for shared trips. Sharing works only if the friend is also on the Access list.
+
+## Frontend data flow
+
+- The planner runs in a Web Worker via Comlink. A new edit cancels the running job.
+- TanStack Query keys are per stage. Old data stays visible while new data loads.
+- Selected stage, selected proposal and map view live in URL search params.
 
 ## Repo layout
 
@@ -118,8 +146,7 @@ pnpm monorepo:
 ```
 packages/
   domain/      types and zod schemas
-  providers/   interfaces, adapters, decorators
-  cache/       CacheStore interface and implementations
+  providers/   adapters (fetch and parse)
   planner/     trip logic, depends only on interfaces
   ui/          design tokens and components
 apps/
@@ -128,7 +155,14 @@ apps/
 pipeline/      OSM to R2 data pipeline (GitHub Action)
 ```
 
-`domain` and `planner` must not import browser or Cloudflare APIs. A lint rule enforces this.
+- Cache code is platform-specific and lives in the apps.
+- `domain` and `planner` have no DOM or Cloudflare types in their tsconfig. The compiler enforces the boundary.
+
+## Mobile
+
+- PWA first. Capacitor if needed.
+- Auth sits behind an interface.
+- Running the planner in a Worker needs the $5 Workers plan.
 
 ## Tech stack
 
@@ -140,12 +174,19 @@ pipeline/      OSM to R2 data pipeline (GitHub Action)
 | Data loading | TanStack Query |
 | Forms | TanStack Form with zod |
 | Styling | Tailwind CSS v4, Radix UI, Lucide icons |
-| Component docs | Storybook |
 | Translation | i18next, react-i18next |
-| Map | MapLibre GL JS, OpenFreeMap tiles |
+| Map | MapLibre GL JS via react-map-gl, OpenFreeMap tiles |
+| Web Worker calls | Comlink |
 | Geometry | Turf.js |
 | API | Hono on Cloudflare Workers |
 | Database | Cloudflare D1 |
 | Files | Cloudflare R2 |
 | Auth | Cloudflare Access |
 | Validation | zod |
+
+## Later
+
+- Custom domain with a public R2 bucket for geodata
+- OpenRouteService as fallback router (never used during generation)
+- Rate limiter (Durable Object) and daily budget per provider
+- Usage page (`/api/usage`)
