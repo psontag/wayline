@@ -61,6 +61,8 @@ Fallback router. Has a built-in round trip option.
 
 Used to find hotels at stage ends and show their rating.
 
+> **Open decision.** Google's terms (section 3.2.3 (e)) forbid using Places data with or near a non-Google map. Wayline uses a MapLibre map. Using Google Places requires a Google map or a different hotel source.
+
 ### Cost
 
 Free quota is per SKU and per month:
