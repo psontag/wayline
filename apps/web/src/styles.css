@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@import "@wayline/ui/tokens.css";
+
+@source "../../../packages/ui/src";
+
+@layer base {
+  body {
+    @apply bg-bg text-text;
+  }
+}
