@@ -8,5 +8,12 @@
   },
   "scripts": {
     "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@googlemaps/polyline-codec": "1.0.28",
+    "@turf/bearing": "7.4.0",
+    "@turf/distance": "7.4.0",
+    "@turf/helpers": "7.4.0",
+    "zod": "4.6.5"
   }
 }

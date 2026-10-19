@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@wayline/cache": "workspace:*",
-    "@wayline/domain": "workspace:*"
+    "@wayline/domain": "workspace:*",
+    "flatbush": "4.6.2"
   }
 }
