@@ -1,0 +1,5 @@
+osmium
+tifffile
+imagecodecs
+numpy
+matplotlib
