@@ -8,7 +8,9 @@
     "chips": "Chips and badges",
     "stats": "Stats and surface",
     "stages": "Stage cards",
-    "toast": "Toast"
+    "toast": "Toast",
+    "forms": "Form fields",
+    "trips": "Trip cards, menus and dialogs"
   },
   "demo": {
     "planTrip": "Plan trip",
@@ -36,6 +38,32 @@
     "alternative": "{{name}} · {{distance}}",
     "bookHotels": "Hotels in {{place}} on Booking.com",
     "toastMessage": "Day 3 now starts in Kronach and is 58 km.",
-    "toastAction": "Undo"
+    "toastAction": "Undo",
+    "station": "Train station",
+    "kind": "Kind of trip",
+    "oneWayTrip": "One-way trip",
+    "oneWayHint": "Train out, train back",
+    "loop": "Multi-day loop",
+    "loopHint": "Ends where it starts",
+    "start": "Start",
+    "startDate": "Start date",
+    "days": "Days",
+    "km": "km",
+    "kmError": "Enter 20 to 250 km.",
+    "profileHint": "Mostly paved and quiet roads. Some forest and farm tracks.",
+    "tripName": "Franconia, four days",
+    "tripDates": "Sat 12 Jun – Tue 15 Jun",
+    "tripStats": "252 km · 2,340 m · 4 stages",
+    "actions": "Trip actions",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "placeName": "Bamberg",
+    "network": "Signed cycling routes",
+    "route": "Route",
+    "area": "Area with test data",
+    "emptyTitle": "No trips yet",
+    "emptyText": "Pick a start and a few numbers. Wayline suggests routes, stops and hotels.",
+    "deleteTitle": "Delete trip?",
+    "deleteText": "“Franconia, four days” will be deleted. This can't be undone."
   }
 }

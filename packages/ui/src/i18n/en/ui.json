@@ -33,5 +33,20 @@
   },
   "toast": {
     "close": "Close"
+  },
+  "stepper": {
+    "decrease": "Decrease",
+    "increase": "Increase"
+  },
+  "date": {
+    "placeholder": "Pick a date",
+    "clear": "Clear date"
+  },
+  "combobox": {
+    "search": "Search",
+    "empty": "No matches"
+  },
+  "dialog": {
+    "cancel": "Cancel"
   }
 }
