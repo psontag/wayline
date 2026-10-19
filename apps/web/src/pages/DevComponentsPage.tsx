@@ -46,8 +46,14 @@ import {
   TextLink,
   WeatherStrip,
   type WeatherStripItem,
+  MessagePanel,
+  ProgressBar,
+  ProposalCard,
+  ProposalCardSkeleton,
+  ProposalMarker,
 } from "@wayline/ui";
 import {
+  Mountain,
   Copy,
   Download,
   Ellipsis,
@@ -339,6 +345,7 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
       <FormDemos />
       <TripDemos />
       <TripEditorParts />
+      <ProposalDemos />
     </ThemeScope>
   );
 }
@@ -653,6 +660,63 @@ function TripDemos() {
         tone="danger"
         onConfirm={() => undefined}
       />
+    </Section>
+  );
+}
+
+const proposalProfile = Array.from(
+  { length: 40 },
+  (_, i) => 300 + 120 * Math.sin(i / 4) + 4 * i,
+);
+
+function ProposalDemos() {
+  const { t } = useTranslation("devComponents");
+  const format = useFormat();
+  const [selected, setSelected] = useState(2);
+  const stats = [
+    { value: format.distance(252_000), label: t("demo.distance") },
+    { value: format.elevation(2340), label: t("demo.ascent") },
+    { value: format.percent(0.84), label: t("demo.paved") },
+    { value: format.distance(78_000), label: t("demo.longestDay") },
+  ];
+  return (
+    <Section title={t("section.proposals")}>
+      <Card className="flex flex-col gap-2">
+        <span className="font-bold">{t("demo.routing")}</span>
+        <ProgressBar value={0.68} aria-label={t("demo.routing")} />
+      </Card>
+      <div className="flex flex-col gap-2">
+        {[1, 2].map((n) => (
+          <ProposalCard
+            key={n}
+            number={n}
+            title={t("demo.proposalTitle")}
+            subtitle={t("demo.proposalSubtitle")}
+            stats={stats}
+            profile={proposalProfile}
+            footer={t("demo.proposalRoutes")}
+            selected={selected === n}
+            onSelect={() => setSelected(n)}
+          >
+            <Button variant="primary">{t("demo.openTrip")}</Button>
+          </ProposalCard>
+        ))}
+        <ProposalCardSkeleton />
+      </div>
+      <div className="flex items-center gap-3">
+        <ProposalMarker number={1} />
+        <ProposalMarker number={2} selected />
+      </div>
+      <Card padding="none">
+        <MessagePanel
+          icon={<Mountain aria-hidden />}
+          title={t("demo.noResultTitle")}
+          text={t("demo.noResultText")}
+          actions={
+            <Button variant="primary">{t("demo.noResultAction")}</Button>
+          }
+        />
+      </Card>
     </Section>
   );
 }
