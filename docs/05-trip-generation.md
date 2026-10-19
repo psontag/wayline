@@ -103,3 +103,24 @@ The Web Worker reports phases:
 | `quiet` | Strong penalty on roads with traffic. |
 
 Presets map to custom BRouter profiles.
+
+In the graph search, the profile sets k in cost = length / score^k:
+
+| Preset | k |
+|---|---|
+| `fast` | 1 |
+| `touring` | 2 |
+| `quiet` | 2.5 |
+| `scenic` | 3 |
+
+## Hotel budget
+
+OSM has no prices, so kind and stars stand in for the budget.
+
+| Budget | Hotels that fit |
+|---|---|
+| `low` | Guest houses, motels, hotels with up to 2 stars |
+| `mid` | Up to 3 stars or no stars |
+| `high` | Hotels with 3+ stars or no stars |
+
+Stage cutting prefers stops with more hotels that fit. The stop hotel is the nearest one that fits, else the nearest one.

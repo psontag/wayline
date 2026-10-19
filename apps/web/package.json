@@ -16,6 +16,7 @@
     "@wayline/planner": "workspace:*",
     "@wayline/providers": "workspace:*",
     "@wayline/ui": "workspace:*",
+    "comlink": "4.4.2",
     "i18next": "26.4.2",
     "idb-keyval": "6.3.0",
     "lucide-react": "1.51.0",

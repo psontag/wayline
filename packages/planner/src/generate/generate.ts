@@ -120,6 +120,8 @@ export class Planner {
       },
     );
     if (!picks.length) return { ok: false, failedLimit };
+    // Stages are cut during the search, since a path only counts if it cuts.
+    onProgress?.({ phase: "cutting", done: picks.length, total: picks.length });
 
     const proposals: Proposal[] = [];
     for (const [i, p] of picks.entries()) {
