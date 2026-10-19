@@ -6,16 +6,24 @@ const css = readFileSync(new URL("./tokens.css", import.meta.url), "utf8");
 
 type Theme = "light" | "dark";
 
-function readColors(): Record<Theme, Map<string, string>> {
-  const light = new Map<string, string>();
-  const dark = new Map<string, string>();
-  const pattern =
-    /--color-([a-z-]+):\s*light-dark\((#[0-9a-f]{6}),\s*(#[0-9a-f]{6})\)/g;
-  for (const [, name = "", l = "", d = ""] of css.matchAll(pattern)) {
-    light.set(name, l);
-    dark.set(name, d);
+function readBlock(start: string): Map<string, string> {
+  const from = css.indexOf(start);
+  if (from < 0) throw new Error(`Missing block ${start}`);
+  const block = css.slice(from, css.indexOf("}", from));
+  const tokens = new Map<string, string>();
+  for (const [, name = "", value = ""] of block.matchAll(
+    /--color-([a-z0-9-]+):\s*(#[0-9a-f]{6});/g,
+  )) {
+    tokens.set(name, value);
   }
-  return { light, dark };
+  return tokens;
+}
+
+function readColors(): Record<Theme, Map<string, string>> {
+  return {
+    light: readBlock('[data-theme="light"] {'),
+    dark: readBlock('[data-theme="dark"] {'),
+  };
 }
 
 function get(tokens: Map<string, string>, name: string): string {

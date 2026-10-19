@@ -23,8 +23,7 @@ const colorTokens = {
 
 export type ThemeTokens = Record<keyof typeof colorTokens, string>;
 
-// Tokens use light-dark(), so the raw variable is not a usable color.
-// A probe element resolves each one to rgb() for the current theme.
+// A probe element resolves each token to rgb() for the current theme.
 function readTokens(): ThemeTokens {
   const probe = document.createElement("span");
   probe.style.display = "none";
