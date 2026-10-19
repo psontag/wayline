@@ -64,6 +64,7 @@
     "network": "Signed cycling routes",
     "route": "Route",
     "area": "Area with test data",
+    "mapHint": "Click the map to set the start",
     "emptyTitle": "No trips yet",
     "emptyText": "Pick a start and a few numbers. Wayline suggests routes, stops and hotels.",
     "deleteTitle": "Delete trip?",
