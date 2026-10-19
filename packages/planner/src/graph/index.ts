@@ -1,6 +1,7 @@
 import type { RouteNetworkSource } from "@wayline/providers";
 import { Graph } from "./Graph";
 
+export * from "./area";
 export * from "./dijkstra";
 export * from "./Graph";
 export * from "./leg";

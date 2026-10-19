@@ -35,12 +35,11 @@ export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
     alternatives: s.alternatives.map((a) => places.town(a.node)),
   }));
   ends.push({ ...p.end, locked: false, alternatives: [] });
-  // Step index where each stage ends. Point i is reached after step i − 1.
-  const cuts = [...p.stops.map((s) => s.index), p.steps.length];
+  const stageSteps = splitSteps(p.steps, p.stops);
 
   const stages: Stage[] = ends.map((end, i) => {
     const start = i === 0 ? p.start : stripStop(ends[i - 1] ?? end);
-    const steps = p.steps.slice(i === 0 ? 0 : cuts[i - 1], cuts[i]);
+    const steps = stageSteps[i] ?? [];
     const legs = [pathToLeg(graph, steps, start.coord, end.coord, meta)];
     const last = i === ends.length - 1;
     const hotel = last
@@ -78,6 +77,13 @@ export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
     stages,
     sharedWith: [],
   };
+}
+
+/** Path steps of each stage. */
+export function splitSteps(steps: PathStep[], stops: Stop[]): PathStep[][] {
+  // Step index where each stage ends. Point i is reached after step i − 1.
+  const cuts = [...stops.map((s) => s.index), steps.length];
+  return cuts.map((cut, i) => steps.slice(i === 0 ? 0 : cuts[i - 1], cut));
 }
 
 function stripStop(s: StopPlace): Place {
