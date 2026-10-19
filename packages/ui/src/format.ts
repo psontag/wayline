@@ -40,9 +40,9 @@ export function createFormat(language: string) {
   });
 
   return {
-    /** 78 km, or 850 m below 1 km. Input in meters. */
+    /** 78 km, or 850 m below 1 km. Zero is 0 km. Input in meters. */
     distance: (m: number) =>
-      m < 1000 ? meters.format(m) : km.format(m / 1000),
+      m > 0 && m < 1000 ? meters.format(m) : km.format(m / 1000),
     /** 650 m */
     elevation: (m: number) => meters.format(m),
     /** 22 °C */

@@ -31,12 +31,29 @@ import {
   PlaceMarker,
   RadioCards,
   TripCard,
+  AlternativeMarker,
+  DateButton,
+  ElevationProfile,
+  EndpointMarker,
+  HotelRow,
+  HoverMarker,
+  InlineEdit,
+  MenuItem,
+  MenuSeparator,
+  type ProfilePoint,
+  SaveStatus,
+  StopMarker,
+  TextLink,
+  WeatherStrip,
+  type WeatherStripItem,
 } from "@wayline/ui";
 import {
   Copy,
   Download,
   Ellipsis,
+  EllipsisVertical,
   ExternalLink,
+  Pencil,
   Redo2,
   Share2,
   TrainFront,
@@ -321,7 +338,118 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
 
       <FormDemos />
       <TripDemos />
+      <TripEditorParts />
     </ThemeScope>
+  );
+}
+
+const profile: ProfilePoint[] = Array.from({ length: 61 }, (_, i) => ({
+  km: i,
+  ele: 300 + 120 * Math.sin(i / 9) + 40 * Math.sin(i / 2.5),
+  surface: i > 18 && i < 30 ? "gravel" : i > 44 && i < 50 ? "unpaved" : "paved",
+}));
+
+const weather: WeatherStripItem[] = [0, 10, 20, 30, 40, 50, 60].map(
+  (km, i) => ({
+    distance: km * 1000,
+    time: new Date(2027, 5, 13, 9, Math.round((km / 18) * 60)),
+    temperature: 17 + i,
+    condition: i === 3 ? "cloud" : i === 4 ? "rain" : "sun",
+    wind: {
+      kind: i < 2 ? "tail" : i < 5 ? "head" : "cross",
+      rotation: i < 2 ? 10 : i < 5 ? 175 : 95,
+    },
+  }),
+);
+
+function TripEditorParts() {
+  const { t } = useTranslation("devComponents");
+  const [hoverKm, setHoverKm] = useState<number>();
+  const [date, setDate] = useState("2027-06-12");
+  const [name, setName] = useState("Franconia, four days");
+  const [renaming, setRenaming] = useState(false);
+  return (
+    <Section title={t("section.tripEditor")}>
+      <Card className="flex flex-col gap-3">
+        <SurfaceLegend />
+        <ElevationProfile
+          points={profile}
+          hoverKm={hoverKm}
+          onHoverKm={setHoverKm}
+          aria-label={t("demo.elevation")}
+        />
+        <div className="border-t border-border pt-2">
+          <WeatherStrip items={weather} />
+        </div>
+      </Card>
+      <Card className="flex flex-col gap-3">
+        <HotelRow
+          name="Hotel Bauerngirgl"
+          stars={3}
+          distance={400}
+          website="https://example.com"
+          action={
+            <Button variant="ghost" size="sm">
+              {t("demo.change")}
+            </Button>
+          }
+        />
+        <TextLink href="https://www.bahn.de" target="_blank" rel="noreferrer">
+          <TrainFront aria-hidden />
+          {t("demo.train")}
+        </TextLink>
+      </Card>
+      <div className="flex flex-wrap items-center gap-3">
+        <SaveStatus state="saved" />
+        <SaveStatus state="saving" />
+        <SaveStatus state="error" />
+        <DateButton value={date} onChange={setDate}>
+          {date}
+        </DateButton>
+        <Menu
+          trigger={
+            <IconButton
+              size="sm"
+              label={t("demo.menu")}
+              icon={<EllipsisVertical aria-hidden />}
+            />
+          }
+        >
+          <MenuItem
+            icon={<Pencil aria-hidden />}
+            onSelect={() => setRenaming(true)}
+          >
+            {t("demo.rename")}
+          </MenuItem>
+          <MenuSeparator />
+          <MenuItem icon={<Trash2 aria-hidden />} tone="danger">
+            {t("demo.delete")}
+          </MenuItem>
+        </Menu>
+        {renaming ? (
+          <InlineEdit
+            value={name}
+            aria-label={t("demo.rename")}
+            onCommit={(next) => {
+              setName(next);
+              setRenaming(false);
+            }}
+            onCancel={() => setRenaming(false)}
+          />
+        ) : (
+          <span className="text-md font-bold">{name}</span>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-4 rounded-md bg-bg p-4">
+        <EndpointMarker name="Bamberg" station />
+        <StopMarker day={1} name="Coburg" />
+        <StopMarker day={2} name="Kronach" selected />
+        <AlternativeMarker
+          label={t("demo.alternative", { name: "Küps", distance: "56 km" })}
+        />
+        <HoverMarker />
+      </div>
+    </Section>
   );
 }
 
@@ -482,20 +610,18 @@ function TripDemos() {
                   icon={<Ellipsis aria-hidden />}
                 />
               }
-              items={[
-                {
-                  label: t("demo.duplicate"),
-                  icon: <Copy aria-hidden />,
-                  onSelect: () => undefined,
-                },
-                {
-                  label: t("demo.delete"),
-                  icon: <Trash2 aria-hidden />,
-                  tone: "danger",
-                  onSelect: () => setDialog(true),
-                },
-              ]}
-            />
+            >
+              <MenuItem icon={<Copy aria-hidden />}>
+                {t("demo.duplicate")}
+              </MenuItem>
+              <MenuItem
+                icon={<Trash2 aria-hidden />}
+                tone="danger"
+                onSelect={() => setDialog(true)}
+              >
+                {t("demo.delete")}
+              </MenuItem>
+            </Menu>
           }
         />
         <div className="flex flex-col items-start gap-3">

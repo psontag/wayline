@@ -1,50 +1,64 @@
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import type { ReactElement, ReactNode } from "react";
+import * as MenuPrimitive from "@radix-ui/react-dropdown-menu";
+import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
 import { usePortalContainer } from "../theme/ThemeScope";
 
-export type MenuItem = {
-  label: string;
-  icon?: ReactNode;
-  onSelect: () => void;
-  tone?: "neutral" | "danger";
-};
-
-export type MenuProps = {
-  /** A button, e.g. an IconButton. */
-  trigger: ReactElement;
-  items: MenuItem[];
-  align?: "start" | "end";
-};
-
-/** A short list of actions behind a button, e.g. duplicate and delete. */
-export function Menu({ trigger, items, align = "end" }: MenuProps) {
+/** Dropdown menu. The trigger is usually an IconButton. */
+export function Menu({
+  trigger,
+  children,
+}: {
+  trigger: ReactNode;
+  children: ReactNode;
+}) {
   const container = usePortalContainer();
   return (
-    <DropdownMenu.Root modal={false}>
-      <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
-      <DropdownMenu.Portal container={container}>
-        <DropdownMenu.Content
-          align={align}
+    <MenuPrimitive.Root modal={false}>
+      <MenuPrimitive.Trigger asChild>{trigger}</MenuPrimitive.Trigger>
+      <MenuPrimitive.Portal container={container}>
+        <MenuPrimitive.Content
+          align="end"
           sideOffset={4}
-          className="z-popover min-w-24 rounded-md border border-border bg-surface-raised p-1 text-text shadow-md"
+          className="z-popover overflow-hidden rounded-md border border-border bg-surface-raised p-1 text-text shadow-md"
         >
-          {items.map((item) => (
-            <DropdownMenu.Item
-              key={item.label}
-              onSelect={item.onSelect}
-              className={cn(
-                "flex h-8 cursor-default items-center gap-2 rounded-sm px-2 text-base outline-none select-none",
-                "data-highlighted:bg-hover [&_svg]:size-4 [&_svg]:shrink-0",
-                item.tone === "danger" ? "text-danger" : "text-text",
-              )}
-            >
-              {item.icon}
-              {item.label}
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+          {children}
+        </MenuPrimitive.Content>
+      </MenuPrimitive.Portal>
+    </MenuPrimitive.Root>
   );
+}
+
+export type MenuItemProps = {
+  icon?: ReactNode;
+  tone?: "default" | "danger";
+  onSelect?: () => void;
+  disabled?: boolean;
+  children: ReactNode;
+};
+
+export function MenuItem({
+  icon,
+  tone = "default",
+  onSelect,
+  disabled,
+  children,
+}: MenuItemProps) {
+  return (
+    <MenuPrimitive.Item
+      onSelect={onSelect}
+      disabled={disabled}
+      className={cn(
+        "flex h-8 cursor-default items-center gap-2 rounded-sm pr-6 pl-2 text-base whitespace-nowrap outline-none select-none",
+        "data-disabled:opacity-50 data-highlighted:bg-hover [&_svg]:size-4 [&_svg]:shrink-0",
+        tone === "danger" ? "text-danger" : "text-text",
+      )}
+    >
+      {icon}
+      {children}
+    </MenuPrimitive.Item>
+  );
+}
+
+export function MenuSeparator() {
+  return <MenuPrimitive.Separator className="my-1 h-px bg-border" />;
 }
