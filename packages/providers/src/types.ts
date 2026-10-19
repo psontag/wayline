@@ -1,4 +1,5 @@
 import type {
+  BBox,
   Hotel,
   Leg,
   LonLat,
@@ -53,7 +54,13 @@ export interface LodgingProvider {
 /** Static geodata of one region. Each file loads once. */
 export interface RouteNetworkSource {
   manifest(): Promise<Manifest>;
-  network(): Promise<RouteNetwork>;
+  /**
+   * The route network around bbox: at least every node in it and every edge
+   * that touches one of those nodes, plus the far ends of those edges. It may
+   * hold more. Without bbox, the whole region. Pass a bbox for tiled data.
+   */
+  network(bbox?: BBox): Promise<RouteNetwork>;
+  /** Towns, stations and hotels of the whole region. */
   places(): Promise<Places>;
 }
 

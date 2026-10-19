@@ -10,3 +10,4 @@ pipeline/cache/
 # Built by pnpm data:build
 apps/web/public/data/*
 !apps/web/public/data/mock/
+pipeline/.venv/

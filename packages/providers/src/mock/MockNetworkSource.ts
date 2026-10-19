@@ -14,9 +14,11 @@ export class MockNetworkSource implements RouteNetworkSource {
     return this.load("manifest.json") as Promise<Manifest>;
   }
 
+  /** The whole network. It is small, so a bbox is ignored. */
   async network(): Promise<RouteNetwork> {
-    const manifest = await this.manifest();
-    return this.load(manifest.files.network) as Promise<RouteNetwork>;
+    const { files } = await this.manifest();
+    if (!files.network) throw new Error(`${this.baseUrl} has no network file`);
+    return this.load(files.network) as Promise<RouteNetwork>;
   }
 
   async places(): Promise<Places> {

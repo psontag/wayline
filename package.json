@@ -14,7 +14,7 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "data:build": "uv run --python 3.12 --with-requirements pipeline/requirements.txt pipeline/build.py"
+    "data:build": "pipeline/build.sh"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

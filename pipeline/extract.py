@@ -58,7 +58,8 @@ class Relations(osmium.SimpleHandler):
             return
         self.routes[r.id] = {
             "id": r.id,
-            "name": t.get("name") or t.get("ref") or f"relation {r.id}",
+            # Basic networks hold all local cycleways of an area. Their name is no route name.
+            "name": None if t.get("network:type") == "basic_network" else t.get("name") or t.get("ref"),
             "network": t.get("network") if t.get("network") in ROUTE_NETWORKS else "other",
             "ways": [m.ref for m in r.members if m.type == "w"],
         }

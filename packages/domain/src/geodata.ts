@@ -1,20 +1,41 @@
 import type { BBox } from "./schema";
 
 // Shapes of the static geodata files in /data/<dataset>/.
-// Written by pipeline/spike/export_mock.py.
+// Written by pipeline/build.py (tiled) and pipeline/spike/export_mock.py (mock).
 
 export type Manifest = {
   version: string;
   region: { name: string; bbox: BBox };
-  /** File names relative to the manifest. */
-  files: { network: string; places: string };
+  /** File names relative to the manifest. A tiled dataset has no network file. */
+  files: { network?: string; places: string };
+  /** Only in tiled datasets. */
+  tiles?: TileIndex;
   createdAt: string;
 };
+
+export type TileIndex = {
+  /** Tile edge in degrees. Tile key "x_y" = floor(lon / size)_floor(lat / size). */
+  size: number;
+  /** File path relative to the manifest, with "{key}" for the tile key. */
+  path: string;
+  /** Tiles that exist. Others have no network. */
+  keys: string[];
+};
+
+/**
+ * One tile of the route network. It holds the nodes in the tile, every edge
+ * that touches one of them, and the far nodes of those edges. So edges that
+ * cross a tile border are in both tiles.
+ */
+export type NetworkTile = RouteNetwork & { tile: string };
 
 export type NetworkClass = "icn" | "ncn" | "rcn" | "lcn" | "connector";
 
 export type NetworkNode = {
-  /** Index in RouteNetwork.nodes. Stable within one dataset version. */
+  /**
+   * Stable within one dataset version. In a full network it is also the
+   * index in RouteNetwork.nodes. In a part of a tiled network it is not.
+   */
   id: number;
   lon: number;
   lat: number;
@@ -25,7 +46,7 @@ export type NetworkNode = {
 };
 
 export type NetworkEdge = {
-  /** Index in RouteNetwork.edges. */
+  /** Same rules as NetworkNode.id. */
   id: number;
   from: number;
   to: number;

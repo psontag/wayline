@@ -46,7 +46,7 @@ const browserGlobals = [
 const arbitraryValue = String.raw`(\[[^\]]*\]|\([^)]*\))[^:]*$`;
 
 export default defineConfig(
-  globalIgnores(["**/dist/", "**/.wrangler/", "**/node_modules/"]),
+  globalIgnores(["**/dist/", "**/.wrangler/", "**/node_modules/", "pipeline/"]),
   js.configs.recommended,
   tseslint.configs.strict,
   {
