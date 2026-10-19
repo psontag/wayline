@@ -57,6 +57,13 @@ describe("cutStages", () => {
     ).toBe(200);
   });
 
+  it("fails when every cut climbs too much", () => {
+    const towns = [5, 7, 8, 10, 15, 16, 22, 23].map((i) => town(i));
+    expect(
+      cutStages(points, towns, { ...options, maxAscentPerDay: 700 }),
+    ).toBeNull();
+  });
+
   it("fails without towns", () => {
     expect(cutStages(points, [], options)).toBeNull();
   });

@@ -69,7 +69,7 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 Stops must be towns with hotels. For a route of length L and n days:
 
 1. Collect towns near the route with their position (km from start).
-2. Choose n − 1 towns with dynamic programming. Cost per stage: deviation from target km, plus a penalty if ascent exceeds the max.
+2. Choose n − 1 towns with dynamic programming. Cost per stage: deviation from target km. A stage that climbs more than the max ascent is not allowed. If no cut fits, the path is dropped.
 3. Keep the best 2–3 towns per stop as alternatives.
 
 On edit, cutting runs only between locked stops.

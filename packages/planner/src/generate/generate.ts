@@ -19,13 +19,7 @@ import {
   pathKm,
   VARIETY_PENALTY,
 } from "./search";
-import {
-  cutStages,
-  type PathPoint,
-  pathPoints,
-  type Stop,
-  stopCandidates,
-} from "./stages";
+import { cutStages, pathPoints, type Stop, stopCandidates } from "./stages";
 import { Stops } from "./stops";
 import { buildTrip, meanScore, routeNames } from "./trip";
 
@@ -39,8 +33,6 @@ const TIME_LIMIT_MS = 2000;
 const MAX_SHARED = 0.4;
 /** Via nodes of two proposals must be at least this far apart. */
 const MIN_VIA_GAP_KM = 10;
-/** A stage may climb this much more than the max before a proposal is dropped. */
-const ASCENT_TOLERANCE = 1.25;
 /** Max distance from the requested start to its station node. */
 const START_KM = 5;
 
@@ -255,20 +247,13 @@ export class Planner {
         if (sharedKm > MAX_SHARED * km) continue;
 
         const points = pathPoints(graph, c.nodes[0] ?? 0, steps);
-        const stops = cutStages(
-          points,
-          stopCandidates(graph, points, hotelNodes, hotelCount),
-          request,
-        );
+        const towns = stopCandidates(graph, points, hotelNodes, hotelCount);
+        const stops = cutStages(points, towns, request);
         if (!stops) {
-          fails.hotels++;
-          continue;
-        }
-        if (
-          steepestStage(points, stops) >
-          ASCENT_TOLERANCE * request.maxAscentPerDay
-        ) {
-          fails.ascent++;
+          // Tell a missing town apart from too much climbing.
+          const flat = { ...request, maxAscentPerDay: Infinity };
+          if (cutStages(points, towns, flat)) fails.ascent++;
+          else fails.hotels++;
           continue;
         }
 
@@ -291,18 +276,6 @@ export class Planner {
             : "days";
     return { picks, failedLimit };
   }
-}
-
-/** Highest ascent of any stage. */
-function steepestStage(points: PathPoint[], stops: Stop[]): number {
-  const at = [0, ...stops.map((s) => s.index), points.length - 1];
-  let max = 0;
-  for (const [i, b] of at.entries()) {
-    const a = at[i - 1];
-    if (a === undefined) continue;
-    max = Math.max(max, (points[b]?.ascent ?? 0) - (points[a]?.ascent ?? 0));
-  }
-  return max;
 }
 
 /** Loads the network and places of a source. */

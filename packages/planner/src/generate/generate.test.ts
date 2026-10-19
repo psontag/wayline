@@ -56,6 +56,7 @@ function checkTrip(p: Proposal, request: GenerateRequest) {
     const km = s.stats.distance / 1000;
     expect(km).toBeGreaterThan(0.4 * request.kmPerDay);
     expect(km).toBeLessThan(1.6 * request.kmPerDay);
+    expect(s.stats.ascent).toBeLessThanOrEqual(request.maxAscentPerDay);
     if (i < stages.length - 1) {
       expect(s.hotel).toBeDefined();
       expect(stages[i + 1]?.start.coord).toEqual(s.end.coord);

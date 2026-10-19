@@ -91,11 +91,14 @@ export function stopCandidates(
   return out.sort((a, b) => a.km - b.km || a.offKm - b.offKm);
 }
 
-/** Cost of one stage: deviation from the target, plus too much ascent. */
+/**
+ * Cost of one stage: deviation from the target km. A stage that climbs more
+ * than the max does not fit at all.
+ */
 export function stageCost(km: number, ascent: number, o: CutOptions): number {
+  if (ascent > o.maxAscentPerDay) return Infinity;
   const dev = (km - o.kmPerDay) / o.kmPerDay;
-  const over = Math.max(0, ascent - o.maxAscentPerDay) / o.maxAscentPerDay;
-  return dev * dev + 2 * over * over;
+  return dev * dev;
 }
 
 /** Prefer towns with more hotels (about 10 km of deviation) and on the path. */
