@@ -9,7 +9,8 @@
     "stats": "Stats and surface",
     "stages": "Stage cards",
     "toast": "Toast",
-    "tripEditor": "Trip editor"
+    "tripEditor": "Trip editor",
+    "phone": "Phone"
   },
   "demo": {
     "planTrip": "Plan trip",
@@ -43,6 +44,19 @@
     "train": "Train to Bamberg on bahn.de",
     "menu": "Trip menu",
     "rename": "Rename",
-    "delete": "Delete"
+    "delete": "Delete",
+    "back": "Back to trips",
+    "day": "Day {{day}}",
+    "weather": "Weather",
+    "wind": "Wind",
+    "stop": "Stop: Kronach",
+    "stopTown": "Stop town",
+    "current": "Current",
+    "picked": "Picked",
+    "pick": "Pick",
+    "whereToStop": "Where to stop",
+    "tripName": "Franconia, four days",
+    "weatherValue": "17–23 °C, dry",
+    "windValue": "45 % headwind"
   }
 }
