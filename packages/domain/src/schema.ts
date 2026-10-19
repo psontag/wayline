@@ -163,6 +163,8 @@ export const GenerateRequest = z
     region: BBox.optional(),
     /** Start station. Loops start and end here. */
     startStation: Place.optional(),
+    /** One-way only. Without it, the generator picks the end. */
+    endStation: Place.optional(),
     days: z.number().int().min(1).max(14),
     kmPerDay: z.number().positive(),
     maxAscentPerDay: z.number().positive(),

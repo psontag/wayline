@@ -2,7 +2,7 @@ import { Slot } from "@radix-ui/react-slot";
 import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import { cn } from "../lib/cn";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md";
 
 export const focusRing =
@@ -22,6 +22,8 @@ const variants: Record<ButtonVariant, string> = {
     "border border-border bg-surface text-text hover:bg-hover active:bg-active",
   ghost:
     "bg-transparent text-text hover:bg-hover active:bg-active aria-[current=page]:bg-selected",
+  danger:
+    "border border-border bg-surface font-bold text-danger hover:bg-hover active:bg-active",
 };
 
 const sizes: Record<ButtonSize, { text: string; icon: string }> = {

@@ -10,6 +10,8 @@ export type SegmentedControlProps = {
   onValueChange: (value: string) => void;
   "aria-label"?: string;
   "aria-labelledby"?: string;
+  /** Fill the width with equal segments. */
+  stretch?: boolean;
 };
 
 /** One choice out of a few, e.g. the routing profile. */
@@ -17,6 +19,7 @@ export function SegmentedControl({
   options,
   value,
   onValueChange,
+  stretch = false,
   ...aria
 }: SegmentedControlProps) {
   return (
@@ -25,7 +28,10 @@ export function SegmentedControl({
       value={value}
       // Radix sends "" when the active item is clicked again. Keep the choice.
       onValueChange={(next) => next && onValueChange(next)}
-      className="inline-flex gap-0.5 rounded-sm border border-border bg-hover p-0.5"
+      className={cn(
+        "gap-0.5 rounded-sm border border-border bg-hover p-0.5",
+        stretch ? "grid auto-cols-fr grid-flow-col" : "inline-flex",
+      )}
       {...aria}
     >
       {options.map((option) => (
