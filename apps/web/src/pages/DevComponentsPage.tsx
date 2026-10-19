@@ -19,8 +19,30 @@ import {
   ToastViewport,
   useFormat,
   type ResolvedTheme,
+  Combobox,
+  ConfirmDialog,
+  DateField,
+  EmptyState,
+  FormField,
+  MapLegend,
+  Menu,
+  NumberInput,
+  NumberStepper,
+  PlaceMarker,
+  RadioCards,
+  TripCard,
 } from "@wayline/ui";
-import { Download, ExternalLink, Redo2, Share2, Undo2 } from "lucide-react";
+import {
+  Copy,
+  Download,
+  Ellipsis,
+  ExternalLink,
+  Redo2,
+  Share2,
+  TrainFront,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -296,6 +318,9 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
           <ToastViewport placement="inline" />
         </ToastProvider>
       </Section>
+
+      <FormDemos />
+      <TripDemos />
     </ThemeScope>
   );
 }
@@ -315,5 +340,193 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       <h2 className="text-md font-bold text-text-muted">{title}</h2>
       {children}
     </section>
+  );
+}
+
+const demoPlaces = ["Bamberg", "Coburg", "Kronach", "Kulmbach", "Lichtenfels"];
+
+function FormDemos() {
+  const { t } = useTranslation("devComponents");
+  const id = useId();
+  const [kind, setKind] = useState("one-way");
+  const [days, setDays] = useState<number | undefined>(3);
+  const [km, setKm] = useState<number | undefined>(70);
+  const [date, setDate] = useState("2027-06-12");
+  const [place, setPlace] = useState("Bamberg");
+  const [search, setSearch] = useState("");
+  const [profile, setProfile] = useState("touring");
+  const placeOption = (name: string) => ({
+    value: name,
+    label: name,
+    description: t("demo.station"),
+    icon: <TrainFront aria-hidden />,
+  });
+
+  return (
+    <Section title={t("section.forms")}>
+      <div className="flex max-w-panel flex-col gap-4">
+        <FormField label={t("demo.kind")} labelId={`${id}-kind`}>
+          <RadioCards
+            aria-labelledby={`${id}-kind`}
+            value={kind}
+            onValueChange={setKind}
+            options={[
+              {
+                value: "one-way",
+                label: t("demo.oneWayTrip"),
+                hint: t("demo.oneWayHint"),
+              },
+              {
+                value: "loop",
+                label: t("demo.loop"),
+                hint: t("demo.loopHint"),
+              },
+            ]}
+          />
+        </FormField>
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label={t("demo.start")} htmlFor={`${id}-place`}>
+            <Combobox
+              id={`${id}-place`}
+              options={demoPlaces
+                .filter((p) => p.toLowerCase().includes(search.toLowerCase()))
+                .map(placeOption)}
+              onSearchChange={setSearch}
+              value={place}
+              selected={placeOption(place)}
+              onValueChange={setPlace}
+            />
+          </FormField>
+          <FormField label={t("demo.startDate")} htmlFor={`${id}-date`}>
+            <DateField
+              id={`${id}-date`}
+              clearable
+              value={date}
+              onValueChange={setDate}
+            />
+          </FormField>
+          <FormField label={t("demo.days")} htmlFor={`${id}-days`}>
+            <NumberStepper
+              id={`${id}-days`}
+              min={1}
+              max={14}
+              value={days}
+              onValueChange={setDays}
+            />
+          </FormField>
+          <FormField
+            label={t("demo.kmPerDay")}
+            htmlFor={`${id}-km`}
+            error={km ? undefined : t("demo.kmError")}
+          >
+            <NumberInput
+              id={`${id}-km`}
+              unit={t("demo.km")}
+              value={km}
+              onValueChange={setKm}
+              aria-invalid={!km}
+            />
+          </FormField>
+        </div>
+        <FormField
+          label={t("demo.profile")}
+          labelId={`${id}-profile`}
+          hint={t("demo.profileHint")}
+        >
+          <SegmentedControl
+            stretch
+            aria-labelledby={`${id}-profile`}
+            value={profile}
+            onValueChange={setProfile}
+            options={[
+              { value: "touring", label: t("demo.touring") },
+              { value: "fast", label: t("demo.fast") },
+              { value: "scenic", label: t("demo.scenic") },
+              { value: "quiet", label: t("demo.quiet") },
+            ]}
+          />
+        </FormField>
+      </div>
+    </Section>
+  );
+}
+
+const demoPreview: [number, number][] = [
+  [10.9, 49.9],
+  [10.95, 50.02],
+  [11.06, 50.14],
+  [11.2, 50.2],
+  [11.32, 50.24],
+  [11.45, 50.1],
+  [11.57, 49.94],
+];
+
+function TripDemos() {
+  const { t } = useTranslation("devComponents");
+  const [dialog, setDialog] = useState(false);
+  return (
+    <Section title={t("section.trips")}>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <TripCard
+          title={<a href="#trip">{t("demo.tripName")}</a>}
+          badge={<Badge>{t("demo.oneWay")}</Badge>}
+          dates={t("demo.tripDates")}
+          stats={t("demo.tripStats")}
+          preview={demoPreview}
+          actions={
+            <Menu
+              trigger={
+                <IconButton
+                  size="sm"
+                  label={t("demo.actions")}
+                  icon={<Ellipsis aria-hidden />}
+                />
+              }
+              items={[
+                {
+                  label: t("demo.duplicate"),
+                  icon: <Copy aria-hidden />,
+                  onSelect: () => undefined,
+                },
+                {
+                  label: t("demo.delete"),
+                  icon: <Trash2 aria-hidden />,
+                  tone: "danger",
+                  onSelect: () => setDialog(true),
+                },
+              ]}
+            />
+          }
+        />
+        <div className="flex flex-col items-start gap-3">
+          <Button variant="danger" onClick={() => setDialog(true)}>
+            <Trash2 aria-hidden />
+            {t("demo.delete")}
+          </Button>
+          <PlaceMarker name={t("demo.placeName")} />
+          <MapLegend
+            items={[
+              { label: t("demo.network"), line: "route-dimmed" },
+              { label: t("demo.route"), line: "route" },
+              { label: t("demo.area"), line: "dashed" },
+            ]}
+          />
+        </div>
+      </div>
+      <EmptyState
+        title={t("demo.emptyTitle")}
+        text={t("demo.emptyText")}
+        action={<Button variant="primary">{t("demo.planTrip")}</Button>}
+      />
+      <ConfirmDialog
+        open={dialog}
+        onOpenChange={setDialog}
+        title={t("demo.deleteTitle")}
+        description={t("demo.deleteText")}
+        confirmLabel={t("demo.delete")}
+        tone="danger"
+        onConfirm={() => undefined}
+      />
+    </Section>
   );
 }
