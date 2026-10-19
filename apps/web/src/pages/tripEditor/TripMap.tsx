@@ -34,6 +34,7 @@ import MapGL, {
   Source,
 } from "react-map-gl/maplibre";
 import { NetworkLayer } from "../../components/NetworkLayer";
+import { tripStops } from "./tripArea";
 import { useHiddenPlaceLabels } from "../../components/placeLabels";
 
 // MapLibre finds its worker next to its own module. Vite moves both.
@@ -249,7 +250,7 @@ export function TripMap({
             }}
           />
         </Source>
-        <NetworkLayer beforeId="stage-casing" />
+        <NetworkLayer around={tripStops(trip)} beforeId="stage-casing" />
 
         {first && (
           <Marker
