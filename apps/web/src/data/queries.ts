@@ -74,6 +74,16 @@ export function useDuplicateTrip() {
   });
 }
 
+/** The route network, for surface colors in the elevation profile. */
+export function useNetwork() {
+  const { network } = useServices();
+  return useQuery({
+    queryKey: ["network"],
+    queryFn: () => network.network(),
+    staleTime: Infinity,
+  }).data;
+}
+
 const FORECAST_STALE_MS = 2 * 60 * 60 * 1000;
 
 /**
