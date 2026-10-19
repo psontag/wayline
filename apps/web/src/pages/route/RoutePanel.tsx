@@ -1,6 +1,7 @@
 import type { Place, Profile, Stats } from "@wayline/domain";
 import {
   Button,
+  cn,
   FormField,
   IconButton,
   MessagePanel,
@@ -8,6 +9,7 @@ import {
   StatBlock,
   SurfaceBar,
   useFormat,
+  ViaRow,
 } from "@wayline/ui";
 import { ArrowUpDown, Route, TriangleAlert } from "lucide-react";
 import { useId } from "react";
@@ -26,12 +28,15 @@ export type RoutePanelProps = {
   profile: Profile;
   onProfile: (profile: Profile) => void;
   stats?: Stats;
+  /** Via points in route order. distance is in meters from the start. */
+  via: { name: string; distance?: number }[];
+  onRemoveVia: (index: number) => void;
   updating: boolean;
   failed: boolean;
   onRetry: () => void;
 };
 
-/** Start, end, profile and the totals of the route. */
+/** Start, end, profile, the totals and the via points of the route. */
 export function RoutePanel({
   places,
   from,
@@ -42,6 +47,8 @@ export function RoutePanel({
   profile,
   onProfile,
   stats,
+  via,
+  onRemoveVia,
   updating,
   failed,
   onRetry,
@@ -138,6 +145,42 @@ export function RoutePanel({
           title={t("empty.title")}
           text={updating ? t("updating") : t("empty.text")}
         />
+      )}
+
+      {(stats || via.length > 0) && (
+        // Phones can't drag the route, so the empty list has nothing to offer.
+        <section
+          className={cn(
+            "flex flex-col gap-3 p-4",
+            via.length === 0 && "max-md:hidden",
+          )}
+        >
+          <h2 className="text-sm font-bold">{t("via.title")}</h2>
+          {via.length > 0 ? (
+            <ol className="flex flex-col gap-2">
+              {via.map((point, index) => (
+                // Via points have no id. Their order is their identity.
+                <li key={index}>
+                  <ViaRow
+                    n={index + 1}
+                    name={point.name}
+                    detail={
+                      point.distance === undefined
+                        ? undefined
+                        : t("via.at", {
+                            distance: format.distance(point.distance),
+                          })
+                    }
+                    removeLabel={t("via.remove", { n: index + 1 })}
+                    onRemove={() => onRemoveVia(index)}
+                  />
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-sm text-text-muted">{t("via.hint")}</p>
+          )}
+        </section>
       )}
     </>
   );
