@@ -1,7 +1,7 @@
 import type { Places } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
 import placesJson from "../../../public/data/mock/oberfranken/places.json";
-import { defaultValues, newTripSchema, toRequest } from "./form";
+import { defaultValues, fromRequest, newTripSchema, toRequest } from "./form";
 import { placeOptions, searchPlaces } from "./places";
 
 const places = placeOptions(placesJson as Places);
@@ -54,6 +54,11 @@ describe("new trip form", () => {
     });
     expect(request.endStation).toBeUndefined();
     expect(request.startDate).toBeUndefined();
+  });
+
+  it("fills the form from an earlier request", () => {
+    const request = toRequest({ ...defaults, days: 5, profile: "scenic" });
+    expect(toRequest(fromRequest(request, defaults))).toEqual(request);
   });
 
   it("needs an end for one-way trips that is not the start", () => {

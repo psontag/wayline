@@ -9,7 +9,7 @@ import { placeOptions } from "./places";
 export function NewTripPage() {
   const { t } = useTranslation("newTrip");
   const { network } = useServices();
-  const { kind } = useSearch({ from: "/new" });
+  const { kind, request } = useSearch({ from: "/new" });
   const places = useQuery({
     queryKey: ["places"],
     queryFn: () => network.places(),
@@ -27,5 +27,5 @@ export function NewTripPage() {
       </p>
     );
   }
-  return <NewTripForm places={options} kind={kind} />;
+  return <NewTripForm places={options} kind={kind} request={request} />;
 }
