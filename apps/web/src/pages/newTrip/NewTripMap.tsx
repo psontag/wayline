@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { decodeLine, type Place } from "@wayline/domain";
+import type { Place } from "@wayline/domain";
 import {
   IconButton,
   MapControlGroup,
@@ -8,7 +8,7 @@ import {
   useTheme,
   useThemeTokens,
 } from "@wayline/ui";
-import type { FeatureCollection, LineString, Polygon } from "geojson";
+import type { FeatureCollection, Polygon } from "geojson";
 import { Minus, Plus } from "lucide-react";
 import { setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -21,6 +21,7 @@ import MapGL, {
   Source,
   type MapRef,
 } from "react-map-gl/maplibre";
+import { NetworkLayer } from "../../components/NetworkLayer";
 import { useHiddenPlaceLabels } from "../../components/placeLabels";
 import { useServices } from "../../data/ServicesProvider";
 
@@ -33,32 +34,15 @@ const mapStyles = {
 
 type Bounds = [[number, number], [number, number]];
 
-/** Signed routes of the test network and the area it covers. */
-function useNetworkLayer() {
+/** The area the test network covers. */
+function useNetworkArea() {
   const { network } = useServices();
   return useQuery({
-    queryKey: ["newTrip", "networkLayer"],
+    queryKey: ["newTrip", "networkArea"],
     staleTime: Infinity,
-    queryFn: async () => {
-      const [graph, manifest] = await Promise.all([
-        network.network(),
-        network.manifest(),
-      ]);
-      const lines: FeatureCollection<LineString> = {
-        type: "FeatureCollection",
-        features: graph.edges
-          .filter((e) => e.routes.length > 0)
-          .map((e) => ({
-            type: "Feature",
-            properties: {},
-            geometry: {
-              type: "LineString",
-              coordinates: decodeLine(e.geometry),
-            },
-          })),
-      };
-      const [w, s, e, n] = manifest.region.bbox;
-      const area: FeatureCollection<Polygon> = {
+    queryFn: async (): Promise<FeatureCollection<Polygon>> => {
+      const [w, s, e, n] = (await network.manifest()).region.bbox;
+      return {
         type: "FeatureCollection",
         features: [
           {
@@ -79,7 +63,6 @@ function useNetworkLayer() {
           },
         ],
       };
-      return { lines, area };
     },
   });
 }
@@ -112,7 +95,7 @@ export function NewTripMap({
   const { resolvedTheme } = useTheme();
   const tokens = useThemeTokens();
   const mapRef = useRef<MapRef>(null);
-  const layer = useNetworkLayer();
+  const area = useNetworkArea();
   const [labelLayerId, setLabelLayerId] = useState<string>();
   const places = [start, end].filter((p): p is Place => p !== null);
   const hideLabels = useHiddenPlaceLabels(
@@ -147,41 +130,20 @@ export function NewTripMap({
         onLoad={onStyle}
         onStyleData={onStyle}
       >
-        {layer.data && (
-          <>
-            <Source id="network" type="geojson" data={layer.data.lines}>
-              <Layer
-                id="network-line"
-                beforeId={labelLayerId}
-                type="line"
-                layout={{ "line-cap": "round", "line-join": "round" }}
-                paint={{
-                  "line-color": tokens.routeDimmed,
-                  "line-width": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    8,
-                    2.5,
-                    12,
-                    5,
-                  ],
-                }}
-              />
-            </Source>
-            <Source id="area" type="geojson" data={layer.data.area}>
-              <Layer
-                id="area-outline"
-                beforeId={labelLayerId}
-                type="line"
-                paint={{
-                  "line-color": tokens.textMuted,
-                  "line-width": 1.5,
-                  "line-dasharray": [4, 3],
-                }}
-              />
-            </Source>
-          </>
+        <NetworkLayer beforeId={labelLayerId} />
+        {area.data && (
+          <Source id="area" type="geojson" data={area.data}>
+            <Layer
+              id="area-outline"
+              beforeId={labelLayerId}
+              type="line"
+              paint={{
+                "line-color": tokens.textMuted,
+                "line-width": 1.5,
+                "line-dasharray": [4, 3],
+              }}
+            />
+          </Source>
         )}
         {places.map((place) => (
           <Marker
@@ -214,7 +176,7 @@ export function NewTripMap({
       <div className="absolute bottom-3 left-3 z-panel">
         <MapLegend
           items={[
-            { label: t("map.network"), line: "route-dimmed" },
+            { label: t("map.network"), line: "network" },
             { label: t("map.area"), line: "dashed" },
           ]}
         />

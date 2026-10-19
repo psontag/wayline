@@ -10,6 +10,7 @@ import {
   HoverMarker,
   IconButton,
   MapControlGroup,
+  MapLegend,
   StopMarker,
   useTheme,
   useThemeTokens,
@@ -32,6 +33,7 @@ import MapGL, {
   Marker,
   Source,
 } from "react-map-gl/maplibre";
+import { NetworkLayer } from "../../components/NetworkLayer";
 import { useHiddenPlaceLabels } from "../../components/placeLabels";
 
 // MapLibre finds its worker next to its own module. Vite moves both.
@@ -247,6 +249,7 @@ export function TripMap({
             }}
           />
         </Source>
+        <NetworkLayer beforeId="stage-casing" />
 
         {first && (
           <Marker
@@ -319,6 +322,11 @@ export function TripMap({
           </Marker>
         )}
       </MapGL>
+      {controls && (
+        <div className="absolute top-3 left-3 z-panel">
+          <MapLegend items={[{ label: t("map.network"), line: "network" }]} />
+        </div>
+      )}
       {controls && (
         <div className="absolute top-3 right-3 z-panel">
           <MapControlGroup>

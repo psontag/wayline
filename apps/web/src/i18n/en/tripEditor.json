@@ -63,7 +63,8 @@
     "label": "Map of the trip. Day {{day}} is selected.",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "selectStage": "Day {{day}}: {{place}}"
+    "selectStage": "Day {{day}}: {{place}}",
+    "network": "Signed cycling routes"
   },
   "note": {
     "nextStage": "Day {{day}} now starts in {{place}} and is {{distance}}.",

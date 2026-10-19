@@ -3,6 +3,7 @@ import {
   EndpointMarker,
   IconButton,
   MapControlGroup,
+  MapLegend,
   ProposalMarker,
   useTheme,
   useThemeTokens,
@@ -25,6 +26,7 @@ import MapGL, {
   Marker,
   Source,
 } from "react-map-gl/maplibre";
+import { NetworkLayer } from "../../components/NetworkLayer";
 import { useHiddenPlaceLabels } from "../../components/placeLabels";
 import { labelPoints, tripPoints } from "./proposalView";
 
@@ -225,6 +227,7 @@ export function ProposalsMap({
             }}
           />
         </Source>
+        <NetworkLayer beforeId="proposal-casing" />
 
         {ends.map((place) => (
           <Marker
@@ -276,6 +279,9 @@ export function ProposalsMap({
             onClick={() => mapRef.current?.zoomOut()}
           />
         </MapControlGroup>
+      </div>
+      <div className="absolute bottom-3 left-3 z-panel">
+        <MapLegend items={[{ label: t("map.network"), line: "network" }]} />
       </div>
     </div>
   );

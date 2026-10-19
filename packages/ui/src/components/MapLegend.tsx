@@ -2,12 +2,13 @@ import { cn } from "../lib/cn";
 
 export type MapLegendItem = {
   label: string;
-  line: "route" | "route-dimmed" | "dashed";
+  line: "route" | "route-dimmed" | "network" | "dashed";
 };
 
 const lines = {
   route: "h-1 bg-route",
   "route-dimmed": "h-1 bg-route-dimmed",
+  network: "h-1 bg-network",
   dashed: "h-0 border-t-2 border-dashed border-text-muted",
 } as const;
 
