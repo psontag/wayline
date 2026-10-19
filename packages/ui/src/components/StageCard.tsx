@@ -1,5 +1,5 @@
 import * as Toggle from "@radix-ui/react-toggle";
-import { ArrowUp, Lock, LockOpen, Sun } from "lucide-react";
+import { ArrowUp, Clock, Lock, LockOpen, Sun } from "lucide-react";
 import type { ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useFormat } from "../format";
@@ -16,7 +16,8 @@ export type Wind = {
 
 export type StageCardProps = {
   day: number;
-  date: Date;
+  /** Missing when the trip has no start date. */
+  date?: Date;
   from: string;
   to: string;
   /** Meters */
@@ -26,6 +27,8 @@ export type StageCardProps = {
   surface: SurfaceShares;
   temperature?: { min: number; max: number };
   wind?: Wind;
+  /** Expected start and arrival. */
+  times?: { start: Date; end: Date };
   locked: boolean;
   onLockedChange: (locked: boolean) => void;
   selected?: boolean;
@@ -71,7 +74,9 @@ export function StageCard(props: StageCardProps) {
       </span>
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="text-xs text-text-muted">
-          {t("stage.day", { day, date: format.date(date) })}
+          {date
+            ? t("stage.day", { day, date: format.date(date) })
+            : t("stage.dayOnly", { day })}
         </span>
         <span className="truncate text-md font-bold">
           {t("stage.route", { from, to })}
@@ -154,6 +159,7 @@ function SelectedDetails({
   surface,
   temperature,
   wind,
+  times,
   to,
   locked,
   onLockedChange,
@@ -167,8 +173,17 @@ function SelectedDetails({
   return (
     <div className="flex flex-col gap-3">
       <SurfaceBar shares={surface} />
-      {(temperature || wind) && (
+      {(temperature || wind || times) && (
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm tabular-nums">
+          {times && (
+            <span className="flex items-center gap-1.5">
+              <Clock className="size-4" aria-hidden />
+              {t("stage.times", {
+                start: format.time(times.start),
+                end: format.time(times.end),
+              })}
+            </span>
+          )}
           {temperature && (
             <span className="flex items-center gap-1.5">
               <Sun className="size-4" aria-hidden />
