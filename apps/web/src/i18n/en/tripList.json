@@ -1,4 +1,32 @@
 {
   "title": "Trips",
-  "placeholder": "This screen is not built yet."
+  "newTrip": "New trip",
+  "yourTrips": "Your trips",
+  "loading": "Loading trips",
+  "loadFailed": "Could not load your trips.",
+  "empty": {
+    "title": "No trips yet",
+    "text": "Pick a start and a few numbers. Wayline suggests routes, stops and hotels.",
+    "action": "Plan your first trip"
+  },
+  "phoneHint": "Plan new trips on a larger screen.",
+  "kind": {
+    "one-way": "One-way",
+    "multi-day-loop": "Multi-day loop",
+    "route": "Route A to B",
+    "day-loop": "Day loop"
+  },
+  "noDate": "No date yet",
+  "dateRange": "{{start}} – {{end}}",
+  "stats": "{{distance}} · {{ascent}}",
+  "statsWithStages": "{{distance}} · {{ascent}} · {{count}} stages",
+  "actions": "Trip actions",
+  "duplicate": "Duplicate",
+  "delete": "Delete",
+  "copyName": "{{name}} (copy)",
+  "deleteDialog": {
+    "title": "Delete trip?",
+    "text": "“{{name}}” will be deleted. This can't be undone.",
+    "confirm": "Delete"
+  }
 }
