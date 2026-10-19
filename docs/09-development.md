@@ -7,6 +7,7 @@
 | pnpm | Package manager, monorepo workspaces |
 | Vite | Web app dev server and build |
 | Wrangler | Run and deploy the Worker, local D1 |
+| Docker | Local BRouter |
 | Vitest | Unit and integration tests |
 | ESLint, Prettier | Lint and format |
 | GitHub Actions | CI, deploy, data pipeline |
@@ -31,6 +32,25 @@ Local development and tests never call external APIs by default. There are two k
 | `FakeRouting`, `FakeWeather` | `packages/providers` | Deterministic data for any input. Planner, API and UI tests, local dev. |
 
 `PROVIDERS=live` switches to the real APIs.
+
+## Local BRouter
+
+A local BRouter covers Baden-Württemberg, Hessen and Bayern. It needs Docker.
+
+```sh
+pnpm brouter    # BRouter on localhost:17777
+```
+
+- First run downloads four segment files (about 1.5 GB) into `.cache/brouter/segments4/`. Later runs skip them.
+- BRouter runs with `docker compose` from `infra/brouter/`. The image pins BRouter 1.7.10.
+- Our presets are BRouter profiles in `infra/brouter/profiles/`: `touring`, `fast`, `scenic`, `quiet`. Each is `trekking` with a few switches changed. A restart picks up changes.
+- To update the segments, delete `.cache/brouter/segments4/` and run again.
+
+Check it:
+
+```sh
+curl "http://localhost:17777/brouter?lonlats=10.8873,49.8917|9.9356,49.7913&profile=touring&alternativeidx=0&format=geojson"
+```
 
 ## Tests
 
