@@ -28,7 +28,7 @@ export function pathToLeg(
   const surfaceKm: Surface = { paved: 0, gravel: 0, unpaved: 0 };
 
   for (const { edge, forward } of steps) {
-    const e = graph.edges[edge]!;
+    const e = graph.edge(edge);
     const line = graph.edgeLine(edge, forward);
     // Consecutive edges share their end point.
     const skip = coords.length ? 1 : 0;
@@ -48,11 +48,11 @@ export function pathToLeg(
   const access = distanceKm(from, first) + distanceKm(last, to);
   if (distanceKm(from, first) > 0.001) {
     coords.unshift(from);
-    elevation.unshift(elevation[0]!);
+    elevation.unshift(elevation[0] ?? 0);
   }
   if (distanceKm(last, to) > 0.001) {
     coords.push(to);
-    elevation.push(elevation.at(-1)!);
+    elevation.push(elevation.at(-1) ?? 0);
   }
   km += access;
   surfaceKm.paved += access;

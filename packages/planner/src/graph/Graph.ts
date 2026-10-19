@@ -36,8 +36,8 @@ export class Graph {
     this.edges = network.edges;
     this.adjacency = network.nodes.map(() => []);
     for (const e of network.edges) {
-      this.adjacency[e.from]!.push(e.id);
-      if (e.to !== e.from) this.adjacency[e.to]!.push(e.id);
+      this.edgesAt(e.from).push(e.id);
+      if (e.to !== e.from) this.edgesAt(e.to).push(e.id);
     }
     this.index = new Flatbush(Math.max(1, network.nodes.length));
     for (const n of network.nodes) {
@@ -49,14 +49,31 @@ export class Graph {
     this.index.finish();
   }
 
+  node(id: number): NetworkNode {
+    const n = this.nodes[id];
+    if (!n) throw new Error(`No node ${id}`);
+    return n;
+  }
+
+  edge(id: number): NetworkEdge {
+    const e = this.edges[id];
+    if (!e) throw new Error(`No edge ${id}`);
+    return e;
+  }
+
+  /** Edge ids at a node. */
+  edgesAt(node: number): number[] {
+    return this.adjacency[node] ?? [];
+  }
+
   coord(node: number): LonLat {
-    const n = this.nodes[node]!;
+    const n = this.node(node);
     return [n.lon, n.lat];
   }
 
   /** The node at the other end of an edge. */
   other(edge: number, node: number): number {
-    const e = this.edges[edge]!;
+    const e = this.edge(edge);
     return e.from === node ? e.to : e.from;
   }
 
@@ -66,7 +83,10 @@ export class Graph {
    */
   nearestNode(
     coord: LonLat,
-    { maxKm = 5, filter }: { maxKm?: number; filter?: (n: NetworkNode) => boolean } = {},
+    {
+      maxKm = 5,
+      filter,
+    }: { maxKm?: number; filter?: (n: NetworkNode) => boolean } = {},
   ): number | undefined {
     if (!this.nodes.length) return undefined;
     const [id] = this.index.neighbors(
@@ -74,7 +94,7 @@ export class Graph {
       coord[1] * KM_PER_LAT,
       1,
       maxKm * 1.1,
-      filter && ((i) => filter(this.nodes[i]!)),
+      filter && ((i) => filter(this.node(i))),
     );
     if (id === undefined) return undefined;
     return distanceKm(coord, this.coord(id)) <= maxKm ? id : undefined;
@@ -84,7 +104,12 @@ export class Graph {
   nodesWithin(coord: LonLat, radiusKm: number): number[] {
     if (!this.nodes.length) return [];
     return this.index
-      .neighbors(coord[0] * KM_PER_LON, coord[1] * KM_PER_LAT, Infinity, radiusKm * 1.1)
+      .neighbors(
+        coord[0] * KM_PER_LON,
+        coord[1] * KM_PER_LAT,
+        Infinity,
+        radiusKm * 1.1,
+      )
       .filter((i) => distanceKm(coord, this.coord(i)) <= radiusKm);
   }
 
@@ -92,7 +117,7 @@ export class Graph {
   edgeLine(edge: number, forward = true): EdgeLine {
     let line = this.lines.get(edge);
     if (!line) {
-      const e = this.edges[edge]!;
+      const e = this.edge(edge);
       line = { coords: decodeLine(e.geometry), elevation: e.elevation };
       this.lines.set(edge, line);
     }

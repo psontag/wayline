@@ -18,10 +18,10 @@ export class FakeRouting implements RoutingProvider {
     const graph = await this.graph();
     const meta = { provider: "fake", profileHash: options.profile };
     const legs: Leg[] = [];
-    for (let i = 1; i < points.length; i++) {
+    for (const [i, to] of points.entries()) {
+      const from = points[i - 1];
+      if (!from) continue;
       if (options.signal?.aborted) throw new Error("Aborted");
-      const from = points[i - 1]!;
-      const to = points[i]!;
       const a = graph.nearestNode(from, { maxKm: SNAP_KM });
       const b = graph.nearestNode(to, { maxKm: SNAP_KM });
       const steps =
@@ -43,8 +43,8 @@ export class FakeRouting implements RoutingProvider {
 
 function elevationNear(graph: Graph, node: number | undefined): number {
   if (node === undefined) return 0;
-  const edge = graph.adjacency[node]?.[0];
+  const edge = graph.edgesAt(node)[0];
   if (edge === undefined) return 0;
-  const line = graph.edgeLine(edge, graph.edges[edge]!.from === node);
+  const line = graph.edgeLine(edge, graph.edge(edge).from === node);
   return line.elevation[0] ?? 0;
 }

@@ -48,12 +48,12 @@ export function routePoints(legs: Leg[]): RoutePoint[] {
 /** Position on the route at the given km. Clamped to the ends. */
 export function pointAtKm(points: RoutePoint[], km: number): RoutePoint {
   const first = points[0];
-  if (!first) throw new Error("Empty route");
+  const last = points.at(-1);
+  if (!first || !last) throw new Error("Empty route");
   if (km <= first.km) return first;
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1]!;
-    const b = points[i]!;
-    if (b.km >= km) {
+  for (const [i, b] of points.entries()) {
+    const a = points[i - 1];
+    if (a && b.km >= km) {
       const f = b.km === a.km ? 0 : (km - a.km) / (b.km - a.km);
       return {
         coord: [
@@ -65,5 +65,5 @@ export function pointAtKm(points: RoutePoint[], km: number): RoutePoint {
       };
     }
   }
-  return points.at(-1)!;
+  return last;
 }

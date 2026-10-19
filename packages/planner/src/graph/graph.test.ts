@@ -24,7 +24,12 @@ const nodes = [
   hotelCount: 0,
 }));
 
-function edge(id: number, from: number, to: number, over: Partial<NetworkEdge> = {}): NetworkEdge {
+function edge(
+  id: number,
+  from: number,
+  to: number,
+  over: Partial<NetworkEdge> = {},
+): NetworkEdge {
   const a = nodes[from]!;
   const b = nodes[to]!;
   return {
@@ -55,7 +60,11 @@ const network: RouteNetwork = {
     edge(0, 0, 1),
     edge(1, 1, 2),
     edge(2, 0, 3, { lengthKm: 8, score: 0.4 }),
-    edge(3, 2, 3, { lengthKm: 8, score: 0.4, surface: { paved: 0, gravel: 1, unpaved: 0 } }),
+    edge(3, 2, 3, {
+      lengthKm: 8,
+      score: 0.4,
+      surface: { paved: 0, gravel: 1, unpaved: 0 },
+    }),
   ],
 };
 const graph = new Graph(network);
@@ -65,7 +74,10 @@ describe("Graph", () => {
     expect(graph.nearestNode([11.09, 50.09])).toBe(2);
     expect(graph.nearestNode([12, 51])).toBeUndefined();
     expect(
-      graph.nearestNode([11.09, 50.09], { maxKm: 10, filter: (n) => n.id !== 2 }),
+      graph.nearestNode([11.09, 50.09], {
+        maxKm: 10,
+        filter: (n) => n.id !== 2,
+      }),
     ).toBe(1);
   });
 

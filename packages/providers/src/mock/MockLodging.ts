@@ -1,6 +1,10 @@
 import { distanceKm, type GeoHotel, type LonLat } from "@wayline/domain";
 import Flatbush from "flatbush";
-import type { HotelOption, LodgingProvider, RouteNetworkSource } from "../types";
+import type {
+  HotelOption,
+  LodgingProvider,
+  RouteNetworkSource,
+} from "../types";
 
 // Index coordinates in rough km, so nearest-neighbor search works on degrees.
 const KM_PER_LAT = 110.57;
@@ -25,8 +29,8 @@ export class MockLodging implements LodgingProvider {
       radiusKm * 1.1,
     );
     return ids
-      .map((i) => {
-        const h = hotels[i]!;
+      .flatMap((i) => hotels[i] ?? [])
+      .map((h) => {
         const hotelCoord: LonLat = [h.lon, h.lat];
         return {
           osmId: h.id,

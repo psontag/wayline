@@ -8,9 +8,14 @@ export type WindKind = "head" | "tail" | "cross";
  * Wind relative to the direction of travel. Both angles in degrees.
  * windFrom is where the wind comes from, as in weather data.
  */
-export function relativeWind(travelBearing: number, windFrom: number): WindKind {
+export function relativeWind(
+  travelBearing: number,
+  windFrom: number,
+): WindKind {
   // Angle between the wind source and the way ahead, 0 to 180.
-  const diff = Math.abs(((((windFrom - travelBearing) % 360) + 540) % 360) - 180);
+  const diff = Math.abs(
+    ((((windFrom - travelBearing) % 360) + 540) % 360) - 180,
+  );
   if (diff <= 45) return "head";
   if (diff >= 135) return "tail";
   return "cross";

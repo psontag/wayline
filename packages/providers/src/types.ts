@@ -30,7 +30,10 @@ export type Forecast = {
 };
 
 export interface WeatherProvider {
-  forecast(coord: LonLat, options?: { signal?: AbortSignalLike }): Promise<Forecast>;
+  forecast(
+    coord: LonLat,
+    options?: { signal?: AbortSignalLike },
+  ): Promise<Forecast>;
 }
 
 export type HotelOption = Hotel & {

@@ -40,17 +40,18 @@ export function dijkstra(
   queue.push(source, 0);
 
   while (queue.length) {
-    const c = queue.peekValue()!;
-    const node = queue.pop()!;
-    if (c > best[node]!) continue;
+    const c = queue.peekValue() ?? Infinity;
+    const node = queue.pop();
+    if (node === undefined) break;
+    if (c > (best[node] ?? Infinity)) continue;
     if (node === target || c > maxCost) break;
-    for (const id of graph.adjacency[node]!) {
-      const edge = graph.edges[id]!;
+    for (const id of graph.edgesAt(node)) {
+      const edge = graph.edge(id);
       const next = graph.other(id, node);
       const nc = c + cost(edge);
-      if (nc < best[next]!) {
+      if (nc < (best[next] ?? Infinity)) {
         best[next] = nc;
-        km[next] = km[node]! + edge.lengthKm;
+        km[next] = (km[node] ?? 0) + edge.lengthKm;
         prevEdge[next] = id;
         queue.push(next, nc);
       }
@@ -65,13 +66,16 @@ export function pathTo(
   result: DijkstraResult,
   target: number,
 ): PathStep[] | null {
-  if (result.cost[target] === Infinity) return null;
+  if ((result.cost[target] ?? Infinity) === Infinity) return null;
   const steps: PathStep[] = [];
   let node = target;
-  while (result.prevEdge[node]! >= 0) {
-    const id = result.prevEdge[node]!;
+  for (
+    let id = result.prevEdge[node] ?? -1;
+    id >= 0;
+    id = result.prevEdge[node] ?? -1
+  ) {
     const prev = graph.other(id, node);
-    steps.push({ edge: id, forward: graph.edges[id]!.from === prev });
+    steps.push({ edge: id, forward: graph.edge(id).from === prev });
     node = prev;
   }
   return steps.reverse();

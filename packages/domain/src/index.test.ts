@@ -221,7 +221,10 @@ describe("GenerateRequest", () => {
 
   it("needs a region or a start station", () => {
     expect(GenerateRequest.safeParse(base).success).toBe(false);
-    const ok = GenerateRequest.parse({ ...base, region: [10.5, 49.6, 12, 50.5] });
+    const ok = GenerateRequest.parse({
+      ...base,
+      region: [10.5, 49.6, 12, 50.5],
+    });
     expect(ok.startTime).toBe("09:00");
   });
 });
