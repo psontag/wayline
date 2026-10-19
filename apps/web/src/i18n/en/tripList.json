@@ -1,6 +1,7 @@
 {
   "title": "Trips",
   "newTrip": "New trip",
+  "routeAToB": "Route A to B",
   "yourTrips": "Your trips",
   "loading": "Loading trips",
   "loadFailed": "Could not load your trips.",
