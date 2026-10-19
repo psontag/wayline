@@ -32,6 +32,7 @@ import MapGL, {
   Marker,
   Source,
 } from "react-map-gl/maplibre";
+import { useHiddenPlaceLabels } from "../../components/placeLabels";
 
 // MapLibre finds its worker next to its own module. Vite moves both.
 setWorkerUrl(workerUrl);
@@ -130,10 +131,19 @@ export function TripMap({
     }
   }, [selected, lines]);
 
+  const first = trip.stages[0];
+  const last = trip.stages.at(-1);
+  const hideLabels = useHiddenPlaceLabels(mapRef, [
+    ...(first ? [first.start.name] : []),
+    ...trip.stages.map((stage) => stage.end.name),
+    ...alternatives.map(({ place }) => place.name),
+  ]);
+
   // Our layers go below the first label layer, so place names stay readable.
-  const findLabelLayer = () => {
+  const onStyle = () => {
     const layers = mapRef.current?.getStyle()?.layers ?? [];
     setLabelLayerId(layers.find((layer) => layer.type === "symbol")?.id);
+    hideLabels();
   };
 
   const onClick = (event: MapLayerMouseEvent) => {
@@ -141,8 +151,6 @@ export function TripMap({
     if (typeof index === "number") onSelect(index);
   };
 
-  const first = trip.stages[0];
-  const last = trip.stages.at(-1);
   const isSelected: FilterSpecification = ["==", ["get", "selected"], true];
   const notSelected: FilterSpecification = ["==", ["get", "selected"], false];
 
@@ -160,8 +168,8 @@ export function TripMap({
         }}
         mapStyle={mapStyles[resolvedTheme]}
         style={{ position: "absolute", inset: "0" }}
-        onLoad={findLabelLayer}
-        onStyleData={findLabelLayer}
+        onLoad={onStyle}
+        onStyleData={onStyle}
         interactiveLayerIds={["stage-hit"]}
         onClick={onClick}
         onMouseEnter={() => setCursor("pointer")}
