@@ -53,6 +53,14 @@ No technical terms in the summary. Technical details go below, under **For agent
 
 Screenshots go into the PR. Mockups referenced from issues live in `design/`.
 
+## Screenshots
+
+`gh` can't upload images. Screenshots live on the `pr-assets` branch instead: an orphan branch with only images, one folder per PR (`pr-<n>/`).
+
+- Commit them on top of `origin/pr-assets` and push. If the push is rejected, fetch and rebase, then push again. Never force push.
+- Link them in the PR body: `![desktop light](https://github.com/psontag/wayline/blob/pr-assets/pr-<n>/desktop-light.png?raw=true)`.
+- Show light and dark side by side in a table.
+
 ## Commands
 
 ```sh
