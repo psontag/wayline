@@ -25,6 +25,18 @@ def hotel_tags(t):
     }
 
 
+def is_train_station(t):
+    """Stations of the main rail network. Tram and light rail stops are often
+    tagged train=yes, so we ask for a DB station code instead."""
+    if t.get("railway") not in ("station", "halt") or "name" not in t:
+        return False
+    if t.get("station") in ("subway", "light_rail", "miniature", "funicular", "tram"):
+        return False
+    if t.get("usage") == "tourism" or t.get("public_transport") == "stop_position":
+        return False
+    return "railway:ref" in t or "railway:ref:DBAG" in t or t.get("uic_ref", "").startswith("80")
+
+
 def population(t):
     try:
         return int(t.get("population", "").replace(".", "").replace(" ", ""))
@@ -112,9 +124,8 @@ class Nodes(osmium.SimpleHandler):
             if pop:
                 place["population"] = pop
             self.places.append(place)
-        if t.get("railway") in ("station", "halt") and t.get("station") not in ("subway", "light_rail", "miniature"):
-            if t.get("usage") != "tourism" and "name" in t:
-                self.stations.append({"id": n.id, "name": t["name"], "loc": loc})
+        if is_train_station(t):
+            self.stations.append({"id": n.id, "name": t["name"], "loc": loc})
         if t.get("tourism") in HOTELS:
             self.hotels.append({"id": f"n{n.id}", **hotel_tags(t), "loc": loc})
 
