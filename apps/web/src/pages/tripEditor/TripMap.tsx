@@ -323,7 +323,7 @@ export function TripMap({
         )}
       </MapGL>
       {controls && (
-        <div className="absolute top-3 left-3 z-panel">
+        <div className="absolute bottom-3 left-3 z-panel">
           <MapLegend items={[{ label: t("map.network"), line: "network" }]} />
         </div>
       )}

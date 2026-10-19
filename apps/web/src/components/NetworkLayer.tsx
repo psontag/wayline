@@ -47,7 +47,7 @@ export function NetworkLayer({ beforeId }: { beforeId?: string }) {
         layout={{ "line-cap": "round", "line-join": "round" }}
         paint={{
           "line-color": tokens.network,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 8, 2, 12, 4],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 8, 1.25, 12, 3],
         }}
       />
     </Source>

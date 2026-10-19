@@ -40,9 +40,12 @@ export function AppShell() {
             <Button asChild variant="ghost" size="sm">
               <Link to="/map">{t("nav.map")}</Link>
             </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/dev/components">{t("nav.components")}</Link>
-            </Button>
+            {/* Dev link. Phones need the room for the settings. */}
+            <div className="hidden sm:flex">
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/dev/components">{t("nav.components")}</Link>
+              </Button>
+            </div>
           </nav>
           <TopBarSpacer />
           <div className="flex items-center gap-1">

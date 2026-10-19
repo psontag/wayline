@@ -280,7 +280,7 @@ export function ProposalsMap({
           />
         </MapControlGroup>
       </div>
-      <div className="absolute bottom-3 left-3 z-panel">
+      <div className="absolute bottom-3 left-3 z-panel hidden sm:block">
         <MapLegend items={[{ label: t("map.network"), line: "network" }]} />
       </div>
     </div>
