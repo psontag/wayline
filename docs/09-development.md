@@ -41,7 +41,7 @@ A local BRouter covers Baden-Württemberg, Hessen and Bayern. It needs Docker.
 pnpm brouter    # BRouter on localhost:17777
 ```
 
-- First run downloads four segment files (about 1.5 GB) into `.cache/brouter/segments4/`. Later runs skip them.
+- First run downloads four segment files (about 760 MB) into `.cache/brouter/segments4/`. Later runs skip them.
 - BRouter runs with `docker compose` from `infra/brouter/`. The image pins BRouter 1.7.10.
 - Our presets are BRouter profiles in `infra/brouter/profiles/`: `touring`, `fast`, `scenic`, `quiet`. Each is `trekking` with a few switches changed. A restart picks up changes.
 - To update the segments, delete `.cache/brouter/segments4/` and run again.
