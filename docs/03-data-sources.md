@@ -103,6 +103,21 @@ Version 1:
 - Start and end points snap to stations.
 - A link opens bahn.de with stations and date filled in.
 
+bahn.de has no public docs for its link format. The link uses the fragment that bahn.de writes into its own search URL:
+
+```
+https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=Bamberg&zo=Coburg&hd=2027-06-12T08:00:00&hza=D
+```
+
+| Parameter | Meaning |
+|---|---|
+| `so`, `zo` | Start and destination as station names |
+| `hd` | Date and time, local |
+| `hza` | `D` departure, `A` arrival |
+| `sts` | Set by bahn.de itself. Meaning unknown, kept as is. |
+
+Without station ids (`soid`, `zoid`), bahn.de matches the names itself. Check by hand when the format breaks.
+
 Later: live connections with a bike filter. `db-vendo-client` / `v6.db.transport.rest` are community projects. Their state and bike support need checking.
 
 ## Map
