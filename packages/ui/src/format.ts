@@ -55,6 +55,8 @@ export function createFormat(language: string) {
     date: (d: Date) => date.format(d),
     /** 14:30 */
     time: (d: Date) => time.format(d),
+    /** Sat 12 Jun – Tue 15 Jun */
+    dateRange: (from: Date, to: Date) => date.formatRange(from, to),
   };
 }
 
