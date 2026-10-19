@@ -1,0 +1,12 @@
+# Local BRouter. Start with `pnpm brouter`, which downloads the segments first.
+name: wayline-brouter
+
+services:
+  brouter:
+    build: .
+    image: wayline-brouter:1.7.10
+    ports:
+      - "127.0.0.1:17777:17777"
+    volumes:
+      - ../../.cache/brouter/segments4:/brouter/segments4:ro
+      - ./profiles:/wayline/profiles:ro

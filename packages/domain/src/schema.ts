@@ -99,6 +99,22 @@ export const Leg = z.object({
 });
 export type Leg = z.infer<typeof Leg>;
 
+/** Provider answer as the Worker returns and caches it. The browser parses raw. */
+export const ProviderEnvelope = z.object({
+  provider: z.string(),
+  profileHash: z.string(),
+  raw: z.unknown(),
+});
+export type ProviderEnvelope = z.infer<typeof ProviderEnvelope>;
+
+/** Body of POST /api/route: one leg. */
+export const RouteRequest = z.object({
+  from: LonLat,
+  to: LonLat,
+  profile: Profile,
+});
+export type RouteRequest = z.infer<typeof RouteRequest>;
+
 export const Stage = z.object({
   id: z.string(),
   start: Place,

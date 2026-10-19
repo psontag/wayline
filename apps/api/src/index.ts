@@ -1,10 +1,9 @@
-import { SCHEMA_VERSION } from "@wayline/domain";
-import { Hono } from "hono";
+import app from "./app";
+import { deleteExpiredLegs } from "./legs";
 
-const app = new Hono();
-
-app.get("/api/health", (c) =>
-  c.json({ status: "ok", schemaVersion: SCHEMA_VERSION }),
-);
-
-export default app;
+export default {
+  fetch: app.fetch,
+  async scheduled(_controller, env, ctx) {
+    ctx.waitUntil(deleteExpiredLegs(env.DB));
+  },
+} satisfies ExportedHandler<Env>;

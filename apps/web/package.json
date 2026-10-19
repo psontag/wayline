@@ -18,6 +18,7 @@
     "@wayline/providers": "workspace:*",
     "@wayline/ui": "workspace:*",
     "comlink": "4.4.2",
+    "hono": "4.13.12",
     "i18next": "26.4.2",
     "idb-keyval": "6.3.0",
     "lucide-react": "1.51.0",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",
+    "@wayline/api": "workspace:*",
     "@types/geojson": "7946.0.16",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
