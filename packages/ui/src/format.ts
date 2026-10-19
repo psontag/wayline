@@ -51,8 +51,12 @@ export function createFormat(language: string) {
     speed: (kmh: number) => speed.format(kmh),
     /** 86 %. Input as share from 0 to 1. */
     percent: (share: number) => percent.format(share),
-    /** Sat 12 Jun */
-    date: (d: Date) => date.format(d),
+    /** Sat 12 Jun. Some engines put a comma after the weekday; drop it. */
+    date: (d: Date) =>
+      date
+        .formatToParts(d)
+        .map((p) => (p.type === "literal" ? p.value.replace(",", "") : p.value))
+        .join(""),
     /** 14:30 */
     time: (d: Date) => time.format(d),
   };

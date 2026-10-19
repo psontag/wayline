@@ -120,7 +120,8 @@ export function acceptable(graph: Graph, steps: PathStep[], totalKm: number) {
 
 /**
  * One-way: start → via town → end station. The via town stretches the
- * trip to the target length. Best candidates first.
+ * trip to the target length. Best candidates first. Ends closer than
+ * minKm in a straight line are skipped.
  */
 export function oneWayCandidates(
   graph: Graph,
@@ -129,10 +130,10 @@ export function oneWayCandidates(
   ends: number[],
   vias: number[],
   totalKm: number,
+  minKm = Math.min(40, totalKm / 4),
 ): Candidate[] {
   const fromStart = costs.from(graph, start);
   const startCoord = graph.coord(start);
-  const minKm = Math.min(40, totalKm / 4);
   const out: Candidate[] = [];
   for (const end of ends) {
     const straight = distanceKm(startCoord, graph.coord(end));
