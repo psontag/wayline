@@ -29,14 +29,26 @@ export function Chip({ selected = false, className, ...props }: ChipProps) {
 
 export type BadgeTone = "neutral" | "accent";
 
-export type BadgeProps = HTMLAttributes<HTMLSpanElement> & { tone?: BadgeTone };
+export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
+  tone?: BadgeTone;
+  /** md fits a top bar, e.g. the inputs of a search. */
+  size?: "sm" | "md";
+};
 
 /** Small static label, e.g. the trip kind. */
-export function Badge({ tone = "neutral", className, ...props }: BadgeProps) {
+export function Badge({
+  tone = "neutral",
+  size = "sm",
+  className,
+  ...props
+}: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-text",
+        "inline-flex items-center rounded-full whitespace-nowrap text-text",
+        size === "sm"
+          ? "px-2 py-0.5 text-2xs font-bold"
+          : "px-2.5 py-1 text-xs font-semibold",
         tone === "neutral" ? "bg-hover" : "bg-selected",
         className,
       )}

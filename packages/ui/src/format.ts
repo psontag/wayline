@@ -38,6 +38,7 @@ export function createFormat(language: string) {
     minute: "2-digit",
     hourCycle: "h23",
   });
+  const list = new Intl.ListFormat(locale, { type: "conjunction" });
 
   return {
     /** 78 km, or 850 m below 1 km. Zero is 0 km. Input in meters. */
@@ -59,6 +60,8 @@ export function createFormat(language: string) {
         .join(""),
     /** 14:30 */
     time: (d: Date) => time.format(d),
+    /** Kronach, Kulmbach and Coburg */
+    list: (items: string[]) => list.format(items),
   };
 }
 
