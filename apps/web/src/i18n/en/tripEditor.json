@@ -1,4 +1,73 @@
 {
   "title": "Trip",
-  "placeholder": "This screen is not built yet."
+  "loading": "Loading trip",
+  "notFound": "This trip does not exist.",
+  "backToList": "Back to trips",
+  "header": {
+    "subtitle": "{{kind}} · {{from}} → {{to}}",
+    "startDate": "Start date",
+    "startDateValue": "{{date}} · {{time}}",
+    "setStartDate": "Set start date",
+    "undo": "Undo",
+    "redo": "Redo",
+    "share": "Share",
+    "exportGpx": "Export GPX",
+    "menu": "Trip menu",
+    "rename": "Rename",
+    "renameLabel": "Trip name",
+    "duplicate": "Duplicate",
+    "copyName": "{{name}} (copy)",
+    "settings": "Settings",
+    "delete": "Delete",
+    "deleteConfirm": "Delete “{{name}}”?"
+  },
+  "kind": {
+    "one-way": "One-way",
+    "multi-day-loop": "Multi-day loop",
+    "route": "Route A to B",
+    "day-loop": "Day loop"
+  },
+  "summary": {
+    "stages": "Stages",
+    "stageCount_one": "{{count}} day",
+    "stageCount_other": "{{count}} days",
+    "distance": "Distance",
+    "ascent": "Ascent",
+    "paved": "Paved",
+    "trainTo": "Train to {{station}} on bahn.de",
+    "trainFrom": "Train from {{station}} on bahn.de"
+  },
+  "stage": {
+    "alternative": "{{name}} · {{distance}}",
+    "bookHotels": "Hotels in {{place}} on Booking.com",
+    "rating": "Rating",
+    "ratingAny": "Any",
+    "noHotel": "No hotel picked",
+    "noHotelsNear": "No hotels found near {{place}}",
+    "change": "Change",
+    "done": "Done",
+    "choose": "Choose"
+  },
+  "profile": {
+    "title": "Day {{day}} · {{from}} → {{to}}",
+    "totals": "{{distance}} · {{ascent}}",
+    "totalsWithTimes": "{{distance}} · {{ascent}} · {{start}}–{{end}}",
+    "at": "{{distance}} · {{elevation}}",
+    "atWithTime": "{{distance}} · {{elevation}} · {{time}}",
+    "label": "Elevation of day {{day}}. Highest point {{elevation}} at {{distance}}.",
+    "noStartDate": "Set a start date to see the weather.",
+    "forecastFrom": "Forecast from {{date}}",
+    "loadingWeather": "Loading weather"
+  },
+  "map": {
+    "label": "Map of the trip. Day {{day}} is selected.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "selectStage": "Day {{day}}: {{place}}"
+  },
+  "note": {
+    "nextStage": "Day {{day}} now starts in {{place}} and is {{distance}}.",
+    "lastStage": "Day {{day}} now ends in {{place}}.",
+    "undo": "Undo"
+  }
 }

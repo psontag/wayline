@@ -5,6 +5,7 @@ import {
   ConfirmDialog,
   IconButton,
   Menu,
+  MenuItem,
   TripCard,
   useFormat,
 } from "@wayline/ui";
@@ -58,24 +59,26 @@ export function TripListItem({ trip }: { trip: TripSummary }) {
                 icon={<Ellipsis aria-hidden />}
               />
             }
-            items={[
-              {
-                label: t("duplicate"),
-                icon: <Copy aria-hidden />,
-                onSelect: () =>
-                  duplicateTrip.mutate({
-                    id: trip.id,
-                    name: t("copyName", { name: trip.name }),
-                  }),
-              },
-              {
-                label: t("delete"),
-                icon: <Trash2 aria-hidden />,
-                tone: "danger",
-                onSelect: () => setConfirmDelete(true),
-              },
-            ]}
-          />
+          >
+            <MenuItem
+              icon={<Copy aria-hidden />}
+              onSelect={() =>
+                duplicateTrip.mutate({
+                  id: trip.id,
+                  name: t("copyName", { name: trip.name }),
+                })
+              }
+            >
+              {t("duplicate")}
+            </MenuItem>
+            <MenuItem
+              icon={<Trash2 aria-hidden />}
+              tone="danger"
+              onSelect={() => setConfirmDelete(true)}
+            >
+              {t("delete")}
+            </MenuItem>
+          </Menu>
         }
       />
       <ConfirmDialog

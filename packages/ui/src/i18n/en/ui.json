@@ -23,6 +23,8 @@
     "stop": "Stop: <strong>{{name}}</strong>",
     "locked": "Locked",
     "lock": "Lock",
+    "dayOnly": "Day {{day}}",
+    "times": "{{start}}–{{end}}",
     "temperatureRange": "{{min}}–{{max}}",
     "windWithSpeed": "{{wind}} · {{speed}}",
     "wind": {
@@ -48,5 +50,29 @@
   },
   "dialog": {
     "cancel": "Cancel"
+  },
+  "weather": {
+    "at": "{{distance}} · {{time}}",
+    "condition": {
+      "sun": "Dry",
+      "cloud": "Cloudy",
+      "rain": "Rain"
+    },
+    "wind": {
+      "head": "Head",
+      "tail": "Tail",
+      "cross": "Cross"
+    }
+  },
+  "hotel": {
+    "stars_one": "{{count}} star",
+    "stars_other": "{{count}} stars",
+    "fromRoute": "{{distance}} from route",
+    "website": "Website"
+  },
+  "save": {
+    "saved": "Saved",
+    "saving": "Saving",
+    "error": "Not saved"
   }
 }

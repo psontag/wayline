@@ -10,7 +10,8 @@
     "stages": "Stage cards",
     "toast": "Toast",
     "forms": "Form fields",
-    "trips": "Trip cards, menus and dialogs"
+    "trips": "Trip cards, menus and dialogs",
+    "tripEditor": "Trip editor"
   },
   "demo": {
     "planTrip": "Plan trip",
@@ -64,6 +65,11 @@
     "emptyTitle": "No trips yet",
     "emptyText": "Pick a start and a few numbers. Wayline suggests routes, stops and hotels.",
     "deleteTitle": "Delete trip?",
-    "deleteText": "“Franconia, four days” will be deleted. This can't be undone."
+    "deleteText": "“Franconia, four days” will be deleted. This can't be undone.",
+    "elevation": "Elevation of a sample stage",
+    "change": "Change",
+    "train": "Train to Bamberg on bahn.de",
+    "menu": "Trip menu",
+    "rename": "Rename"
   }
 }

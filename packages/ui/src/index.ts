@@ -65,7 +65,6 @@ export {
 } from "./components/ConfirmDialog";
 export { DateField, type DateFieldProps } from "./components/DateField";
 export { EmptyState, type EmptyStateProps } from "./components/EmptyState";
-export { Menu, type MenuItem, type MenuProps } from "./components/Menu";
 export { NumberInput, type NumberInputProps } from "./components/NumberInput";
 export {
   NumberStepper,
@@ -80,3 +79,33 @@ export { TripCard, type TripCardProps } from "./components/TripCard";
 export { FormField, type FormFieldProps } from "./components/FormField";
 export { PlaceMarker } from "./components/PlaceMarker";
 export { MapLegend, type MapLegendItem } from "./components/MapLegend";
+export {
+  ElevationProfile,
+  type ElevationProfileProps,
+  type ProfilePoint,
+  type SurfaceKind,
+} from "./components/ElevationProfile";
+export {
+  WeatherStrip,
+  type WeatherCondition,
+  type WeatherStripItem,
+} from "./components/WeatherStrip";
+export { HotelRow, type HotelRowProps } from "./components/HotelRow";
+export { SaveStatus, type SaveState } from "./components/SaveStatus";
+export { TextLink, type TextLinkProps } from "./components/TextLink";
+export {
+  AlternativeMarker,
+  EndpointMarker,
+  HoverMarker,
+  StopMarker,
+  type AlternativeMarkerProps,
+  type StopMarkerProps,
+} from "./components/MapMarker";
+export { DateButton, type DateButtonProps } from "./components/DateButton";
+export { InlineEdit, type InlineEditProps } from "./components/InlineEdit";
+export {
+  Menu,
+  MenuItem,
+  MenuSeparator,
+  type MenuItemProps,
+} from "./components/Menu";
