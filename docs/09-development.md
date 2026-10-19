@@ -17,6 +17,7 @@
 
 ```sh
 pnpm install
+pnpm --filter @wayline/api db:migrate   # local D1 schema, once per new migration
 pnpm dev        # web app and Worker
 pnpm test
 ```
@@ -39,8 +40,30 @@ Local development and tests never call external APIs by default. There are two k
 |---|---|---|
 | Recorded fixtures | `packages/providers/fixtures/` | Adapter parsing tests only |
 | `FakeRouting`, `FakeWeather` | `packages/providers` | Deterministic data for any input. Planner, API and UI tests, local dev. |
+| `fakeBrouterLeg` | `packages/providers` | Straight-line legs in BRouter's format. Default router of the Worker. |
 
 `PROVIDERS=live` switches to the real APIs.
+
+Routing switches:
+
+| Setting | Where | Effect |
+|---|---|---|
+| `BROUTER_URL=http://localhost:17777` | `apps/api/.dev.vars` | The Worker routes with the local BRouter instead of `fakeBrouterLeg`. |
+| `VITE_ROUTING=api` | `apps/web/.env.local` | The web app routes through `POST /api/route` (`ApiRouting`) instead of `FakeRouting` on the mock network. |
+
+Real routing end to end:
+
+```sh
+pnpm brouter                                         # terminal 1
+echo "BROUTER_URL=http://localhost:17777" > apps/api/.dev.vars
+echo "VITE_ROUTING=api" > apps/web/.env.local
+pnpm --filter @wayline/api db:migrate
+pnpm dev                                             # terminal 2
+curl -X POST localhost:8787/api/route -H 'content-type: application/json' \
+  -d '{"from":[10.8873,49.8917],"to":[9.9356,49.7913],"profile":"touring"}'
+```
+
+The response header `X-Cache` says `HIT` or `MISS`.
 
 ## Local BRouter
 
@@ -88,6 +111,9 @@ curl "http://localhost:17777/brouter?lonlats=10.8873,49.8917|9.9356,49.7913&prof
 ## Database
 
 D1 schema changes are SQL migration files in `apps/api/migrations/`.
+
+- Locally, `pnpm --filter @wayline/api db:migrate` applies them to the D1 that `cf dev` uses (`apps/api/.wrangler/state`). API tests apply them to an in-memory D1.
+- `cf d1 migrations apply --local` works too, but hangs after it is done (cf beta). Hence the script.
 
 - Within one deploy, migrations are additive only. Destructive changes go in a later deploy.
 - Never edit an applied migration.

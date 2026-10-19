@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "pnpm --recursive --parallel dev",
     "brouter": "node scripts/brouter.js",
-    "build": "pnpm --recursive build",
+    "build": "pnpm --filter @wayline/web build && pnpm --filter @wayline/api build",
     "lint": "eslint .",
     "typecheck": "pnpm --recursive typecheck",
     "test": "vitest run",

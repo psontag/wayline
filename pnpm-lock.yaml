@@ -202,19 +202,31 @@ importers:
 
   apps/api:
     dependencies:
+      '@hono/zod-validator':
+        specifier: 0.9.1
+        version: 0.9.1(hono@4.13.12)(zod@4.6.5)
       '@wayline/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@wayline/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers
       hono:
         specifier: 4.13.12
         version: 4.13.12
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
     devDependencies:
-      '@wayline/web':
-        specifier: workspace:*
-        version: link:../web
+      '@types/node':
+        specifier: 24.19.1
+        version: 24.19.1
       cf:
         specifier: 1.0.0-beta.12
         version: 1.0.0-beta.12(@types/node@24.19.1)
+      miniflare:
+        specifier: 5.20261001.0-alpha
+        version: 5.20261001.0-alpha(@types/node@24.19.1)
       wrangler:
         specifier: 4.147.0
         version: 4.147.0(@cloudflare/workers-types@5.20261003.1)(@types/node@24.19.1)
@@ -245,6 +257,9 @@ importers:
       comlink:
         specifier: 4.4.2
         version: 4.4.2
+      hono:
+        specifier: 4.13.12
+        version: 4.13.12
       i18next:
         specifier: 26.4.2
         version: 26.4.2(typescript@6.0.3)
@@ -288,6 +303,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 6.1.1
         version: 6.1.1(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(jiti@2.7.0))
+      '@wayline/api':
+        specifier: workspace:*
+        version: link:../api
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
@@ -827,6 +845,12 @@ packages:
 
   '@googlemaps/polyline-codec@1.0.28':
     resolution: {integrity: sha512-m7rh8sbxlrHvebXEweBHX8r1uPtToPRYxWDD6p6k2YG8hyhBe0Wi6xRUVFpxpEseMNgF+OBotFQC5senj8K7TQ==}
+
+  '@hono/zod-validator@0.9.1':
+    resolution: {integrity: sha512-iiv6w0qrIc0arfvCtUqBWsvl4fXjzaTcQcCJTTtCnkawF9HHGE+KjEl0ox3gQJ6rKZEgE3mLExlQCF72M+mNuw==}
+    peerDependencies:
+      hono: '>=4.11.2'
+      zod: ^3.25.0 || ^4.0.0
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -3420,6 +3444,11 @@ snapshots:
   '@fontsource-variable/manrope@5.3.0': {}
 
   '@googlemaps/polyline-codec@1.0.28': {}
+
+  '@hono/zod-validator@0.9.1(hono@4.13.12)(zod@4.6.5)':
+    dependencies:
+      hono: 4.13.12
+      zod: 4.6.5
 
   '@humanfs/core@0.19.2':
     dependencies:

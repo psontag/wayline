@@ -8,6 +8,7 @@ import {
   type RoutingProvider,
   type WeatherProvider,
 } from "@wayline/providers";
+import { ApiRouting } from "./ApiRouting";
 import { createTripGenerator } from "./generator";
 import { LocalTripStore } from "./LocalTripStore";
 import type { TripGenerator } from "./TripGenerator";
@@ -34,7 +35,11 @@ async function fetchJson(url: string): Promise<unknown> {
 export function createServices(): Services {
   const network = new MockNetworkSource(fetchJson, MOCK_DATA);
   let graph: ReturnType<typeof loadGraph> | undefined;
-  const routing = new FakeRouting(() => (graph ??= loadGraph(network)));
+  // VITE_ROUTING=api routes through the Worker. Default: the mock network.
+  const routing =
+    import.meta.env.VITE_ROUTING === "api"
+      ? new ApiRouting()
+      : new FakeRouting(() => (graph ??= loadGraph(network)));
   return {
     trips: new LocalTripStore({
       loadSample: () => fetchJson(`${MOCK_DATA}/sample-trip.json`),
