@@ -9,7 +9,7 @@ import {
 } from "@wayline/domain";
 import type { Graph, PathStep } from "../graph/Graph";
 import { pathToLeg } from "../graph/leg";
-import type { Stop } from "./stages";
+import { type Stop, STOP_KM } from "./stages";
 import type { Stops } from "./stops";
 
 /** Provider name on legs built from the network graph. */
@@ -116,6 +116,48 @@ export function routeNames(
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
     .map(([name]) => name);
+}
+
+const PLACE_RANK = { city: 2, town: 1, village: 0 };
+
+/**
+ * Up to `limit` well-known towns near the path, in route order. Cities beat
+ * towns beat villages. Population, else hotel count, breaks ties.
+ */
+export function viaNames(
+  graph: Graph,
+  places: Stops,
+  start: number,
+  steps: PathStep[],
+  skip: string[],
+  limit = 3,
+): string[] {
+  const seen = new Set(skip);
+  const found: { name: string; order: number; rank: number[] }[] = [];
+  let node = start;
+  for (const [order, { edge }] of steps.entries()) {
+    node = graph.other(edge, node);
+    for (const near of graph.nodesWithin(graph.coord(node), STOP_KM)) {
+      const t = places.geoTown(near);
+      if (!t || seen.has(t.name)) continue;
+      seen.add(t.name);
+      const rank = [PLACE_RANK[t.place], t.population ?? 0, t.hotelCount];
+      found.push({ name: t.name, order, rank });
+    }
+  }
+  return found
+    .sort((a, b) => compareRank(b.rank, a.rank))
+    .slice(0, limit)
+    .sort((a, b) => a.order - b.order)
+    .map((t) => t.name);
+}
+
+function compareRank(a: number[], b: number[]): number {
+  for (const [i, x] of a.entries()) {
+    const d = x - (b[i] ?? 0);
+    if (d) return d;
+  }
+  return 0;
 }
 
 /** Length-weighted mean edge score, 0 to 1. */

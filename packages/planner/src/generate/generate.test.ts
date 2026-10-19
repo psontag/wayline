@@ -36,7 +36,9 @@ beforeAll(async () => {
 function describeProposal(p: Proposal): string {
   const km = (m: number) => Math.round(m / 1000);
   const total = p.trip.stages.reduce((s, x) => s + x.stats.distance, 0);
-  const lines = [`${p.trip.name}: ${km(total)} km, score ${p.score}`];
+  const lines = [
+    `${p.trip.name}: ${km(total)} km, score ${p.score}, via ${p.via.join(", ")}`,
+  ];
   for (const [i, s] of p.trip.stages.entries()) {
     const alt = s.end.alternatives.map((a) => a.name).join(", ");
     lines.push(
@@ -52,6 +54,8 @@ function checkTrip(p: Proposal, request: GenerateRequest) {
   const { stages } = p.trip;
   expect(stages).toHaveLength(request.days);
   expect(stages[0]?.start.name).toBe("Bamberg");
+  expect(p.via.length).toBeGreaterThan(0);
+  expect(p.via).not.toContain("Bamberg");
   for (const [i, s] of stages.entries()) {
     const km = s.stats.distance / 1000;
     expect(km).toBeGreaterThan(0.4 * request.kmPerDay);

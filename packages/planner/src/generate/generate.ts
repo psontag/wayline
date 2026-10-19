@@ -21,7 +21,7 @@ import {
 } from "./search";
 import { cutStages, pathPoints, type Stop, stopCandidates } from "./stages";
 import { Stops } from "./stops";
-import { buildTrip, meanScore, routeNames } from "./trip";
+import { buildTrip, meanScore, routeNames, viaNames } from "./trip";
 
 /** Proposals to look for. */
 const PROPOSALS = 5;
@@ -141,6 +141,10 @@ export class Planner {
         trip,
         score: score(graph, p, totalKm),
         routeNames: routeNames(graph, p.steps),
+        via: viaNames(graph, this.stops, start, p.steps, [
+          trip.stages[0]?.start.name ?? "",
+          trip.stages.at(-1)?.end.name ?? "",
+        ]),
       };
       proposals.push(proposal);
       onProposal?.(proposal);

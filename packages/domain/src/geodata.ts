@@ -57,6 +57,8 @@ export type GeoTown = {
   id: string;
   name: string;
   place: "city" | "town" | "village";
+  /** OSM population, if tagged. */
+  population?: number;
   lon: number;
   lat: number;
   hotelCount: number;
