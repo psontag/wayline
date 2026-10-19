@@ -95,6 +95,7 @@
     "label": "Map with the proposals",
     "select": "Select proposal {{number}}",
     "zoomIn": "Zoom in",
-    "zoomOut": "Zoom out"
+    "zoomOut": "Zoom out",
+    "network": "Signed cycling routes"
   }
 }

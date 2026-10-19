@@ -37,6 +37,7 @@ Map tokens:
 | `route-selected` | Selected proposal or stage |
 | `stage-a`, `stage-b` | Stages alternate between these two |
 | `marker`, `via-point` | Stops and via points |
+| `network` | Signed cycling routes, a quiet layer below the route |
 
 Color values:
 
@@ -72,6 +73,7 @@ Color values:
 | `stage-b` | `#C9BDE6` | `#8F82B8` |
 | `marker` | `#15181D` | `#EDEFF3` |
 | `via-point` | `#B4532A` | `#FFB088` |
+| `network` | `#9DB7A0` | `#4E6B57` |
 
 Other tokens:
 

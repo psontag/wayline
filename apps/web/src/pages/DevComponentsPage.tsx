@@ -740,7 +740,7 @@ function TripDemos() {
           <PlaceMarker name={t("demo.placeName")} />
           <MapLegend
             items={[
-              { label: t("demo.network"), line: "route-dimmed" },
+              { label: t("demo.network"), line: "network" },
               { label: t("demo.route"), line: "route" },
               { label: t("demo.area"), line: "dashed" },
             ]}

@@ -16,6 +16,7 @@ const colorTokens = {
   stageB: "stage-b",
   marker: "marker",
   viaPoint: "via-point",
+  network: "network",
   terrainPaved: "terrain-paved",
   terrainGravel: "terrain-gravel",
   terrainUnpaved: "terrain-unpaved",

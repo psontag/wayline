@@ -186,6 +186,8 @@ export const Proposal = z.object({
   score: z.number(),
   /** Main signed routes, longest first. */
   routeNames: z.array(z.string()),
+  /** Best-known towns on the way, in route order. */
+  via: z.array(z.string()),
 });
 export type Proposal = z.infer<typeof Proposal>;
 

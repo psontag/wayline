@@ -106,6 +106,11 @@ export class Stops {
     return { name: n.name ?? "", kind: "town", coord: [n.lon, n.lat] };
   }
 
+  /** OSM town data at a node, if a town snaps to it. */
+  geoTown(node: number): GeoTown | undefined {
+    return this.towns.get(node);
+  }
+
   /** Hotels near a point, nearest first. */
   hotelsNear(coord: LonLat, radiusKm = HOTEL_KM): GeoHotel[] {
     if (!this.index) return [];

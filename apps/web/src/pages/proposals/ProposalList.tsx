@@ -202,13 +202,15 @@ function ProposalItem({
   const profile = useMemo(() => elevationSamples(tripPoints(trip)), [trip]);
   const from = trip.stages[0]?.start.name ?? "";
   const to = trip.stages.at(-1)?.end.name ?? "";
-  const stops = trip.stages.slice(0, -1).map((s) => s.end.name);
+  const via = proposal.via.length
+    ? proposal.via
+    : trip.stages.slice(0, -1).map((s) => s.end.name);
 
   return (
     <ProposalCard
       number={number}
       title={
-        stops.length ? t("card.via", { stops: format.list(stops) }) : trip.name
+        via.length ? t("card.via", { stops: format.list(via) }) : trip.name
       }
       subtitle={t(
         `card.subtitle.${trip.kind === "one-way" ? "one-way" : "multi-day-loop"}`,

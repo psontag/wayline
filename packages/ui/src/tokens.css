@@ -47,6 +47,7 @@
   --color-stage-b: #c9bde6;
   --color-marker: #15181d;
   --color-via-point: #b4532a;
+  --color-network: #9db7a0;
 
   /* Spacing: 4 px steps. Also used for widths and heights. */
   --spacing-0: 0px;
@@ -193,6 +194,7 @@
       --color-stage-b: #8f82b8;
       --color-marker: #edeff3;
       --color-via-point: #ffb088;
+      --color-network: #4e6b57;
       --color-scrim: rgb(0 0 0 / 0.55);
       --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
       --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
@@ -232,6 +234,7 @@
     --color-stage-b: #c9bde6;
     --color-marker: #15181d;
     --color-via-point: #b4532a;
+    --color-network: #9db7a0;
     --color-scrim: rgb(16 18 22 / 0.35);
     --shadow-sm: 0 1px 2px rgb(16 18 22 / 0.12);
     --shadow-md:
@@ -271,6 +274,7 @@
     --color-stage-b: #8f82b8;
     --color-marker: #edeff3;
     --color-via-point: #ffb088;
+    --color-network: #4e6b57;
     --color-scrim: rgb(0 0 0 / 0.55);
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);

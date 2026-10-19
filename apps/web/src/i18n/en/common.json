@@ -5,6 +5,7 @@
   },
   "nav": {
     "map": "Map",
-    "components": "Components"
+    "components": "Components",
+    "settings": "Settings"
   }
 }
