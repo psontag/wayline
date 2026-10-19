@@ -8,7 +8,8 @@
     "chips": "Chips and badges",
     "stats": "Stats and surface",
     "stages": "Stage cards",
-    "toast": "Toast"
+    "toast": "Toast",
+    "tripEditor": "Trip editor"
   },
   "demo": {
     "planTrip": "Plan trip",
@@ -36,6 +37,12 @@
     "alternative": "{{name}} · {{distance}}",
     "bookHotels": "Hotels in {{place}} on Booking.com",
     "toastMessage": "Day 3 now starts in Kronach and is 58 km.",
-    "toastAction": "Undo"
+    "toastAction": "Undo",
+    "elevation": "Elevation of a sample stage",
+    "change": "Change",
+    "train": "Train to Bamberg on bahn.de",
+    "menu": "Trip menu",
+    "rename": "Rename",
+    "delete": "Delete"
   }
 }
