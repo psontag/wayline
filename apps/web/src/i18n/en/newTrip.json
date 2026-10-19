@@ -1,4 +1,71 @@
 {
   "title": "New trip",
-  "placeholder": "This screen is not built yet."
+  "loading": "Loading places",
+  "loadFailed": "Could not load the places.",
+  "kind": {
+    "legend": "Kind of trip",
+    "one-way": {
+      "label": "One-way trip",
+      "hint": "Train out, train back"
+    },
+    "multi-day-loop": {
+      "label": "Multi-day loop",
+      "hint": "Ends where it starts"
+    }
+  },
+  "start": "Start",
+  "end": "End",
+  "placePlaceholder": "Choose a place",
+  "placeSearch": "Search a town or station",
+  "placeKind": {
+    "station": "Train station",
+    "town": "Town"
+  },
+  "days": "Days",
+  "kmPerDay": "Km per day",
+  "maxAscentPerDay": "Max ascent per day",
+  "hotelBudget": "Hotel budget",
+  "budget": {
+    "low": "Up to €80",
+    "mid": "€80–140",
+    "high": "€140+"
+  },
+  "profile": {
+    "label": "Profile",
+    "touring": "Touring",
+    "fast": "Fast",
+    "scenic": "Scenic",
+    "quiet": "Quiet",
+    "hint": {
+      "touring": "Mostly paved and quiet roads. Some forest and farm tracks.",
+      "fast": "Paved and direct. Main roads are fine.",
+      "scenic": "The nicest signed routes. Detours are fine.",
+      "quiet": "Away from traffic, even if it takes longer."
+    }
+  },
+  "startDate": "Start date",
+  "optional": "(optional)",
+  "startTime": "Start time",
+  "unit": {
+    "km": "km",
+    "m": "m"
+  },
+  "summary_one": "{{count}} day · about {{distance}}",
+  "summary_other": "{{count}} days · about {{distance}}",
+  "submit": "Find trips",
+  "errors": {
+    "startRequired": "Choose a start.",
+    "endRequired": "Choose an end.",
+    "endSameAsStart": "Choose an end other than the start. For a round trip, pick Multi-day loop.",
+    "days": "Choose 1 to 14 days.",
+    "kmPerDay": "Enter 20 to 250 km.",
+    "maxAscentPerDay": "Enter 100 to 5,000 m."
+  },
+  "map": {
+    "label": "Map with the start and end of the trip",
+    "network": "Signed cycling routes",
+    "area": "Area with test data",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out"
+  }
 }

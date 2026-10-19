@@ -10,6 +10,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@tanstack/react-form": "1.33.5",
     "@tanstack/react-query": "5.104.1",
     "@tanstack/react-router": "1.170.41",
     "@wayline/domain": "workspace:*",
@@ -23,7 +24,8 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-i18next": "17.0.15",
-    "react-map-gl": "8.1.3"
+    "react-map-gl": "8.1.3",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",
