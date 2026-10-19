@@ -39,7 +39,7 @@ export function createServices(): Services {
     trips: new LocalTripStore({
       loadSample: () => fetchJson(`${MOCK_DATA}/sample-trip.json`),
     }),
-    generator: createTripGenerator({ network, routing }),
+    generator: createTripGenerator({ dataUrl: MOCK_DATA }),
     routing,
     weather: new FakeWeather(),
     lodging: new MockLodging(network),
