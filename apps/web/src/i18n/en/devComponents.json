@@ -65,6 +65,7 @@
     "route": "Route",
     "area": "Area with test data",
     "mapHint": "Click the map to set the start",
+    "removeVia": "Remove via point",
     "emptyTitle": "No trips yet",
     "emptyText": "Pick a start and a few numbers. Wayline suggests routes, stops and hotels.",
     "deleteTitle": "Delete trip?",

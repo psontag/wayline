@@ -36,6 +36,7 @@ import {
   DateButton,
   ElevationProfile,
   EndpointMarker,
+  GhostViaMarker,
   HotelRow,
   HoverMarker,
   InlineEdit,
@@ -45,6 +46,8 @@ import {
   SaveStatus,
   StopMarker,
   TextLink,
+  ViaMarker,
+  ViaRow,
   WeatherStrip,
   type WeatherStripItem,
   MessagePanel,
@@ -468,6 +471,17 @@ function TripEditorParts() {
           label={t("demo.alternative", { name: "Küps", distance: "56 km" })}
         />
         <HoverMarker />
+        <ViaMarker aria-label={t("demo.removeVia")} />
+        <GhostViaMarker />
+      </div>
+      <div className="max-w-sm">
+        <ViaRow
+          n={1}
+          name="Lichtenfels"
+          detail="34 km"
+          removeLabel={t("demo.removeVia")}
+          onRemove={() => undefined}
+        />
       </div>
     </Section>
   );
