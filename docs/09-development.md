@@ -49,7 +49,13 @@ Routing switches:
 | Setting | Where | Effect |
 |---|---|---|
 | `BROUTER_URL=http://localhost:17777` | `apps/api/.dev.vars` | The Worker routes with the local BRouter instead of `fakeBrouterLeg`. |
-| `VITE_ROUTING=api` | `apps/web/.env.local` | The web app routes through `POST /api/route` (`ApiRouting`) instead of `FakeRouting` on the mock network. |
+| `VITE_ROUTING=api` | `apps/web/.env.local` | The web app routes through `POST /api/route` (`ApiRouting`) instead of `FakeRouting` on the route network. The generator routes the chosen proposals too. |
+
+Geodata:
+
+- The app uses the region data named by `apps/web/public/data/latest.json` (`pnpm data:build`, see `pipeline/README.md`).
+- Without it, or with `VITE_DATA=mock` in `apps/web/.env.local`, it uses the Oberfranken mock.
+- Tests use the mock and the Heidelberg tiles in `apps/web/public/data/mock/`.
 
 Real routing end to end:
 

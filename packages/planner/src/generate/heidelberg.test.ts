@@ -83,6 +83,7 @@ describe("Planner on the Heidelberg tiles", () => {
       expect(stages).toHaveLength(3);
       expect(stages[0]!.start.name).toBe("Heidelberg Hauptbahnhof");
       expect(stages[2]!.end.name).toBe("Heidelberg Hauptbahnhof");
+      expect(p.via).not.toContain("Heidelberg");
       for (const stop of [stages[0]!, stages[1]!]) {
         expect(stop.hotel).toBeDefined();
         expect(hotels.get(stop.end.osmId ?? "")).toBeGreaterThan(0);

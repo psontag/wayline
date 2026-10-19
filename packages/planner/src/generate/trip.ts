@@ -145,7 +145,9 @@ export function viaNames(
     node = graph.other(edge, node);
     for (const near of graph.nodesWithin(graph.coord(node), STOP_KM)) {
       const t = places.geoTown(near);
-      if (!t || seen.has(t.name)) continue;
+      // "Heidelberg" is no via for a trip from "Heidelberg Hauptbahnhof".
+      if (!t || seen.has(t.name) || skip.some((s) => s.startsWith(t.name)))
+        continue;
       seen.add(t.name);
       const rank = [PLACE_RANK[t.place], t.population ?? 0, t.hotelCount];
       found.push({ name: t.name, order, rank });
