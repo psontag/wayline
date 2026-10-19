@@ -6,22 +6,64 @@ import {
 } from "@tanstack/react-router";
 import { AppShell } from "./components/AppShell";
 import { DevComponentsPage } from "./pages/DevComponentsPage";
-import { HomePage } from "./pages/HomePage";
+import { validateNewTripSearch } from "./pages/newTrip/search";
+import { validateProposalsSearch } from "./pages/proposals/search";
+import { SettingsPage } from "./pages/settings/SettingsPage";
+import { validateTripEditorSearch } from "./pages/tripEditor/search";
+import { TripListPage } from "./pages/tripList/TripListPage";
+
+// Each screen owns its folder in pages/, including its search params.
+// Screens with a map load lazily: MapLibre is large.
 
 const rootRoute = createRootRoute({
   component: AppShell,
 });
 
-const homeRoute = createRoute({
+const tripListRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: HomePage,
+  component: TripListPage,
+});
+
+const newTripRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/new",
+  validateSearch: validateNewTripSearch,
+  component: lazyRouteComponent(
+    () => import("./pages/newTrip/NewTripPage"),
+    "NewTripPage",
+  ),
+});
+
+const proposalsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/proposals",
+  validateSearch: validateProposalsSearch,
+  component: lazyRouteComponent(
+    () => import("./pages/proposals/ProposalsPage"),
+    "ProposalsPage",
+  ),
+});
+
+const tripEditorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/trips/$tripId",
+  validateSearch: validateTripEditorSearch,
+  component: lazyRouteComponent(
+    () => import("./pages/tripEditor/TripEditorPage"),
+    "TripEditorPage",
+  ),
+});
+
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings",
+  component: SettingsPage,
 });
 
 const mapRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/map",
-  // MapLibre is large. Load it only on map pages.
   component: lazyRouteComponent(() => import("./pages/MapPage"), "MapPage"),
 });
 
@@ -32,7 +74,11 @@ const devComponentsRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  homeRoute,
+  tripListRoute,
+  newTripRoute,
+  proposalsRoute,
+  tripEditorRoute,
+  settingsRoute,
   mapRoute,
   devComponentsRoute,
 ]);

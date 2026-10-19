@@ -4,13 +4,18 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./src/mock/testData.ts"
   },
   "scripts": {
     "typecheck": "tsc"
   },
   "dependencies": {
     "@wayline/cache": "workspace:*",
-    "@wayline/domain": "workspace:*"
+    "@wayline/domain": "workspace:*",
+    "flatbush": "4.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1"
   }
 }

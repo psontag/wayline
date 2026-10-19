@@ -13,6 +13,15 @@ PLACES = {"city", "town", "village"}
 HOTELS = {"hotel", "guest_house", "motel"}
 
 
+def hotel_tags(t):
+    return {
+        "name": t.get("name"),
+        "kind": t["tourism"],
+        "stars": t.get("stars"),
+        "website": t.get("website") or t.get("contact:website"),
+    }
+
+
 class RelationsAndPoints(osmium.SimpleHandler):
     """Pass 1: route relations and point features."""
 
@@ -53,11 +62,11 @@ class RelationsAndPoints(osmium.SimpleHandler):
             if t.get("usage") != "tourism" and "name" in t:
                 self.stations.append({"id": n.id, "name": t["name"], "loc": loc})
         if t.get("tourism") in HOTELS:
-            self.hotels.append({"id": f"n{n.id}", "name": t.get("name"), "kind": t["tourism"], "loc": loc})
+            self.hotels.append({"id": f"n{n.id}", **hotel_tags(t), "loc": loc})
 
     def way(self, w):
         if w.tags.get("tourism") in HOTELS:
-            self.hotel_way_ids[w.id] = {"name": w.tags.get("name"), "kind": w.tags["tourism"]}
+            self.hotel_way_ids[w.id] = hotel_tags(w.tags)
 
 
 class Ways(osmium.SimpleHandler):

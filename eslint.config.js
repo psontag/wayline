@@ -126,4 +126,11 @@ export default defineConfig(
       "no-restricted-globals": ["error", ...browserGlobals],
     },
   },
+  {
+    // Tests know their data. A wrong assumption fails the test anyway.
+    files: ["**/*.test.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-non-null-assertion": "off",
+    },
+  },
 );
