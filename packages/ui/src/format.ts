@@ -38,11 +38,12 @@ export function createFormat(language: string) {
     minute: "2-digit",
     hourCycle: "h23",
   });
+  const list = new Intl.ListFormat(locale, { type: "conjunction" });
 
   return {
-    /** 78 km, or 850 m below 1 km. Input in meters. */
+    /** 78 km, or 850 m below 1 km. Zero is 0 km. Input in meters. */
     distance: (m: number) =>
-      m < 1000 ? meters.format(m) : km.format(m / 1000),
+      m > 0 && m < 1000 ? meters.format(m) : km.format(m / 1000),
     /** 650 m */
     elevation: (m: number) => meters.format(m),
     /** 22 °C */
@@ -51,10 +52,18 @@ export function createFormat(language: string) {
     speed: (kmh: number) => speed.format(kmh),
     /** 86 %. Input as share from 0 to 1. */
     percent: (share: number) => percent.format(share),
-    /** Sat 12 Jun */
-    date: (d: Date) => date.format(d),
+    /** Sat 12 Jun. Some engines put a comma after the weekday; drop it. */
+    date: (d: Date) =>
+      date
+        .formatToParts(d)
+        .map((p) => (p.type === "literal" ? p.value.replace(",", "") : p.value))
+        .join(""),
     /** 14:30 */
     time: (d: Date) => time.format(d),
+    /** Kronach, Kulmbach and Coburg */
+    list: (items: string[]) => list.format(items),
+    /** Sat 12 Jun – Tue 15 Jun */
+    dateRange: (from: Date, to: Date) => date.formatRange(from, to),
   };
 }
 

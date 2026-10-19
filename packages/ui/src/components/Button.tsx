@@ -2,8 +2,8 @@ import { Slot } from "@radix-ui/react-slot";
 import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import { cn } from "../lib/cn";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost";
-export type ButtonSize = "sm" | "md";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonSize = "sm" | "md" | "lg";
 
 export const focusRing =
   "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
@@ -22,11 +22,14 @@ const variants: Record<ButtonVariant, string> = {
     "border border-border bg-surface text-text hover:bg-hover active:bg-active",
   ghost:
     "bg-transparent text-text hover:bg-hover active:bg-active aria-[current=page]:bg-selected",
+  danger:
+    "border border-border bg-surface font-bold text-danger hover:bg-hover active:bg-active",
 };
 
 const sizes: Record<ButtonSize, { text: string; icon: string }> = {
   sm: { text: "h-8 px-2.5 text-sm", icon: "size-8" },
   md: { text: "h-10 px-4 text-base", icon: "size-10" },
+  lg: { text: "h-11 px-4 text-base", icon: "size-11" },
 };
 
 type CommonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {

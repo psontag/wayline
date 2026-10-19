@@ -54,3 +54,93 @@ export {
 } from "./theme/ThemeProvider";
 export { ThemeScope } from "./theme/ThemeScope";
 export { useThemeTokens, type ThemeTokens } from "./theme/useThemeTokens";
+export {
+  Combobox,
+  type ComboboxOption,
+  type ComboboxProps,
+} from "./components/Combobox";
+export {
+  ConfirmDialog,
+  type ConfirmDialogProps,
+} from "./components/ConfirmDialog";
+export { DateField, type DateFieldProps } from "./components/DateField";
+export { EmptyState, type EmptyStateProps } from "./components/EmptyState";
+export { NumberInput, type NumberInputProps } from "./components/NumberInput";
+export {
+  NumberStepper,
+  type NumberStepperProps,
+} from "./components/NumberStepper";
+export {
+  RadioCards,
+  type RadioCardOption,
+  type RadioCardsProps,
+} from "./components/RadioCards";
+export { TripCard, type TripCardProps } from "./components/TripCard";
+export { FormField, type FormFieldProps } from "./components/FormField";
+export { PlaceMarker } from "./components/PlaceMarker";
+export { MapLegend, type MapLegendItem } from "./components/MapLegend";
+export {
+  ElevationProfile,
+  type ElevationProfileProps,
+  type ProfilePoint,
+  type SurfaceKind,
+} from "./components/ElevationProfile";
+export {
+  WeatherStrip,
+  type WeatherCondition,
+  type WeatherStripItem,
+} from "./components/WeatherStrip";
+export { HotelRow, type HotelRowProps } from "./components/HotelRow";
+export { SaveStatus, type SaveState } from "./components/SaveStatus";
+export { TextLink, type TextLinkProps } from "./components/TextLink";
+export {
+  AlternativeMarker,
+  EndpointMarker,
+  HoverMarker,
+  StopMarker,
+  type AlternativeMarkerProps,
+  type StopMarkerProps,
+} from "./components/MapMarker";
+export { DateButton, type DateButtonProps } from "./components/DateButton";
+export { InlineEdit, type InlineEditProps } from "./components/InlineEdit";
+export {
+  Menu,
+  MenuItem,
+  MenuSeparator,
+  type MenuItemProps,
+} from "./components/Menu";
+export {
+  ProposalCard,
+  ProposalCardSkeleton,
+  type ProposalCardProps,
+  type ProposalStat,
+} from "./components/ProposalCard";
+export {
+  ProposalMarker,
+  type ProposalMarkerProps,
+} from "./components/ProposalMarker";
+export { ProgressBar, type ProgressBarProps } from "./components/ProgressBar";
+export {
+  MessagePanel,
+  type MessagePanelProps,
+} from "./components/MessagePanel";
+export {
+  BottomSheet,
+  SheetDialog,
+  SHEET_PEEK,
+  type BottomSheetProps,
+  type SheetDialogProps,
+  type SheetSnap,
+} from "./components/BottomSheet";
+export {
+  FloatingButton,
+  FloatingTitle,
+  type FloatingButtonProps,
+} from "./components/FloatingBar";
+export { InfoTile } from "./components/InfoTile";
+export { LinkRow, type LinkRowProps } from "./components/LinkRow";
+export {
+  ChoiceCard,
+  ChoiceGroup,
+  type ChoiceCardProps,
+} from "./components/ChoiceCard";
