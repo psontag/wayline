@@ -138,6 +138,17 @@
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --default-transition-duration: 120ms;
   --default-transition-timing-function: var(--ease-out);
+  --animate-pulse: pulse 1.6s ease-in-out infinite;
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
 
   /* Breakpoints */
   --breakpoint-sm: 640px;

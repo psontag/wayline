@@ -91,6 +91,10 @@ export class Planner {
     const costs = new Costs(graph, request.profile, request.region);
     const start = this.startNode(request);
     if (start === undefined) return { ok: false, failedLimit: "area" };
+    const endStation = this.endNode(request);
+    if (endStation === null || endStation === start) {
+      return { ok: false, failedLimit: "area" };
+    }
 
     onProgress?.({ phase: "searching", done: 0, total: MAX_TRIES });
     const vias = this.stops.townNodes();
@@ -100,9 +104,12 @@ export class Planner {
             graph,
             costs,
             start,
-            this.stops.stationNodes().filter((n) => n !== start),
+            endStation === undefined
+              ? this.stops.stationNodes().filter((n) => n !== start)
+              : [endStation],
             vias,
             totalKm,
+            endStation === undefined ? undefined : 0,
           )
         : loopCandidates(graph, costs, start, vias, totalKm);
     if (!candidates.length) {
@@ -174,6 +181,20 @@ export class Planner {
       },
     );
     return node;
+  }
+
+  /**
+   * End station of a one-way trip. Undefined lets the planner pick it,
+   * null means the requested one is not on the network.
+   */
+  private endNode(request: GenerateRequest): number | null | undefined {
+    if (request.kind !== "one-way" || !request.endStation) return undefined;
+    return (
+      this.graph.nearestNode(request.endStation.coord, {
+        maxKm: START_KM,
+        filter: (n) => n.kind === "station",
+      }) ?? null
+    );
   }
 
   /**

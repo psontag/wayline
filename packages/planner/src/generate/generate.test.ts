@@ -89,6 +89,28 @@ describe("Planner on the Oberfranken network", () => {
     expect(ends.size).toBeGreaterThan(1);
   });
 
+  it("ends at the requested station", async () => {
+    const request: GenerateRequest = {
+      ...oneWay,
+      endStation: {
+        name: "Coburg",
+        kind: "station",
+        coord: [10.95751, 50.26276],
+      },
+      days: 3,
+      kmPerDay: 70,
+      maxAscentPerDay: 900,
+    };
+    const result = await planner.generate(request);
+    if (!result.ok) throw new Error(result.failedLimit);
+    expect(result.proposals.length).toBeGreaterThanOrEqual(3);
+    for (const p of result.proposals) {
+      console.log(describeProposal(p));
+      checkTrip(p, request);
+      expect(p.trip.stages.at(-1)?.end.name).toBe("Coburg");
+    }
+  });
+
   it("proposes multi-day loops", async () => {
     const t = performance.now();
     const result = await planner.generate(loop);

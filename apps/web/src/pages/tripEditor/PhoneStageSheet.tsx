@@ -18,7 +18,7 @@ import { BedDouble, Download, TrainFront } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
-import { exportGpx } from "./exportGpx";
+import { downloadTripGpx } from "../../data/gpx";
 import { StageProfile } from "./StageProfile";
 import { forecastFrom, stageWind } from "./stageWeather";
 
@@ -198,7 +198,7 @@ export function PhoneStageSheet({
           size="sm"
           className="self-start"
           onClick={() =>
-            exportGpx({
+            downloadTripGpx({
               ...trip,
               name: t("phone.stageFileName", {
                 name: trip.name,

@@ -94,6 +94,26 @@ export function defaultValues(
   };
 }
 
+/** Form values for an earlier request. Keeps defaults for missing fields. */
+export function fromRequest(
+  request: GenerateRequest,
+  defaults: NewTripValues,
+): NewTripValues {
+  return {
+    kind: request.kind,
+    start: request.startStation ?? defaults.start,
+    end:
+      request.endStation ?? (request.kind === "one-way" ? null : defaults.end),
+    days: request.days,
+    kmPerDay: request.kmPerDay,
+    maxAscentPerDay: request.maxAscentPerDay,
+    profile: request.profile,
+    hotelBudget: request.hotelBudget ?? defaults.hotelBudget,
+    startDate: request.startDate ?? "",
+    startTime: request.startTime,
+  };
+}
+
 export function toRequest(values: NewTripValues): GenerateRequest {
   const v = newTripSchema.parse(values);
   return GenerateRequest.parse({

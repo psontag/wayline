@@ -12,6 +12,7 @@
     "forms": "Form fields",
     "trips": "Trip cards, menus and dialogs",
     "tripEditor": "Trip editor",
+    "proposals": "Proposals",
     "phone": "Phone"
   },
   "demo": {
@@ -72,6 +73,15 @@
     "train": "Train to Bamberg on bahn.de",
     "menu": "Trip menu",
     "rename": "Rename",
+    "longestDay": "Longest day",
+    "routing": "Routing proposal 3 of 4",
+    "proposalTitle": "Via Coburg, Kronach and Kulmbach",
+    "proposalSubtitle": "Bamberg → Bayreuth by train both ways",
+    "proposalRoutes": "Routes: Main-Radweg · Frankenwaldweg",
+    "openTrip": "Open trip",
+    "noResultTitle": "No trip fits these limits",
+    "noResultText": "Every path climbs more than 800 m on at least one day.",
+    "noResultAction": "Allow up to 1,000 m per day",
     "back": "Back to trips",
     "day": "Day {{day}}",
     "weather": "Weather",

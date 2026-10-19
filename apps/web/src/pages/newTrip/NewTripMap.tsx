@@ -21,6 +21,7 @@ import MapGL, {
   Source,
   type MapRef,
 } from "react-map-gl/maplibre";
+import { useHiddenPlaceLabels } from "../../components/placeLabels";
 import { useServices } from "../../data/ServicesProvider";
 
 setWorkerUrl(workerUrl);
@@ -113,12 +114,17 @@ export function NewTripMap({
   const mapRef = useRef<MapRef>(null);
   const layer = useNetworkLayer();
   const [labelLayerId, setLabelLayerId] = useState<string>();
-  const findLabelLayer = () => {
+  const places = [start, end].filter((p): p is Place => p !== null);
+  const hideLabels = useHiddenPlaceLabels(
+    mapRef,
+    places.map((p) => p.name),
+  );
+  const onStyle = () => {
     const layers = mapRef.current?.getStyle()?.layers ?? [];
     setLabelLayerId(layers.find((l) => l.type === "symbol")?.id);
+    hideLabels();
   };
 
-  const places = [start, end].filter((p): p is Place => p !== null);
   const bounds = boundsOf(places);
   const boundsKey = JSON.stringify(bounds);
   useEffect(() => {
@@ -138,8 +144,8 @@ export function NewTripMap({
         }}
         mapStyle={mapStyles[resolvedTheme]}
         style={{ position: "absolute", inset: 0 }}
-        onLoad={findLabelLayer}
-        onStyleData={findLabelLayer}
+        onLoad={onStyle}
+        onStyleData={onStyle}
       >
         {layer.data && (
           <>

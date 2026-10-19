@@ -30,7 +30,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDeleteTrip, useDuplicateTrip } from "../../data/queries";
-import { exportGpx } from "./exportGpx";
+import { downloadTripGpx } from "../../data/gpx";
 import type { TripEditorState } from "./useTripEditor";
 
 /** Top bar of the trip editor: name, date, save state and trip actions. */
@@ -119,7 +119,7 @@ export function TripHeader({
           {t("header.share")}
         </Button>
       </div>
-      <Button variant="primary" size="sm" onClick={() => exportGpx(trip)}>
+      <Button variant="primary" size="sm" onClick={() => downloadTripGpx(trip)}>
         <Download aria-hidden />
         <span className="hidden sm:inline">{t("header.exportGpx")}</span>
       </Button>

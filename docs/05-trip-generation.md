@@ -50,7 +50,7 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 
 1. **Load the graph** for the region.
 2. **Pick start and end.**
-   - One-way: pairs of stations with the right distance. Prefilter pairs by straight-line distance.
+   - One-way: pairs of stations with the right distance. Prefilter pairs by straight-line distance. If the user picked an end station, use only that one.
    - Multi-day loop: one station. Start and end are the same.
 3. **Search paths.**
    - Shortest path with cost = length / score^k.

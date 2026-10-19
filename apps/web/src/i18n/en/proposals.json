@@ -1,4 +1,100 @@
 {
   "title": "Proposals",
-  "placeholder": "This screen is not built yet."
+  "backToList": "All trips",
+  "newTrip": "New trip",
+  "edit": "Edit",
+  "noRequest": "Start with a new trip to get proposals.",
+  "request": {
+    "label": "Search inputs",
+    "kind": {
+      "one-way": "One-way",
+      "multi-day-loop": "Multi-day loop"
+    },
+    "places": "{{from}} → {{to}}",
+    "loopFrom": "From {{from}}",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "kmPerDay": "{{distance}} per day",
+    "maxAscent": "Max {{ascent}}",
+    "profile": {
+      "touring": "Touring",
+      "fast": "Fast",
+      "scenic": "Scenic",
+      "quiet": "Quiet"
+    }
+  },
+  "progress": {
+    "loading": "Loading the route network",
+    "searching": "Searching paths",
+    "cutting": "Cutting stages",
+    "routing": "Routing proposal {{current}} of {{total}}",
+    "label": "Progress",
+    "loaded": "Network loaded",
+    "searched_one": "{{count}} path searched",
+    "searched_other": "{{count}} paths searched",
+    "cut": "Stages cut",
+    "cancel": "Cancel"
+  },
+  "done": {
+    "count_one": "{{count}} proposal",
+    "count_other": "{{count}} proposals",
+    "hint": "Hover to compare, select to see the stages"
+  },
+  "cancelled": {
+    "title": "Search cancelled",
+    "count_one": "{{count}} proposal so far",
+    "count_other": "{{count}} proposals so far",
+    "text": "Search again, or change the inputs.",
+    "again": "Search again"
+  },
+  "failed": {
+    "title": "No trip fits these limits",
+    "text": {
+      "maxAscentPerDay": "Every path climbs more than {{ascent}} on at least one day.",
+      "hotels": "There are too few towns with hotels in your budget along the paths.",
+      "days": "No path from {{start}} has the right length for {{days}} at {{distance}} per day.",
+      "kmPerDay": "No path fits {{distance}} per day.",
+      "area": "No train station with signed routes was found near {{start}}. Pick another start."
+    },
+    "relax": {
+      "maxAscentPerDay": "Allow up to {{ascent}} per day",
+      "kmPerDay": "Ride {{distance}} per day instead",
+      "days_one": "Plan {{count}} day instead",
+      "days_other": "Plan {{count}} days instead",
+      "anyBudget": "Allow any hotel price"
+    },
+    "change": "Change the inputs"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "text": "The search stopped with an error. Try again.",
+    "retry": "Try again"
+  },
+  "card": {
+    "subtitle": {
+      "one-way": "{{from}} → {{to}} by train both ways",
+      "multi-day-loop": "Loop from {{from}}"
+    },
+    "distance": "Distance",
+    "ascent": "Ascent",
+    "paved": "Paved",
+    "longestDay": "Longest day",
+    "via": "Via {{stops}}",
+    "day": "Day {{day}}",
+    "dayDate": "Day {{day}} · {{date}}",
+    "stage": "{{from}} → {{to}}",
+    "stageStats": "{{distance}} · {{ascent}}",
+    "routes": "Routes: {{routes}}",
+    "noRoutes": "No signed routes",
+    "score": "Score {{score}}",
+    "open": "Open trip",
+    "opening": "Opening",
+    "openFailed": "Could not save the trip. Try again."
+  },
+  "map": {
+    "label": "Map with the proposals",
+    "select": "Select proposal {{number}}",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out"
+  }
 }

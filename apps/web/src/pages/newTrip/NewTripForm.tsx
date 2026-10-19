@@ -1,6 +1,11 @@
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
-import type { Place, Profile, TripKind } from "@wayline/domain";
+import type {
+  GenerateRequest,
+  Place,
+  Profile,
+  TripKind,
+} from "@wayline/domain";
 import {
   Button,
   DateField,
@@ -17,6 +22,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   defaultValues,
+  fromRequest,
   isFormError,
   limits,
   newTripSchema,
@@ -40,9 +46,11 @@ function today() {
 export function NewTripForm({
   places,
   kind,
+  request,
 }: {
   places: Place[];
   kind?: TripKind;
+  request?: GenerateRequest;
 }) {
   const { t } = useTranslation("newTrip");
   const format = useFormat();
@@ -51,7 +59,9 @@ export function NewTripForm({
   const [now] = useState(today);
 
   const form = useForm({
-    defaultValues: defaultValues(places, now, kind),
+    defaultValues: request
+      ? fromRequest(request, defaultValues(places, now, kind))
+      : defaultValues(places, now, kind),
     validators: { onChange: newTripSchema },
     onSubmit: ({ value }) =>
       navigate({ to: "/proposals", search: { request: toRequest(value) } }),

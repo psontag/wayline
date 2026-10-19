@@ -19,7 +19,7 @@ import {
 import { ChevronLeft, Download } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { exportGpx } from "./exportGpx";
+import { downloadTripGpx } from "../../data/gpx";
 import { PhoneStageSheet } from "./PhoneStageSheet";
 import { PhoneStopSheet } from "./PhoneStopSheet";
 import { type MapAlternative, type MapPadding, TripMap } from "./TripMap";
@@ -137,7 +137,7 @@ function PhoneHeader({ trip }: { trip: Trip }) {
       <FloatingButton
         variant="accent"
         label={t("header.exportGpx")}
-        onClick={() => exportGpx(trip)}
+        onClick={() => downloadTripGpx(trip)}
       >
         <Download aria-hidden />
       </FloatingButton>
