@@ -41,8 +41,20 @@ const mapStyles = {
   dark: "https://tiles.openfreemap.org/styles/dark",
 };
 
+export type MapPadding = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
 // Marker labels sit right of the point, so keep more room on that side.
-const padding = { top: 56, right: 120, bottom: 40, left: 56 };
+const defaultPadding: MapPadding = {
+  top: 56,
+  right: 120,
+  bottom: 40,
+  left: 56,
+};
 
 const lineLayout = { "line-cap": "round", "line-join": "round" } as const;
 
@@ -57,6 +69,10 @@ export type TripMapProps = {
   onPickAlternative?: (place: Place) => void;
   /** Point that follows the elevation crosshair. */
   hover?: LonLat;
+  /** Space around the trip when the map fits it, e.g. for a sheet. */
+  padding?: MapPadding;
+  /** Zoom buttons. Phones zoom with two fingers. */
+  controls?: boolean;
   /** Overlays, e.g. a toast. */
   children?: ReactNode;
 };
@@ -80,6 +96,8 @@ export function TripMap({
   alternatives = [],
   onPickAlternative,
   hover,
+  padding = defaultPadding,
+  controls = true,
   children,
 }: TripMapProps) {
   const { t } = useTranslation("tripEditor");
@@ -128,7 +146,7 @@ export function TripMap({
           : 600,
       });
     }
-  }, [selected, lines]);
+  }, [selected, lines, padding]);
 
   // Our layers go below the first label layer, so place names stay readable.
   const findLabelLayer = () => {
@@ -293,22 +311,24 @@ export function TripMap({
           </Marker>
         )}
       </MapGL>
-      <div className="absolute top-3 right-3 z-panel">
-        <MapControlGroup>
-          <IconButton
-            label={t("map.zoomIn")}
-            icon={<Plus aria-hidden />}
-            size="sm"
-            onClick={() => mapRef.current?.zoomIn()}
-          />
-          <IconButton
-            label={t("map.zoomOut")}
-            icon={<Minus aria-hidden />}
-            size="sm"
-            onClick={() => mapRef.current?.zoomOut()}
-          />
-        </MapControlGroup>
-      </div>
+      {controls && (
+        <div className="absolute top-3 right-3 z-panel">
+          <MapControlGroup>
+            <IconButton
+              label={t("map.zoomIn")}
+              icon={<Plus aria-hidden />}
+              size="sm"
+              onClick={() => mapRef.current?.zoomIn()}
+            />
+            <IconButton
+              label={t("map.zoomOut")}
+              icon={<Minus aria-hidden />}
+              size="sm"
+              onClick={() => mapRef.current?.zoomOut()}
+            />
+          </MapControlGroup>
+        </div>
+      )}
       {children}
     </div>
   );
