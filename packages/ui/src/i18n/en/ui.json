@@ -74,5 +74,10 @@
     "saved": "Saved",
     "saving": "Saving",
     "error": "Not saved"
+  },
+  "sheet": {
+    "expand": "Expand sheet",
+    "collapse": "Collapse sheet",
+    "close": "Close"
   }
 }

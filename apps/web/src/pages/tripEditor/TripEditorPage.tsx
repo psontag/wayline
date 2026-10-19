@@ -23,6 +23,8 @@ import { useStopOptions } from "./StopPicker";
 import { TripHeader } from "./TripHeader";
 import { TripMap } from "./TripMap";
 import { TripSummary } from "./TripSummary";
+import { PhoneTripEditor } from "./PhoneTripEditor";
+import { useIsPhone } from "./useIsPhone";
 import { useTripEditor } from "./useTripEditor";
 
 export function TripEditorPage() {
@@ -64,6 +66,7 @@ function TripEditor({ trip }: { trip: Trip }) {
   const navigate = useNavigate({ from: "/trips/$tripId" });
   const editor = useTripEditor(trip);
   const network = useNetwork();
+  const isPhone = useIsPhone();
   const [hoverKm, setHoverKm] = useState<number>();
 
   const selected = Math.min(search.stage ?? 0, trip.stages.length - 1);
@@ -93,6 +96,38 @@ function TripEditor({ trip }: { trip: Trip }) {
           }),
         }));
 
+  const toast = editor.note && (
+    <Toast
+      key={editor.note.id}
+      open
+      onOpenChange={(open) => !open && editor.clearNote()}
+      duration={8000}
+      message={editor.note.message}
+      action={{ label: t("note.undo"), onClick: editor.undo }}
+    />
+  );
+
+  if (isPhone) {
+    return (
+      <ToastProvider>
+        {toast}
+        <PhoneTripEditor
+          trip={trip}
+          editor={editor}
+          selected={selected}
+          onSelect={select}
+          network={network}
+          alternatives={alternatives}
+          onPickAlternative={(place) => void editor.moveStop(selected, place)}
+          hoverKm={hoverKm}
+          onHoverKm={setHoverKm}
+          hover={hover}
+          toast={<ToastViewport placement="inline" />}
+        />
+      </ToastProvider>
+    );
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <TripHeader trip={trip} editor={editor} />
@@ -110,16 +145,7 @@ function TripEditor({ trip }: { trip: Trip }) {
               hover={hover}
             >
               <ToastProvider>
-                {editor.note && (
-                  <Toast
-                    key={editor.note.id}
-                    open
-                    onOpenChange={(open) => !open && editor.clearNote()}
-                    duration={8000}
-                    message={editor.note.message}
-                    action={{ label: t("note.undo"), onClick: editor.undo }}
-                  />
-                )}
+                {toast}
                 <div className="absolute inset-x-4 bottom-8 z-toast flex justify-center">
                   <ToastViewport placement="inline" />
                 </div>

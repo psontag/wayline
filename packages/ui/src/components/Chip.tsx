@@ -4,21 +4,30 @@ import { focusRing } from "./Button";
 
 export type ChipProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   selected?: boolean;
+  /** md is a touch-sized chip, e.g. the day picker on phones. */
+  size?: "sm" | "md";
   ref?: Ref<HTMLButtonElement>;
 };
 
 /** Pill button for picking one of a few options, e.g. stop alternatives. */
-export function Chip({ selected = false, className, ...props }: ChipProps) {
+export function Chip({
+  selected = false,
+  size = "sm",
+  className,
+  ...props
+}: ChipProps) {
   return (
     <button
       type="button"
       aria-pressed={selected}
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs whitespace-nowrap tabular-nums transition-colors",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full border whitespace-nowrap tabular-nums transition-colors",
         "[&_svg]:size-3.5",
+        size === "sm" ? "h-7 px-2.5 text-xs" : "h-9 px-3.5 text-sm",
+        selected || size === "md" ? "font-bold" : "font-semibold",
         selected
-          ? "border-selected-border bg-selected font-bold text-text"
-          : "border-border bg-surface font-semibold text-text hover:bg-hover",
+          ? "border-selected-border bg-selected text-text"
+          : "border-border bg-surface text-text hover:bg-hover",
         focusRing,
         className,
       )}

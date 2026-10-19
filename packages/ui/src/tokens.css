@@ -81,6 +81,7 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
 
   /* Font */
@@ -121,6 +122,7 @@
   /* Shadow */
   --shadow-sm: 0 1px 2px rgb(16 18 22 / 0.12);
   --shadow-md: 0 1px 2px rgb(16 18 22 / 0.08), 0 4px 12px rgb(16 18 22 / 0.06);
+  --shadow-sheet: 0 -4px 24px rgb(16 18 22 / 0.14);
 
   /* Z-index */
   --z-index-map: 0;
@@ -183,6 +185,7 @@
       --color-scrim: rgb(0 0 0 / 0.55);
       --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
       --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+      --shadow-sheet: 0 -4px 24px rgb(0 0 0 / 0.4);
     }
   }
 
@@ -222,6 +225,7 @@
     --shadow-sm: 0 1px 2px rgb(16 18 22 / 0.12);
     --shadow-md:
       0 1px 2px rgb(16 18 22 / 0.08), 0 4px 12px rgb(16 18 22 / 0.06);
+    --shadow-sheet: 0 -4px 24px rgb(16 18 22 / 0.14);
   }
 
   [data-theme="dark"] {
@@ -259,6 +263,7 @@
     --color-scrim: rgb(0 0 0 / 0.55);
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+    --shadow-sheet: 0 -4px 24px rgb(0 0 0 / 0.4);
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -13,6 +13,10 @@ export type HotelRowProps = {
   website?: string;
   /** E.g. a Change or Choose button. */
   action?: ReactNode;
+  /** card: outlined box without the bed icon, for lists on phones. */
+  variant?: "plain" | "card";
+  /** Highlights the card. Only for the card variant. */
+  selected?: boolean;
 };
 
 /** A hotel with stars, distance to the route and its website. */
@@ -22,6 +26,8 @@ export function HotelRow({
   distance,
   website,
   action,
+  variant = "plain",
+  selected = false,
 }: HotelRowProps) {
   const { t } = useTranslation("ui");
   const format = useFormat();
@@ -33,10 +39,29 @@ export function HotelRow({
     .join(" · ");
 
   return (
-    <div className="flex items-center gap-2.5">
-      <BedDouble className="size-4 shrink-0" aria-hidden />
+    <div
+      className={cn(
+        "flex items-center",
+        variant === "plain" && "gap-2.5",
+        variant === "card" && "gap-3 rounded-md border p-3",
+        variant === "card" &&
+          (selected
+            ? "border-selected-border bg-selected"
+            : "border-border bg-surface"),
+      )}
+    >
+      {variant === "plain" && (
+        <BedDouble className="size-4 shrink-0" aria-hidden />
+      )}
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-semibold">{name}</span>
+        <span
+          className={cn(
+            "truncate",
+            variant === "plain" ? "font-semibold" : "font-bold",
+          )}
+        >
+          {name}
+        </span>
         <span className="flex items-center gap-2 text-xs text-text-muted tabular-nums">
           {meta}
           {website && (

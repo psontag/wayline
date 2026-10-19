@@ -69,5 +69,43 @@
     "nextStage": "Day {{day}} now starts in {{place}} and is {{distance}}.",
     "lastStage": "Day {{day}} now ends in {{place}}.",
     "undo": "Undo"
+  },
+  "phone": {
+    "sheet": "Stages of the trip",
+    "subtitle": "{{dates}} · {{distance}}",
+    "route": "{{from}} → {{to}}",
+    "day": "Day {{day}}",
+    "dayDate": "Day {{day}} · {{date}}",
+    "weather": "Weather",
+    "wind": "Wind",
+    "weatherValue": "{{min}}–{{max}}, {{condition}}",
+    "condition": {
+      "dry": "dry",
+      "rain": "rain"
+    },
+    "noStartDate": "No start date",
+    "loading": "Loading",
+    "forecastFrom": "Forecast from {{date}}",
+    "stop": "Stop: {{place}}",
+    "noHotel": "No hotel picked yet",
+    "hotel": "{{name}} · {{stars}}",
+    "elevation": "Elevation",
+    "exportStage": "Export this stage as GPX",
+    "stageFileName": "{{name}}, day {{day}}",
+    "stopTitle": "Where to stop",
+    "stopSubtitle": "{{day}} · from {{place}}",
+    "stopTowns": "Stop town",
+    "current": "Current",
+    "shorter": "Shorter",
+    "longer": "Longer",
+    "townMeta": "{{distance}} · {{ascent}}",
+    "locked": "{{place}} is locked. Later edits keep it.",
+    "unlocked": "{{place}} is not locked. Later edits may move it.",
+    "lock": "Lock",
+    "unlock": "Unlock",
+    "hotelsIn": "Hotels in {{place}}",
+    "picked": "Picked",
+    "pick": "Pick",
+    "checkPrices": "Check prices on Booking.com"
   }
 }
