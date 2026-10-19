@@ -55,6 +55,31 @@ export {
 export { ThemeScope } from "./theme/ThemeScope";
 export { useThemeTokens, type ThemeTokens } from "./theme/useThemeTokens";
 export {
+  Combobox,
+  type ComboboxOption,
+  type ComboboxProps,
+} from "./components/Combobox";
+export {
+  ConfirmDialog,
+  type ConfirmDialogProps,
+} from "./components/ConfirmDialog";
+export { DateField, type DateFieldProps } from "./components/DateField";
+export { EmptyState, type EmptyStateProps } from "./components/EmptyState";
+export { NumberInput, type NumberInputProps } from "./components/NumberInput";
+export {
+  NumberStepper,
+  type NumberStepperProps,
+} from "./components/NumberStepper";
+export {
+  RadioCards,
+  type RadioCardOption,
+  type RadioCardsProps,
+} from "./components/RadioCards";
+export { TripCard, type TripCardProps } from "./components/TripCard";
+export { FormField, type FormFieldProps } from "./components/FormField";
+export { PlaceMarker } from "./components/PlaceMarker";
+export { MapLegend, type MapLegendItem } from "./components/MapLegend";
+export {
   ElevationProfile,
   type ElevationProfileProps,
   type ProfilePoint,

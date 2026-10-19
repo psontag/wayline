@@ -1,0 +1,71 @@
+import type { Places } from "@wayline/domain";
+import { describe, expect, it } from "vitest";
+import placesJson from "../../../public/data/mock/oberfranken/places.json";
+import { defaultValues, newTripSchema, toRequest } from "./form";
+import { placeOptions, searchPlaces } from "./places";
+
+const places = placeOptions(placesJson as Places);
+
+describe("searchPlaces", () => {
+  it("puts names that start with the query first, stations before towns", () => {
+    const names = searchPlaces(places, "coburg").map((p) => p.name);
+    expect(names[0]).toBe("Coburg");
+    expect(searchPlaces(places, "coburg")[0]!.kind).toBe("station");
+    expect(names).toContain("Coburg Nord");
+  });
+
+  it("ignores case and accents", () => {
+    expect(searchPlaces(places, "BAMBERG")[0]!.name).toBe("Bamberg");
+    expect(searchPlaces(places, "goßweinstein")[0]!.name).toBe("Gößweinstein");
+  });
+
+  it("limits the results", () => {
+    expect(searchPlaces(places, "a", 5)).toHaveLength(5);
+  });
+});
+
+describe("new trip form", () => {
+  const defaults = defaultValues(places, "2027-06-01");
+
+  it("defaults to Bamberg to Coburg in three days", () => {
+    expect(defaults.start?.name).toBe("Bamberg");
+    expect(defaults.end?.name).toBe("Coburg");
+    expect(defaults.days).toBe(3);
+    expect(defaults.startDate).toBe("2027-06-08");
+  });
+
+  it("turns the defaults into a generate request", () => {
+    const request = toRequest(defaults);
+    expect(request).toMatchObject({
+      kind: "one-way",
+      startStation: { name: "Bamberg", kind: "station" },
+      endStation: { name: "Coburg", kind: "station" },
+      days: 3,
+      kmPerDay: 70,
+      startDate: "2027-06-08",
+    });
+  });
+
+  it("drops the end and an empty date for a loop", () => {
+    const request = toRequest({
+      ...defaults,
+      kind: "multi-day-loop",
+      startDate: "",
+    });
+    expect(request.endStation).toBeUndefined();
+    expect(request.startDate).toBeUndefined();
+  });
+
+  it("needs an end for one-way trips that is not the start", () => {
+    const messages = (values: typeof defaults) =>
+      newTripSchema.safeParse(values).error?.issues.map((i) => i.message);
+    expect(messages({ ...defaults, end: null })).toEqual(["endRequired"]);
+    expect(messages({ ...defaults, end: defaults.start })).toEqual([
+      "endSameAsStart",
+    ]);
+    expect(messages({ ...defaults, days: 0, kmPerDay: undefined })).toEqual([
+      "days",
+      "kmPerDay",
+    ]);
+  });
+});
