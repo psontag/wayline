@@ -13,3 +13,4 @@ apps/web/public/data/*
 !apps/web/public/data/mock/
 pipeline/.venv/
 .cache/
+.env.local
