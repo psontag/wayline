@@ -79,12 +79,12 @@ Other tokens:
 |---|---|
 | Spacing | 4 px steps, also for sizes: `0.5`–`3.5` in half steps, `4`–`12`, `14`, `16`, `20`, `24`, `px` |
 | Width | `sm` 384 px, `panel` 440 px, `page` 1120 px |
-| Radius | `sm` 4 px, `md` 6 px, `lg` 8 px, `full` |
+| Radius | `sm` 4 px, `md` 6 px, `lg` 8 px, `xl` 16 px (sheets), `full` |
 | Font size | `2xs` 11, `xs` 12, `sm` 13, `base` 14, `md` 15, `lg` 18, `xl` 22, `2xl` 28 px |
 | Font weight | `normal`, `medium`, `semibold`, `bold`, `extrabold` |
 | Line height | `tight` 1.15, `normal` 1.5 |
 | Letter spacing | `tight` −0.02 em, `wide` 0.06 em |
-| Shadow | `sm`, `md` |
+| Shadow | `sm`, `md`, `sheet` (upwards, for bottom sheets) |
 | Z-index | `map`, `panel`, `sheet`, `popover`, `dialog`, `toast` |
 | Motion duration | `fast` 120 ms, `normal` 200 ms |
 | Breakpoints | `sm` 640, `md` 768, `lg` 1024 px |

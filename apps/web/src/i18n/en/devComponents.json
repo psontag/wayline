@@ -12,7 +12,8 @@
     "forms": "Form fields",
     "trips": "Trip cards, menus and dialogs",
     "tripEditor": "Trip editor",
-    "proposals": "Proposals"
+    "proposals": "Proposals",
+    "phone": "Phone"
   },
   "demo": {
     "planTrip": "Plan trip",
@@ -80,6 +81,18 @@
     "openTrip": "Open trip",
     "noResultTitle": "No trip fits these limits",
     "noResultText": "Every path climbs more than 800 m on at least one day.",
-    "noResultAction": "Allow up to 1,000 m per day"
+    "noResultAction": "Allow up to 1,000 m per day",
+    "back": "Back to trips",
+    "day": "Day {{day}}",
+    "weather": "Weather",
+    "wind": "Wind",
+    "stop": "Stop: Kronach",
+    "stopTown": "Stop town",
+    "current": "Current",
+    "picked": "Picked",
+    "pick": "Pick",
+    "whereToStop": "Where to stop",
+    "weatherValue": "17–23 °C, dry",
+    "windValue": "45 % headwind"
   }
 }

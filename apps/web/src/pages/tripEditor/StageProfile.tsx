@@ -26,6 +26,8 @@ export type StageProfileProps = {
   /** km of the crosshair. */
   hoverKm?: number;
   onHoverKm: (km: number | undefined) => void;
+  /** panel: bar under the map. sheet: block in the phone sheet. */
+  variant?: "panel" | "sheet";
 };
 
 /** Elevation of a stage by surface, and the weather on one km axis. */
@@ -35,6 +37,7 @@ export function StageProfile({
   network,
   hoverKm,
   onHoverKm,
+  variant = "panel",
 }: StageProfileProps) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -94,21 +97,31 @@ export function StageProfile({
   }
 
   return (
-    <section className="flex shrink-0 flex-col gap-2 border-t border-border bg-surface px-4 py-3">
+    <section
+      className={
+        variant === "panel"
+          ? "flex shrink-0 flex-col gap-2 border-t border-border bg-surface px-4 py-3"
+          : "flex flex-col gap-2"
+      }
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <div className="flex min-w-0 items-baseline gap-3">
-          <h2 className="truncate font-bold">
-            {t("profile.title", {
-              day: index + 1,
-              from: stage.start.name,
-              to: stage.end.name,
-            })}
-          </h2>
+          {variant === "panel" ? (
+            <h2 className="truncate font-bold">
+              {t("profile.title", {
+                day: index + 1,
+                from: stage.start.name,
+                to: stage.end.name,
+              })}
+            </h2>
+          ) : (
+            <h2 className="text-sm font-bold">{t("phone.elevation")}</h2>
+          )}
           <span className="text-xs whitespace-nowrap text-text-muted tabular-nums">
             {readout}
           </span>
         </div>
-        <SurfaceLegend />
+        {variant === "panel" && <SurfaceLegend />}
       </div>
       <ElevationProfile
         points={points}

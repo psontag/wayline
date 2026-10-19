@@ -62,6 +62,8 @@ export function createFormat(language: string) {
     time: (d: Date) => time.format(d),
     /** Kronach, Kulmbach and Coburg */
     list: (items: string[]) => list.format(items),
+    /** Sat 12 Jun – Tue 15 Jun */
+    dateRange: (from: Date, to: Date) => date.formatRange(from, to),
   };
 }
 

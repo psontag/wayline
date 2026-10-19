@@ -27,7 +27,8 @@
     "@radix-ui/react-tooltip": "1.2.16",
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
-    "lucide-react": "1.51.0"
+    "lucide-react": "1.51.0",
+    "vaul": "1.1.2"
   },
   "peerDependencies": {
     "i18next": "^26.4.2",
