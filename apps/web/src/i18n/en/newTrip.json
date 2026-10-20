@@ -19,7 +19,8 @@
   "placeSearch": "Search a town or station",
   "placeKind": {
     "station": "Train station",
-    "town": "Town"
+    "town": "Town",
+    "custom": "Point on the map"
   },
   "days": "Days",
   "kmPerDay": "Km per day",

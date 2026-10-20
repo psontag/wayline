@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   Link,
   useNavigate,
@@ -16,8 +15,7 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
-import { useTrip } from "../../data/queries";
-import { useServices } from "../../data/ServicesProvider";
+import { useNetwork, useTrip } from "../../data/queries";
 import { StageList } from "./StageList";
 import { StageProfile } from "./StageProfile";
 import { useStopOptions } from "./StopPicker";
@@ -51,24 +49,13 @@ export function TripEditorPage() {
   );
 }
 
-/** The route network around a trip, for surface colors in the profile. */
-function useNetwork(trip: Trip) {
-  const { network } = useServices();
-  const bbox = networkArea(tripStops(trip));
-  return useQuery({
-    queryKey: ["network", bbox],
-    queryFn: () => network.network(bbox),
-    staleTime: Infinity,
-  }).data;
-}
-
 function TripEditor({ trip }: { trip: Trip }) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
   const search = useSearch({ from: "/trips/$tripId" });
   const navigate = useNavigate({ from: "/trips/$tripId" });
   const editor = useTripEditor(trip);
-  const network = useNetwork(trip);
+  const network = useNetwork(networkArea(tripStops(trip)));
   const isPhone = useIsPhone();
   const [hoverKm, setHoverKm] = useState<number>();
 

@@ -19,12 +19,13 @@ import { useTranslation } from "react-i18next";
 
 export function AppShell() {
   const { t } = useTranslation();
-  // The trip editor and the proposals have their own top bar.
+  // The trip editor, the proposals and the route screen have their own top bar.
   const matchRoute = useMatchRoute();
   const navigate = useNavigate();
   const ownTopBar =
     !!matchRoute({ to: "/trips/$tripId" }) ||
-    !!matchRoute({ to: "/proposals" });
+    !!matchRoute({ to: "/proposals" }) ||
+    !!matchRoute({ to: "/route" });
   return (
     <div className="flex h-dvh flex-col bg-bg text-text">
       {!ownTopBar && (

@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import {
   addDays,
+  type BBox,
   type LonLat,
   routePoints,
   sampleAt,
@@ -72,6 +73,17 @@ export function useDuplicateTrip() {
       void client.invalidateQueries({ queryKey: queryKeys.trips });
     },
   });
+}
+
+/** The route network, for surface colors in the elevation profile. */
+export function useNetwork(bbox: BBox | undefined) {
+  const { network } = useServices();
+  return useQuery({
+    queryKey: ["network", bbox],
+    queryFn: () => network.network(bbox),
+    enabled: !!bbox,
+    staleTime: Infinity,
+  }).data;
 }
 
 const FORECAST_STALE_MS = 2 * 60 * 60 * 1000;

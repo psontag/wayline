@@ -1,6 +1,6 @@
 import type { Place } from "@wayline/domain";
 import { Combobox, type ComboboxOption } from "@wayline/ui";
-import { MapPin, TrainFront } from "lucide-react";
+import { Crosshair, MapPin, TrainFront } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { placeKey, searchPlaces } from "./places";
@@ -35,11 +35,17 @@ export function PlaceField({
     value: placeKey(place),
     label: place.name,
     description: t(
-      place.kind === "station" ? "placeKind.station" : "placeKind.town",
+      place.kind === "station"
+        ? "placeKind.station"
+        : place.kind === "custom"
+          ? "placeKind.custom"
+          : "placeKind.town",
     ),
     icon:
       place.kind === "station" ? (
         <TrainFront aria-hidden />
+      ) : place.kind === "custom" ? (
+        <Crosshair aria-hidden />
       ) : (
         <MapPin aria-hidden />
       ),

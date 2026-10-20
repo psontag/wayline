@@ -24,6 +24,7 @@ import {
   DateField,
   EmptyState,
   FormField,
+  MapHint,
   MapLegend,
   Menu,
   NumberInput,
@@ -68,6 +69,7 @@ import {
   Ellipsis,
   EllipsisVertical,
   ExternalLink,
+  MousePointerClick,
   Pencil,
   Redo2,
   Share2,
@@ -745,6 +747,9 @@ function TripDemos() {
               { label: t("demo.area"), line: "dashed" },
             ]}
           />
+          <MapHint icon={<MousePointerClick aria-hidden />}>
+            {t("demo.mapHint")}
+          </MapHint>
         </div>
       </div>
       <EmptyState
