@@ -65,6 +65,7 @@ export {
 } from "./components/ConfirmDialog";
 export { Dialog, type DialogProps } from "./components/Dialog";
 export { DateField, type DateFieldProps } from "./components/DateField";
+export { DayStrip, type DayStripItem } from "./components/DayStrip";
 export { EmptyState, type EmptyStateProps } from "./components/EmptyState";
 export { NumberInput, type NumberInputProps } from "./components/NumberInput";
 export {

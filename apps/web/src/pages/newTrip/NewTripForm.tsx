@@ -1,18 +1,21 @@
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
-import type {
-  GenerateRequest,
-  Place,
-  Profile,
-  TripKind,
+import {
+  addDays,
+  dayShares,
+  type GenerateRequest,
+  localTimeToDate,
+  type Place,
+  type Profile,
+  type TripKind,
 } from "@wayline/domain";
 import {
   Button,
   Chip,
   DateField,
+  DayStrip,
   FormField,
   NumberInput,
-  NumberStepper,
   RadioCards,
   SegmentedControl,
   Select,
@@ -30,17 +33,21 @@ import {
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  backByTimes,
   defaultValues,
+  formDays,
   fromRequest,
   isFormError,
-  limits,
+  lengths,
   newTripSchema,
+  type NewTripValues,
+  shapes,
   startTimes,
   type ThemeChoice,
   themes,
   toRequest,
-  tripKinds,
-  type NewTripKind,
+  type TripLength,
+  type TripShape,
 } from "./form";
 import { NewTripMap } from "./NewTripMap";
 import { PlaceField } from "./PlaceField";
@@ -97,11 +104,13 @@ export function NewTripForm({
   return (
     <div className="flex min-h-0 flex-1">
       <form.Subscribe
-        selector={(s) => [s.values.kind, s.values.start, s.values.end] as const}
+        selector={(s) =>
+          [s.values.shape, s.values.start, s.values.end] as const
+        }
       >
-        {([kind, start, end]) => (
+        {([shape, start, end]) => (
           <div className="relative hidden min-w-0 flex-1 md:block">
-            <NewTripMap start={start} end={kind === "one-way" ? end : null} />
+            <NewTripMap start={start} end={shape === "ab" ? end : null} />
           </div>
         )}
       </form.Subscribe>
@@ -119,25 +128,42 @@ export function NewTripForm({
             {t("title")}
           </h1>
 
-          <form.Field name="kind">
+          <form.Field name="length">
             {(field) => (
-              <FormField label={t("kind.legend")} labelId={`${id}-kind`}>
-                <RadioCards
-                  aria-labelledby={`${id}-kind`}
+              <FormField label={t("length.label")} labelId={`${id}-length`}>
+                <SegmentedControl
+                  stretch
+                  aria-labelledby={`${id}-length`}
                   value={field.state.value}
-                  onValueChange={(v) => field.handleChange(v as NewTripKind)}
-                  options={tripKinds.map((k) => ({
-                    value: k,
-                    label: t(`kind.${k}.label`),
-                    hint: t(`kind.${k}.hint`),
+                  onValueChange={(v) => field.handleChange(v as TripLength)}
+                  options={lengths.map((l) => ({
+                    value: l,
+                    label: t(`length.${l}`),
                   }))}
                 />
               </FormField>
             )}
           </form.Field>
 
-          <form.Subscribe selector={(s) => s.values.kind}>
-            {(kind) => (
+          <form.Field name="shape">
+            {(field) => (
+              <FormField label={t("shape.label")} labelId={`${id}-shape`}>
+                <RadioCards
+                  aria-labelledby={`${id}-shape`}
+                  value={field.state.value}
+                  onValueChange={(v) => field.handleChange(v as TripShape)}
+                  options={shapes.map((k) => ({
+                    value: k,
+                    label: t(`shape.${k}.label`),
+                    hint: t(`shape.${k}.hint`),
+                  }))}
+                />
+              </FormField>
+            )}
+          </form.Field>
+
+          <form.Subscribe selector={(s) => s.values.shape}>
+            {(shape) => (
               <div className="grid grid-cols-2 gap-3">
                 <form.Field name="start">
                   {(field) => {
@@ -148,7 +174,7 @@ export function NewTripForm({
                         htmlFor={`${id}-start`}
                         error={error}
                         errorId={`${id}-start-error`}
-                        className={kind === "one-way" ? "" : "col-span-2"}
+                        className={shape === "ab" ? "" : "col-span-2"}
                       >
                         <PlaceField
                           id={`${id}-start`}
@@ -162,7 +188,7 @@ export function NewTripForm({
                     );
                   }}
                 </form.Field>
-                {kind === "one-way" && (
+                {shape === "ab" && (
                   <form.Field name="end">
                     {(field) => {
                       const error = errorOf(field.state.meta);
@@ -190,94 +216,189 @@ export function NewTripForm({
             )}
           </form.Subscribe>
 
-          <div className="grid grid-cols-2 gap-3">
-            <form.Field name="days">
-              {(field) => {
-                const error = errorOf(field.state.meta);
-                return (
-                  <FormField
-                    label={t("days")}
-                    htmlFor={`${id}-days`}
-                    error={error}
-                    errorId={`${id}-days-error`}
-                  >
-                    <NumberStepper
-                      id={`${id}-days`}
-                      value={field.state.value}
-                      onValueChange={field.handleChange}
-                      min={limits.days.min}
-                      max={limits.days.max}
-                      aria-invalid={!!error}
-                      aria-describedby={error && `${id}-days-error`}
-                    />
-                  </FormField>
-                );
-              }}
-            </form.Field>
-            <form.Field name="kmPerDay">
-              {(field) => {
-                const error = errorOf(field.state.meta);
-                return (
-                  <FormField
-                    label={t("kmPerDay")}
-                    htmlFor={`${id}-km`}
-                    error={error}
-                    errorId={`${id}-km-error`}
-                  >
-                    <NumberInput
-                      id={`${id}-km`}
-                      unit={t("unit.km")}
-                      value={field.state.value}
-                      onValueChange={field.handleChange}
-                      onBlur={field.handleBlur}
-                      aria-invalid={!!error}
-                      aria-describedby={error && `${id}-km-error`}
-                    />
-                  </FormField>
-                );
-              }}
-            </form.Field>
-            <form.Field name="maxAscentPerDay">
-              {(field) => {
-                const error = errorOf(field.state.meta);
-                return (
-                  <FormField
-                    label={t("maxAscentPerDay")}
-                    htmlFor={`${id}-ascent`}
-                    error={error}
-                    errorId={`${id}-ascent-error`}
-                  >
-                    <NumberInput
-                      id={`${id}-ascent`}
-                      unit={t("unit.m")}
-                      value={field.state.value}
-                      onValueChange={field.handleChange}
-                      onBlur={field.handleBlur}
-                      aria-invalid={!!error}
-                      aria-describedby={error && `${id}-ascent-error`}
-                    />
-                  </FormField>
-                );
-              }}
-            </form.Field>
-            <form.Field name="hotelBudget">
-              {(field) => (
-                <FormField label={t("hotelBudget")} htmlFor={`${id}-budget`}>
-                  <Select
-                    id={`${id}-budget`}
-                    value={field.state.value}
-                    onValueChange={(v) =>
-                      field.handleChange(v as (typeof budgets)[number])
-                    }
-                    options={budgets.map((b) => ({
-                      value: b,
-                      label: t(`budget.${b}`),
-                    }))}
-                  />
-                </FormField>
-              )}
-            </form.Field>
-          </div>
+          <form.Subscribe selector={(s) => s.values.length}>
+            {(length) => (
+              <fieldset className="flex flex-col gap-3">
+                <legend className="mb-2 text-sm font-bold">
+                  {t("when.label")}
+                </legend>
+                <div className="grid grid-cols-2 gap-3">
+                  <form.Field name="startDate">
+                    {(field) => (
+                      <FormField
+                        label={t(
+                          length === "one" ? "when.date" : "when.firstDay",
+                        )}
+                        htmlFor={`${id}-date`}
+                      >
+                        <DateField
+                          id={`${id}-date`}
+                          min={now}
+                          value={field.state.value}
+                          onValueChange={(date) => {
+                            if (!date) return;
+                            // Moving the first day keeps the number of days.
+                            const days = formDays(form.state.values);
+                            field.handleChange(date);
+                            form.setFieldValue(
+                              "endDate",
+                              addDays(date, days - 1),
+                            );
+                          }}
+                        />
+                      </FormField>
+                    )}
+                  </form.Field>
+                  <form.Field name="startTime">
+                    {(field) => (
+                      <FormField
+                        label={t("when.startAt")}
+                        htmlFor={`${id}-time`}
+                      >
+                        <Select
+                          id={`${id}-time`}
+                          value={field.state.value}
+                          onValueChange={field.handleChange}
+                          options={startTimes.map((time) => ({
+                            value: time,
+                            label: format.time(new Date(`2000-01-01T${time}`)),
+                          }))}
+                        />
+                      </FormField>
+                    )}
+                  </form.Field>
+                  {length === "multi" && (
+                    <form.Field name="endDate">
+                      {(field) => {
+                        const error = errorOf(field.state.meta);
+                        return (
+                          <FormField
+                            label={t("when.lastDay")}
+                            htmlFor={`${id}-end-date`}
+                            error={error}
+                            errorId={`${id}-end-date-error`}
+                          >
+                            <DateField
+                              id={`${id}-end-date`}
+                              min={addDays(form.state.values.startDate, 1)}
+                              value={field.state.value}
+                              onValueChange={(date) =>
+                                date && field.handleChange(date)
+                              }
+                            />
+                          </FormField>
+                        );
+                      }}
+                    </form.Field>
+                  )}
+                  {length === "multi" && (
+                    <form.Field name="backBy">
+                      {(field) => (
+                        <FormField
+                          label={t("when.backBy")}
+                          htmlFor={`${id}-back`}
+                        >
+                          <Select
+                            id={`${id}-back`}
+                            value={field.state.value}
+                            onValueChange={field.handleChange}
+                            options={backByTimes.map((time) => ({
+                              value: time,
+                              label: format.time(
+                                new Date(`2000-01-01T${time}`),
+                              ),
+                            }))}
+                          />
+                        </FormField>
+                      )}
+                    </form.Field>
+                  )}
+                </div>
+                {length === "multi" && (
+                  <form.Subscribe selector={(s) => s.values}>
+                    {(values) => <Days values={values} />}
+                  </form.Subscribe>
+                )}
+              </fieldset>
+            )}
+          </form.Subscribe>
+
+          <form.Subscribe selector={(s) => s.values.length}>
+            {(length) => (
+              <div className="grid grid-cols-2 gap-3">
+                <form.Field name="kmPerDay">
+                  {(field) => {
+                    const error = errorOf(field.state.meta);
+                    return (
+                      <FormField
+                        label={t(length === "one" ? "distance" : "kmPerDay")}
+                        htmlFor={`${id}-km`}
+                        error={error}
+                        errorId={`${id}-km-error`}
+                      >
+                        <NumberInput
+                          id={`${id}-km`}
+                          unit={t("unit.km")}
+                          value={field.state.value}
+                          onValueChange={field.handleChange}
+                          onBlur={field.handleBlur}
+                          aria-invalid={!!error}
+                          aria-describedby={error && `${id}-km-error`}
+                        />
+                      </FormField>
+                    );
+                  }}
+                </form.Field>
+                <form.Field name="maxAscentPerDay">
+                  {(field) => {
+                    const error = errorOf(field.state.meta);
+                    return (
+                      <FormField
+                        label={t(
+                          length === "one" ? "maxAscent" : "maxAscentPerDay",
+                        )}
+                        htmlFor={`${id}-ascent`}
+                        error={error}
+                        errorId={`${id}-ascent-error`}
+                      >
+                        <NumberInput
+                          id={`${id}-ascent`}
+                          unit={t("unit.m")}
+                          value={field.state.value}
+                          onValueChange={field.handleChange}
+                          onBlur={field.handleBlur}
+                          aria-invalid={!!error}
+                          aria-describedby={error && `${id}-ascent-error`}
+                        />
+                      </FormField>
+                    );
+                  }}
+                </form.Field>
+                {length === "multi" && (
+                  <form.Field name="hotelBudget">
+                    {(field) => (
+                      <FormField
+                        label={t("hotelBudget")}
+                        htmlFor={`${id}-budget`}
+                      >
+                        <Select
+                          id={`${id}-budget`}
+                          value={field.state.value}
+                          onValueChange={(v) =>
+                            field.handleChange(v as (typeof budgets)[number])
+                          }
+                          options={budgets.map((b) => ({
+                            value: b,
+                            label: t(`budget.${b}`),
+                          }))}
+                        />
+                      </FormField>
+                    )}
+                  </form.Field>
+                )}
+              </div>
+            )}
+          </form.Subscribe>
 
           <form.Field name="profile">
             {(field) => (
@@ -330,57 +451,11 @@ export function NewTripForm({
               </FormField>
             )}
           </form.Field>
-
-          <div className="grid grid-cols-2 gap-3">
-            <form.Field name="startDate">
-              {(field) => (
-                <FormField
-                  label={t("startDate")}
-                  note={t("optional")}
-                  htmlFor={`${id}-date`}
-                >
-                  <DateField
-                    id={`${id}-date`}
-                    clearable
-                    min={now}
-                    value={field.state.value}
-                    onValueChange={field.handleChange}
-                  />
-                </FormField>
-              )}
-            </form.Field>
-            <form.Field name="startTime">
-              {(field) => (
-                <FormField label={t("startTime")} htmlFor={`${id}-time`}>
-                  <Select
-                    id={`${id}-time`}
-                    value={field.state.value}
-                    onValueChange={field.handleChange}
-                    options={startTimes.map((time) => ({
-                      value: time,
-                      label: format.time(new Date(`2000-01-01T${time}`)),
-                    }))}
-                  />
-                </FormField>
-              )}
-            </form.Field>
-          </div>
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-4">
-          <form.Subscribe
-            selector={(s) => [s.values.days, s.values.kmPerDay] as const}
-          >
-            {([days, km]) => (
-              <span className="text-xs text-text-muted tabular-nums">
-                {days && km
-                  ? t("summary", {
-                      count: days,
-                      distance: format.distance(days * km * 1000),
-                    })
-                  : null}
-              </span>
-            )}
+          <form.Subscribe selector={(s) => s.values}>
+            {(values) => <Summary values={values} />}
           </form.Subscribe>
           <Button type="submit" variant="primary">
             {t("submit")}
@@ -389,5 +464,62 @@ export function NewTripForm({
         </div>
       </form>
     </div>
+  );
+}
+
+/** Shares of a full day, if the dates and times are valid. */
+function sharesOf(values: NewTripValues): number[] | undefined {
+  const days = formDays(values);
+  if (!(days >= 2 && days <= 14)) return undefined;
+  return dayShares(days, values.startTime, values.backBy);
+}
+
+/** One tile per day: date, target km and why a day is short. */
+function Days({ values }: { values: NewTripValues }) {
+  const { t } = useTranslation("newTrip");
+  const format = useFormat();
+  const shares = sharesOf(values);
+  if (!shares) return null;
+  const time = (hm: string) => format.time(new Date(`2000-01-01T${hm}`));
+  const last = shares.length - 1;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <DayStrip
+        aria-label={t("when.days")}
+        items={shares.map((share, i) => ({
+          label: format.date(localTimeToDate(addDays(values.startDate, i))),
+          share,
+          value: t("when.dayKm", {
+            distance: format.distance(
+              Math.round(((values.kmPerDay ?? 0) * share) / 5) * 5000,
+            ),
+          }),
+          note:
+            i === 0 && share < 1
+              ? t("when.from", { time: time(values.startTime) })
+              : i === last && share < 1
+                ? t("when.backByDay", { time: time(values.backBy) })
+                : t("when.fullDay"),
+        }))}
+      />
+      <span className="text-xs text-text-muted">{t("when.hint")}</span>
+    </div>
+  );
+}
+
+function Summary({ values }: { values: NewTripValues }) {
+  const { t } = useTranslation("newTrip");
+  const format = useFormat();
+  const km = values.kmPerDay;
+  const shares = values.length === "one" ? [1] : sharesOf(values);
+  if (!km || !shares) return <span />;
+  const days = shares.reduce((a, b) => a + b, 0);
+  return (
+    <span className="text-xs text-text-muted tabular-nums">
+      {t("summary", {
+        count: shares.length,
+        distance: format.distance(days * km * 1000),
+      })}
+    </span>
   );
 }
