@@ -3,6 +3,8 @@ dist/
 .wrangler/
 .cloudflare/
 .dev.vars
+# Cloudflare token for debugging and the tunnel (docs/12-deploy.md)
+.cloudflare.env
 *.tsbuildinfo
 .DS_Store
 .claude/worktrees/

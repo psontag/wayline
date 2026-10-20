@@ -1,4 +1,6 @@
 # Local BRouter. Start with `pnpm brouter`, which downloads the segments first.
+# With a Cloudflare token in .cloudflare.env it also starts cloudflared, so
+# the deployed Worker reaches BRouter through the tunnel.
 name: wayline-brouter
 
 services:
@@ -10,3 +12,13 @@ services:
     volumes:
       - ../../.cache/brouter/segments4:/brouter/segments4:ro
       - ./profiles:/wayline/profiles:ro
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.9.3
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on: [brouter]
+    profiles: [tunnel]
+    restart: unless-stopped

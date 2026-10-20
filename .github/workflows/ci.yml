@@ -4,13 +4,15 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a running deploy.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -30,3 +32,86 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+
+  # Sets up Cloudflare, builds the route data and deploys. See docs/12-deploy.md.
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Route data: rebuilt when the pipeline changes and once a month, so
+      # OSM updates come in. The OSM and DEM downloads are cached too.
+      - id: month
+        run: echo "month=$(date +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - id: data
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: |
+            apps/web/public/data/latest.json
+            apps/web/public/data/south-*
+          key: data-${{ steps.month.outputs.month }}-${{ hashFiles('pipeline/*.py', 'pipeline/requirements.txt') }}
+      - if: steps.data.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: pipeline/cache
+          key: osm-${{ steps.month.outputs.month }}
+      - if: steps.data.outputs.cache-hit != 'true'
+        uses: astral-sh/setup-uv@v10.2.0
+      - if: steps.data.outputs.cache-hit != 'true'
+        run: pnpm data:build
+      - if: steps.data.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: pipeline/cache
+          key: osm-${{ steps.month.outputs.month }}
+      - if: steps.data.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: |
+            apps/web/public/data/latest.json
+            apps/web/public/data/south-*
+          key: ${{ steps.data.outputs.cache-primary-key }}
+
+      # Creates or updates D1, the tunnel, the VPC service and Access, and
+      # writes their ids to $GITHUB_ENV for the build.
+      - name: Set up Cloudflare
+        run: node apps/api/scripts/setup-cloudflare.ts
+        env:
+          # A variable or a secret, whichever the owner made.
+          ACCESS_EMAILS: ${{ vars.ACCESS_EMAILS || secrets.ACCESS_EMAILS }}
+
+      - name: Apply D1 migrations
+        working-directory: apps/api
+        run: pnpm exec cf d1 migrations apply "$WAYLINE_D1_ID" --dir migrations
+
+      - run: pnpm build
+        env:
+          # Route and save trips through the Worker, not in the browser.
+          VITE_ROUTING: api
+          VITE_TRIPS: api
+
+      - name: Deploy
+        working-directory: apps/api
+        run: pnpm exec cf deploy --message "${{ github.sha }}"
+
+      # The app must ask for a login. A 200 means Access is not in front of it.
+      - name: Check that Access protects the app
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" "$WAYLINE_URL/api/health")
+          echo "GET /api/health without login: $status"
+          if [ "$status" = "200" ]; then
+            echo "::error::$WAYLINE_URL answers without login"
+            exit 1
+          fi
