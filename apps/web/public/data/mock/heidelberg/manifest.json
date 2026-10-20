@@ -1,1 +1,1 @@
-{"version":"south-2026-10-19","region":{"name":"Heidelberg","bbox":[8.0,49.0,9.49,49.99]},"files":{"places":"places.json"},"tiles":{"size":0.5,"path":"tiles/{key}.json","keys":["16_98","16_99","17_98","17_99","18_98","18_99"]},"createdAt":"2026-10-19"}
+{"version":"south-2026-10-20","region":{"name":"Heidelberg","bbox":[8.0,49.0,9.49,49.99]},"files":{"places":"places.json"},"tiles":{"size":0.5,"path":"tiles/{key}.json","keys":["16_98","16_99","17_98","17_99","18_98","18_99"]},"createdAt":"2026-10-20"}
