@@ -202,6 +202,7 @@ function ProposalItem({
   const { t } = useTranslation("proposals");
   const format = useFormat();
   const { trip, routeNames } = proposal;
+  const themeValue = theme && proposal.themes?.[theme];
   const stats = proposalStats(trip);
   const profile = useMemo(() => elevationSamples(tripPoints(trip)), [trip]);
   const from = trip.stages[0]?.start.name ?? "";
@@ -221,11 +222,11 @@ function ProposalItem({
           `card.subtitle.${trip.kind === "one-way" ? "one-way" : "multi-day-loop"}`,
           { from, to },
         ),
-        ...(theme && proposal.themeValue !== undefined
+        ...(theme && themeValue !== undefined
           ? [
               t(`card.theme.${theme}`, {
-                share: format.percent(proposal.themeValue),
-                count: Math.round(proposal.themeValue),
+                share: format.percent(themeValue),
+                count: Math.round(themeValue),
               }),
             ]
           : []),

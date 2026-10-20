@@ -7,6 +7,7 @@ import {
   type GenerateResult,
   type Places,
   type Proposal,
+  Theme,
 } from "@wayline/domain";
 import type {
   AbortSignalLike,
@@ -193,8 +194,10 @@ export class Planner {
           trip.stages.at(-1)?.end.name ?? "",
         ]),
       };
-      if (request.theme) {
-        proposal.themeValue = themeValue(graph, p.steps, request.theme);
+      if (p.steps.some((s) => graph.edge(s.edge).scenery)) {
+        proposal.themes = Object.fromEntries(
+          Theme.options.map((t) => [t, themeValue(graph, p.steps, t)]),
+        );
       }
       proposals.push(proposal);
       onProposal?.(proposal);

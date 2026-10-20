@@ -210,10 +210,10 @@ export const Proposal = z.object({
   /** Best-known towns on the way, in route order. */
   via: z.array(z.string()),
   /**
-   * How much of the requested theme the trip has: share of km (nature,
-   * water, wine) or number of sights (culture).
+   * How much of each theme the trip has: share of km (nature, water, wine)
+   * or number of sights (culture). Missing without scenery data.
    */
-  themeValue: z.number().optional(),
+  themes: z.partialRecord(Theme, z.number()).optional(),
 });
 export type Proposal = z.infer<typeof Proposal>;
 
