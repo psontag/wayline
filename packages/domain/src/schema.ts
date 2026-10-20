@@ -107,6 +107,14 @@ export const ProviderEnvelope = z.object({
 });
 export type ProviderEnvelope = z.infer<typeof ProviderEnvelope>;
 
+/** Body of POST /api/route: one leg. */
+export const RouteRequest = z.object({
+  from: LonLat,
+  to: LonLat,
+  profile: Profile,
+});
+export type RouteRequest = z.infer<typeof RouteRequest>;
+
 export const Stage = z.object({
   id: z.string(),
   start: Place,
