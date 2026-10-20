@@ -1,17 +1,15 @@
 import {
-  ApiErrorBody,
   type Leg,
   type LonLat,
   type Profile,
   ProviderEnvelope,
-  WaylineError,
 } from "@wayline/domain";
 import {
   parseBrouterLeg,
   type RouteOptions,
   type RoutingProvider,
 } from "@wayline/providers";
-import { type ApiClient, createApiClient } from "./apiClient";
+import { type ApiClient, createApiClient, readJson } from "./apiClient";
 
 /** The browser sends at most this many routing requests at once. */
 const MAX_PARALLEL = 3;
@@ -53,16 +51,8 @@ export class ApiRouting implements RoutingProvider {
       { json: { from, to, profile } },
       { init: { signal } },
     );
-    const body: unknown = await res.json();
-    if (!res.ok) {
-      const error = ApiErrorBody.safeParse(body);
-      if (error.success) {
-        const { code, message, retryAfter } = error.data;
-        throw new WaylineError(code, message, retryAfter);
-      }
-      throw new WaylineError("PROVIDER_UNAVAILABLE", `API: ${res.status}`);
-    }
     // BRouter and the fake router both answer in BRouter's GeoJSON.
-    return parseBrouterLeg(ProviderEnvelope.parse(body), from, to);
+    const envelope = ProviderEnvelope.parse(await readJson(res));
+    return parseBrouterLeg(envelope, from, to);
   }
 }

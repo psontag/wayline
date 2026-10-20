@@ -9,6 +9,7 @@ import {
   type WeatherProvider,
 } from "@wayline/providers";
 import { ApiRouting } from "./ApiRouting";
+import { ApiTripStore, withMovedTrips } from "./ApiTripStore";
 import { createTripGenerator } from "./generator";
 import { LocalTripStore } from "./LocalTripStore";
 import type { TripGenerator } from "./TripGenerator";
@@ -63,10 +64,15 @@ export function createServices(): Services {
     import.meta.env.VITE_ROUTING === "api"
       ? new ApiRouting()
       : new FakeRouting((bbox) => graphs.get(bbox));
+  // VITE_TRIPS=api saves trips on the server. Default: browser storage.
+  const trips =
+    import.meta.env.VITE_TRIPS === "api"
+      ? withMovedTrips(new ApiTripStore(), new LocalTripStore())
+      : new LocalTripStore({
+          loadSample: () => fetchJson(`${MOCK_DATA}/sample-trip.json`),
+        });
   return {
-    trips: new LocalTripStore({
-      loadSample: () => fetchJson(`${MOCK_DATA}/sample-trip.json`),
-    }),
+    trips,
     generator: createTripGenerator({ dataUrl: url }),
     routing,
     weather: new FakeWeather(),
