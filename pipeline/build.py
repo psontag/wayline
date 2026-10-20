@@ -14,12 +14,14 @@ import math
 import os
 import time
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor
 
 import download
 import export as X
 import extract as E
 import graph as G
 import region
+import scenery as S
 from dem import Dem
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -48,6 +50,18 @@ def load_extract(cache, state):
         return data, src
     with open(dst) as f:
         return json.load(f), src
+
+
+def load_scenery(cache, state):
+    """Scenery of one state (see scenery.extract). Cached like load_extract."""
+    src = os.path.join(cache, "osm", f"{state}-latest.osm.pbf")
+    dst = os.path.join(cache, "work", f"{state}-scenery.npz")
+    if not os.path.exists(dst) or os.path.getmtime(dst) < max(os.path.getmtime(src), os.path.getmtime(S.__file__)):
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        # In a child process, so its memory is free again afterwards.
+        with ProcessPoolExecutor(1) as pool:
+            pool.submit(S.extract_to, src, dst).result()
+    return S.load(dst)
 
 
 def tile_key(lon, lat):
@@ -95,6 +109,10 @@ def main():
     download.main(args.cache)
     t.step("download")
 
+    # Before the route extracts, so the scenery extract's peak memory doesn't add to theirs.
+    scenery = S.Scenery(*S.merge(load_scenery(args.cache, s) for s in states))
+    t.step("scenery")
+
     parts, srcs = [], []
     for s in states:
         data, src = load_extract(args.cache, s)
@@ -112,9 +130,10 @@ def main():
     osm_date = datetime.date.fromtimestamp(max(os.path.getmtime(p) for p in srcs)).isoformat()
     version = f"south-{osm_date}" if states == region.STATES else f"{'-'.join(states)}-{osm_date}"
     dem = Dem(os.path.join(args.cache, "dem"))
-    network, index = X.export_network(g, dem, version)
+    network, index = X.export_network(g, dem, version, scenery)
     print(f"network: nodes={len(network['nodes'])} edges={len(network['edges'])}")
-    t.step("elevation and geometry")
+    t.step("elevation, geometry and scenery")
+    del scenery
 
     places = X.export_places(data, g, index, version)
     tiles = split_tiles(network)
@@ -139,6 +158,7 @@ def main():
     print(f"out: {out}")
     print(f"places.json: {places_size / mb:.1f} MiB (towns={len(places['towns'])} stations={len(places['stations'])} hotels={len(places['hotels'])})")
     print(f"tiles: {len(s)} files, {sum(s) / mb:.1f} MiB, median {s[len(s) // 2] / mb:.2f} MiB, max {s[-1] / mb:.2f} MiB")
+    print("scenery:", S.stats(network["edges"]))
     print(f"total: {time.time() - t.start:.0f} s")
 
 

@@ -160,8 +160,9 @@ def dem_tile(loc):
     return (math.floor(loc[1]), math.floor(loc[0]))
 
 
-def export_network(g, dem, version):
-    """Nodes and edges of the largest connected part. Ids are array indexes."""
+def export_network(g, dem, version, scenery=None):
+    """Nodes and edges of the largest connected part. Ids are array indexes.
+    Edges get a scenery field if `scenery` (scenery.Scenery) is given."""
     main = main_component(g)
     edges = [e for e in g["edges"] if e["a"] in main]
 
@@ -215,6 +216,8 @@ def export_network(g, dem, version):
             "descent": round(down),
             **line(pts),
         }
+        if scenery:
+            out_edges[i]["scenery"] = scenery.edge(pts)
     return {"version": version, "nodes": nodes, "edges": out_edges}, index
 
 

@@ -2,3 +2,4 @@ osmium==4.3.2
 tifffile==2026.10.15
 imagecodecs==2026.10.10
 numpy==2.5.4
+pillow==12.3.0
