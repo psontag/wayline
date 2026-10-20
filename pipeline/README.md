@@ -11,7 +11,7 @@ pnpm data:build
 - Needs [uv](https://docs.astral.sh/uv/) and Python 3.12. `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`.
 - Downloads missing inputs to `pipeline/cache/` (gitignored, about 3 GB): Geofabrik extracts of the three states and Copernicus GLO-30 tiles N47–N51, E007–E013.
 - Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `south-<date of the extracts>`.
-- Takes about 6 minutes and up to 5.5 GB of memory on a laptop. Reading the extracts takes 5 of the 6 minutes. The results are cached, so the next build takes 1 minute.
+- Takes about 8 minutes and up to 5.5 GB of memory on a laptop. Reading the extracts takes 7 of the 8 minutes: 5 for routes and places, 2.5 for scenery. The results are cached, so the next build takes 1 minute.
 - `pnpm data:build --states hessen` builds one state.
 
 Output (October 2026):
@@ -19,10 +19,43 @@ Output (October 2026):
 | | |
 |---|---|
 | Route network | 68,000 nodes, 90,000 edges, 87,000 km |
-| Tiles | 87 files of 0.5°, 32 MiB (6.4 MiB gzipped), median 0.3 MiB, largest 2 MiB |
+| Tiles | 87 files of 0.5°, 39 MiB (6.6 MiB gzipped), median 0.4 MiB, largest 2.4 MiB |
 | `places.json` | 4.1 MiB (1 MiB gzipped): 16,800 towns, 2,500 stations, 15,700 hotels |
 
-A trip around Heidelberg needs about 6 tiles, 4 MiB (0.7 MiB gzipped).
+A trip around Heidelberg needs about 6 tiles, 4.4 MiB (0.7 MiB gzipped).
+
+## Scenery
+
+Each edge has `scenery`: how much of it runs through forest, along water, through vineyards and in nature areas, and how many sights are near (`Scenery` in `packages/domain/src/geodata.ts`).
+
+- `scenery.py` draws the areas and rivers of each class onto a grid of 50 m cells over the region.
+- An edge's share of a class is the share of its points (every 50 m) on a cell of that class.
+- Each class grows by a buffer, so edges next to a forest or along a river count too.
+
+| Class | OSM tags | Buffer |
+|---|---|---|
+| `forest` | `landuse=forest`, `natural=wood` | 50 m |
+| `water` | `waterway=river\|canal`, `natural=water` over 5 ha (not basins or wastewater) | 150 m |
+| `vineyard` | `landuse=vineyard` | 100 m |
+| `nature` | `leisure=nature_reserve`, `boundary=national_park`, `boundary=protected_area` with `protect_class` 1–4, and nature parks (`Naturpark` in name or `protection_title`) | none |
+| `sights` | Named `historic=castle\|ruins\|monastery\|city_gate`, `tourism=attraction\|viewpoint\|museum` (nodes, and areas by their center) | counted within 500 m |
+
+- Pillow draws areas about 25 m too large. The buffers above come on top.
+- Landscape protection areas (`protect_class=5` without `Naturpark`) don't count. They cover about a third of the land.
+- Nature parks are large and include towns, e.g. Heidelberg is in Geo-Naturpark Bergstraße-Odenwald.
+- A state extract holds only the part of a relation inside the state. `scenery.py` joins the ways of such relations across the states. Areas that reach outside the region are dropped, except water: its open outline is closed with a straight line. So the Bodensee covers its German side.
+
+Mean share per edge km, October 2026:
+
+| forest | water | vineyard | nature |
+|---|---|---|---|
+| 0.43 | 0.17 | 0.01 | 0.31 |
+
+Sights within 500 m, share of edges:
+
+| 0 | 1 | 2–4 | 5–9 | 10+ |
+|---|---|---|---|---|
+| 63% | 18% | 13% | 4% | 2% |
 
 ## Files
 
@@ -32,6 +65,7 @@ A trip around Heidelberg needs about 6 tiles, 4 MiB (0.7 MiB gzipped).
 | `build.py` | Runs everything |
 | `download.py` | Downloads the inputs |
 | `extract.py` | Reads cycling routes, towns, stations and hotels from a PBF file |
+| `scenery.py` | Reads forests, water, vineyards, nature areas and sights, and scores edges |
 | `graph.py` | Builds the route graph (docs/05-trip-generation.md) |
 | `dem.py` | Reads elevation from the DEM tiles |
 | `export.py` | Writes nodes, edges and places in the format of `packages/domain/src/geodata.ts` |
