@@ -9,6 +9,7 @@ How Wayline turns a few inputs into trip proposals.
 - Number of days
 - Target km per day, max ascent per day
 - Profile, hotel budget, start date (optional)
+- Theme (optional)
 
 ## Output
 
@@ -117,6 +118,21 @@ In the graph search, the profile sets k in cost = length / score^k:
 | `touring` | 2 |
 | `quiet` | 2.5 |
 | `scenic` | 3 |
+
+## Themes
+
+A theme makes the search prefer edges with that scenery. Edge scenery comes from the pipeline (`Scenery` in `packages/domain/src/geodata.ts`).
+
+| Theme | Edge fit (0–1) | Shown on the proposal |
+|---|---|---|
+| `nature` | max(forest, nature reserve share) | share of km |
+| `water` | water share | share of km |
+| `wine` | vineyard share × 2, max 1 | share of km in vineyards |
+| `culture` | sights per km × 2, max 1 | number of sights |
+
+- Search: the edge score is multiplied by 1 + 0.8 × fit, before the power k.
+- Ranking: the proposal score is multiplied by 0.5 + 0.5 × mean fit.
+- Without scenery data, a theme changes nothing.
 
 ## Hotel budget
 
