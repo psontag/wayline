@@ -3,6 +3,7 @@ import {
   expectedTimeAtKm,
   localTimeToDate,
   type RouteNetwork,
+  stageStartTime,
   type Trip,
 } from "@wayline/domain";
 import {
@@ -74,7 +75,7 @@ export function StageProfile({
             localTimeToDate(
               expectedTimeAtKm(
                 date,
-                trip.settings.startTime,
+                stageStartTime(trip.settings, index),
                 trip.settings.avgSpeed,
                 hoverKm,
               ),

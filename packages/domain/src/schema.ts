@@ -136,7 +136,15 @@ export const Settings = z.object({
   kmPerDay: z.number().positive(),
   maxAscentPerDay: z.number().positive(),
   hotelBudget: HotelBudget.optional(),
+  /** Start on the first day. Later days start at DAY_START. */
   startTime: TimeOfDay.default("09:00"),
+  /** Latest arrival on the last day. */
+  backBy: TimeOfDay.optional(),
+  /**
+   * Share of a full day per stage, 0.25 to 1. Targets for km and ascent
+   * scale with it. Missing means full days.
+   */
+  dayShares: z.array(z.number().min(0).max(1)).optional(),
   avgSpeed: z.number().positive().default(18),
 });
 export type Settings = z.infer<typeof Settings>;
@@ -156,6 +164,8 @@ export const Trip = z.object({
   startDate: IsoDate.optional(),
   settings: Settings,
   stages: z.array(Stage),
+  /** Stages as proposed. A changed stage can go back to its proposal. */
+  proposed: z.array(Stage).optional(),
   sharedWith: z.array(z.string()).default([]),
 });
 export type Trip = z.infer<typeof Trip>;
@@ -184,7 +194,7 @@ export type WeatherSample = z.infer<typeof WeatherSample>;
 
 export const GenerateRequest = z
   .object({
-    kind: z.enum(["one-way", "multi-day-loop"]),
+    kind: z.enum(["one-way", "multi-day-loop", "day-loop"]),
     /** Map area to search in. */
     region: BBox.optional(),
     /** Start station. Loops start and end here. */
@@ -199,11 +209,18 @@ export const GenerateRequest = z
     theme: Theme.optional(),
     startDate: IsoDate.optional(),
     startTime: TimeOfDay.default("09:00"),
+    backBy: TimeOfDay.optional(),
+    /** Share of a full day per stage. Missing means full days. */
+    dayShares: z.array(z.number().min(0).max(1)).optional(),
   })
   .refine((r) => r.region || r.startStation, {
     message: "Needs a region or a start station",
   });
 export type GenerateRequest = z.infer<typeof GenerateRequest>;
+
+/** What sets a one-day A to B proposal apart. */
+export const ProposalCharacter = z.enum(["direct", "scenic", "longer"]);
+export type ProposalCharacter = z.infer<typeof ProposalCharacter>;
 
 export const Proposal = z.object({
   id: z.string(),
@@ -217,6 +234,7 @@ export const Proposal = z.object({
   via: z.array(z.string()),
   /** Share of km with each theme. Missing without scenery data. */
   themes: z.partialRecord(Theme, z.number()).optional(),
+  character: ProposalCharacter.optional(),
 });
 export type Proposal = z.infer<typeof Proposal>;
 

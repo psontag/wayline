@@ -10,6 +10,7 @@ import {
   type LonLat,
   routePoints,
   sampleAt,
+  stageStartTime,
   type Stop,
   type Trip,
   weatherAlongStage,
@@ -130,7 +131,8 @@ export function useWeather(trip: Trip | undefined, stageIndex: number) {
   const client = useQueryClient();
   const stage = trip?.stages[stageIndex];
   const date = trip?.startDate && addDays(trip.startDate, stageIndex);
-  const { startTime, avgSpeed } = trip?.settings ?? {};
+  const startTime = trip && stageStartTime(trip.settings, stageIndex);
+  const avgSpeed = trip?.settings.avgSpeed;
 
   return useQuery({
     queryKey: [

@@ -108,7 +108,7 @@ export function fromRequest(
   defaults: NewTripValues,
 ): NewTripValues {
   return {
-    kind: request.kind,
+    kind: request.kind === "day-loop" ? "multi-day-loop" : request.kind,
     start: request.startStation ?? defaults.start,
     end:
       request.endStation ?? (request.kind === "one-way" ? null : defaults.end),

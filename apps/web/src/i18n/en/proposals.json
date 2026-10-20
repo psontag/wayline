@@ -8,7 +8,8 @@
     "label": "Search inputs",
     "kind": {
       "one-way": "One-way",
-      "multi-day-loop": "Multi-day loop"
+      "multi-day-loop": "Multi-day loop",
+      "day-loop": "Day loop"
     },
     "places": "{{from}} → {{to}}",
     "loopFrom": "From {{from}}",

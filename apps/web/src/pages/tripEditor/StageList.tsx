@@ -2,6 +2,7 @@ import {
   localTimeToDate,
   expectedTimeAtKm,
   addDays,
+  stageStartTime,
   type Trip,
 } from "@wayline/domain";
 import { StageCard } from "@wayline/ui";
@@ -48,7 +49,8 @@ export function stageTimes(trip: Trip, index: number) {
   const stage = trip.stages[index];
   if (!trip.startDate || !stage) return undefined;
   const date = addDays(trip.startDate, index);
-  const { startTime, avgSpeed } = trip.settings;
+  const startTime = stageStartTime(trip.settings, index);
+  const { avgSpeed } = trip.settings;
   return {
     start: localTimeToDate(`${date}T${startTime}`),
     end: localTimeToDate(
