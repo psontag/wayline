@@ -81,9 +81,17 @@ export class Stops {
     return this.graph.nodes.filter((n) => n.kind === "town").map((n) => n.id);
   }
 
-  /** Nodes that can be stops: towns with at least one hotel. */
+  /**
+   * Nodes that can be stops: towns with at least one hotel we can show. The
+   * node count also has hotels without a name, which places.json leaves out.
+   */
   hotelNodes(): number[] {
-    return this.graph.nodes.filter((n) => n.hotelCount > 0).map((n) => n.id);
+    return this.graph.nodes
+      .filter(
+        (n) =>
+          n.hotelCount > 0 && this.hotelsNear(this.town(n.id).coord).length > 0,
+      )
+      .map((n) => n.id);
   }
 
   /** Station at a node as a place. */

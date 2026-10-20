@@ -4,6 +4,7 @@ import {
   type GenerateRequest,
   type Leg,
   type LonLat,
+  routePoints,
 } from "@wayline/domain";
 import {
   type RoutingProvider,
@@ -87,6 +88,25 @@ describe("Planner on the Heidelberg tiles", () => {
       for (const stop of [stages[0]!, stages[1]!]) {
         expect(stop.hotel).toBeDefined();
         expect(hotels.get(stop.end.osmId ?? "")).toBeGreaterThan(0);
+      }
+
+      // A real loop: stops away from the start, days near the target, and
+      // the middle does not pass the start.
+      const home = request.startStation!.coord;
+      for (const stop of [stages[0]!, stages[1]!]) {
+        expect(distanceKm(home, stop.end.coord)).toBeGreaterThan(15);
+      }
+      for (const s of stages) {
+        expect(s.stats.distance / 1000).toBeGreaterThan(0.5 * 70);
+        expect(s.stats.distance / 1000).toBeLessThan(1.35 * 70);
+      }
+      const line = routePoints(stages.flatMap((s) => s.legs));
+      const total = line.at(-1)!.km;
+      const middle = line.filter(
+        (q) => q.km > 0.2 * total && q.km < 0.8 * total,
+      );
+      for (const q of middle) {
+        expect(distanceKm(home, q.coord)).toBeGreaterThan(5);
       }
       console.log(
         `${p.trip.name}: ` +
