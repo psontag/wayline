@@ -28,6 +28,12 @@
     "paved": "Paved"
   },
   "updating": "Updating route",
+  "via": {
+    "title": "Via points",
+    "at": "After {{distance}}",
+    "remove": "Remove via point {{n}}",
+    "hint": "Drag the route on the map to pass through another point."
+  },
   "empty": {
     "title": "Plan a route",
     "text": "Pick a start and an end. Wayline finds a bike route between them."

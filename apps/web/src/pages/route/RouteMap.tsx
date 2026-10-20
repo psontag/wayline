@@ -7,6 +7,7 @@ import {
 } from "@wayline/domain";
 import {
   EndpointMarker,
+  GhostViaMarker,
   HoverMarker,
   IconButton,
   MapControlGroup,
@@ -14,6 +15,7 @@ import {
   MapLegend,
   useTheme,
   useThemeTokens,
+  ViaMarker,
 } from "@wayline/ui";
 import type { FeatureCollection, LineString } from "geojson";
 import { Minus, MousePointerClick, Plus } from "lucide-react";
@@ -31,6 +33,7 @@ import MapGL, {
 } from "react-map-gl/maplibre";
 import { NetworkLayer } from "../../components/NetworkLayer";
 import { useHiddenPlaceLabels } from "../../components/placeLabels";
+import { useRouteDrag } from "./useRouteDrag";
 
 setWorkerUrl(workerUrl);
 
@@ -51,6 +54,7 @@ export type Endpoint = "from" | "to";
 export type RouteMapProps = {
   from?: Place;
   to?: Place;
+  via: LonLat[];
   legs?: Leg[];
   /** A new route is loading. The old one is shown faded. */
   updating?: boolean;
@@ -59,6 +63,10 @@ export type RouteMapProps = {
   /** Map clicks set this endpoint. */
   picking?: Endpoint;
   onPick: (endpoint: Endpoint, coord: LonLat) => void;
+  /** A drop on leg i adds a via point between point i and i + 1. */
+  onAddVia: (leg: number, coord: LonLat) => void;
+  onMoveVia: (index: number, coord: LonLat) => void;
+  onRemoveVia: (index: number) => void;
   /** Changes when the map should zoom to the endpoints. */
   fitKey: number;
 };
@@ -77,15 +85,22 @@ function bounds(coords: LonLat[]): LngLatBoundsLike {
   return [w, s, e, n];
 }
 
-/** Map of the route. Click to set the start and end, drag them to move. */
+/**
+ * Map of the route. Click to set the start and end, drag markers to move
+ * them. Drag the line to add a via point, click a via point to remove it.
+ */
 export function RouteMap({
   from,
   to,
+  via,
   legs,
   updating = false,
   hover,
   picking,
   onPick,
+  onAddVia,
+  onMoveVia,
+  onRemoveVia,
   fitKey,
 }: RouteMapProps) {
   const { t } = useTranslation("route");
@@ -93,18 +108,55 @@ export function RouteMap({
   const tokens = useThemeTokens();
   const mapRef = useRef<MapRef>(null);
   const [labelLayerId, setLabelLayerId] = useState<string>();
+  // A marker drag can end with a click on the marker. It must not remove.
+  const draggedVia = useRef(false);
 
+  const lines = useMemo(
+    () => (legs ?? []).map((leg) => decodeLine(leg.geometry)),
+    [legs],
+  );
   const data = useMemo<FeatureCollection<LineString>>(
     () => ({
       type: "FeatureCollection",
-      features: (legs ?? []).map((leg, index) => ({
+      features: lines.map((coordinates, index) => ({
         type: "Feature",
         properties: { leg: index },
-        geometry: { type: "LineString", coordinates: decodeLine(leg.geometry) },
+        geometry: { type: "LineString", coordinates },
       })),
     }),
-    [legs],
+    [lines],
   );
+
+  const points = from && to ? [from.coord, ...via, to.coord] : ([] as LonLat[]);
+  const routeDrag = useRouteDrag({
+    mapRef,
+    lines,
+    // The old route is faded while a new one loads. Its legs may not match
+    // the points any more.
+    enabled: !updating && !picking && lines.length === points.length - 1,
+    onDrop: onAddVia,
+  });
+  const { drag, ghost } = routeDrag;
+  const ghostAt = drag?.at ?? ghost;
+  const preview = useMemo<FeatureCollection<LineString>>(() => {
+    const a = drag && points[drag.leg];
+    const b = drag && points[drag.leg + 1];
+    return {
+      type: "FeatureCollection",
+      features:
+        drag && a && b
+          ? [
+              {
+                type: "Feature",
+                properties: {},
+                geometry: { type: "LineString", coordinates: [a, drag.at, b] },
+              },
+            ]
+          : [],
+    };
+    // points is new on every render; drag changes with every move anyway.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drag]);
 
   const ends = [from, to].filter((p): p is Place => !!p);
   const hideLabels = useHiddenPlaceLabels(
@@ -186,7 +238,13 @@ export function RouteMap({
         onLoad={onStyle}
         onStyleData={onStyle}
         onClick={onClick}
-        cursor={picking ? "crosshair" : undefined}
+        interactiveLayerIds={["route-hit"]}
+        onMouseMove={routeDrag.onMouseMove}
+        onMouseDown={routeDrag.onMouseDown}
+        onMouseLeave={routeDrag.onMouseLeave}
+        cursor={
+          picking ? "crosshair" : drag ? "grabbing" : ghost ? "grab" : undefined
+        }
       >
         <Source id="route" type="geojson" data={data}>
           <Layer
@@ -211,6 +269,28 @@ export function RouteMap({
               "line-opacity": updating ? 0.5 : 1,
             }}
           />
+          <Layer
+            id="route-hit"
+            type="line"
+            layout={lineLayout}
+            paint={{
+              "line-color": tokens.route,
+              "line-width": 20,
+              "line-opacity": 0,
+            }}
+          />
+        </Source>
+        <Source id="drag-preview" type="geojson" data={preview}>
+          <Layer
+            id="drag-preview"
+            type="line"
+            layout={lineLayout}
+            paint={{
+              "line-color": tokens.viaPoint,
+              "line-width": 3,
+              "line-dasharray": [1, 2],
+            }}
+          />
         </Source>
         <NetworkLayer
           around={ends.map((p) => p.coord)}
@@ -219,6 +299,36 @@ export function RouteMap({
 
         {fromMarker}
         {toMarker}
+        {via.map((coord, index) => (
+          <Marker
+            // Index keys keep the marker while its point moves.
+            key={index}
+            longitude={coord[0]}
+            latitude={coord[1]}
+            draggable
+            onDragStart={() => (draggedVia.current = true)}
+            onDragEnd={(e) => {
+              onMoveVia(index, [e.lngLat.lng, e.lngLat.lat]);
+              // The click, if any, comes right after the drag ends.
+              setTimeout(() => (draggedVia.current = false));
+            }}
+            style={{ zIndex: 2 }}
+          >
+            <ViaMarker
+              aria-label={t("via.remove", { n: index + 1 })}
+              onClick={() => !draggedVia.current && onRemoveVia(index)}
+            />
+          </Marker>
+        ))}
+        {ghostAt && (
+          <Marker
+            longitude={ghostAt[0]}
+            latitude={ghostAt[1]}
+            style={{ zIndex: 3, pointerEvents: "none" }}
+          >
+            <GhostViaMarker />
+          </Marker>
+        )}
         {hover && (
           <Marker
             longitude={hover[0]}

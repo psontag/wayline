@@ -8,7 +8,15 @@ import {
 } from "@wayline/domain";
 import type { RoutingProvider } from "@wayline/providers";
 import { describe, expect, it, vi } from "vitest";
-import { fetchRoute, mapPlace, routeToTrip } from "./route";
+import {
+  fetchRoute,
+  insertVia,
+  mapPlace,
+  moveVia,
+  removeVia,
+  routeToTrip,
+  viaDistances,
+} from "./route";
 
 function straight(from: LonLat, to: LonLat): Leg {
   return {
@@ -49,6 +57,25 @@ describe("fetchRoute", () => {
     await fetchRoute(client, routing, [a, b], "touring");
     await fetchRoute(client, routing, [a, b], "touring");
     expect(routing.route).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes only the legs a via point changes", async () => {
+    const client = new QueryClient();
+    const routing = fakeRouting();
+    const c: LonLat = [11.1, 50.1];
+    const v: LonLat = [10.95, 49.95];
+    await fetchRoute(client, routing, [a, b, c], "touring");
+    expect(routing.route).toHaveBeenCalledTimes(2);
+
+    // A via point on the first leg splits it. The second leg is kept.
+    await fetchRoute(client, routing, [a, v, b, c], "touring");
+    expect(routing.route).toHaveBeenCalledTimes(4);
+    expect(routing.route).toHaveBeenNthCalledWith(3, [a, v], expect.anything());
+    expect(routing.route).toHaveBeenNthCalledWith(4, [v, b], expect.anything());
+
+    // Removing it again needs no routing at all.
+    await fetchRoute(client, routing, [a, b, c], "touring");
+    expect(routing.route).toHaveBeenCalledTimes(4);
   });
 
   it("routes again for another profile", async () => {
@@ -97,5 +124,33 @@ describe("routeToTrip", () => {
     expect(trip.stages).toHaveLength(1);
     expect(trip.stages[0]?.stats.distance).toBe(1000);
     expect(trip.stages[0]?.end.locked).toBe(true);
+  });
+});
+
+describe("via points", () => {
+  const v1: LonLat = [1, 1];
+  const v2: LonLat = [2, 2];
+
+  it("inserts on a leg", () => {
+    expect(insertVia([], 0, v1)).toEqual([v1]);
+    expect(insertVia([v1], 0, v2)).toEqual([v2, v1]);
+    expect(insertVia([v1], 1, v2)).toEqual([v1, v2]);
+  });
+
+  it("rounds new points to 5 decimals", () => {
+    expect(insertVia([], 0, [1.123456789, 2.987654321])).toEqual([
+      [1.12346, 2.98765],
+    ]);
+  });
+
+  it("moves and removes", () => {
+    expect(moveVia([v1, v2], 1, [3, 3])).toEqual([v1, [3, 3]]);
+    expect(removeVia([v1, v2], 0)).toEqual([v2]);
+  });
+
+  it("measures the distance to each via point", () => {
+    const leg = straight(a, b);
+    expect(viaDistances([leg, leg, leg])).toEqual([1000, 2000]);
+    expect(viaDistances([leg])).toEqual([]);
   });
 });
