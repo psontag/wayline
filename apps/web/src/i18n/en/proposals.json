@@ -100,8 +100,7 @@
       "nature": "{{share}} forest and nature",
       "water": "{{share}} along water",
       "wine": "{{share}} through vineyards",
-      "culture_one": "{{count}} sight on the way",
-      "culture_other": "{{count}} sights on the way"
+      "culture": "{{share}} near sights"
     }
   },
   "map": {

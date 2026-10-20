@@ -223,12 +223,7 @@ function ProposalItem({
           { from, to },
         ),
         ...(theme && themeValue !== undefined
-          ? [
-              t(`card.theme.${theme}`, {
-                share: format.percent(themeValue),
-                count: Math.round(themeValue),
-              }),
-            ]
+          ? [t(`card.theme.${theme}`, { share: format.percent(themeValue) })]
           : []),
       ].join(" · ")}
       stats={[

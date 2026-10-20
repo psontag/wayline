@@ -1,9 +1,8 @@
 import {
-  type BBox,
   bearing,
   distanceKm,
+  type GenerateRequest,
   type Profile,
-  type Theme,
 } from "@wayline/domain";
 import { dijkstra, type EdgeCost, shortestPath } from "../graph/dijkstra";
 import type { Graph, PathStep } from "../graph/Graph";
@@ -33,6 +32,19 @@ const LOOP_MAX_ANGLE = 120;
 /** Chained loop paths come out longer than the estimate: legs avoid each other and the start. */
 const LOOP_STRETCH = 1.15;
 
+/**
+ * Climbing over the daily average allowed raises the cost: an edge that
+ * climbs twice as steeply costs twice as much.
+ */
+export function climbFactor(
+  ascent: number,
+  lengthKm: number,
+  allowedPerKm: number,
+): number {
+  if (lengthKm <= 0) return 1;
+  return Math.max(1, ascent / lengthKm / allowedPerKm);
+}
+
 /** Ordered candidate: nodes to chain with shortest paths. */
 export type Candidate = { quality: number; nodes: number[] };
 
@@ -41,8 +53,16 @@ export class Costs {
   readonly base: Float64Array;
   readonly penalty: Float64Array;
 
-  constructor(graph: Graph, profile: Profile, region?: BBox, theme?: Theme) {
+  constructor(
+    graph: Graph,
+    request: Pick<
+      GenerateRequest,
+      "profile" | "region" | "theme" | "kmPerDay" | "maxAscentPerDay"
+    >,
+  ) {
+    const { profile, region, theme } = request;
     const k = SCORE_POWER[profile];
+    const allowed = request.maxAscentPerDay / request.kmPerDay;
     const inside = (n: number) => {
       if (!region) return true;
       const { lon, lat } = graph.node(n);
@@ -55,7 +75,8 @@ export class Costs {
     };
     this.base = Float64Array.from(graph.edges, (e) =>
       inside(e.from) || inside(e.to)
-        ? e.lengthKm /
+        ? (e.lengthKm *
+            climbFactor(Math.max(e.ascent, e.descent), e.lengthKm, allowed)) /
           Math.pow(Math.max(e.score, 0.05) * themeBoost(e, theme), k)
         : Infinity,
     );

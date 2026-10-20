@@ -127,12 +127,18 @@ A theme makes the search prefer edges with that scenery. Edge scenery comes from
 |---|---|---|
 | `nature` | max(forest, nature reserve share) | share of km |
 | `water` | water share | share of km |
-| `wine` | vineyard share × 2, max 1 | share of km in vineyards |
-| `culture` | sights per km × 2, max 1 | number of sights |
+| `wine` | vineyard share × 4, max 1 | share of km in vineyards |
+| `culture` | sights per km × 2, max 1 | share of km near a sight |
 
 - Search: the edge score is multiplied by 1 + 0.8 × fit, before the power k.
 - Ranking: the proposal score is multiplied by 0.5 + 0.5 × mean fit.
 - Without scenery data, a theme changes nothing.
+
+Across the network: forest 43 % of km, nature reserves and parks 29 %, water 17 %, vineyards 1.4 %, near a sight 39 %.
+
+## Climbing
+
+Edges that climb more steeply than the daily average allowed (max ascent per day / km per day) cost more: twice as steep costs twice as much. This keeps hilly forests and valleys from failing the ascent limit.
 
 ## Hotel budget
 

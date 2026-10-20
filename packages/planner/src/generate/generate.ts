@@ -105,12 +105,7 @@ export class Planner {
 
     const graph = this.graph;
     const totalKm = request.days * request.kmPerDay;
-    const costs = new Costs(
-      graph,
-      request.profile,
-      request.region,
-      request.theme,
-    );
+    const costs = new Costs(graph, request);
     const start = this.startNode(request);
     if (start === undefined) return { ok: false, failedLimit: "area" };
     const endStation = this.endNode(request);

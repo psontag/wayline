@@ -5,8 +5,8 @@ import type { Graph, PathStep } from "../graph/Graph";
 export const THEME_WEIGHT = 0.8;
 /** Sights per km that count as a fully themed edge. */
 const SIGHTS_PER_KM = 0.5;
-/** Vineyards are rare along routes, so a smaller share counts fully. */
-const VINEYARD_FULL = 0.5;
+/** Vineyards are rare along routes (1–2 % of km), so a smaller share counts fully. */
+const VINEYARD_FULL = 0.25;
 
 /** 0 to 1: how well an edge fits the theme. 0 without scenery data. */
 export function themeShare(edge: NetworkEdge, theme: Theme): number {
@@ -33,8 +33,8 @@ export function themeBoost(edge: NetworkEdge, theme?: Theme): number {
 }
 
 /**
- * What a path has of the theme, as shown on the proposal: share of km for
- * nature, water and wine, number of sights for culture.
+ * Share of km with the theme, as shown on the proposal. Culture counts the
+ * km with a sight nearby. Wine counts vineyards, not the fit.
  */
 export function themeValue(
   graph: Graph,
@@ -48,11 +48,10 @@ export function themeValue(
     const s = e.scenery;
     km += e.lengthKm;
     if (!s) continue;
-    if (theme === "culture") value += s.sights;
+    if (theme === "culture") value += s.sights > 0 ? e.lengthKm : 0;
     else if (theme === "wine") value += s.vineyard * e.lengthKm;
     else value += themeShare(e, theme) * e.lengthKm;
   }
-  if (theme === "culture") return value;
   return km ? value / km : 0;
 }
 

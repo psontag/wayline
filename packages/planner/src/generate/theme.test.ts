@@ -35,7 +35,7 @@ describe("themes", () => {
     const e = edge(0, 4);
     expect(themeShare(e, "nature")).toBe(0.5);
     expect(themeShare(e, "water")).toBe(0.6);
-    expect(themeShare(e, "wine")).toBe(0.5);
+    expect(themeShare(e, "wine")).toBe(1);
     // 3 sights on 4 km: more than one every 2 km.
     expect(themeShare(e, "culture")).toBe(1);
   });
@@ -47,7 +47,7 @@ describe("themes", () => {
     expect(themeBoost(edge(0, 4), "water")).toBeGreaterThan(1);
   });
 
-  it("sums a path: share of km, or sights", () => {
+  it("sums a path as a share of km", () => {
     const dry = { ...scenery, water: 0, sights: 1 };
     const network: RouteNetwork = {
       version: "t",
@@ -66,6 +66,7 @@ describe("themes", () => {
     ];
     const graph = new Graph(network);
     expect(themeValue(graph, steps, "water")).toBeCloseTo(0.15);
-    expect(themeValue(graph, steps, "culture")).toBe(4);
+    expect(themeValue(graph, steps, "culture")).toBe(1);
+    expect(themeValue(graph, steps, "wine")).toBeCloseTo(0.25);
   });
 });

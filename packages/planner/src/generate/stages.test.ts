@@ -1,6 +1,6 @@
 import type { LonLat } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
-import { removeSpurs } from "./search";
+import { climbFactor, removeSpurs } from "./search";
 import { cutStages, type PathPoint, type StopCandidate } from "./stages";
 
 // A straight 300 km path with a node every 10 km and 10 m ascent per km.
@@ -113,5 +113,15 @@ describe("removeSpurs", () => {
       { edge: 1, forward: true },
       { edge: 4, forward: true },
     ]);
+  });
+});
+
+describe("climbFactor", () => {
+  it("raises the cost of edges steeper than the daily average", () => {
+    // 900 m on 70 km allows about 13 m per km.
+    const allowed = 900 / 70;
+    expect(climbFactor(50, 10, allowed)).toBe(1);
+    expect(climbFactor(260, 10, allowed)).toBeCloseTo(2.02, 2);
+    expect(climbFactor(10, 0, allowed)).toBe(1);
   });
 });
