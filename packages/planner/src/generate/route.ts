@@ -11,9 +11,39 @@ import type { Graph, PathStep } from "../graph/Graph";
 const WAYPOINT_KM = 10;
 
 /**
- * Router waypoints of each stage: the stage ends and graph nodes about
- * every WAYPOINT_KM in between, so the router follows the graph path.
- * Node ids repeat between proposals, so routed legs can be cached.
+ * Steps of a stage cut about every WAYPOINT_KM. Each piece becomes one leg,
+ * so an edit routes only the pieces it touches and keeps the rest.
+ */
+export function legSteps(graph: Graph, steps: PathStep[]): PathStep[][] {
+  const total = steps.reduce((km, s) => km + graph.edge(s.edge).lengthKm, 0);
+  const out: PathStep[][] = [[]];
+  let km = 0;
+  let sinceLast = 0;
+  for (const step of steps) {
+    const length = graph.edge(step.edge).lengthKm;
+    km += length;
+    sinceLast += length;
+    out.at(-1)?.push(step);
+    if (sinceLast >= WAYPOINT_KM && total - km >= WAYPOINT_KM / 2) {
+      out.push([]);
+      sinceLast = 0;
+    }
+  }
+  return out;
+}
+
+/** Node at the end of the steps. */
+export function endNode(graph: Graph, steps: PathStep[]): number | undefined {
+  const last = steps.at(-1);
+  if (!last) return undefined;
+  const e = graph.edge(last.edge);
+  return last.forward ? e.to : e.from;
+}
+
+/**
+ * Router waypoints of each stage: the stage ends and the graph nodes
+ * between its legs, so the router follows the graph path. Node ids repeat
+ * between proposals, so routed legs can be cached.
  */
 export function stageWaypoints(
   graph: Graph,
@@ -21,22 +51,13 @@ export function stageWaypoints(
   stageSteps: PathStep[][],
 ): LonLat[][] {
   return trip.stages.map((stage, i) => {
-    const steps = stageSteps[i] ?? [];
-    const total = steps.reduce((km, s) => km + graph.edge(s.edge).lengthKm, 0);
-    const points: LonLat[] = [stage.start.coord];
-    let km = 0;
-    let sinceLast = 0;
-    for (const { edge, forward } of steps) {
-      const e = graph.edge(edge);
-      km += e.lengthKm;
-      sinceLast += e.lengthKm;
-      if (sinceLast >= WAYPOINT_KM && total - km >= WAYPOINT_KM / 2) {
-        points.push(graph.coord(forward ? e.to : e.from));
-        sinceLast = 0;
-      }
-    }
-    points.push(stage.end.coord);
-    return points;
+    const pieces = legSteps(graph, stageSteps[i] ?? []);
+    const inner = pieces
+      .slice(0, -1)
+      .map((p) => endNode(graph, p))
+      .filter((n): n is number => n !== undefined)
+      .map((n) => graph.coord(n));
+    return [stage.start.coord, ...inner, stage.end.coord];
   });
 }
 

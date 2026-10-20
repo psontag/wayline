@@ -15,7 +15,7 @@ const hotel = {
 };
 
 describe("moveStop", () => {
-  it("moves the stop, locks it and routes both stages again", async () => {
+  it("moves the stop, locks it and routes the stages around it", async () => {
     const place = trip.stages[0]!.end.alternatives[0]!;
     const next = await moveStop(trip, 0, place, {
       route,
@@ -31,8 +31,65 @@ describe("moveStop", () => {
     expect(first!.hotel).toEqual(hotel);
     expect(first!.legs[0]!.provider).toBe("test");
     expect(second!.start.coord).toEqual(place.coord);
-    expect(second!.stats.distance).toBe(second!.legs[0]!.distance);
+    expect(second!.stats.distance).toBeCloseTo(
+      second!.legs.reduce((km, l) => km + l.distance, 0),
+    );
     expect(next.stages[2]).toBe(trip.stages[2]);
+  });
+});
+
+describe("moveStop on a planned route", () => {
+  // Two days east along the 49th parallel, three legs each.
+  const at = (lon: number): LonLat => [lon, 49];
+  const stage = (id: string, lons: number[], end: string) => ({
+    id,
+    start: { name: "S", kind: "town" as const, coord: at(lons[0]!) },
+    end: {
+      name: end,
+      kind: "town" as const,
+      coord: at(lons.at(-1)!),
+      locked: false,
+      alternatives: [],
+    },
+    via: [],
+    legs: lons
+      .slice(1)
+      .map((lon, i) => straightLeg(at(lons[i]!), at(lon), meta)),
+    stats: trip.stages[0]!.stats,
+  });
+  const planned = {
+    ...trip,
+    stages: [
+      stage("a", [10, 10.2, 10.4, 10.6], "Mitte"),
+      stage("b", [10.6, 10.8, 11, 11.2], "Ende"),
+    ],
+  };
+
+  it("keeps the route and routes only the leg at the new stop", async () => {
+    const calls: LonLat[][] = [];
+    const place = { name: "Neu", kind: "town" as const, coord: at(10.5) };
+    const next = await moveStop(planned, 0, place, {
+      route: async (points) => {
+        calls.push(points);
+        return route(points);
+      },
+      nearestHotel: async () => hotel,
+    });
+    expect(calls).toEqual([[at(10.4), at(10.5), at(10.6)]]);
+    const [first, second] = next.stages;
+    expect(first!.legs.slice(0, 2)).toEqual(
+      planned.stages[0]!.legs.slice(0, 2),
+    );
+    expect(first!.legs.at(-1)!.to).toEqual(at(10.5));
+    expect(second!.start.name).toBe("Neu");
+    expect(second!.legs.slice(1)).toEqual(planned.stages[1]!.legs);
+    // The whole trip is as long as before.
+    const km = (t: typeof planned) =>
+      t.stages.reduce(
+        (sum, s) => sum + s.legs.reduce((a, l) => a + l.distance, 0),
+        0,
+      );
+    expect(Math.abs(km(next) - km(planned))).toBeLessThan(10);
   });
 });
 

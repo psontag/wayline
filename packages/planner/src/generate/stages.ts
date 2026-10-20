@@ -3,9 +3,11 @@ import type { Graph, PathStep } from "../graph/Graph";
 
 /** Max distance from the path to a stop town. */
 export const STOP_KM = 2;
-/** Max km between a stop and its alternatives. */
-const ALTERNATIVE_KM = 10;
-const MAX_ALTERNATIVES = 2;
+/** Alternatives make the stage about this much shorter or longer. */
+const ALTERNATIVE_SHARES = [-0.2, -0.1, 0.1, 0.2];
+const MAX_ALTERNATIVES = 3;
+/** Alternatives differ from the stop and each other by this share. */
+const ALTERNATIVE_GAP = 0.05;
 /** Min km between two stops. */
 const MIN_GAP_KM = 5;
 /** Min straight distance between two stops, as a share of the km per day. */
@@ -194,16 +196,46 @@ export function cutStages(
     i = best[j]?.[i]?.prev ?? -1;
   }
   const taken = new Set(chosen.map((c) => c.node));
-  return chosen.map((c) => ({
-    ...c,
-    alternatives: cands
-      .filter(
-        (a) =>
-          !taken.has(a.node) &&
-          a.hotels > 0 &&
-          Math.abs(a.km - c.km) <= ALTERNATIVE_KM,
-      )
-      .sort((a, b) => b.hotels - a.hotels || a.offKm - b.offKm)
-      .slice(0, MAX_ALTERNATIVES),
-  }));
+  return chosen.map((c, j) => {
+    const from = chosen[j - 1]?.km ?? 0;
+    const to = chosen[j + 1]?.km ?? total;
+    return { ...c, alternatives: alternatives(c, from, to, cands, taken) };
+  });
+}
+
+/**
+ * Towns with hotels that make the stage about 10 or 20 % shorter or
+ * longer. Up to MAX_ALTERNATIVES that clearly differ in km. Fewer when the
+ * path has no such towns.
+ */
+function alternatives(
+  stop: StopCandidate,
+  fromKm: number,
+  toKm: number,
+  candidates: StopCandidate[],
+  taken: Set<number>,
+): StopCandidate[] {
+  const length = stop.km - fromKm;
+  const gap = Math.max(3, ALTERNATIVE_GAP * length);
+  const offTarget = (a: StopCandidate) =>
+    Math.min(
+      ...ALTERNATIVE_SHARES.map((s) => Math.abs(a.km - stop.km - s * length)),
+    );
+  const ranked = candidates
+    .filter(
+      (a) =>
+        !taken.has(a.node) &&
+        a.hotels > 0 &&
+        a.km > fromKm + MIN_GAP_KM &&
+        a.km < toKm - MIN_GAP_KM &&
+        Math.abs(a.km - stop.km) >= gap &&
+        offTarget(a) <= 0.1 * length,
+    )
+    .sort((a, b) => offTarget(a) - offTarget(b) || b.hotels - a.hotels);
+  const out: StopCandidate[] = [];
+  for (const a of ranked) {
+    if (out.length === MAX_ALTERNATIVES) break;
+    if (out.every((o) => Math.abs(o.km - a.km) >= gap)) out.push(a);
+  }
+  return out.sort((a, b) => a.km - b.km);
 }
