@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Db } from "./legs";
+import type { Db } from "./db";
 
 /**
  * Applies new files from migrations/ to a local D1, in name order. Records

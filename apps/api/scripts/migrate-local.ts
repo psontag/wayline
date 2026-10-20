@@ -2,7 +2,7 @@
 // `cf d1 migrations apply --local` hangs after it is done (cf 1.0.0-beta),
 // so this opens the same database with Miniflare.
 import { convertV4MiniflareOptions, Miniflare } from "miniflare";
-import type { Db } from "../src/legs";
+import type { Db } from "../src/db";
 import { applyMigrations } from "../src/migrate.ts";
 
 // Must match the D1 id in cloudflare.config.ts.
