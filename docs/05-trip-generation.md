@@ -125,12 +125,12 @@ A theme makes the search prefer edges with that scenery. Edge scenery comes from
 
 | Theme | Edge fit (0–1) | Shown on the proposal |
 |---|---|---|
-| `nature` | max(forest, nature reserve share) | share of km |
+| `nature` | max(forest, ½ × nature reserve share): nature parks include towns | share of km |
 | `water` | water share | share of km |
 | `wine` | vineyard share × 4, max 1 | share of km in vineyards |
 | `culture` | sights per km × 2, max 1 | share of km near a sight |
 
-- Search: the edge score is multiplied by 1 + 0.8 × fit, before the power k.
+- Search: the edge score is multiplied by 1 + 1.2 × fit, before the power k.
 - Ranking: the proposal score is multiplied by 0.5 + 0.5 × mean fit.
 - Without scenery data, a theme changes nothing.
 

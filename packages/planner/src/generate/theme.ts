@@ -2,7 +2,9 @@ import type { NetworkEdge, Theme } from "@wayline/domain";
 import type { Graph, PathStep } from "../graph/Graph";
 
 /** How much a fully themed edge raises its score. */
-export const THEME_WEIGHT = 0.8;
+export const THEME_WEIGHT = 1.2;
+/** Weight of nature reserves and parks next to forest. */
+const NATURE_PARK = 0.5;
 /** Sights per km that count as a fully themed edge. */
 const SIGHTS_PER_KM = 0.5;
 /** Vineyards are rare along routes (1–2 % of km), so a smaller share counts fully. */
@@ -14,7 +16,8 @@ export function themeShare(edge: NetworkEdge, theme: Theme): number {
   if (!s) return 0;
   switch (theme) {
     case "nature":
-      return Math.max(s.forest, s.nature);
+      // Nature parks include towns, so they count half.
+      return Math.max(s.forest, NATURE_PARK * s.nature);
     case "water":
       return s.water;
     case "wine":

@@ -34,7 +34,7 @@ function edge(id: number, lengthKm: number, s = scenery): NetworkEdge {
 describe("themes", () => {
   it("measures how well an edge fits", () => {
     const e = edge(0, 4);
-    expect(themeShare(e, "nature")).toBe(0.5);
+    expect(themeShare(e, "nature")).toBe(0.25);
     expect(themeShare(e, "water")).toBe(0.6);
     expect(themeShare(e, "wine")).toBe(1);
     // 3 sights on 4 km: more than one every 2 km.
