@@ -1,5 +1,5 @@
 import type { GenerateRequest, Proposal } from "@wayline/domain";
-import { readMockFile } from "@wayline/providers/testing";
+import { readDataFile, readMockFile } from "@wayline/providers/testing";
 import { expose, wrap } from "comlink";
 import { describe, expect, it } from "vitest";
 import { createTripGenerator, type PlannerWorker } from "./generator";
@@ -60,5 +60,25 @@ describe("createTripGenerator", () => {
     // The next run starts a fresh planner.
     const again = await generator.generate(request);
     expect(again.ok).toBe(true);
+  });
+});
+
+describe("createPlannerApi", () => {
+  it("plans on tiled region data", async () => {
+    const api = createPlannerApi(readDataFile);
+    const result = await api.generate(
+      {
+        ...request,
+        startStation: {
+          name: "Heidelberg Hauptbahnhof",
+          kind: "station",
+          coord: [8.67542, 49.40347],
+        },
+        maxAscentPerDay: 900,
+      },
+      "/data/mock/heidelberg",
+    );
+    if (!result.ok) throw new Error(result.failedLimit);
+    expect(result.proposals.length).toBeGreaterThanOrEqual(2);
   });
 });

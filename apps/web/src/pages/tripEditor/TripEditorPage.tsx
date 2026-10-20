@@ -15,6 +15,7 @@ import {
 } from "@wayline/ui";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { networkArea } from "../../components/NetworkLayer";
 import { useTrip } from "../../data/queries";
 import { useServices } from "../../data/ServicesProvider";
 import { StageList } from "./StageList";
@@ -22,6 +23,7 @@ import { StageProfile } from "./StageProfile";
 import { useStopOptions } from "./StopPicker";
 import { TripHeader } from "./TripHeader";
 import { TripMap } from "./TripMap";
+import { tripStops } from "./tripArea";
 import { TripSummary } from "./TripSummary";
 import { PhoneTripEditor } from "./PhoneTripEditor";
 import { useIsPhone } from "./useIsPhone";
@@ -49,12 +51,13 @@ export function TripEditorPage() {
   );
 }
 
-/** The route network, for surface colors in the elevation profile. */
-function useNetwork() {
+/** The route network around a trip, for surface colors in the profile. */
+function useNetwork(trip: Trip) {
   const { network } = useServices();
+  const bbox = networkArea(tripStops(trip));
   return useQuery({
-    queryKey: ["network"],
-    queryFn: () => network.network(),
+    queryKey: ["network", bbox],
+    queryFn: () => network.network(bbox),
     staleTime: Infinity,
   }).data;
 }
@@ -65,7 +68,7 @@ function TripEditor({ trip }: { trip: Trip }) {
   const search = useSearch({ from: "/trips/$tripId" });
   const navigate = useNavigate({ from: "/trips/$tripId" });
   const editor = useTripEditor(trip);
-  const network = useNetwork();
+  const network = useNetwork(trip);
   const isPhone = useIsPhone();
   const [hoverKm, setHoverKm] = useState<number>();
 

@@ -1,4 +1,5 @@
 import {
+  type BBox,
   distanceKm,
   type FailedLimit,
   type GenerateProgress,
@@ -7,8 +8,14 @@ import {
   type Places,
   type Proposal,
 } from "@wayline/domain";
-import type { AbortSignalLike, RouteNetworkSource } from "@wayline/providers";
+import type {
+  AbortSignalLike,
+  RouteNetworkSource,
+  RoutingProvider,
+} from "@wayline/providers";
+import { AreaCache, bboxAround } from "../graph/area";
 import { Graph, type PathStep } from "../graph/Graph";
+import { routeTrip, stageWaypoints } from "./route";
 import {
   acceptable,
   type Candidate,
@@ -21,7 +28,7 @@ import {
 } from "./search";
 import { cutStages, pathPoints, type Stop, stopCandidates } from "./stages";
 import { Stops } from "./stops";
-import { buildTrip, meanScore, routeNames, viaNames } from "./trip";
+import { buildTrip, meanScore, routeNames, splitSteps, viaNames } from "./trip";
 
 /** Proposals to look for. */
 const PROPOSALS = 5;
@@ -42,6 +49,11 @@ export type PlannerOptions = {
   onProposal?: (proposal: Proposal) => void;
   /** Checked between steps. Aborting rejects with an AbortError. */
   signal?: AbortSignalLike;
+  /**
+   * Routes the chosen proposals (step 7). Without it, stages keep the
+   * graph path. If routing fails, the proposal keeps the graph path too.
+   */
+  routing?: RoutingProvider;
   /** Clock, for tests. */
   now?: () => Date;
 };
@@ -127,7 +139,7 @@ export class Planner {
       check();
       onProgress?.({ phase: "routing", done: i, total: picks.length });
       const end = p.nodes.at(-1) ?? start;
-      const trip = buildTrip(graph, this.stops, {
+      let trip = buildTrip(graph, this.stops, {
         id: `draft-${runId}-${i + 1}`,
         now,
         request,
@@ -136,6 +148,24 @@ export class Planner {
         steps: p.steps,
         stops: p.stops,
       });
+      if (options.routing) {
+        const waypoints = stageWaypoints(
+          graph,
+          trip,
+          splitSteps(p.steps, p.stops),
+        );
+        try {
+          trip = await routeTrip(
+            trip,
+            waypoints,
+            options.routing,
+            request,
+            signal,
+          );
+        } catch {
+          check();
+        }
+      }
       const proposal: Proposal = {
         id: `${runId}-${i + 1}`,
         trip,
@@ -282,7 +312,7 @@ export class Planner {
   }
 }
 
-/** Loads the network and places of a source. */
+/** Loads the whole network and places of a small, untiled source. */
 export async function loadPlanner(
   source: RouteNetworkSource,
 ): Promise<Planner> {
@@ -291,6 +321,44 @@ export async function loadPlanner(
     source.places(),
   ]);
   return new Planner(new Graph(network), places);
+}
+
+/** Planners for the area of each request. Loads only the tiles it needs. */
+export class Planners {
+  private areas: AreaCache<Planner>;
+
+  constructor(source: RouteNetworkSource) {
+    this.areas = new AreaCache(
+      source,
+      (network, places) => new Planner(new Graph(network), places),
+    );
+  }
+
+  for(request: GenerateRequest): Promise<Planner> {
+    return this.areas.get(requestBBox(request));
+  }
+}
+
+/** Longest search radius around the start, in km. */
+const MAX_RADIUS_KM = 200;
+
+/** The area a request can reach. */
+export function requestBBox(request: GenerateRequest): BBox {
+  const totalKm = request.days * request.kmPerDay;
+  const points = [request.startStation, request.endStation].flatMap((p) =>
+    p ? [p.coord] : [],
+  );
+  if (request.region) {
+    const [w, s, e, n] = request.region;
+    return bboxAround([[w, s], [e, n], ...points], 20);
+  }
+  // Loop stops are at most about half the length from the start. One-way
+  // ends without a chosen end are up to the full length away.
+  const radius =
+    request.kind === "multi-day-loop" || request.endStation
+      ? totalKm / 2
+      : totalKm;
+  return bboxAround(points, Math.min(radius, MAX_RADIUS_KM));
 }
 
 /**

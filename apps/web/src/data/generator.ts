@@ -10,7 +10,7 @@ export type PlannerWorker = {
 
 export type GeneratorDeps = {
   /** Folder with manifest.json, e.g. /data/mock/oberfranken. */
-  dataUrl: string;
+  dataUrl: string | Promise<string>;
   /** Starts a planner. Tests pass one that runs in-process. */
   connect?: () => PlannerWorker;
 };
@@ -53,23 +53,23 @@ export function createTripGenerator({
         };
         cancelRunning = cancel;
         signal?.addEventListener("abort", cancel);
-        w.api
-          .generate(
+        const run = async () =>
+          w.api.generate(
             request,
-            dataUrl,
+            await dataUrl,
             onProgress && proxy(onProgress),
             onProposal && proxy(onProposal),
-          )
-          .then(
-            (result) => {
-              done();
-              resolve(result);
-            },
-            (error: unknown) => {
-              done();
-              reject(error);
-            },
           );
+        run().then(
+          (result) => {
+            done();
+            resolve(result);
+          },
+          (error: unknown) => {
+            done();
+            reject(error);
+          },
+        );
       });
     },
   };
