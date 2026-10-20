@@ -8,7 +8,7 @@ export type AuthBindings = {
   ACCESS_TEAM_DOMAIN?: string;
   /** Application Audience (AUD) tag of the Access application. */
   ACCESS_AUD?: string;
-  /** Local development without Access. Ignored when Access is set up. */
+  /** Local development without Access. Ignored when an Access var is set. */
   DEV_USER_EMAIL?: string;
 };
 
@@ -58,9 +58,10 @@ export const auth = createMiddleware<{
 }>(async (c, next) => {
   const { ACCESS_TEAM_DOMAIN, ACCESS_AUD, DEV_USER_EMAIL } = c.env;
   let email: string | undefined;
-  if (ACCESS_TEAM_DOMAIN && ACCESS_AUD) {
+  // With only one of the Access vars set, nobody gets in.
+  if (ACCESS_TEAM_DOMAIN || ACCESS_AUD) {
     const token = c.req.header("Cf-Access-Jwt-Assertion");
-    if (token) {
+    if (token && ACCESS_TEAM_DOMAIN && ACCESS_AUD) {
       const teamDomain = ACCESS_TEAM_DOMAIN.replace(/\/$/, "");
       const certs = `${teamDomain}/cdn-cgi/access/certs`;
       const verify = async (refresh: boolean) =>

@@ -84,6 +84,11 @@ describe("auth", () => {
       env: { ACCESS_TEAM_DOMAIN: "https://t.example", ACCESS_AUD: "aud" },
     });
     expect(res.status).toBe(401);
+    const half = await call("GET", "/api/me", {
+      user: anna,
+      env: { ACCESS_AUD: "aud" },
+    });
+    expect(half.status).toBe(401);
   });
 });
 
