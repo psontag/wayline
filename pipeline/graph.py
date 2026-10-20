@@ -91,7 +91,8 @@ def build(data):
             w = str(wid)
             if w not in data["ways"]:
                 continue
-            way_routes[w].add(r["name"])
+            if r["name"]:
+                way_routes[w].add(r["name"])
             if w not in way_net or NETWORK_RANK[r["network"]] < NETWORK_RANK[way_net[w]]:
                 way_net[w] = r["network"]
 

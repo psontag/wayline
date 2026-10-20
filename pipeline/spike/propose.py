@@ -12,8 +12,11 @@ import unicodedata
 from collections import defaultdict
 from xml.sax.saxutils import escape
 
-import graph as G
-from dem import Dem
+# Shared modules live in pipeline/.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import graph as G  # noqa: E402
+from dem import Dem  # noqa: E402
 
 K = 2  # cost = length / score^K
 REUSE_PENALTY = 5  # edges already used in this proposal

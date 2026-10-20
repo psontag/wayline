@@ -120,10 +120,13 @@ A GitHub Action runs monthly or manually (`workflow_dispatch`). It loads OSM dat
 
 | File | Format |
 |---|---|
-| `manifest.json` | Points to the current dataset version |
-| Route network graph | One compact file. Kept in IndexedDB per version. |
-| Edge geometry, towns, stations, hotels | Tiled files per map area |
+| `latest.json` | Names the current dataset version |
+| `<version>/manifest.json` | Region, bbox and the list of tiles |
+| `<version>/tiles/<x>_<y>.json` | Route network of one 0.5° tile: nodes, edges with geometry and elevation |
+| `<version>/places.json` | All towns, stations and hotels of the region. Used for place search. |
 | Cycling route overlay | PMTiles |
+
+The browser loads only the tiles near a trip (`TiledNetworkSource` in `packages/providers`). Node and edge ids are stable within one version. The pipeline is described in `pipeline/README.md`.
 
 ## Auth and storage
 
