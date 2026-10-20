@@ -97,6 +97,7 @@ All API errors have one shape:
 | `NOT_FOUND` | Unknown trip or file |
 | `CONFLICT` | Trip changed since it was loaded |
 | `INVALID` | Request failed validation |
+| `UNAUTHORIZED` | No valid Access login |
 
 ## API
 
@@ -111,6 +112,7 @@ All API errors have one shape:
 | `GET /api/trips/:id` | Load a trip |
 | `PUT /api/trips/:id` | Save a trip. Fails with `CONFLICT` if `updatedAt` doesn't match. |
 | `DELETE /api/trips/:id` | Delete a trip |
+| `GET/PUT /api/trips/:id/shares` | Emails a trip is shared with. Owner only. |
 | `POST /api/route` | Route a leg |
 | `GET /api/weather` | Forecast for a cell |
 | `GET /data/*` | Geodata (static assets) |

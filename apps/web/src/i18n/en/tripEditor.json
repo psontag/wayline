@@ -19,7 +19,9 @@
     "copyName": "{{name}} (copy)",
     "settings": "Settings",
     "delete": "Delete",
-    "deleteConfirm": "Delete “{{name}}”?"
+    "deleteConfirm": "Delete “{{name}}”?",
+    "viewOnly": "View only",
+    "sharedBy": "Shared by {{owner}}"
   },
   "kind": {
     "one-way": "One-way",
@@ -107,6 +109,22 @@
     "hotelsIn": "Hotels in {{place}}",
     "picked": "Picked",
     "pick": "Pick",
-    "checkPrices": "Check prices on Booking.com"
+    "checkPrices": "Check prices on Booking.com",
+    "sharedSubtitle": "Shared by {{owner}} · view only"
+  },
+  "share": {
+    "title": "Share trip",
+    "text": "Friends can open this trip and export it, but not change it.",
+    "email": "Email",
+    "placeholder": "friend@example.com",
+    "add": "Add",
+    "sharedWith": "Shared with",
+    "none": "Not shared yet.",
+    "remove": "Stop sharing with {{email}}",
+    "invalid": "Enter an email address.",
+    "self": "This is your own email.",
+    "failed": "Could not save. Try again.",
+    "accessNote": "Friends also need to be on the Wayline login list.",
+    "done": "Done"
   }
 }

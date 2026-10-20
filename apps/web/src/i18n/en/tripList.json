@@ -29,5 +29,7 @@
     "title": "Delete trip?",
     "text": "“{{name}}” will be deleted. This can't be undone.",
     "confirm": "Delete"
-  }
+  },
+  "sharedWithYou": "Shared with you",
+  "sharedBy": "Shared by {{owner}}"
 }

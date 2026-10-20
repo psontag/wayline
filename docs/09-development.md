@@ -51,6 +51,14 @@ Routing switches:
 | `BROUTER_URL=http://localhost:17777` | `apps/api/.dev.vars` | The Worker routes with the local BRouter instead of `fakeBrouterLeg`. |
 | `VITE_ROUTING=api` | `apps/web/.env.local` | The web app routes through `POST /api/route` (`ApiRouting`) instead of `FakeRouting` on the route network. The generator routes the chosen proposals too. |
 
+Trips and login:
+
+| Setting | Where | Effect |
+|---|---|---|
+| `VITE_TRIPS=api` | `apps/web/.env.local` | Trips are saved in the local D1 through `/api/trips` (`ApiTripStore`). Trips in browser storage move there on first use. Default: browser storage. |
+| `DEV_USER_EMAIL=you@example.com` | `apps/api/.dev.vars` | The user for `/api/me` and `/api/trips` without Access. Change it and restart `pnpm dev` to act as another user. |
+| `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` | Worker vars | Team domain (`https://<team>.cloudflareaccess.com`) and AUD tag of the Access app. When both are set, the Worker verifies the Access JWT and ignores `DEV_USER_EMAIL`. |
+
 Geodata:
 
 - The app uses the region data named by `apps/web/public/data/latest.json` (`pnpm data:build`, see `pipeline/README.md`).

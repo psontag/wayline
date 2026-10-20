@@ -9,16 +9,7 @@ import {
   fakeBrouterLeg,
   fetchBrouterLeg,
 } from "@wayline/providers";
-
-/** The part of D1 we use. Keeps this file free of Worker types. */
-export type Db = {
-  prepare(sql: string): {
-    bind(...values: unknown[]): {
-      first<T = Record<string, unknown>>(): Promise<T | null>;
-      run(): Promise<unknown>;
-    };
-  };
-};
+import type { Db } from "./db";
 
 export const LEG_TTL_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;

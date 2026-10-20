@@ -30,7 +30,8 @@ export type StageCardProps = {
   /** Expected start and arrival. */
   times?: { start: Date; end: Date };
   locked: boolean;
-  onLockedChange: (locked: boolean) => void;
+  /** Without it, the lock is only shown, not a button. */
+  onLockedChange?: (locked: boolean) => void;
   selected?: boolean;
   onSelect?: () => void;
   /** Stages alternate between two map colors. */
@@ -214,22 +215,31 @@ function SelectedDetails({
               components={{ strong: <strong /> }}
             />
           </span>
-          <Toggle.Root
-            pressed={locked}
-            onPressedChange={onLockedChange}
-            className={cn(
-              "inline-flex h-7 items-center gap-1.5 rounded-sm border border-border bg-surface px-2.5 text-xs font-bold transition-colors hover:bg-hover",
-              "text-text-muted data-[state=on]:text-text",
-              focusRing,
-            )}
-          >
-            {locked ? (
-              <Lock className="size-3.5" aria-hidden />
-            ) : (
-              <LockOpen className="size-3.5" aria-hidden />
-            )}
-            {locked ? t("stage.locked") : t("stage.lock")}
-          </Toggle.Root>
+          {onLockedChange ? (
+            <Toggle.Root
+              pressed={locked}
+              onPressedChange={onLockedChange}
+              className={cn(
+                "inline-flex h-7 items-center gap-1.5 rounded-sm border border-border bg-surface px-2.5 text-xs font-bold transition-colors hover:bg-hover",
+                "text-text-muted data-[state=on]:text-text",
+                focusRing,
+              )}
+            >
+              {locked ? (
+                <Lock className="size-3.5" aria-hidden />
+              ) : (
+                <LockOpen className="size-3.5" aria-hidden />
+              )}
+              {locked ? t("stage.locked") : t("stage.lock")}
+            </Toggle.Root>
+          ) : (
+            locked && (
+              <span className="inline-flex h-7 items-center gap-1.5 text-xs font-bold">
+                <Lock className="size-3.5" aria-hidden />
+                {t("stage.locked")}
+              </span>
+            )
+          )}
         </div>
         {alternatives && (
           <div className="flex flex-wrap gap-1.5">{alternatives}</div>

@@ -18,11 +18,43 @@ import { cellOf, type Forecast } from "@wayline/providers";
 import { useServices } from "./ServicesProvider";
 
 export const queryKeys = {
+  me: ["me"] as const,
   trips: ["trips"] as const,
+  shares: (id: string) => ["shares", id] as const,
   trip: (id: string) => ["trip", id] as const,
   forecast: (cell: LonLat) => ["forecast", ...cell] as const,
   hotels: (coord: LonLat) => ["hotels", ...coord] as const,
 };
+
+/** Email of the logged-in user. Null without a server. */
+export function useMe() {
+  const { me } = useServices();
+  return useQuery({ queryKey: queryKeys.me, queryFn: me, staleTime: Infinity });
+}
+
+export function useShares(id: string, enabled = true) {
+  const { trips } = useServices();
+  return useQuery({
+    queryKey: queryKeys.shares(id),
+    queryFn: () => trips.shares(id),
+    enabled,
+  });
+}
+
+export function useSetShares(id: string) {
+  const { trips } = useServices();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (emails: string[]) => trips.setShares(id, emails),
+    onSuccess: (emails) => {
+      client.setQueryData(queryKeys.shares(id), emails);
+      client.setQueryData<Trip>(
+        queryKeys.trip(id),
+        (trip) => trip && { ...trip, sharedWith: emails },
+      );
+    },
+  });
+}
 
 export function useTrips() {
   const { trips } = useServices();

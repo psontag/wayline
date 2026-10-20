@@ -1,29 +1,19 @@
 import { ApiErrorBody, ProviderEnvelope } from "@wayline/domain";
 import { parseBrouterLeg } from "@wayline/providers";
-import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import app, { type Bindings } from "./app";
-import { cachedLeg, type Db, deleteExpiredLegs, legRouter } from "./legs";
-import { applyMigrations } from "./migrate";
+import type { Db } from "./db";
+import { cachedLeg, deleteExpiredLegs, legRouter } from "./legs";
+import { openTestDb } from "./testDb";
 
-// Local D1 in Miniflare, with our migrations applied.
-let mf: Miniflare;
 let db: Db;
+let dispose: () => Promise<void>;
 
 beforeAll(async () => {
-  mf = new Miniflare(
-    convertV4MiniflareOptions({
-      modules: true,
-      script: "export default {}",
-      compatibilityDate: "2026-10-01",
-      d1Databases: ["DB"],
-    }),
-  );
-  db = (await mf.getD1Database("DB")) as unknown as Db;
-  await applyMigrations(db);
+  ({ db, dispose } = await openTestDb());
 });
 
-afterAll(() => mf.dispose());
+afterAll(() => dispose());
 
 const bamberg = [10.887312, 49.891734];
 const forchheim = [11.0587, 49.7186];

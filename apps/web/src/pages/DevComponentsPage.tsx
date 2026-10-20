@@ -21,6 +21,7 @@ import {
   type ResolvedTheme,
   Combobox,
   ConfirmDialog,
+  Dialog,
   DateField,
   EmptyState,
   FormField,
@@ -76,6 +77,7 @@ import {
   Pencil,
   Redo2,
   Share2,
+  Users,
   TrainFront,
   Trash2,
   Undo2,
@@ -716,6 +718,7 @@ const demoPreview: [number, number][] = [
 function TripDemos() {
   const { t } = useTranslation("devComponents");
   const [dialog, setDialog] = useState(false);
+  const [shareDialog, setShareDialog] = useState(false);
   return (
     <Section title={t("section.trips")}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -748,11 +751,30 @@ function TripDemos() {
             </Menu>
           }
         />
+        <TripCard
+          title={<a href="#trip">{t("demo.tripName")}</a>}
+          badge={<Badge>{t("demo.oneWay")}</Badge>}
+          dates={t("demo.tripDates")}
+          stats={t("demo.tripStats")}
+          byline={
+            <>
+              <Users aria-hidden />
+              {t("demo.sharedBy")}
+            </>
+          }
+          preview={demoPreview}
+        />
         <div className="flex flex-col items-start gap-3">
-          <Button variant="danger" onClick={() => setDialog(true)}>
-            <Trash2 aria-hidden />
-            {t("demo.delete")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="danger" onClick={() => setDialog(true)}>
+              <Trash2 aria-hidden />
+              {t("demo.delete")}
+            </Button>
+            <Button onClick={() => setShareDialog(true)}>
+              <Share2 aria-hidden />
+              {t("demo.share")}
+            </Button>
+          </div>
           <PlaceMarker name={t("demo.placeName")} />
           <MapLegend
             items={[
@@ -780,6 +802,19 @@ function TripDemos() {
         tone="danger"
         onConfirm={() => undefined}
       />
+      <Dialog
+        open={shareDialog}
+        onOpenChange={setShareDialog}
+        title={t("demo.shareTitle")}
+        description={t("demo.shareText")}
+        footer={
+          <Button variant="primary" onClick={() => setShareDialog(false)}>
+            {t("demo.done")}
+          </Button>
+        }
+      >
+        <Input label={t("demo.email")} type="email" />
+      </Dialog>
     </Section>
   );
 }

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { localTimeToDate, type Trip } from "@wayline/domain";
 import {
+  Badge,
   Button,
   cn,
   DateButton,
@@ -20,6 +21,7 @@ import {
   Copy,
   Download,
   EllipsisVertical,
+  Eye,
   Pencil,
   Redo2,
   Settings,
@@ -37,9 +39,14 @@ import type { TripEditorState } from "./useTripEditor";
 export function TripHeader({
   trip,
   editor,
+  canShare,
+  onShare,
 }: {
   trip: Trip;
   editor: TripEditorState;
+  /** Only with trips on the server. */
+  canShare: boolean;
+  onShare: () => void;
 }) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -94,31 +101,45 @@ export function TripHeader({
         </DateButton>
       </div>
       <TopBarSpacer />
-      <div className="hidden sm:block">
-        <SaveStatus state={editor.saveState} />
-      </div>
-      <div className="hidden gap-1 md:flex">
-        <IconButton
-          size="sm"
-          label={t("header.undo")}
-          icon={<Undo2 aria-hidden />}
-          disabled={!editor.canUndo}
-          onClick={editor.undo}
-        />
-        <IconButton
-          size="sm"
-          label={t("header.redo")}
-          icon={<Redo2 aria-hidden />}
-          disabled={!editor.canRedo}
-          onClick={editor.redo}
-        />
-      </div>
-      <div className="hidden md:block">
-        <Button size="sm" disabled>
-          <Share2 aria-hidden />
-          {t("header.share")}
-        </Button>
-      </div>
+      {editor.readOnly ? (
+        <div className="hidden min-w-0 items-center gap-2 sm:flex">
+          <span className="truncate text-sm text-text-muted">
+            {t("header.sharedBy", { owner: trip.owner })}
+          </span>
+          <Badge size="md">
+            <Eye className="mr-1 size-3.5" aria-hidden />
+            {t("header.viewOnly")}
+          </Badge>
+        </div>
+      ) : (
+        <>
+          <div className="hidden sm:block">
+            <SaveStatus state={editor.saveState} />
+          </div>
+          <div className="hidden gap-1 md:flex">
+            <IconButton
+              size="sm"
+              label={t("header.undo")}
+              icon={<Undo2 aria-hidden />}
+              disabled={!editor.canUndo}
+              onClick={editor.undo}
+            />
+            <IconButton
+              size="sm"
+              label={t("header.redo")}
+              icon={<Redo2 aria-hidden />}
+              disabled={!editor.canRedo}
+              onClick={editor.redo}
+            />
+          </div>
+          <div className="hidden md:block">
+            <Button size="sm" disabled={!canShare} onClick={onShare}>
+              <Share2 aria-hidden />
+              {t("header.share")}
+            </Button>
+          </div>
+        </>
+      )}
       <Button variant="primary" size="sm" onClick={() => downloadTripGpx(trip)}>
         <Download aria-hidden />
         <span className="hidden sm:inline">{t("header.exportGpx")}</span>
@@ -132,13 +153,15 @@ export function TripHeader({
           />
         }
       >
-        <MenuItem
-          icon={<Pencil aria-hidden />}
-          disabled={!editor.canEdit}
-          onSelect={() => setRenaming(true)}
-        >
-          {t("header.rename")}
-        </MenuItem>
+        {!editor.readOnly && (
+          <MenuItem
+            icon={<Pencil aria-hidden />}
+            disabled={!editor.canEdit}
+            onSelect={() => setRenaming(true)}
+          >
+            {t("header.rename")}
+          </MenuItem>
+        )}
         <MenuItem
           icon={<Copy aria-hidden />}
           onSelect={() =>
@@ -162,21 +185,25 @@ export function TripHeader({
         >
           {t("header.settings")}
         </MenuItem>
-        <MenuSeparator />
-        <MenuItem
-          icon={<Trash2 aria-hidden />}
-          tone="danger"
-          onSelect={() => {
-            if (!confirm(t("header.deleteConfirm", { name: trip.name }))) {
-              return;
-            }
-            remove.mutate(trip.id, {
-              onSuccess: () => void navigate({ to: "/" }),
-            });
-          }}
-        >
-          {t("header.delete")}
-        </MenuItem>
+        {!editor.readOnly && (
+          <>
+            <MenuSeparator />
+            <MenuItem
+              icon={<Trash2 aria-hidden />}
+              tone="danger"
+              onSelect={() => {
+                if (!confirm(t("header.deleteConfirm", { name: trip.name }))) {
+                  return;
+                }
+                remove.mutate(trip.id, {
+                  onSuccess: () => void navigate({ to: "/" }),
+                });
+              }}
+            >
+              {t("header.delete")}
+            </MenuItem>
+          </>
+        )}
       </Menu>
     </TopBar>
   );
