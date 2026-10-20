@@ -117,3 +117,21 @@ describe("leg cache", () => {
     expect(row?.n).toBe(0);
   });
 });
+
+describe("leg router", () => {
+  it("goes through the tunnel binding when it exists", async () => {
+    const urls: string[] = [];
+    const tunnel = {
+      fetch: (async (url: string | URL | Request) => {
+        urls.push(String(url));
+        return new Response("down", { status: 503 });
+      }) as typeof fetch,
+    };
+    const router = legRouter(undefined, tunnel);
+    expect(router.provider).toBe("brouter");
+    await expect(
+      router.fetch([8.1, 49.1], [8.2, 49.2], "touring"),
+    ).rejects.toThrow();
+    expect(urls[0]).toMatch(/^http:\/\/brouter:17777\/brouter\?/);
+  });
+});

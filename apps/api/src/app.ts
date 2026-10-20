@@ -13,7 +13,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { ZodType } from "zod";
 import { auth, type AuthBindings, type AuthVariables } from "./auth";
 import type { Db } from "./db";
-import { cachedLeg, legRouter, roundCoord } from "./legs";
+import { cachedLeg, legRouter, roundCoord, type TunnelFetcher } from "./legs";
 import {
   deleteTrip,
   getShares,
@@ -27,6 +27,8 @@ export type Bindings = AuthBindings & {
   DB: Db;
   /** e.g. http://localhost:17777. Without it, the fake router answers. */
   BROUTER_URL?: string;
+  /** Workers VPC binding to BRouter through the tunnel. Only when deployed. */
+  BROUTER?: TunnelFetcher;
 };
 
 const status: Record<ErrorCode, ContentfulStatusCode> = {
@@ -95,7 +97,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: AuthVariables }>()
     const { from, to, profile } = c.req.valid("json");
     const { envelope, cached } = await cachedLeg(
       c.env.DB,
-      legRouter(c.env.BROUTER_URL),
+      legRouter(c.env.BROUTER_URL, c.env.BROUTER),
       roundCoord(from),
       roundCoord(to),
       profile,

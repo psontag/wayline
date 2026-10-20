@@ -118,7 +118,7 @@ curl "http://localhost:17777/brouter?lonlats=10.8873,49.8917|9.9356,49.7913&prof
 ## Secrets
 
 - API keys are Worker secrets, set with `wrangler secret put <NAME> --name wayline-api`. `cf` cannot set a single secret yet.
-- Live logs: `wrangler tail wayline-api`.
+- Live logs: `wrangler tail wayline-api` with the debug token (`docs/12-deploy.md`).
 - Locally they go in `.dev.vars`. This file is git-ignored.
 - Deploy credentials are GitHub Actions secrets.
 
@@ -138,7 +138,7 @@ D1 schema changes are SQL migration files in `apps/api/migrations/`.
 | Trigger | Steps |
 |---|---|
 | Pull request | Lint, typecheck, test |
-| Push to `main` | Lint, typecheck, test, build, `cf d1 migrations apply <DATABASE_ID>`, `cf deploy` |
+| Push to `main` | Lint, typecheck, test, then deploy (`docs/12-deploy.md`) |
 | Monthly or manual | Data pipeline |
 
 ## Later

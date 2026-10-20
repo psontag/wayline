@@ -1,6 +1,6 @@
 # Architecture
 
-Wayline runs on Cloudflare and in the browser. There are no servers to maintain. Everything is written in TypeScript.
+Wayline runs on Cloudflare and in the browser. The only server is BRouter on the owner's machine, reached through a tunnel. Everything is written in TypeScript.
 
 ## Overview
 
@@ -11,20 +11,21 @@ Browser (React SPA)
  └─ calls → Cloudflare Worker (one hostname, behind Access)
               ├─ static assets: the SPA and geodata (/data/*)
               ├─ /api: routing, weather, trips
-              └─ storage: trips and route legs in D1
+              ├─ storage: trips and route legs in D1
+              └─ routing → VPC binding → tunnel → BRouter (owner's machine)
 
-GitHub Action (monthly or manual) → OSM data → geodata files → deploy
+GitHub Action (push to main) → Cloudflare setup, geodata (monthly) → deploy
 ```
 
 ## Hosting
 
-One Worker on one hostname, behind Cloudflare Access. It serves:
+One Worker on its `workers.dev` hostname, behind Cloudflare Access. It serves:
 
 - the SPA as static assets
 - `/api`
 - `/data/*`: geodata as static assets
 
-`workers.dev` and preview URLs are turned off.
+Preview URLs are off. Deploy and setup: `docs/12-deploy.md`.
 
 ## Split between browser and Worker
 
@@ -118,7 +119,7 @@ All API errors have one shape:
 
 ## Geodata
 
-A GitHub Action runs monthly or manually (`workflow_dispatch`). It loads OSM data (Geofabrik extracts), writes files to `apps/web/public/data/<version>/` and deploys. Each file must stay under 25 MiB, and all static assets under 20,000 files.
+The deploy job builds it with `pnpm data:build` and caches the result per month, so OSM updates come in monthly. It loads OSM data (Geofabrik extracts) and writes files to `apps/web/public/data/<version>/`. Each file must stay under 25 MiB, and all static assets under 20,000 files.
 
 | File | Format |
 |---|---|

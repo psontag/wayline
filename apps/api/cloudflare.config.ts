@@ -1,5 +1,11 @@
 import { bindings, defineConfig, triggers } from "cf/config";
 
+// Ids of the deployed resources come from infra/cloudflare/setup.ts, which
+// CI runs before the build. Locally they are missing: D1 is local, BRouter
+// is at BROUTER_URL from .dev.vars, and there is no Access.
+const env = process.env;
+const LOCAL_D1_ID = "00000000-0000-4000-8000-000000000000";
+
 export default defineConfig({
   worker: {
     name: "wayline-api",
@@ -10,13 +16,22 @@ export default defineConfig({
       notFoundHandling: "single-page-application",
       runWorkerFirst: ["/api/*"],
     },
+    workersDev: true,
+    previewUrls: false,
+    observability: { enabled: true },
     env: {
-      // TODO: the id is a placeholder for local D1. Set the real id of the
-      // `wayline` database before the first deploy.
       DB: bindings.d1({
         name: "wayline",
-        id: "00000000-0000-4000-8000-000000000000",
+        id: env.WAYLINE_D1_ID ?? LOCAL_D1_ID,
       }),
+      ...(env.WAYLINE_BROUTER_SERVICE_ID && {
+        BROUTER: bindings.vpcService({ id: env.WAYLINE_BROUTER_SERVICE_ID }),
+      }),
+      ...(env.WAYLINE_ACCESS_TEAM_DOMAIN &&
+        env.WAYLINE_ACCESS_AUD && {
+          ACCESS_TEAM_DOMAIN: bindings.text(env.WAYLINE_ACCESS_TEAM_DOMAIN),
+          ACCESS_AUD: bindings.text(env.WAYLINE_ACCESS_AUD),
+        }),
     },
     // Deletes expired legs.
     triggers: [triggers.scheduled({ schedule: "0 3 * * *" })],

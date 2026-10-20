@@ -21,8 +21,34 @@ export type LegRouter = {
   fetch(from: LonLat, to: LonLat, profile: Profile): Promise<ProviderEnvelope>;
 };
 
-/** Local BRouter when BROUTER_URL is set, otherwise the fake router. */
-export function legRouter(brouterUrl: string | undefined): LegRouter {
+/** A Workers VPC binding: fetch goes through the tunnel to BRouter. */
+export type TunnelFetcher = { fetch: typeof fetch };
+
+/** BRouter inside the tunnel. The VPC service picks the host, the path counts. */
+const TUNNEL_BROUTER_URL = "http://brouter:17777";
+
+/**
+ * BRouter through the tunnel when the BROUTER binding exists (deployed),
+ * else at BROUTER_URL (local), else the fake router.
+ */
+export function legRouter(
+  brouterUrl: string | undefined,
+  tunnel?: TunnelFetcher,
+): LegRouter {
+  if (tunnel) {
+    return {
+      provider: "brouter",
+      profileHash: brouterProfileHash,
+      fetch: (from, to, profile) =>
+        fetchBrouterLeg(from, to, profile, {
+          baseUrl: brouterUrl ?? TUNNEL_BROUTER_URL,
+          fetch: (url) =>
+            tunnel.fetch(url, {
+              signal: AbortSignal.timeout(BROUTER_TIMEOUT_MS),
+            }),
+        }),
+    };
+  }
   if (!brouterUrl) {
     return {
       provider: "fake",

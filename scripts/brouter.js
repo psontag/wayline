@@ -1,7 +1,8 @@
 // Downloads the BRouter segments for BW, Hessen and Bayern if missing, then
-// starts BRouter in Docker on localhost:17777.
+// starts BRouter in Docker on localhost:17777. With a Cloudflare token in
+// .cloudflare.env it also starts cloudflared, so the deployed app can route.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, renameSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -36,9 +37,48 @@ if (spawnSync("docker", ["info"], { stdio: "ignore" }).status !== 0) {
   );
   process.exit(1);
 }
-run("docker", ["compose", "-f", compose, "up", "--build"]);
+const tunnelToken = loadTunnelToken();
+run(
+  "docker",
+  [
+    "compose",
+    "-f",
+    compose,
+    ...(tunnelToken ? ["--profile", "tunnel"] : []),
+    "up",
+    "--build",
+  ],
+  { ...process.env, TUNNEL_TOKEN: tunnelToken ?? "" },
+);
 
-function run(command, args) {
-  const { status } = spawnSync(command, args, { stdio: "inherit" });
+/** Tunnel token from Cloudflare, or undefined to run without the tunnel. */
+function loadTunnelToken() {
+  const file = join(root, ".cloudflare.env");
+  if (!existsSync(file)) return undefined;
+  const env = Object.fromEntries(
+    readFileSync(file, "utf8")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#"))
+      .map((line) => {
+        const i = line.indexOf("=");
+        return [line.slice(0, i), line.slice(i + 1)];
+      }),
+  );
+  const { status, stdout, stderr } = spawnSync(
+    "node",
+    [join(root, "apps/api/scripts/setup-cloudflare.ts"), "--tunnel-token"],
+    { env: { ...process.env, ...env }, encoding: "utf8" },
+  );
+  if (status !== 0) {
+    console.warn(`Starting without the tunnel: ${stderr.trim()}`);
+    return undefined;
+  }
+  console.log("Starting cloudflared for the tunnel");
+  return stdout.trim();
+}
+
+function run(command, args, env = process.env) {
+  const { status } = spawnSync(command, args, { stdio: "inherit", env });
   if (status !== 0) process.exit(status ?? 1);
 }
