@@ -16,7 +16,7 @@ import {
   type SheetSnap,
   useFormat,
 } from "@wayline/ui";
-import { ChevronLeft, Download } from "lucide-react";
+import { ChevronLeft, Download, Share2 } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { downloadTripGpx } from "../../data/gpx";
@@ -41,6 +41,8 @@ export type PhoneTripEditorProps = {
   hover?: LonLat;
   /** The note after an edit. */
   toast: ReactNode;
+  /** Opens the share dialog. Only for the owner of a trip on the server. */
+  onShare?: () => void;
 };
 
 /** Phone layout: full-screen map, floating header and a bottom sheet. */
@@ -56,6 +58,7 @@ export function PhoneTripEditor({
   onHoverKm,
   hover,
   toast,
+  onShare,
 }: PhoneTripEditorProps) {
   const { t } = useTranslation("tripEditor");
   const [snap, setSnap] = useState<SheetSnap>("half");
@@ -88,7 +91,7 @@ export function PhoneTripEditor({
           </div>
         </TripMap>
       </div>
-      <PhoneHeader trip={trip} />
+      <PhoneHeader trip={trip} readOnly={editor.readOnly} onShare={onShare} />
       <BottomSheet snap={snap} onSnapChange={setSnap} label={t("phone.sheet")}>
         <PhoneStageSheet
           trip={trip}
@@ -111,7 +114,15 @@ export function PhoneTripEditor({
   );
 }
 
-function PhoneHeader({ trip }: { trip: Trip }) {
+function PhoneHeader({
+  trip,
+  readOnly,
+  onShare,
+}: {
+  trip: Trip;
+  readOnly: boolean;
+  onShare?: () => void;
+}) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
   const distance = format.distance(tripStats(trip.stages).distance);
@@ -132,8 +143,17 @@ function PhoneHeader({ trip }: { trip: Trip }) {
       </FloatingButton>
       <FloatingTitle
         title={trip.name}
-        subtitle={t("phone.subtitle", { dates, distance })}
+        subtitle={
+          readOnly
+            ? t("phone.sharedSubtitle", { owner: trip.owner })
+            : t("phone.subtitle", { dates, distance })
+        }
       />
+      {onShare && (
+        <FloatingButton label={t("header.share")} onClick={onShare}>
+          <Share2 aria-hidden />
+        </FloatingButton>
+      )}
       <FloatingButton
         variant="accent"
         label={t("header.exportGpx")}

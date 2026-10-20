@@ -92,12 +92,16 @@ export function StageItem({
       wind={weather ? stageWind(weather) : undefined}
       times={stageTimes(trip, index)}
       locked={stage.end.locked}
-      onLockedChange={(locked) => editor.setLocked(index, locked)}
+      onLockedChange={
+        editor.readOnly
+          ? undefined
+          : (locked) => editor.setLocked(index, locked)
+      }
       selected={selected}
       onSelect={onSelect}
       color={index % 2 ? "b" : "a"}
       alternatives={
-        selected && !isLast ? (
+        selected && !isLast && !editor.readOnly ? (
           <StopPicker trip={trip} index={index} editor={editor} />
         ) : undefined
       }

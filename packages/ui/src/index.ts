@@ -63,6 +63,7 @@ export {
   ConfirmDialog,
   type ConfirmDialogProps,
 } from "./components/ConfirmDialog";
+export { Dialog, type DialogProps } from "./components/Dialog";
 export { DateField, type DateFieldProps } from "./components/DateField";
 export { EmptyState, type EmptyStateProps } from "./components/EmptyState";
 export { NumberInput, type NumberInputProps } from "./components/NumberInput";

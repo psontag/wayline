@@ -95,6 +95,11 @@
     "pick": "Pick",
     "whereToStop": "Where to stop",
     "weatherValue": "17–23 °C, dry",
-    "windValue": "45 % headwind"
+    "windValue": "45 % headwind",
+    "sharedBy": "Shared by anna@example.com",
+    "shareTitle": "Share trip",
+    "shareText": "Friends can open this trip and export it, but not change it.",
+    "done": "Done",
+    "email": "Email"
   }
 }

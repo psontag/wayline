@@ -37,9 +37,12 @@ export function PhoneStopSheet({
 }: PhoneStopSheetProps) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
-  const options = useStopOptions(trip, index);
+  const { readOnly } = editor;
+  const options = useStopOptions(trip, index).filter(
+    (o) => o.current || !readOnly,
+  );
   const stage = trip.stages[index];
-  const hotels = useHotels(open ? stage?.end : undefined);
+  const hotels = useHotels(open && !readOnly ? stage?.end : undefined);
   if (!stage || index === trip.stages.length - 1) return null;
 
   const { end, hotel } = stage;
@@ -87,26 +90,28 @@ export function PhoneStopSheet({
             />
           ))}
         </ChoiceGroup>
-        <div className="flex items-center gap-2 text-xs text-text-muted">
-          {end.locked ? (
-            <Lock className="size-3.5 shrink-0" aria-hidden />
-          ) : (
-            <LockOpen className="size-3.5 shrink-0" aria-hidden />
-          )}
-          <span className="flex-1">
-            {t(end.locked ? "phone.locked" : "phone.unlocked", {
-              place: end.name,
-            })}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={!editor.canEdit}
-            onClick={() => editor.setLocked(index, !end.locked)}
-          >
-            {end.locked ? t("phone.unlock") : t("phone.lock")}
-          </Button>
-        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-2 text-xs text-text-muted">
+            {end.locked ? (
+              <Lock className="size-3.5 shrink-0" aria-hidden />
+            ) : (
+              <LockOpen className="size-3.5 shrink-0" aria-hidden />
+            )}
+            <span className="flex-1">
+              {t(end.locked ? "phone.locked" : "phone.unlocked", {
+                place: end.name,
+              })}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!editor.canEdit}
+              onClick={() => editor.setLocked(index, !end.locked)}
+            >
+              {end.locked ? t("phone.unlock") : t("phone.lock")}
+            </Button>
+          </div>
+        )}
       </div>
 
       <section className="flex flex-col gap-2.5">
@@ -122,9 +127,11 @@ export function PhoneStopSheet({
             distance={distanceKm(hotel.coord, end.coord) * 1000}
             website={hotel.website}
             action={
-              <Button size="sm" aria-disabled>
-                {t("phone.picked")}
-              </Button>
+              !readOnly && (
+                <Button size="sm" aria-disabled>
+                  {t("phone.picked")}
+                </Button>
+              )
             }
           />
         )}

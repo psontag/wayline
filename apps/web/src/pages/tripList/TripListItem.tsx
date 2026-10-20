@@ -9,7 +9,7 @@ import {
   TripCard,
   useFormat,
 } from "@wayline/ui";
-import { Copy, Ellipsis, Trash2 } from "lucide-react";
+import { Copy, Ellipsis, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDeleteTrip, useDuplicateTrip } from "../../data/queries";
@@ -49,6 +49,16 @@ export function TripListItem({ trip }: { trip: TripSummary }) {
         badge={<Badge>{t(`kind.${trip.kind}`)}</Badge>}
         dates={dates}
         stats={stats}
+        byline={
+          trip.shared && (
+            <>
+              <Users aria-hidden />
+              <span className="truncate">
+                {t("sharedBy", { owner: trip.owner })}
+              </span>
+            </>
+          )
+        }
         preview={trip.preview}
         actions={
           <Menu
@@ -71,13 +81,15 @@ export function TripListItem({ trip }: { trip: TripSummary }) {
             >
               {t("duplicate")}
             </MenuItem>
-            <MenuItem
-              icon={<Trash2 aria-hidden />}
-              tone="danger"
-              onSelect={() => setConfirmDelete(true)}
-            >
-              {t("delete")}
-            </MenuItem>
+            {!trip.shared && (
+              <MenuItem
+                icon={<Trash2 aria-hidden />}
+                tone="danger"
+                onSelect={() => setConfirmDelete(true)}
+              >
+                {t("delete")}
+              </MenuItem>
+            )}
           </Menu>
         }
       />

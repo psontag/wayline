@@ -84,6 +84,17 @@ export class LocalTripStore implements TripStore {
     return copy;
   }
 
+  async shares(id: string) {
+    return (await this.get(id)).sharedWith;
+  }
+
+  /** Only stored. Without a server nobody else sees the trip. */
+  async setShares(id: string, emails: string[]) {
+    const trip = await this.get(id);
+    await (await this.kv()).set(TRIP + id, { ...trip, sharedWith: emails });
+    return emails;
+  }
+
   private now() {
     return this.options.now?.() ?? new Date();
   }
