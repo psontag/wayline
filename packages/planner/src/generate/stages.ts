@@ -58,6 +58,8 @@ export type CutOptions = {
   days: number;
   kmPerDay: number;
   maxAscentPerDay: number;
+  /** Share of a full day per stage. Targets scale with it. */
+  dayShares?: number[];
   /** Start of a loop. Stops keep away from it. */
   home?: LonLat;
 };
@@ -105,12 +107,19 @@ export function stopCandidates(
 }
 
 /**
- * Cost of one stage: deviation from the target km. A stage that climbs more
- * than the max, or is far too short or long, does not fit at all.
+ * Cost of stage `day`: deviation from its target km. A stage that climbs
+ * more than its max, or is far too short or long, does not fit at all.
  */
-export function stageCost(km: number, ascent: number, o: CutOptions): number {
-  if (ascent > o.maxAscentPerDay) return Infinity;
-  const dev = (km - o.kmPerDay) / o.kmPerDay;
+export function stageCost(
+  km: number,
+  ascent: number,
+  o: CutOptions,
+  day = 0,
+): number {
+  const share = o.dayShares?.[day] ?? 1;
+  const target = o.kmPerDay * share;
+  if (ascent > o.maxAscentPerDay * share) return Infinity;
+  const dev = (km - target) / target;
   if (dev < MIN_STAGE - 1 || dev > MAX_STAGE - 1) return Infinity;
   return dev * dev;
 }
@@ -136,10 +145,12 @@ export function cutStages(
   const total = points.at(-1)?.km ?? 0;
   const totalAscent = points.at(-1)?.ascent ?? 0;
   const homeKm = Math.min(HOME_KM, 0.1 * total);
+  const firstKm = o.kmPerDay * (o.dayShares?.[0] ?? 1);
+  const lastKm = o.kmPerDay * (o.dayShares?.[n] ?? 1);
   const cands = candidates.filter(
     (c) =>
-      c.km > 0.4 * o.kmPerDay &&
-      c.km < total - 0.4 * o.kmPerDay &&
+      c.km > 0.4 * firstKm &&
+      c.km < total - 0.4 * lastKm &&
       (!o.home || distanceKm(c.coord, o.home) >= homeKm),
   );
   const minGap = MIN_STRAIGHT_GAP * o.kmPerDay;
@@ -148,7 +159,7 @@ export function cutStages(
   // best[j][i]: cheapest cost with stop j at candidate i, and the previous one.
   const best: { cost: number; prev: number }[][] = [
     cands.map((c) => ({
-      cost: stageCost(c.km, ascentAt(c), o) + stopCost(c),
+      cost: stageCost(c.km, ascentAt(c), o, 0) + stopCost(c),
       prev: -1,
     })),
   ];
@@ -170,7 +181,7 @@ export function cutStages(
             continue;
           const cost =
             b.cost +
-            stageCost(c.km - p.km, ascentAt(c) - ascentAt(p), o) +
+            stageCost(c.km - p.km, ascentAt(c) - ascentAt(p), o, j) +
             stopCost(c);
           if (cost < row.cost) row = { cost, prev: h };
         }
@@ -184,7 +195,8 @@ export function cutStages(
   for (const [i, c] of cands.entries()) {
     const b = best[n - 1]?.[i];
     if (!b || b.cost === Infinity) continue;
-    const cost = b.cost + stageCost(total - c.km, totalAscent - ascentAt(c), o);
+    const cost =
+      b.cost + stageCost(total - c.km, totalAscent - ascentAt(c), o, n);
     if (cost < endCost) [end, endCost] = [i, cost];
   }
   if (end < 0) return null;

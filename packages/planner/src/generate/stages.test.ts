@@ -76,6 +76,20 @@ describe("cutStages", () => {
     expect(kms.some((km) => km > stop.km)).toBe(true);
   });
 
+  it("aims for a shorter first day with a smaller share", () => {
+    const towns = [3, 4, 5, 7, 8, 10, 11, 15, 16, 18, 19, 22, 23].map((i) =>
+      town(i),
+    );
+    const stops = cutStages(points, towns, {
+      ...options,
+      dayShares: [0.5, 1, 1, 1],
+    });
+    const [a, b] = stops!.map((s) => s.km);
+    // 300 km in 3.5 days: about 43 km, then about 86 km per day.
+    expect(a).toBeLessThanOrEqual(50);
+    expect(b! - a!).toBeGreaterThan(1.5 * a!);
+  });
+
   it("avoids stages that climb too much", () => {
     // Flat for 100 km, then 10 m per km.
     const hilly = points.map((p) => ({

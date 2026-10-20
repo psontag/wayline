@@ -84,6 +84,8 @@ export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
       maxAscentPerDay: request.maxAscentPerDay,
       ...(request.hotelBudget ? { hotelBudget: request.hotelBudget } : {}),
       startTime: request.startTime,
+      ...(request.backBy ? { backBy: request.backBy } : {}),
+      ...(request.dayShares ? { dayShares: request.dayShares } : {}),
       avgSpeed: 18,
     },
     stages,

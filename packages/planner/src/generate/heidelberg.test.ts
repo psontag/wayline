@@ -154,4 +154,68 @@ describe("Planner on the Heidelberg tiles", () => {
     );
     expect(legs.every((l) => l.provider === "graph")).toBe(true);
   });
+
+  it("makes a late first day shorter", async () => {
+    const late = { ...request, dayShares: [0.5, 1, 1], startTime: "13:00" };
+    const planner = await new Planners(source()).for(late);
+    const result = await planner.generate(late);
+    if (!result.ok) throw new Error(result.failedLimit);
+    for (const p of result.proposals) {
+      const [first, second] = p.trip.stages.map((s) => s.stats.distance / 1000);
+      expect(first).toBeLessThan(0.7 * 70);
+      expect(first).toBeLessThan(second!);
+      expect(p.trip.settings.dayShares).toEqual([0.5, 1, 1]);
+    }
+  });
+
+  it("plans day loops", async () => {
+    const loop: GenerateRequest = {
+      ...request,
+      kind: "day-loop",
+      days: 1,
+      kmPerDay: 60,
+    };
+    const planner = await new Planners(source()).for(loop);
+    const result = await planner.generate(loop);
+    if (!result.ok) throw new Error(result.failedLimit);
+    for (const p of result.proposals) {
+      expect(p.trip.stages).toHaveLength(1);
+      const [stage] = p.trip.stages;
+      expect(stage!.start.name).toBe(stage!.end.name);
+      expect(stage!.hotel).toBeUndefined();
+      expect(stage!.stats.distance / 1000).toBeGreaterThan(45);
+      expect(stage!.stats.distance / 1000).toBeLessThan(75);
+      expect(p.trip.name).toContain(" – ");
+    }
+  });
+
+  it("plans one day from a town to a town with characters", async () => {
+    const ride: GenerateRequest = {
+      ...request,
+      kind: "one-way",
+      days: 1,
+      kmPerDay: 60,
+      startStation: {
+        name: "Heidelberg",
+        kind: "town",
+        coord: [8.69472, 49.40936],
+      },
+      endStation: {
+        name: "Weinheim",
+        kind: "town",
+        coord: [8.67175, 49.54624],
+      },
+    };
+    const planner = await new Planners(source()).for(ride);
+    const result = await planner.generate(ride);
+    if (!result.ok) throw new Error(result.failedLimit);
+    const [direct, ...others] = result.proposals;
+    expect(direct!.character).toBe("direct");
+    expect(others.every((p) => p.character !== "direct")).toBe(true);
+    const km = (p: typeof direct) => p!.trip.stages[0]!.stats.distance;
+    for (const p of others) expect(km(p)).toBeGreaterThan(km(direct));
+    expect(others.length).toBeGreaterThan(0);
+    // Weinheim has a station within 2 km.
+    expect(direct!.trip.stages[0]!.end.kind).toBe("station");
+  });
 });

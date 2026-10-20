@@ -6,6 +6,7 @@ import {
   type GenerateRequest,
   type GenerateResult,
   type LonLat,
+  type Place,
   type Places,
   type Proposal,
   Theme,
@@ -50,8 +51,14 @@ const TIME_LIMIT_MS = 2000;
 const MAX_SHARED = 0.4;
 /** Via nodes of two proposals must be at least this far apart. */
 const MIN_VIA_GAP_KM = 10;
-/** Max distance from the requested start to its station node. */
+/** A start or end within this distance of a station uses the station. */
+const STATION_KM = 2;
+/** Max distance from the requested start or end to the network. */
 const START_KM = 5;
+/** A one-day proposal sharing more of the direct path is no proposal. */
+const MAX_SHARED_DIRECT = 0.6;
+/** "Longer" one-day proposals are this much longer than the direct one. */
+const LONGER = { min: 1.2, max: 1.4 };
 /** The middle leg of a loop avoids edges this close to the start. */
 const LOOP_AVOID = { share: 0.08, minKm: 5, factor: 8 };
 /** The middle of a loop must not come closer to the start than this. */
@@ -110,13 +117,35 @@ export class Planner {
     check();
 
     const graph = this.graph;
-    const totalKm = request.days * request.kmPerDay;
     const costs = new Costs(graph, request);
     const start = this.startNode(request);
     if (start === undefined) return { ok: false, failedLimit: "area" };
     const endStation = this.endNode(request);
     if (endStation === null || endStation === start) {
       return { ok: false, failedLimit: "area" };
+    }
+
+    // One day from A to B: the direct path first, then longer ones.
+    let totalKm = targetKm(request);
+    let direct: Pick | undefined;
+    if (request.kind === "one-way" && request.days === 1 && endStation) {
+      const steps = chainPath(graph, [start, endStation], costs);
+      if (steps) {
+        const km = pathKm(graph, steps);
+        direct = {
+          nodes: [start, endStation],
+          steps,
+          stops: [],
+          km,
+          shared: 0,
+        };
+        totalKm = Math.min(totalKm, LONGER.max * km);
+        if (totalKm < LONGER.min * km) totalKm = 1.1 * km;
+        for (const s of steps) {
+          costs.penalty[s.edge] =
+            (costs.penalty[s.edge] ?? 1) * VARIETY_PENALTY;
+        }
+      }
     }
 
     onProgress?.({ phase: "searching", done: 0, total: MAX_TRIES });
@@ -135,21 +164,23 @@ export class Planner {
             endStation === undefined ? undefined : 0,
           )
         : loopCandidates(graph, costs, start, vias, totalKm);
-    if (!candidates.length) {
+    if (!candidates.length && !direct) {
       return { ok: false, failedLimit: request.region ? "area" : "days" };
     }
 
-    const { picks, failedLimit } = this.pick(
-      candidates,
-      costs,
-      request,
-      totalKm,
-      (done) => {
-        check();
-        onProgress?.({ phase: "searching", done, total: MAX_TRIES });
-      },
-    );
-    if (!picks.length) return { ok: false, failedLimit };
+    const found = this.pick(candidates, costs, request, totalKm, (done) => {
+      check();
+      onProgress?.({ phase: "searching", done, total: MAX_TRIES });
+    });
+    const picks = direct
+      ? [
+          direct,
+          ...found.picks.filter(
+            (p) => sharedKm(graph, p, direct) < MAX_SHARED_DIRECT * p.km,
+          ),
+        ].slice(0, PROPOSALS)
+      : found.picks;
+    if (!picks.length) return { ok: false, failedLimit: found.failedLimit };
     // Stages are cut during the search, since a path only counts if it cuts.
     onProgress?.({ phase: "cutting", done: picks.length, total: picks.length });
 
@@ -162,8 +193,13 @@ export class Planner {
         id: `draft-${runId}-${i + 1}`,
         now,
         request,
-        start: this.stops.station(start),
-        end: this.stops.station(end),
+        start: this.endpoint(start, request.startStation),
+        end: this.endpoint(
+          end,
+          request.kind === "one-way"
+            ? request.endStation
+            : request.startStation,
+        ),
         steps: p.steps,
         stops: p.stops,
       });
@@ -195,6 +231,18 @@ export class Planner {
           trip.stages.at(-1)?.end.name ?? "",
         ]),
       };
+      if (direct) {
+        proposal.character =
+          p === direct
+            ? "direct"
+            : p.km >= LONGER.min * direct.km * 0.95
+              ? "longer"
+              : "scenic";
+      }
+      if (request.kind === "day-loop" && proposal.via[0]) {
+        const home = trip.stages[0]?.start.name ?? "";
+        trip.name = `${home} – ${proposal.via[0]} – ${home}`;
+      }
       if (p.steps.some((s) => graph.edge(s.edge).scenery)) {
         proposal.themes = Object.fromEntries(
           Theme.options.map((t) => [t, themeValue(graph, p.steps, t)]),
@@ -207,15 +255,13 @@ export class Planner {
     return { ok: true, proposals };
   }
 
-  /** Start station: the requested one, else the one nearest the region center. */
+  /**
+   * Start node: a station near the requested place, else the network near
+   * it. Without a place, the station nearest the region center.
+   */
   private startNode(request: GenerateRequest): number | undefined {
     const isStation = (n: { kind: string }) => n.kind === "station";
-    if (request.startStation) {
-      return this.graph.nearestNode(request.startStation.coord, {
-        maxKm: START_KM,
-        filter: isStation,
-      });
-    }
+    if (request.startStation) return this.nodeAt(request.startStation.coord);
     const r = request.region;
     if (!r) return undefined;
     const node = this.graph.nearestNode(
@@ -234,17 +280,29 @@ export class Planner {
   }
 
   /**
-   * End station of a one-way trip. Undefined lets the planner pick it,
-   * null means the requested one is not on the network.
+   * End node of a one-way trip. Undefined lets the planner pick a station,
+   * null means the requested place is not on the network.
    */
   private endNode(request: GenerateRequest): number | null | undefined {
     if (request.kind !== "one-way" || !request.endStation) return undefined;
+    return this.nodeAt(request.endStation.coord) ?? null;
+  }
+
+  private nodeAt(coord: LonLat): number | undefined {
     return (
-      this.graph.nearestNode(request.endStation.coord, {
-        maxKm: START_KM,
+      this.graph.nearestNode(coord, {
+        maxKm: STATION_KM,
         filter: (n) => n.kind === "station",
-      }) ?? null
+      }) ?? this.graph.nearestNode(coord, { maxKm: START_KM })
     );
+  }
+
+  /** The station at a node, else the requested place. */
+  private endpoint(node: number, requested?: Place): Place {
+    if (this.graph.node(node).kind === "station" || !requested) {
+      return this.stops.station(node);
+    }
+    return requested;
   }
 
   /**
@@ -268,7 +326,7 @@ export class Planner {
       this.stops.hotelCount(n, request.hotelBudget),
     );
     const fails = { length: 0, hotels: 0, ascent: 0 };
-    const isLoop = request.kind === "multi-day-loop";
+    const isLoop = request.kind !== "one-way";
     const startNode = candidates[0]?.nodes[0];
     const home = startNode === undefined ? undefined : graph.coord(startNode);
     const avoid =
@@ -443,12 +501,29 @@ export class Planners {
   }
 }
 
+/** Length the request aims for: km per day times the day shares. */
+export function targetKm(request: GenerateRequest): number {
+  const shares = request.dayShares ?? [];
+  let days = 0;
+  for (let i = 0; i < request.days; i++) days += shares[i] ?? 1;
+  return days * request.kmPerDay;
+}
+
+/** km of a path on the edges of another. */
+function sharedKm(graph: Graph, a: Pick, b: Pick): number {
+  const edges = new Set(b.steps.map((s) => s.edge));
+  let km = 0;
+  for (const s of a.steps)
+    if (edges.has(s.edge)) km += graph.edge(s.edge).lengthKm;
+  return km;
+}
+
 /** Longest search radius around the start, in km. */
 const MAX_RADIUS_KM = 200;
 
 /** The area a request can reach. */
 export function requestBBox(request: GenerateRequest): BBox {
-  const totalKm = request.days * request.kmPerDay;
+  const totalKm = targetKm(request);
   const points = [request.startStation, request.endStation].flatMap((p) =>
     p ? [p.coord] : [],
   );
@@ -459,9 +534,7 @@ export function requestBBox(request: GenerateRequest): BBox {
   // Loop stops are at most about half the length from the start. One-way
   // ends without a chosen end are up to the full length away.
   const radius =
-    request.kind === "multi-day-loop" || request.endStation
-      ? totalKm / 2
-      : totalKm;
+    request.kind !== "one-way" || request.endStation ? totalKm / 2 : totalKm;
   return bboxAround(points, Math.min(radius, MAX_RADIUS_KM));
 }
 
