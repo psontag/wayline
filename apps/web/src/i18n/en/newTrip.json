@@ -20,6 +20,7 @@
   "placeKind": {
     "station": "Train station",
     "town": "Town",
+    "townWithStation": "Town · station {{distance}}",
     "custom": "Point on the map"
   },
   "days": "Days",

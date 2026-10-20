@@ -1,9 +1,9 @@
 import type { Place } from "@wayline/domain";
-import { Combobox, type ComboboxOption } from "@wayline/ui";
+import { Combobox, type ComboboxOption, useFormat } from "@wayline/ui";
 import { Crosshair, MapPin, TrainFront } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { placeKey, searchPlaces } from "./places";
+import { nearbyStation, placeKey, searchPlaces } from "./places";
 
 type PlaceFieldProps = {
   id: string;
@@ -14,7 +14,7 @@ type PlaceFieldProps = {
   describedBy?: string;
 };
 
-/** Search and pick a station or town. */
+/** Search and pick a town or station. Towns show their station, if close. */
 export function PlaceField({
   id,
   places,
@@ -24,6 +24,7 @@ export function PlaceField({
   describedBy,
 }: PlaceFieldProps) {
   const { t } = useTranslation("newTrip");
+  const format = useFormat();
   const [search, setSearch] = useState("");
   const results = useMemo(() => searchPlaces(places, search), [places, search]);
   const byKey = useMemo(
@@ -31,16 +32,21 @@ export function PlaceField({
     [places],
   );
 
+  const describe = (place: Place) => {
+    if (place.kind === "station") return t("placeKind.station");
+    if (place.kind === "custom") return t("placeKind.custom");
+    const near = nearbyStation(place, places);
+    return near
+      ? t("placeKind.townWithStation", {
+          distance: format.distance(near.km * 1000),
+        })
+      : t("placeKind.town");
+  };
+
   const option = (place: Place): ComboboxOption => ({
     value: placeKey(place),
     label: place.name,
-    description: t(
-      place.kind === "station"
-        ? "placeKind.station"
-        : place.kind === "custom"
-          ? "placeKind.custom"
-          : "placeKind.town",
-    ),
+    description: describe(place),
     icon:
       place.kind === "station" ? (
         <TrainFront aria-hidden />

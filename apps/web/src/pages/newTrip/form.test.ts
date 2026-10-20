@@ -2,16 +2,31 @@ import type { Places } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
 import placesJson from "../../../public/data/mock/oberfranken/places.json";
 import { defaultValues, fromRequest, newTripSchema, toRequest } from "./form";
-import { placeOptions, searchPlaces } from "./places";
+import { nearbyStation, placeOptions, searchPlaces } from "./places";
 
 const places = placeOptions(placesJson as Places);
 
 describe("searchPlaces", () => {
-  it("puts names that start with the query first, stations before towns", () => {
+  it("puts names that start with the query first, towns before stations", () => {
     const names = searchPlaces(places, "coburg").map((p) => p.name);
     expect(names[0]).toBe("Coburg");
-    expect(searchPlaces(places, "coburg")[0]!.kind).toBe("station");
+    expect(searchPlaces(places, "coburg")[0]!.kind).toBe("town");
     expect(names).toContain("Coburg Nord");
+  });
+
+  it("shows big towns for an empty search", () => {
+    const shown = searchPlaces(places, "");
+    expect(shown.every((p) => p.kind === "town")).toBe(true);
+    expect(shown.map((p) => p.name)).toContain("Bamberg");
+  });
+
+  it("finds the station next to a town", () => {
+    const bamberg = places.find(
+      (p) => p.kind === "town" && p.name === "Bamberg",
+    )!;
+    const near = nearbyStation(bamberg, places);
+    expect(near?.station.kind).toBe("station");
+    expect(near!.km).toBeLessThan(2);
   });
 
   it("ignores case and accents", () => {
