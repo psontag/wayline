@@ -40,7 +40,9 @@ Main router. Best cycling profiles. Supports custom profiles, so we can write on
 - Sends `Access-Control-Allow-Origin: *`. We still call it from the Worker.
 - We must keep request volume low: cache every leg.
 - Custom profiles may get temporary ids on the public server. If a profile is not found, the adapter uploads it again and retries once.
-- MIT license. A Docker image exists. Self-hosting is possible later if the public server is not enough.
+- MIT license. Development uses a local BRouter in Docker (`09-development.md`). Self-hosting in production is possible later if the public server is not enough.
+- Our presets are BRouter profiles in `infra/brouter/profiles/`. The adapter asks for the profile with the preset's name.
+- No route (e.g. a point outside the segments) is a 400 with a plain text reason. The adapter maps it to `INVALID`.
 
 Open: email the operator about custom profiles and our request volume.
 
