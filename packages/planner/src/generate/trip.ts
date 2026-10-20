@@ -1,4 +1,5 @@
 import {
+  distanceKm,
   type GenerateRequest,
   type Place,
   type Stage,
@@ -130,6 +131,9 @@ const PLACE_RANK = { city: 2, town: 1, village: 0 };
  * Up to `limit` well-known towns near the path, in route order. Cities beat
  * towns beat villages. Population, else hotel count, breaks ties.
  */
+/** Towns this close to the start are no via. */
+const HOME_VIA_KM = 8;
+
 export function viaNames(
   graph: Graph,
   places: Stops,
@@ -140,6 +144,7 @@ export function viaNames(
 ): string[] {
   const seen = new Set(skip);
   const found: { name: string; order: number; rank: number[] }[] = [];
+  const home = graph.coord(start);
   let node = start;
   for (const [order, { edge }] of steps.entries()) {
     node = graph.other(edge, node);
@@ -148,6 +153,8 @@ export function viaNames(
       // "Heidelberg" is no via for a trip from "Heidelberg Hauptbahnhof".
       if (!t || seen.has(t.name) || skip.some((s) => s.startsWith(t.name)))
         continue;
+      // Neighbors of the start, like Neu-Ulm for Ulm, say nothing about the way.
+      if (distanceKm(home, [t.lon, t.lat]) < HOME_VIA_KM) continue;
       seen.add(t.name);
       const rank = [PLACE_RANK[t.place], t.population ?? 0, t.hotelCount];
       found.push({ name: t.name, order, rank });
