@@ -16,6 +16,8 @@ export type ElevationProfileProps = {
   /** km of the crosshair. */
   hoverKm?: number;
   onHoverKm?: (km: number | undefined) => void;
+  /** A second profile drawn dashed, e.g. the route as proposed. */
+  compare?: { km: number; ele: number }[];
   /** Describes the chart for screen readers. */
   "aria-label": string;
   className?: string;
@@ -35,6 +37,7 @@ const stroke: Record<SurfaceKind, string> = {
 /** Elevation over distance. The line is colored by surface. */
 export function ElevationProfile({
   points,
+  compare = [],
   hoverKm,
   onHoverKm,
   "aria-label": ariaLabel,
@@ -44,13 +47,13 @@ export function ElevationProfile({
   const last = points.at(-1);
   if (!first || !last) return <div className={cn("h-20", className)} />;
 
-  const length = last.km - first.km || 1;
-  const eles = points.map((p) => p.ele);
+  const length = Math.max(last.km, compare.at(-1)?.km ?? 0) - first.km || 1;
+  const eles = [...points, ...compare].map((p) => p.ele);
   const min = Math.min(...eles);
   const range = Math.max(...eles) - min || 1;
   const x = (km: number) => ((km - first.km) / length) * W;
   const y = (ele: number) => H - PAD - ((ele - min) / range) * (H - 2 * PAD);
-  const xy = (p: ProfilePoint) =>
+  const xy = (p: { km: number; ele: number }) =>
     `${x(p.km).toFixed(1)} ${y(p.ele).toFixed(1)}`;
 
   const area = `M${points.map(xy).join(" L")} L${W} ${H} L0 ${H} Z`;
@@ -96,6 +99,16 @@ export function ElevationProfile({
       className={cn("block h-20 w-full touch-none", className)}
     >
       <path d={area} className="fill-hover" />
+      {compare.length > 1 && (
+        <path
+          d={`M${compare.map(xy).join(" L")}`}
+          fill="none"
+          strokeWidth={2}
+          strokeDasharray="4 4"
+          vectorEffect="non-scaling-stroke"
+          className="stroke-text-muted"
+        />
+      )}
       {runs.map((run, i) => (
         <path
           key={i}

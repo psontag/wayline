@@ -7,6 +7,10 @@ export {
 } from "./components/Button";
 export { Card, type CardProps } from "./components/Card";
 export {
+  ChangeNotice,
+  type ChangeNoticeProps,
+} from "./components/ChangeNotice";
+export {
   Badge,
   Chip,
   type BadgeProps,

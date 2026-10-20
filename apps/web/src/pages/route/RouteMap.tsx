@@ -33,7 +33,7 @@ import MapGL, {
 } from "react-map-gl/maplibre";
 import { NetworkLayer } from "../../components/NetworkLayer";
 import { useHiddenPlaceLabels } from "../../components/placeLabels";
-import { useRouteDrag } from "./useRouteDrag";
+import { useRouteDrag } from "../../components/useRouteDrag";
 
 setWorkerUrl(workerUrl);
 

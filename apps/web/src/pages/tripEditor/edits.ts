@@ -81,7 +81,7 @@ function keepVia(via: Place[], points: LonLat[]): Place[] {
   return via.filter((v) => points.some((p) => distanceKm(p, v.coord) < 0.001));
 }
 
-function withLegs(stage: Stage, legs: Leg[]): Stage {
+export function withLegs(stage: Stage, legs: Leg[]): Stage {
   return { ...stage, legs, stats: statsFromLegs(legs) };
 }
 

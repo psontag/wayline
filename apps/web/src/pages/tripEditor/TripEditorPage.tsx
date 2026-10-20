@@ -4,7 +4,7 @@ import {
   useParams,
   useSearch,
 } from "@tanstack/react-router";
-import { pointAtKm, routePoints, type Trip } from "@wayline/domain";
+import { decodeLine, pointAtKm, routePoints, type Trip } from "@wayline/domain";
 import {
   Button,
   Toast,
@@ -21,7 +21,8 @@ import { StageProfile } from "./StageProfile";
 import { useStopOptions } from "./StopPicker";
 import { ShareDialog } from "./ShareDialog";
 import { TripHeader } from "./TripHeader";
-import { TripMap } from "./TripMap";
+import { isChanged } from "./routeEdits";
+import { type RouteEditing, TripMap } from "./TripMap";
 import { tripStops } from "./tripArea";
 import { TripSummary } from "./TripSummary";
 import { PhoneTripEditor } from "./PhoneTripEditor";
@@ -111,6 +112,32 @@ function TripEditor({
             }),
           }));
 
+  const proposed = useMemo(
+    () =>
+      trip.stages.flatMap((_, i) =>
+        isChanged(trip, i)
+          ? [
+              (trip.proposed?.[i]?.legs ?? []).flatMap((leg) =>
+                decodeLine(leg.geometry),
+              ),
+            ]
+          : [],
+      ),
+    [trip],
+  );
+  const routeEditing = (tapToAdd: boolean): RouteEditing | undefined =>
+    readOnly
+      ? undefined
+      : {
+          enabled: editor.canEdit,
+          tapToAdd,
+          preview: (leg, at) => editor.preview(selected, leg, at),
+          onAddVia: (leg, at) => void editor.insertVia(selected, leg, at),
+          onMoveVia: (coord, at) => void editor.moveVia(selected, coord, at),
+          onRemoveVia: (coord) => void editor.removeVia(selected, coord),
+          proposed,
+        };
+
   const toast = editor.note && (
     <Toast
       key={editor.note.id}
@@ -118,7 +145,11 @@ function TripEditor({
       onOpenChange={(open) => !open && editor.clearNote()}
       duration={8000}
       message={editor.note.message}
-      action={{ label: t("note.undo"), onClick: editor.undo }}
+      action={
+        editor.note.changed
+          ? { label: t("note.undo"), onClick: editor.undo }
+          : undefined
+      }
     />
   );
 
@@ -139,6 +170,7 @@ function TripEditor({
           hoverKm={hoverKm}
           onHoverKm={setHoverKm}
           hover={hover}
+          route={routeEditing(true)}
           toast={<ToastViewport placement="inline" />}
         />
       </ToastProvider>
@@ -166,6 +198,7 @@ function TripEditor({
                 void editor.moveStop(selected, place)
               }
               hover={hover}
+              route={routeEditing(false)}
             >
               <ToastProvider>
                 {toast}

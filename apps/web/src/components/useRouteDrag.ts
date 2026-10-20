@@ -14,7 +14,11 @@ type Point = { x: number; y: number };
 const DRAG_PX = 4;
 
 /** Closest point on the line to a screen point, in screen space. */
-function nearestOnLine(map: MapRef, line: LonLat[], p: Point): LonLat {
+export function nearestOnLine(
+  map: MapRef,
+  line: LonLat[],
+  p: Point,
+): LonLat {
   let best: Point | undefined;
   let bestD = Infinity;
   const points = line.map((c) => map.project(c));
