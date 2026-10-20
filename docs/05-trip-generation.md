@@ -55,9 +55,10 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 3. **Search paths.**
    - Shortest path with cost = length / score^k.
    - Variety: raise the cost of used edges and search again (penalty method).
-   - Loops: two penalized paths to a turning node at about 1/3 of the length.
+   - Loops: start → A → B → start. A and B are towns at about 1/3 of the length, at least 12 % of the length away from the start in a straight line, and 40–120° apart as seen from the start.
+   - The leg from A to B avoids edges near the start (cost × 8).
    - Time limit of about 2 s.
-4. **Filter** by length, ascent and surface, using edge data.
+4. **Filter** by length (within 12 % of the target), ascent and surface, using edge data. Drop loops whose middle part (20–80 % of the length) comes within 4 % of the length, or 4 km, of the start.
 5. **Cut into stages.** See below.
 6. **Rank** and pick 3–5 diverse proposals.
 7. **Route** the chosen proposals. Waypoints are graph nodes about every 10 km, so the router follows the graph path. Proposals share nodes, so legs hit the cache. If routing fails, the proposal keeps the graph path.
@@ -68,8 +69,12 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 
 Stops must be towns with hotels. For a route of length L and n days:
 
-1. Collect towns near the route with their position (km from start).
-2. Choose n − 1 towns with dynamic programming. Cost per stage: deviation from target km. A stage that climbs more than the max ascent is not allowed. If no cut fits, the path is dropped.
+1. Collect towns near the route with their position (km from start). Only towns with a named hotel within 2 km count.
+2. Choose n − 1 towns with dynamic programming. Cost per stage: deviation from target km. If no cut fits, the path is dropped. Not allowed:
+   - a stage that climbs more than the max ascent
+   - a stage shorter than 0.5× or longer than 1.35× the target km
+   - two stops closer than a quarter of the target km in a straight line
+   - on loops: a stop closer to the start than 15 km (or 10 % of the length)
 3. Keep the best 2–3 towns per stop as alternatives.
 
 On edit, cutting runs only between locked stops.

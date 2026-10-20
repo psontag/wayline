@@ -1,4 +1,4 @@
-import { type BBox, distanceKm, type Profile } from "@wayline/domain";
+import { type BBox, bearing, distanceKm, type Profile } from "@wayline/domain";
 import { dijkstra, type EdgeCost, shortestPath } from "../graph/dijkstra";
 import type { Graph, PathStep } from "../graph/Graph";
 
@@ -15,9 +15,16 @@ const REUSE_PENALTY = 5;
 /** Edges used by earlier proposals. */
 export const VARIETY_PENALTY = 2;
 /** Max length deviation of a path from the target. */
-const LENGTH_TOLERANCE = 0.08;
+const LENGTH_TOLERANCE = 0.12;
 /** Max share of a path on edges used twice. */
 const MAX_REUSED = 0.1;
+/** Loop turning points: min straight distance from the start, share of length. */
+const LOOP_REACH = 0.12;
+/** Loop turning points: angle between them, seen from the start, in degrees. */
+const LOOP_MIN_ANGLE = 40;
+const LOOP_MAX_ANGLE = 120;
+/** Chained loop paths come out longer than the estimate: legs avoid each other and the start. */
+const LOOP_STRETCH = 1.15;
 
 /** Ordered candidate: nodes to chain with shortest paths. */
 export type Candidate = { quality: number; nodes: number[] };
@@ -58,6 +65,9 @@ export class Costs {
   }
 }
 
+/** Edges that some legs of a chain should stay off, with a cost factor. */
+export type Avoid = { legs: number[]; edges: Set<number>; factor: number };
+
 /**
  * Chains shortest paths through the nodes. Each leg avoids the edges of
  * earlier legs. Returns null if a leg is not connected.
@@ -66,14 +76,18 @@ export function chainPath(
   graph: Graph,
   nodes: number[],
   costs: Costs,
+  avoid?: Avoid,
 ): PathStep[] | null {
   const local = costs.penalty.slice();
   const cost = costs.cost(local);
+  const avoiding: EdgeCost = (e) =>
+    cost(e) * (avoid?.edges.has(e.id) ? avoid.factor : 1);
   const steps: PathStep[] = [];
   for (const [i, b] of nodes.entries()) {
     const a = nodes[i - 1];
     if (a === undefined || a === b) continue;
-    const path = shortestPath(graph, a, b, cost);
+    const legCost = avoid?.legs.includes(i - 1) ? avoiding : cost;
+    const path = shortestPath(graph, a, b, legCost);
     if (!path) return null;
     for (const s of path) local[s.edge] = (local[s.edge] ?? 1) * REUSE_PENALTY;
     steps.push(...path);
@@ -160,7 +174,8 @@ export function oneWayCandidates(
 
 /**
  * Multi-day loop: start → A → B → start, with A and B at about a third of
- * the length. Best candidates first.
+ * the length, away from the start and in different directions. Best
+ * candidates first.
  */
 export function loopCandidates(
   graph: Graph,
@@ -170,17 +185,27 @@ export function loopCandidates(
   totalKm: number,
 ): Candidate[] {
   const fromStart = costs.from(graph, start);
+  const home = graph.coord(start);
   const ring = vias.filter((n) => {
     const km = fromStart.km[n] ?? Infinity;
-    return km >= 0.25 * totalKm && km <= 0.42 * totalKm;
+    return (
+      km >= 0.25 * totalKm &&
+      km <= 0.42 * totalKm &&
+      distanceKm(home, graph.coord(n)) >= LOOP_REACH * totalKm
+    );
   });
+  const bearings = new Map(ring.map((n) => [n, bearing(home, graph.coord(n))]));
   const out: Candidate[] = [];
   for (const [i, a] of ring.entries()) {
     const ka = fromStart.km[a] ?? 0;
     const ca = graph.coord(a);
     for (const b of ring.slice(i + 1)) {
+      const turn = Math.abs((bearings.get(a) ?? 0) - (bearings.get(b) ?? 0));
+      const angle = Math.min(turn, 360 - turn);
+      if (angle < LOOP_MIN_ANGLE || angle > LOOP_MAX_ANGLE) continue;
       const kb = fromStart.km[b] ?? 0;
-      const est = ka + kb + 1.3 * distanceKm(ca, graph.coord(b));
+      const est =
+        (ka + kb + 1.3 * distanceKm(ca, graph.coord(b))) * LOOP_STRETCH;
       if (!(Math.abs(est - totalKm) < 0.1 * totalKm)) continue;
       const cost = (fromStart.cost[a] ?? 0) + (fromStart.cost[b] ?? 0);
       const quality =

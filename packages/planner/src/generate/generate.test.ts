@@ -68,7 +68,8 @@ function checkTrip(p: Proposal, request: GenerateRequest) {
   }
   const total = stages.reduce((sum, s) => sum + s.stats.distance, 0) / 1000;
   const target = request.days * request.kmPerDay;
-  expect(Math.abs(total - target)).toBeLessThan(0.1 * target);
+  // The search allows 12 %. Links to stations and towns add a little.
+  expect(Math.abs(total - target)).toBeLessThan(0.15 * target);
 }
 
 describe("Planner on the Oberfranken network", () => {

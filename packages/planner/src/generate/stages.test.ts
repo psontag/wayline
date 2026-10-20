@@ -1,3 +1,4 @@
+import type { LonLat } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
 import { removeSpurs } from "./search";
 import { cutStages, type PathPoint, type StopCandidate } from "./stages";
@@ -9,8 +10,10 @@ const points: PathPoint[] = Array.from({ length: 31 }, (_, i) => ({
   ascent: i * 100,
 }));
 
+// Towns on the path, 10 km apart from west to east.
 function town(index: number, hotels = 1, offKm = 0): StopCandidate {
-  return { node: 100 + index, index, km: index * 10, offKm, hotels };
+  const coord: LonLat = [8 + index * 0.137, 49];
+  return { node: 100 + index, coord, index, km: index * 10, offKm, hotels };
 }
 
 const options = { days: 4, kmPerDay: 75, maxAscentPerDay: 2000 };
@@ -62,6 +65,28 @@ describe("cutStages", () => {
     expect(
       cutStages(points, towns, { ...options, maxAscentPerDay: 700 }),
     ).toBeNull();
+  });
+
+  it("rejects days far from the target", () => {
+    // Only a stop at 230 km: days of 230 and 70 km for a 150 km target.
+    const o = { days: 2, kmPerDay: 150, maxAscentPerDay: 5000 };
+    expect(cutStages(points, [town(23)], o)).toBeNull();
+    expect(cutStages(points, [town(23), town(16)], o)?.[0]?.km).toBe(160);
+  });
+
+  it("keeps loop stops away from the start", () => {
+    const o = { days: 2, kmPerDay: 150, maxAscentPerDay: 5000 };
+    const home = town(14).coord;
+    expect(cutStages(points, [town(15)], o)?.[0]?.km).toBe(150);
+    expect(cutStages(points, [town(15)], { ...o, home })).toBeNull();
+  });
+
+  it("spreads stops apart in a straight line", () => {
+    // Town 20 is 100 km after town 10 along the path, but at the same place.
+    const same = { ...town(20), coord: town(10).coord };
+    const o = { days: 3, kmPerDay: 100, maxAscentPerDay: 5000 };
+    expect(cutStages(points, [town(10), town(20)], o)).not.toBeNull();
+    expect(cutStages(points, [town(10), same], o)).toBeNull();
   });
 
   it("fails without towns", () => {

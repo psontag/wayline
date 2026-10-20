@@ -18,6 +18,7 @@ import { Graph, type PathStep } from "../graph/Graph";
 import { routeTrip, stageWaypoints } from "./route";
 import {
   acceptable,
+  type Avoid,
   type Candidate,
   chainPath,
   Costs,
@@ -26,7 +27,13 @@ import {
   pathKm,
   VARIETY_PENALTY,
 } from "./search";
-import { cutStages, pathPoints, type Stop, stopCandidates } from "./stages";
+import {
+  cutStages,
+  type PathPoint,
+  pathPoints,
+  type Stop,
+  stopCandidates,
+} from "./stages";
 import { Stops } from "./stops";
 import { buildTrip, meanScore, routeNames, splitSteps, viaNames } from "./trip";
 
@@ -42,6 +49,10 @@ const MAX_SHARED = 0.4;
 const MIN_VIA_GAP_KM = 10;
 /** Max distance from the requested start to its station node. */
 const START_KM = 5;
+/** The middle leg of a loop avoids edges this close to the start. */
+const LOOP_AVOID = { share: 0.08, minKm: 5, factor: 8 };
+/** The middle of a loop must not come closer to the start than this. */
+const LOOP_GAP = { share: 0.04, minKm: 4 };
 
 export type PlannerOptions = {
   onProgress?: (progress: GenerateProgress) => void;
@@ -245,6 +256,12 @@ export class Planner {
     );
     const fails = { length: 0, hotels: 0, ascent: 0 };
     const isLoop = request.kind === "multi-day-loop";
+    const startNode = candidates[0]?.nodes[0];
+    const home = startNode === undefined ? undefined : graph.coord(startNode);
+    const avoid =
+      isLoop && startNode !== undefined
+        ? nearEdges(graph, startNode, totalKm)
+        : undefined;
 
     // One-way trips first look for different ends, then allow repeats.
     const passes = isLoop
@@ -268,7 +285,7 @@ export class Planner {
 
         tried.add(c);
         if (tried.size % 10 === 0) progress(tried.size);
-        const steps = chainPath(graph, c.nodes, costs);
+        const steps = chainPath(graph, c.nodes, costs, avoid);
         if (!steps || !acceptable(graph, steps, totalKm)) {
           fails.length++;
           continue;
@@ -281,11 +298,16 @@ export class Planner {
         if (sharedKm > MAX_SHARED * km) continue;
 
         const points = pathPoints(graph, c.nodes[0] ?? 0, steps);
+        if (isLoop && comesBack(graph, points, totalKm)) {
+          fails.length++;
+          continue;
+        }
         const towns = stopCandidates(graph, points, hotelNodes, hotelCount);
-        const stops = cutStages(points, towns, request);
+        const cut = { ...request, home: isLoop ? home : undefined };
+        const stops = cutStages(points, towns, cut);
         if (!stops) {
           // Tell a missing town apart from too much climbing.
-          const flat = { ...request, maxAscentPerDay: Infinity };
+          const flat = { ...cut, maxAscentPerDay: Infinity };
           if (cutStages(points, towns, flat)) fails.ascent++;
           else fails.hotels++;
           continue;
@@ -310,6 +332,28 @@ export class Planner {
             : "days";
     return { picks, failedLimit };
   }
+}
+
+/** Edges near the start, for the middle leg of a loop to avoid. */
+function nearEdges(graph: Graph, start: number, totalKm: number): Avoid {
+  const km = Math.max(LOOP_AVOID.minKm, LOOP_AVOID.share * totalKm);
+  const edges = new Set<number>();
+  for (const n of graph.nodesWithin(graph.coord(start), km))
+    for (const e of graph.edgesAt(n)) edges.add(e);
+  return { legs: [1], edges, factor: LOOP_AVOID.factor };
+}
+
+/** Does the middle of a loop come back close to the start? */
+function comesBack(graph: Graph, points: PathPoint[], totalKm: number) {
+  const home = graph.coord(points[0]?.node ?? 0);
+  const total = points.at(-1)?.km ?? 0;
+  const gap = Math.max(LOOP_GAP.minKm, LOOP_GAP.share * totalKm);
+  return points.some(
+    (p) =>
+      p.km > 0.2 * total &&
+      p.km < 0.8 * total &&
+      distanceKm(home, graph.coord(p.node)) < gap,
+  );
 }
 
 /** Loads the whole network and places of a small, untiled source. */

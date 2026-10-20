@@ -1,4 +1,4 @@
-import { distanceKm } from "@wayline/domain";
+import { distanceKm, type LonLat } from "@wayline/domain";
 import type { Graph, PathStep } from "../graph/Graph";
 
 /** Max distance from the path to a stop town. */
@@ -8,6 +8,13 @@ const ALTERNATIVE_KM = 10;
 const MAX_ALTERNATIVES = 2;
 /** Min km between two stops. */
 const MIN_GAP_KM = 5;
+/** Min straight distance between two stops, as a share of the km per day. */
+const MIN_STRAIGHT_GAP = 0.25;
+/** A stage must be within these shares of the km per day. */
+const MIN_STAGE = 0.5;
+const MAX_STAGE = 1.35;
+/** Loop stops are at least this far from the start, in a straight line. */
+const HOME_KM = 15;
 
 /** Node on a path with km and ascent from the start. */
 export type PathPoint = { node: number; km: number; ascent: number };
@@ -35,6 +42,7 @@ export function pathPoints(
 /** Stop candidate: a town with hotels near the path. */
 export type StopCandidate = {
   node: number;
+  coord: LonLat;
   /** Index into the path points where the stage ends. */
   index: number;
   km: number;
@@ -48,6 +56,8 @@ export type CutOptions = {
   days: number;
   kmPerDay: number;
   maxAscentPerDay: number;
+  /** Start of a loop. Stops keep away from it. */
+  home?: LonLat;
 };
 
 /**
@@ -82,6 +92,7 @@ export function stopCandidates(
     if (km <= 0 || km >= total) continue;
     out.push({
       node,
+      coord: c,
       index: best.index,
       km,
       offKm: best.d,
@@ -93,11 +104,12 @@ export function stopCandidates(
 
 /**
  * Cost of one stage: deviation from the target km. A stage that climbs more
- * than the max does not fit at all.
+ * than the max, or is far too short or long, does not fit at all.
  */
 export function stageCost(km: number, ascent: number, o: CutOptions): number {
   if (ascent > o.maxAscentPerDay) return Infinity;
   const dev = (km - o.kmPerDay) / o.kmPerDay;
+  if (dev < MIN_STAGE - 1 || dev > MAX_STAGE - 1) return Infinity;
   return dev * dev;
 }
 
@@ -121,9 +133,14 @@ export function cutStages(
   if (n <= 0) return [];
   const total = points.at(-1)?.km ?? 0;
   const totalAscent = points.at(-1)?.ascent ?? 0;
+  const homeKm = Math.min(HOME_KM, 0.1 * total);
   const cands = candidates.filter(
-    (c) => c.km > 0.4 * o.kmPerDay && c.km < total - 0.4 * o.kmPerDay,
+    (c) =>
+      c.km > 0.4 * o.kmPerDay &&
+      c.km < total - 0.4 * o.kmPerDay &&
+      (!o.home || distanceKm(c.coord, o.home) >= homeKm),
   );
+  const minGap = MIN_STRAIGHT_GAP * o.kmPerDay;
   const ascentAt = (c: StopCandidate) => points[c.index]?.ascent ?? 0;
 
   // best[j][i]: cheapest cost with stop j at candidate i, and the previous one.
@@ -141,7 +158,13 @@ export function cutStages(
         for (let h = 0; h < i; h++) {
           const p = cands[h];
           const b = before[h];
-          if (!p || !b || p.km >= c.km - MIN_GAP_KM || b.cost === Infinity)
+          if (
+            !p ||
+            !b ||
+            p.km >= c.km - MIN_GAP_KM ||
+            b.cost === Infinity ||
+            distanceKm(p.coord, c.coord) < minGap
+          )
             continue;
           const cost =
             b.cost +
