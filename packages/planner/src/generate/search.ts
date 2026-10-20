@@ -1,6 +1,13 @@
-import { type BBox, bearing, distanceKm, type Profile } from "@wayline/domain";
+import {
+  type BBox,
+  bearing,
+  distanceKm,
+  type Profile,
+  type Theme,
+} from "@wayline/domain";
 import { dijkstra, type EdgeCost, shortestPath } from "../graph/dijkstra";
 import type { Graph, PathStep } from "../graph/Graph";
+import { themeBoost } from "./theme";
 
 /** cost = length / score^k. A higher k prefers nicer edges more. */
 export const SCORE_POWER: Record<Profile, number> = {
@@ -34,7 +41,7 @@ export class Costs {
   readonly base: Float64Array;
   readonly penalty: Float64Array;
 
-  constructor(graph: Graph, profile: Profile, region?: BBox) {
+  constructor(graph: Graph, profile: Profile, region?: BBox, theme?: Theme) {
     const k = SCORE_POWER[profile];
     const inside = (n: number) => {
       if (!region) return true;
@@ -48,7 +55,8 @@ export class Costs {
     };
     this.base = Float64Array.from(graph.edges, (e) =>
       inside(e.from) || inside(e.to)
-        ? e.lengthKm / Math.pow(Math.max(e.score, 0.05), k)
+        ? e.lengthKm /
+          Math.pow(Math.max(e.score, 0.05) * themeBoost(e, theme), k)
         : Infinity,
     );
     this.penalty = new Float64Array(graph.edges.length).fill(1);

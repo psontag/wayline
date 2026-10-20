@@ -35,6 +35,7 @@ import {
   stopCandidates,
 } from "./stages";
 import { Stops } from "./stops";
+import { themeFit, themeValue } from "./theme";
 import { buildTrip, meanScore, routeNames, splitSteps, viaNames } from "./trip";
 
 /** Proposals to look for. */
@@ -103,7 +104,12 @@ export class Planner {
 
     const graph = this.graph;
     const totalKm = request.days * request.kmPerDay;
-    const costs = new Costs(graph, request.profile, request.region);
+    const costs = new Costs(
+      graph,
+      request.profile,
+      request.region,
+      request.theme,
+    );
     const start = this.startNode(request);
     if (start === undefined) return { ok: false, failedLimit: "area" };
     const endStation = this.endNode(request);
@@ -180,13 +186,16 @@ export class Planner {
       const proposal: Proposal = {
         id: `${runId}-${i + 1}`,
         trip,
-        score: score(graph, p, totalKm),
+        score: score(graph, p, totalKm, request),
         routeNames: routeNames(graph, p.steps),
         via: viaNames(graph, this.stops, start, p.steps, [
           trip.stages[0]?.start.name ?? "",
           trip.stages.at(-1)?.end.name ?? "",
         ]),
       };
+      if (request.theme) {
+        proposal.themeValue = themeValue(graph, p.steps, request.theme);
+      }
       proposals.push(proposal);
       onProposal?.(proposal);
     }
@@ -406,14 +415,26 @@ export function requestBBox(request: GenerateRequest): BBox {
 }
 
 /**
- * Higher is better. Nice edges, length close to the target, even stages
- * and little overlap with earlier proposals.
+ * Higher is better. Nice edges, length close to the target, little overlap
+ * with earlier proposals and, with a theme, much of it.
  */
-function score(graph: Graph, p: Pick, totalKm: number): number {
+function score(
+  graph: Graph,
+  p: Pick,
+  totalKm: number,
+  request: GenerateRequest,
+): number {
   const lengthFit = 1 - Math.abs(p.km - totalKm) / totalKm;
+  const theme = request.theme
+    ? 0.5 + 0.5 * themeFit(graph, p.steps, request.theme)
+    : 1;
   return (
     Math.round(
-      meanScore(graph, p.steps) * lengthFit * (1 - 0.5 * p.shared) * 1000,
+      meanScore(graph, p.steps) *
+        lengthFit *
+        (1 - 0.5 * p.shared) *
+        theme *
+        1000,
     ) / 1000
   );
 }

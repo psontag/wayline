@@ -26,6 +26,10 @@ export type TripKind = z.infer<typeof TripKind>;
 export const Profile = z.enum(["touring", "fast", "scenic", "quiet"]);
 export type Profile = z.infer<typeof Profile>;
 
+/** What a generated trip should lean toward. None means no preference. */
+export const Theme = z.enum(["nature", "water", "wine", "culture"]);
+export type Theme = z.infer<typeof Theme>;
+
 /** Up to €80, €80–140, €140+ */
 export const HotelBudget = z.enum(["low", "mid", "high"]);
 export type HotelBudget = z.infer<typeof HotelBudget>;
@@ -186,6 +190,7 @@ export const GenerateRequest = z
     maxAscentPerDay: z.number().positive(),
     profile: Profile,
     hotelBudget: HotelBudget.optional(),
+    theme: Theme.optional(),
     startDate: IsoDate.optional(),
     startTime: TimeOfDay.default("09:00"),
   })
@@ -204,6 +209,11 @@ export const Proposal = z.object({
   routeNames: z.array(z.string()),
   /** Best-known towns on the way, in route order. */
   via: z.array(z.string()),
+  /**
+   * How much of the requested theme the trip has: share of km (nature,
+   * water, wine) or number of sights (culture).
+   */
+  themeValue: z.number().optional(),
 });
 export type Proposal = z.infer<typeof Proposal>;
 
