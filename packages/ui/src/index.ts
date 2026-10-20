@@ -120,6 +120,7 @@ export {
   ProposalCard,
   ProposalCardSkeleton,
   type ProposalCardProps,
+  type ProposalDay,
   type ProposalStat,
 } from "./components/ProposalCard";
 export {

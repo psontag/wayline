@@ -21,7 +21,7 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
   const from = request?.startStation?.name;
   const to = request?.endStation?.name;
   const places =
-    request?.kind === "multi-day-loop"
+    request && request.kind !== "one-way"
       ? from && t("request.loopFrom", { from })
       : from && to && t("request.places", { from, to });
 
@@ -30,7 +30,10 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
         t(`request.kind.${request.kind}`),
         ...(places ? [places] : []),
         t("request.days", { count: request.days }),
-        t("request.kmPerDay", {
+        ...(request.dayShares?.some((share) => share < 1)
+          ? [t("request.shortDays")]
+          : []),
+        t(request.days === 1 ? "request.distance" : "request.kmPerDay", {
           distance: format.distance(request.kmPerDay * 1000),
         }),
         t("request.maxAscent", {
