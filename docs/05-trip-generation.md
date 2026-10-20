@@ -9,6 +9,7 @@ How Wayline turns a few inputs into trip proposals.
 - Number of days
 - Target km per day, max ascent per day
 - Profile, hotel budget, start date (optional)
+- Theme (optional)
 
 ## Output
 
@@ -58,7 +59,7 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
    - Loops: start → A → B → start. A and B are towns at about 1/3 of the length, at least 12 % of the length away from the start in a straight line, and 40–120° apart as seen from the start.
    - The leg from A to B avoids edges near the start (cost × 8).
    - Time limit of about 2 s.
-4. **Filter** by length (within 12 % of the target), ascent and surface, using edge data. Drop loops whose middle part (20–80 % of the length) comes within 4 % of the length, or 4 km, of the start.
+4. **Filter** by length (within 12 % of the target), ascent and surface, using edge data. Drop loops whose middle part (20–80 % of the length) comes within 4 % of the length, or 4 km, of the start. Drop paths that ride back along themselves: parts within 1.5 km of an earlier part more than 10 km back may add up to 4 % of the length (min 4 km). A short touch, like a river bend, is fine.
 5. **Cut into stages.** See below.
 6. **Rank** and pick 3–5 diverse proposals.
 7. **Route** the chosen proposals. Waypoints are graph nodes about every 10 km, so the router follows the graph path. Proposals share nodes, so legs hit the cache. If routing fails, the proposal keeps the graph path.
@@ -117,6 +118,27 @@ In the graph search, the profile sets k in cost = length / score^k:
 | `touring` | 2 |
 | `quiet` | 2.5 |
 | `scenic` | 3 |
+
+## Themes
+
+A theme makes the search prefer edges with that scenery. Edge scenery comes from the pipeline (`Scenery` in `packages/domain/src/geodata.ts`).
+
+| Theme | Edge fit (0–1) | Shown on the proposal |
+|---|---|---|
+| `nature` | max(forest, ½ × nature reserve share): nature parks include towns | share of km |
+| `water` | water share | share of km |
+| `wine` | vineyard share × 4, max 1 | share of km in vineyards |
+| `culture` | sights per km × 2, max 1 | share of km near a sight |
+
+- Search: the edge score is multiplied by 1 + 1.2 × fit, before the power k.
+- Ranking: the proposal score is multiplied by 0.5 + 0.5 × mean fit.
+- Without scenery data, a theme changes nothing.
+
+Across the network: forest 43 % of km, nature reserves and parks 29 %, water 17 %, vineyards 1.4 %, near a sight 39 %.
+
+## Climbing
+
+Edges that climb more steeply than the daily average allowed (max ascent per day / km per day) cost more: twice as steep costs twice as much. This keeps hilly forests and valleys from failing the ascent limit.
 
 ## Hotel budget
 

@@ -4,6 +4,7 @@ import {
   type GenerateRequest,
   localTimeToDate,
   type Proposal,
+  type Theme,
 } from "@wayline/domain";
 import {
   Button,
@@ -83,6 +84,7 @@ export function ProposalList({
           <ProposalItem
             key={p.id}
             proposal={p}
+            theme={request.theme}
             number={i + 1}
             selected={p.id === selected}
             onSelect={() => onSelect(p.id)}
@@ -178,6 +180,7 @@ function ResultLine({
 
 function ProposalItem({
   proposal,
+  theme,
   number,
   selected,
   onSelect,
@@ -187,6 +190,7 @@ function ProposalItem({
   openFailed,
 }: {
   proposal: Proposal;
+  theme?: Theme;
   number: number;
   selected: boolean;
   onSelect: () => void;
@@ -198,6 +202,7 @@ function ProposalItem({
   const { t } = useTranslation("proposals");
   const format = useFormat();
   const { trip, routeNames } = proposal;
+  const themeValue = theme && proposal.themes?.[theme];
   const stats = proposalStats(trip);
   const profile = useMemo(() => elevationSamples(tripPoints(trip)), [trip]);
   const from = trip.stages[0]?.start.name ?? "";
@@ -212,13 +217,15 @@ function ProposalItem({
       title={
         via.length ? t("card.via", { stops: format.list(via) }) : trip.name
       }
-      subtitle={t(
-        `card.subtitle.${trip.kind === "one-way" ? "one-way" : "multi-day-loop"}`,
-        {
-          from,
-          to,
-        },
-      )}
+      subtitle={[
+        t(
+          `card.subtitle.${trip.kind === "one-way" ? "one-way" : "multi-day-loop"}`,
+          { from, to },
+        ),
+        ...(theme && themeValue !== undefined
+          ? [t(`card.theme.${theme}`, { share: format.percent(themeValue) })]
+          : []),
+      ].join(" · ")}
       stats={[
         { value: format.distance(stats.distance), label: t("card.distance") },
         { value: format.elevation(stats.ascent), label: t("card.ascent") },

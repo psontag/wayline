@@ -44,6 +44,21 @@
       "quiet": "Away from traffic, even if it takes longer."
     }
   },
+  "theme": {
+    "label": "Theme",
+    "any": "Any",
+    "nature": "Nature",
+    "water": "Rivers & lakes",
+    "wine": "Wine",
+    "culture": "Culture",
+    "hint": {
+      "any": "No preference. Good routes and surfaces first.",
+      "nature": "Through forests and nature reserves.",
+      "water": "Along rivers and past lakes.",
+      "wine": "Through vineyards and wine villages.",
+      "culture": "Past castles, monasteries, old towns and museums."
+    }
+  },
   "startDate": "Start date",
   "optional": "(optional)",
   "startTime": "Start time",

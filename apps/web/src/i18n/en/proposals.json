@@ -21,6 +21,12 @@
       "fast": "Fast",
       "scenic": "Scenic",
       "quiet": "Quiet"
+    },
+    "theme": {
+      "nature": "Nature",
+      "water": "Rivers & lakes",
+      "wine": "Wine",
+      "culture": "Culture"
     }
   },
   "progress": {
@@ -89,7 +95,13 @@
     "score": "Score {{score}}",
     "open": "Open trip",
     "opening": "Opening",
-    "openFailed": "Could not save the trip. Try again."
+    "openFailed": "Could not save the trip. Try again.",
+    "theme": {
+      "nature": "{{share}} forest and nature",
+      "water": "{{share}} along water",
+      "wine": "{{share}} through vineyards",
+      "culture": "{{share}} near sights"
+    }
   },
   "map": {
     "label": "Map with the proposals",

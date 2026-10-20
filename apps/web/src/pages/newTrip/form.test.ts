@@ -61,6 +61,13 @@ describe("new trip form", () => {
     expect(toRequest(fromRequest(request, defaults))).toEqual(request);
   });
 
+  it("sends a theme only when one is picked", () => {
+    expect(toRequest(defaults).theme).toBeUndefined();
+    const request = toRequest({ ...defaults, theme: "water" });
+    expect(request.theme).toBe("water");
+    expect(fromRequest(request, defaults).theme).toBe("water");
+  });
+
   it("needs an end for one-way trips that is not the start", () => {
     const messages = (values: typeof defaults) =>
       newTripSchema.safeParse(values).error?.issues.map((i) => i.message);

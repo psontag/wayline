@@ -5,12 +5,17 @@ import {
   IsoDate,
   Place,
   Profile,
+  Theme,
   TimeOfDay,
   type TripKind,
 } from "@wayline/domain";
 import { z } from "zod";
 
 export const tripKinds = ["one-way", "multi-day-loop"] as const;
+
+/** Theme choices on the form. "any" means no theme. */
+export const themes = ["any", ...Theme.options] as const;
+export type ThemeChoice = (typeof themes)[number];
 export type NewTripKind = (typeof tripKinds)[number];
 
 export const formErrors = [
@@ -42,6 +47,7 @@ export const newTripSchema = z
     maxAscentPerDay: whole("maxAscentPerDay", limits.maxAscentPerDay),
     profile: Profile,
     hotelBudget: HotelBudget,
+    theme: z.enum(themes),
     /** "" for no date. */
     startDate: z.union([z.literal(""), IsoDate]),
     startTime: TimeOfDay,
@@ -68,6 +74,7 @@ export type NewTripValues = {
   maxAscentPerDay: number | undefined;
   profile: Profile;
   hotelBudget: HotelBudget;
+  theme: ThemeChoice;
   startDate: string;
   startTime: string;
 };
@@ -89,6 +96,7 @@ export function defaultValues(
     maxAscentPerDay: 900,
     profile: "touring",
     hotelBudget: "mid",
+    theme: "any",
     startDate: addDays(today, 7),
     startTime: "09:00",
   };
@@ -109,6 +117,7 @@ export function fromRequest(
     maxAscentPerDay: request.maxAscentPerDay,
     profile: request.profile,
     hotelBudget: request.hotelBudget ?? defaults.hotelBudget,
+    theme: request.theme ?? "any",
     startDate: request.startDate ?? "",
     startTime: request.startTime,
   };
@@ -125,6 +134,7 @@ export function toRequest(values: NewTripValues): GenerateRequest {
     maxAscentPerDay: v.maxAscentPerDay,
     profile: v.profile,
     hotelBudget: v.hotelBudget,
+    theme: v.theme === "any" ? undefined : v.theme,
     startDate: v.startDate || undefined,
     startTime: v.startTime,
   });

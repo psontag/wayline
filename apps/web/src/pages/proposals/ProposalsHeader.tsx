@@ -37,6 +37,7 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
           ascent: format.elevation(request.maxAscentPerDay),
         }),
         t(`request.profile.${request.profile}`),
+        ...(request.theme ? [t(`request.theme.${request.theme}`)] : []),
       ]
     : [];
 

@@ -151,3 +151,4 @@ The same thing always has the same name in the UI. Translations use one fixed te
 | Via point | Point the user adds to change a route |
 | Day loop | A one-day ride that ends where it starts |
 | Multi-day loop | A multi-day trip that ends where it starts |
+| Theme | What a trip should lean toward: Nature, Rivers & lakes, Wine or Culture |
