@@ -96,6 +96,7 @@ All API errors have one shape:
 | `NOT_FOUND` | Unknown trip or file |
 | `CONFLICT` | Trip changed since it was loaded |
 | `INVALID` | Request failed validation |
+| `UNAUTHORIZED` | No valid Access login |
 
 ## API
 
