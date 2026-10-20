@@ -4,16 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "build": "wrangler deploy --dry-run --outdir dist",
-    "typecheck": "tsc"
+    "dev": "mkdir -p ../web/dist && cf dev",
+    "build": "cf build",
+    "typecheck": "cf workers types && tsc"
   },
   "dependencies": {
     "@wayline/domain": "workspace:*",
     "hono": "4.13.12"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20261003.1",
+    "@wayline/web": "workspace:*",
+    "cf": "1.0.0-beta.12",
     "wrangler": "4.147.0"
   }
 }

@@ -6,7 +6,8 @@
 |---|---|
 | pnpm | Package manager, monorepo workspaces |
 | Vite | Web app dev server and build |
-| Wrangler | Run and deploy the Worker, local D1 |
+| cf | Run, build and deploy the Worker, local D1 |
+| Wrangler | Bundler behind cf. Secrets and live logs. |
 | Docker | Local BRouter |
 | Vitest | Unit and integration tests |
 | ESLint, Prettier | Lint and format |
@@ -20,7 +21,15 @@ pnpm dev        # web app and Worker
 pnpm test
 ```
 
-`pnpm dev` runs the web app with Vite and the Worker with `wrangler dev`. D1 runs locally through Wrangler.
+`pnpm dev` runs the web app with Vite on `localhost:5173` and the Worker with `cf dev` on `localhost:8787`. Vite forwards `/api` to the Worker. D1 runs locally.
+
+The Worker config is `apps/api/cloudflare.config.ts`. Build settings, such as the assets folder, are in `apps/api/wrangler.config.ts`. `cf` writes generated files to `.cloudflare/` (git-ignored).
+
+| Command | Does |
+|---|---|
+| `pnpm build` | Builds the web app, then the Worker with `cf build` |
+| `pnpm --filter @wayline/api exec cf deploy --dry-run` | Checks the deploy without uploading |
+| `pnpm --filter @wayline/api exec cf workers types` | Writes `Env` and runtime types. `typecheck` runs it. |
 
 ## Providers in development
 
@@ -71,7 +80,8 @@ curl "http://localhost:17777/brouter?lonlats=10.8873,49.8917|9.9356,49.7913&prof
 
 ## Secrets
 
-- API keys are Worker secrets, set with `wrangler secret put`.
+- API keys are Worker secrets, set with `wrangler secret put <NAME> --name wayline-api`. `cf` cannot set a single secret yet.
+- Live logs: `wrangler tail wayline-api`.
 - Locally they go in `.dev.vars`. This file is git-ignored.
 - Deploy credentials are GitHub Actions secrets.
 
@@ -88,7 +98,7 @@ D1 schema changes are SQL migration files in `apps/api/migrations/`.
 | Trigger | Steps |
 |---|---|
 | Pull request | Lint, typecheck, test |
-| Push to `main` | Lint, typecheck, test, build, `wrangler d1 migrations apply --remote`, deploy |
+| Push to `main` | Lint, typecheck, test, build, `cf d1 migrations apply <DATABASE_ID>`, `cf deploy` |
 | Monthly or manual | Data pipeline |
 
 ## Later
