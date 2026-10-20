@@ -46,12 +46,13 @@ type Envelope<T> = {
 };
 
 export class CloudflareError extends Error {
-  constructor(
-    readonly status: number,
-    readonly codes: number[],
-    message: string,
-  ) {
+  readonly status: number;
+  readonly codes: number[];
+
+  constructor(status: number, codes: number[], message: string) {
     super(message);
+    this.status = status;
+    this.codes = codes;
   }
 }
 
@@ -124,8 +125,9 @@ async function accessTeamDomain(api: Api): Promise<string> {
     );
     return org.auth_domain;
   } catch (error) {
+    const reason = error instanceof Error ? ` (${error.message})` : "";
     throw new Error(
-      "No Zero Trust organization. Sign up for Zero Trust (Free plan) in the dashboard first.",
+      `No Zero Trust organization with Access. Sign up for Zero Trust (Free plan) in the dashboard first${reason}.`,
       { cause: error },
     );
   }
