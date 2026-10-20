@@ -45,6 +45,20 @@ export type NetworkNode = {
   hotelCount: number;
 };
 
+/** What an edge passes. Shares are 0 to 1 of its length. */
+export type Scenery = {
+  /** landuse=forest, natural=wood, within ~100 m. */
+  forest: number;
+  /** Rivers, canals and lakes over 5 ha, within ~200 m. */
+  water: number;
+  /** landuse=vineyard, within ~150 m. */
+  vineyard: number;
+  /** Inside nature reserves, national parks and nature parks. */
+  nature: number;
+  /** Count of named castles, ruins, monasteries, city gates, attractions, viewpoints and museums within 500 m. */
+  sights: number;
+};
+
 export type NetworkEdge = {
   /** Same rules as NetworkNode.id. */
   id: number;
@@ -66,6 +80,8 @@ export type NetworkEdge = {
   geometry: string;
   /** Meters, one per geometry point. */
   elevation: number[];
+  /** Missing in the Oberfranken mock data. */
+  scenery?: Scenery;
 };
 
 export type RouteNetwork = {
