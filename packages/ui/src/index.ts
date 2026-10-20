@@ -78,6 +78,7 @@ export {
 export { TripCard, type TripCardProps } from "./components/TripCard";
 export { FormField, type FormFieldProps } from "./components/FormField";
 export { PlaceMarker } from "./components/PlaceMarker";
+export { MapHint } from "./components/MapHint";
 export { MapLegend, type MapLegendItem } from "./components/MapLegend";
 export {
   ElevationProfile,

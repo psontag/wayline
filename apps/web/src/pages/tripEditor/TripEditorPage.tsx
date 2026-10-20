@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   Link,
   useNavigate,
@@ -15,8 +14,7 @@ import {
 } from "@wayline/ui";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useTrip } from "../../data/queries";
-import { useServices } from "../../data/ServicesProvider";
+import { useNetwork, useTrip } from "../../data/queries";
 import { StageList } from "./StageList";
 import { StageProfile } from "./StageProfile";
 import { useStopOptions } from "./StopPicker";
@@ -47,16 +45,6 @@ export function TripEditorPage() {
       )}
     </div>
   );
-}
-
-/** The route network, for surface colors in the elevation profile. */
-function useNetwork() {
-  const { network } = useServices();
-  return useQuery({
-    queryKey: ["network"],
-    queryFn: () => network.network(),
-    staleTime: Infinity,
-  }).data;
 }
 
 function TripEditor({ trip }: { trip: Trip }) {
