@@ -4,6 +4,7 @@ import {
   type ErrorCode,
   RouteRequest,
   SCHEMA_VERSION,
+  Shares,
   Trip,
   WaylineError,
 } from "@wayline/domain";
@@ -13,7 +14,14 @@ import type { ZodType } from "zod";
 import { auth, type AuthBindings, type AuthVariables } from "./auth";
 import type { Db } from "./db";
 import { cachedLeg, legRouter, roundCoord } from "./legs";
-import { deleteTrip, getTrip, listTrips, saveTrip } from "./trips";
+import {
+  deleteTrip,
+  getShares,
+  getTrip,
+  listTrips,
+  saveTrip,
+  setShares,
+} from "./trips";
 
 export type Bindings = AuthBindings & {
   DB: Db;
@@ -69,6 +77,19 @@ const app = new Hono<{ Bindings: Bindings; Variables: AuthVariables }>()
   .delete("/api/trips/:id", async (c) => {
     await deleteTrip(c.env.DB, c.var.email, c.req.param("id"));
     return c.body(null, 204);
+  })
+  .get("/api/trips/:id/shares", async (c) => {
+    const emails = await getShares(c.env.DB, c.var.email, c.req.param("id"));
+    return c.json({ emails } satisfies Shares);
+  })
+  .put("/api/trips/:id/shares", json(Shares), async (c) => {
+    const emails = await setShares(
+      c.env.DB,
+      c.var.email,
+      c.req.param("id"),
+      c.req.valid("json").emails,
+    );
+    return c.json({ emails } satisfies Shares);
   })
   .post("/api/route", json(RouteRequest), async (c) => {
     const { from, to, profile } = c.req.valid("json");

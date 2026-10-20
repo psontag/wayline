@@ -1,4 +1,9 @@
-import { ApiErrorBody, parseTrip, type Trip } from "@wayline/domain";
+import {
+  ApiErrorBody,
+  parseTrip,
+  type Trip,
+  type TripSummary,
+} from "@wayline/domain";
 import { sign } from "hono/jwt";
 import {
   afterAll,
@@ -228,5 +233,87 @@ describe("trips", () => {
       body: { id: "x" },
     });
     expect(await errorCode(broken)).toBe("INVALID");
+  });
+});
+
+describe("sharing", () => {
+  const owner = "olga@example.com";
+  const friend = "fritz@example.com";
+
+  async function create(id: string) {
+    const res = await call("PUT", `/api/trips/${id}`, {
+      user: owner,
+      body: trip(id, `Trip ${id}`),
+    });
+    return parseTrip(await res.json());
+  }
+
+  const share = (id: string, emails: string[], user = owner) =>
+    call("PUT", `/api/trips/${id}/shares`, { user, body: { emails } });
+
+  it("lets a friend view a shared trip, but not change it", async () => {
+    const saved = await create("s1");
+    const res = await share("s1", [" Fritz@Example.com ".trim(), owner]);
+    expect(await res.json()).toEqual({ emails: [friend] });
+
+    const list = await (
+      await call("GET", "/api/trips", { user: friend })
+    ).json();
+    expect(list).toEqual([
+      expect.objectContaining({ id: "s1", owner, shared: true }),
+    ]);
+    const own = await call("GET", "/api/trips", { user: owner });
+    expect(((await own.json()) as TripSummary[])[0]?.shared).toBeUndefined();
+
+    const viewed = parseTrip(
+      await (await call("GET", "/api/trips/s1", { user: friend })).json(),
+    );
+    expect(viewed).toMatchObject({ name: "Trip s1", owner, sharedWith: [] });
+    const asOwner = parseTrip(
+      await (await call("GET", "/api/trips/s1", { user: owner })).json(),
+    );
+    expect(asOwner.sharedWith).toEqual([friend]);
+
+    const put = await call("PUT", "/api/trips/s1", {
+      user: friend,
+      body: { ...saved, name: "Mine now" },
+    });
+    expect(await errorCode(put)).toBe("NOT_FOUND");
+    const del = await call("DELETE", "/api/trips/s1", { user: friend });
+    expect(await errorCode(del)).toBe("NOT_FOUND");
+    const reshare = await share("s1", [friend, "x@example.com"], friend);
+    expect(await errorCode(reshare)).toBe("NOT_FOUND");
+    const shares = await call("GET", "/api/trips/s1/shares", { user: friend });
+    expect(await errorCode(shares)).toBe("NOT_FOUND");
+  });
+
+  it("removes access when the owner stops sharing", async () => {
+    await create("s2");
+    await share("s2", [friend, "gina@example.com"]);
+    await share("s2", ["gina@example.com"]);
+    const list = await call("GET", "/api/trips", { user: friend });
+    const ids = ((await list.json()) as TripSummary[]).map((t) => t.id);
+    expect(ids).not.toContain("s2");
+    const res = await call("GET", "/api/trips/s2", { user: friend });
+    expect(await errorCode(res)).toBe("NOT_FOUND");
+    const left = await call("GET", "/api/trips/s2/shares", { user: owner });
+    expect(await left.json()).toEqual({ emails: ["gina@example.com"] });
+  });
+
+  it("deletes the shares with the trip", async () => {
+    await create("s3");
+    await share("s3", [friend]);
+    await call("DELETE", "/api/trips/s3", { user: owner });
+    const row = await db
+      .prepare("SELECT count(*) AS n FROM shares WHERE trip_id = ?")
+      .bind("s3")
+      .first<{ n: number }>();
+    expect(row?.n).toBe(0);
+  });
+
+  it("rejects invalid emails", async () => {
+    await create("s4");
+    const res = await share("s4", ["not an email"]);
+    expect(await errorCode(res)).toBe("INVALID");
   });
 });
