@@ -116,6 +116,14 @@ export function ProposalsMap({
     return out;
   }, [proposals, places]);
 
+  const stopCoords = useMemo(
+    () => [
+      ...places.map((p) => p.coord),
+      ...proposals.flatMap((p) => p.trip.stages.map((s) => s.end.coord)),
+    ],
+    [proposals, places],
+  );
+
   const hideLabels = useHiddenPlaceLabels(
     mapRef,
     ends.map((p) => p.name),
@@ -227,7 +235,7 @@ export function ProposalsMap({
             }}
           />
         </Source>
-        <NetworkLayer beforeId="proposal-casing" />
+        <NetworkLayer around={stopCoords} beforeId="proposal-casing" />
 
         {ends.map((place) => (
           <Marker

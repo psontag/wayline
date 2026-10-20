@@ -48,7 +48,7 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 
 ## Steps
 
-1. **Load the graph** for the region.
+1. **Load the graph** for the request area: the tiles within half the trip length of the start (loops), or the full length (one-way without an end).
 2. **Pick start and end.**
    - One-way: pairs of stations with the right distance. Prefilter pairs by straight-line distance. If the user picked an end station, use only that one.
    - Multi-day loop: one station. Start and end are the same.
@@ -60,7 +60,7 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 4. **Filter** by length, ascent and surface, using edge data.
 5. **Cut into stages.** See below.
 6. **Rank** and pick 3–5 diverse proposals.
-7. **Route** the chosen proposals.
+7. **Route** the chosen proposals. Waypoints are graph nodes about every 10 km, so the router follows the graph path. Proposals share nodes, so legs hit the cache. If routing fails, the proposal keeps the graph path.
 8. **Find hotels** at each stop from the OSM hotel data.
 9. **Add weather** if the start date is within the forecast range.
 

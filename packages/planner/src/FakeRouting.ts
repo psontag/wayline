@@ -1,5 +1,6 @@
-import type { Leg, LonLat } from "@wayline/domain";
+import type { BBox, Leg, LonLat } from "@wayline/domain";
 import type { RouteOptions, RoutingProvider } from "@wayline/providers";
+import { bboxAround } from "./graph/area";
 import { shortestPath } from "./graph/dijkstra";
 import type { Graph } from "./graph/Graph";
 import { pathToLeg, straightLeg } from "./graph/leg";
@@ -8,14 +9,15 @@ import { pathToLeg, straightLeg } from "./graph/leg";
 const SNAP_KM = 5;
 
 /**
- * Router on the mock route network: snaps to the nearest node and takes
- * the nicest path. Stands in for BRouter.
+ * Router on the route network: snaps to the nearest node and takes the
+ * nicest path. Stands in for BRouter. graph gives the network around a bbox.
  */
 export class FakeRouting implements RoutingProvider {
-  constructor(private graph: () => Promise<Graph>) {}
+  constructor(private graph: (bbox: BBox) => Promise<Graph>) {}
 
   async route(points: LonLat[], options: RouteOptions): Promise<Leg[]> {
-    const graph = await this.graph();
+    // Paths may bend away from the points, so load some margin.
+    const graph = await this.graph(bboxAround(points, 30));
     const meta = { provider: "fake", profileHash: options.profile };
     const legs: Leg[] = [];
     for (const [i, to] of points.entries()) {

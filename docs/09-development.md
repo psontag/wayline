@@ -6,7 +6,8 @@
 |---|---|
 | pnpm | Package manager, monorepo workspaces |
 | Vite | Web app dev server and build |
-| Wrangler | Run and deploy the Worker, local D1 |
+| cf | Run, build and deploy the Worker, local D1 |
+| Wrangler | Bundler behind cf. Secrets and live logs. |
 | Docker | Local BRouter |
 | Vitest | Unit and integration tests |
 | ESLint, Prettier | Lint and format |
@@ -16,11 +17,20 @@
 
 ```sh
 pnpm install
+pnpm --filter @wayline/api db:migrate   # local D1 schema, once per new migration
 pnpm dev        # web app and Worker
 pnpm test
 ```
 
-`pnpm dev` runs the web app with Vite and the Worker with `wrangler dev`. D1 runs locally through Wrangler.
+`pnpm dev` runs the web app with Vite on `localhost:5173` and the Worker with `cf dev` on `localhost:8787`. Vite forwards `/api` to the Worker. D1 runs locally.
+
+The Worker config is `apps/api/cloudflare.config.ts`. Build settings, such as the assets folder, are in `apps/api/wrangler.config.ts`. `cf` writes generated files to `.cloudflare/` (git-ignored).
+
+| Command | Does |
+|---|---|
+| `pnpm build` | Builds the web app, then the Worker with `cf build` |
+| `pnpm --filter @wayline/api exec cf deploy --dry-run` | Checks the deploy without uploading |
+| `pnpm --filter @wayline/api exec cf workers types` | Writes `Env` and runtime types. `typecheck` runs it. |
 
 ## Providers in development
 
@@ -30,8 +40,36 @@ Local development and tests never call external APIs by default. There are two k
 |---|---|---|
 | Recorded fixtures | `packages/providers/fixtures/` | Adapter parsing tests only |
 | `FakeRouting`, `FakeWeather` | `packages/providers` | Deterministic data for any input. Planner, API and UI tests, local dev. |
+| `fakeBrouterLeg` | `packages/providers` | Straight-line legs in BRouter's format. Default router of the Worker. |
 
 `PROVIDERS=live` switches to the real APIs.
+
+Routing switches:
+
+| Setting | Where | Effect |
+|---|---|---|
+| `BROUTER_URL=http://localhost:17777` | `apps/api/.dev.vars` | The Worker routes with the local BRouter instead of `fakeBrouterLeg`. |
+| `VITE_ROUTING=api` | `apps/web/.env.local` | The web app routes through `POST /api/route` (`ApiRouting`) instead of `FakeRouting` on the route network. The generator routes the chosen proposals too. |
+
+Geodata:
+
+- The app uses the region data named by `apps/web/public/data/latest.json` (`pnpm data:build`, see `pipeline/README.md`).
+- Without it, or with `VITE_DATA=mock` in `apps/web/.env.local`, it uses the Oberfranken mock.
+- Tests use the mock and the Heidelberg tiles in `apps/web/public/data/mock/`.
+
+Real routing end to end:
+
+```sh
+pnpm brouter                                         # terminal 1
+echo "BROUTER_URL=http://localhost:17777" > apps/api/.dev.vars
+echo "VITE_ROUTING=api" > apps/web/.env.local
+pnpm --filter @wayline/api db:migrate
+pnpm dev                                             # terminal 2
+curl -X POST localhost:8787/api/route -H 'content-type: application/json' \
+  -d '{"from":[10.8873,49.8917],"to":[9.9356,49.7913],"profile":"touring"}'
+```
+
+The response header `X-Cache` says `HIT` or `MISS`.
 
 ## Local BRouter
 
@@ -71,13 +109,17 @@ curl "http://localhost:17777/brouter?lonlats=10.8873,49.8917|9.9356,49.7913&prof
 
 ## Secrets
 
-- API keys are Worker secrets, set with `wrangler secret put`.
+- API keys are Worker secrets, set with `wrangler secret put <NAME> --name wayline-api`. `cf` cannot set a single secret yet.
+- Live logs: `wrangler tail wayline-api`.
 - Locally they go in `.dev.vars`. This file is git-ignored.
 - Deploy credentials are GitHub Actions secrets.
 
 ## Database
 
 D1 schema changes are SQL migration files in `apps/api/migrations/`.
+
+- Locally, `pnpm --filter @wayline/api db:migrate` applies them to the D1 that `cf dev` uses (`apps/api/.wrangler/state`). API tests apply them to an in-memory D1.
+- `cf d1 migrations apply --local` works too, but hangs after it is done (cf beta). Hence the script.
 
 - Within one deploy, migrations are additive only. Destructive changes go in a later deploy.
 - Never edit an applied migration.
@@ -88,7 +130,7 @@ D1 schema changes are SQL migration files in `apps/api/migrations/`.
 | Trigger | Steps |
 |---|---|
 | Pull request | Lint, typecheck, test |
-| Push to `main` | Lint, typecheck, test, build, `wrangler d1 migrations apply --remote`, deploy |
+| Push to `main` | Lint, typecheck, test, build, `cf d1 migrations apply <DATABASE_ID>`, `cf deploy` |
 | Monthly or manual | Data pipeline |
 
 ## Later

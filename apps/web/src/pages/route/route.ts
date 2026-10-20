@@ -72,6 +72,7 @@ export function routeToTrip({
   name,
   from,
   to,
+  via = [],
   legs,
   profile,
   now = new Date(),
@@ -80,6 +81,7 @@ export function routeToTrip({
   name: string;
   from: Place;
   to: Place;
+  via?: Place[];
   legs: Leg[];
   profile: Profile;
   now?: Date;
@@ -107,11 +109,35 @@ export function routeToTrip({
         id: newId(),
         start: from,
         end: { ...to, locked: true, alternatives: [] },
-        via: [],
+        via,
         legs,
         stats,
       },
     ],
     sharedWith: [],
   };
+}
+
+/** Adds a via point on the given leg. Leg i runs from point i to i + 1. */
+export function insertVia(via: LonLat[], leg: number, coord: LonLat) {
+  return [...via.slice(0, leg), roundCoord(coord), ...via.slice(leg)];
+}
+
+export function moveVia(via: LonLat[], index: number, coord: LonLat) {
+  return via.map((v, i) => (i === index ? roundCoord(coord) : v));
+}
+
+export function removeVia(via: LonLat[], index: number) {
+  return via.filter((_, i) => i !== index);
+}
+
+/** Meters from the start to each via point. Needs one leg per pair of points. */
+export function viaDistances(legs: Leg[]): number[] {
+  const out: number[] = [];
+  let m = 0;
+  for (const leg of legs.slice(0, -1)) {
+    m += leg.distance;
+    out.push(m);
+  }
+  return out;
 }

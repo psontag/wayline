@@ -79,6 +79,7 @@ export { TripCard, type TripCardProps } from "./components/TripCard";
 export { FormField, type FormFieldProps } from "./components/FormField";
 export { PlaceMarker } from "./components/PlaceMarker";
 export { MapHint } from "./components/MapHint";
+export { ViaRow, type ViaRowProps } from "./components/ViaRow";
 export { MapLegend, type MapLegendItem } from "./components/MapLegend";
 export {
   ElevationProfile,
@@ -97,10 +98,13 @@ export { TextLink, type TextLinkProps } from "./components/TextLink";
 export {
   AlternativeMarker,
   EndpointMarker,
+  GhostViaMarker,
   HoverMarker,
   StopMarker,
+  ViaMarker,
   type AlternativeMarkerProps,
   type StopMarkerProps,
+  type ViaMarkerProps,
 } from "./components/MapMarker";
 export { DateButton, type DateButtonProps } from "./components/DateButton";
 export { InlineEdit, type InlineEditProps } from "./components/InlineEdit";

@@ -14,12 +14,14 @@ import {
 } from "@wayline/ui";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { networkArea } from "../../components/NetworkLayer";
 import { useNetwork, useTrip } from "../../data/queries";
 import { StageList } from "./StageList";
 import { StageProfile } from "./StageProfile";
 import { useStopOptions } from "./StopPicker";
 import { TripHeader } from "./TripHeader";
 import { TripMap } from "./TripMap";
+import { tripStops } from "./tripArea";
 import { TripSummary } from "./TripSummary";
 import { PhoneTripEditor } from "./PhoneTripEditor";
 import { useIsPhone } from "./useIsPhone";
@@ -53,7 +55,7 @@ function TripEditor({ trip }: { trip: Trip }) {
   const search = useSearch({ from: "/trips/$tripId" });
   const navigate = useNavigate({ from: "/trips/$tripId" });
   const editor = useTripEditor(trip);
-  const network = useNetwork();
+  const network = useNetwork(networkArea(tripStops(trip)));
   const isPhone = useIsPhone();
   const [hoverKm, setHoverKm] = useState<number>();
 

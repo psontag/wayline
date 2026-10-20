@@ -65,7 +65,7 @@
   "map": {
     "label": "Map with the start and end of the trip",
     "network": "Signed cycling routes",
-    "area": "Area with test data",
+    "area": "Area with route data",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out"
   }

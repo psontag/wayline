@@ -96,6 +96,31 @@ export function AlternativeMarker({
   );
 }
 
+export type ViaMarkerProps = Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "children"
+>;
+
+/** Via point on the route. Give it an aria-label that says what a click does. */
+export function ViaMarker({ className, ...props }: ViaMarkerProps) {
+  return (
+    <button
+      type="button"
+      className={cn("group rounded-full p-1", focusRing, className)}
+      {...props}
+    >
+      <span className="block size-3.5 rounded-full border-2 border-via-point bg-surface shadow-sm transition-colors group-hover:bg-via-point" />
+    </button>
+  );
+}
+
+/** Where a via point lands while the route is dragged. */
+export function GhostViaMarker() {
+  return (
+    <span className="block size-3.5 rounded-full border-2 border-via-point bg-surface/70 shadow-sm" />
+  );
+}
+
 /** Point on the route that follows the elevation crosshair. */
 export function HoverMarker() {
   return (

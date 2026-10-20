@@ -130,7 +130,10 @@ export function NewTripMap({
         onLoad={onStyle}
         onStyleData={onStyle}
       >
-        <NetworkLayer beforeId={labelLayerId} />
+        <NetworkLayer
+          around={places.map((p) => p.coord)}
+          beforeId={labelLayerId}
+        />
         {area.data && (
           <Source id="area" type="geojson" data={area.data}>
             <Layer
