@@ -1,6 +1,7 @@
 import {
   isErrorCode,
   parseTrip,
+  Shares,
   type Trip,
   type TripSummary,
 } from "@wayline/domain";
@@ -51,6 +52,29 @@ export class ApiTripStore implements TripStore {
       sharedWith: [],
     });
   }
+
+  async shares(id: string) {
+    const res = await this.client.api.trips[":id"].shares.$get({
+      param: { id },
+    });
+    return Shares.parse(await readJson(res)).emails;
+  }
+
+  async setShares(id: string, emails: string[]) {
+    const res = await this.client.api.trips[":id"].shares.$put({
+      param: { id },
+      json: { emails },
+    });
+    return Shares.parse(await readJson(res)).emails;
+  }
+}
+
+/** Email of the logged-in user. */
+export async function fetchMe(client: ApiClient = createApiClient()) {
+  const { email } = (await readJson(await client.api.me.$get())) as {
+    email: string;
+  };
+  return email;
 }
 
 /**
@@ -88,5 +112,7 @@ export function withMovedTrips(server: TripStore, local: TripStore): TripStore {
     save: (trip) => after(() => server.save(trip)),
     delete: (id) => after(() => server.delete(id)),
     duplicate: (id, name) => after(() => server.duplicate(id, name)),
+    shares: (id) => after(() => server.shares(id)),
+    setShares: (id, emails) => after(() => server.setShares(id, emails)),
   };
 }

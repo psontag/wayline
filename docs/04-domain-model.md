@@ -110,7 +110,7 @@ Weather per stage uses the expected time at each point, from `startTime` and `av
 
 D1 table `trips`: `id`, `owner` (email), `name`, `data` (trip as JSON), `summary` (`TripSummary` as JSON, for the trip list), `created_at`, `updated_at`. The trip is always loaded and saved as a whole. The D1 row limit is 2 MB, which is enough.
 
-D1 table `shares`: `trip_id`, `email`.
+D1 table `shares`: `trip_id`, `email`, `created_at`. It holds `sharedWith`: the server fills `sharedWith` from it for the owner and stores the trip with an empty list.
 
 Schema versions:
 

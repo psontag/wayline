@@ -7,6 +7,8 @@ export type TripCardProps = {
   badge?: ReactNode;
   dates: string;
   stats: string;
+  /** Extra line at the bottom, e.g. who shared the trip. */
+  byline?: ReactNode;
   /** Line of the trip as [lon, lat] points. */
   preview: [number, number][];
   /** Buttons in the top right corner, e.g. a menu. */
@@ -19,6 +21,7 @@ export function TripCard({
   badge,
   dates,
   stats,
+  byline,
   preview,
   actions,
 }: TripCardProps) {
@@ -39,6 +42,11 @@ export function TripCard({
         </div>
         <span className="text-sm text-text-muted">{dates}</span>
         <span className="text-sm tabular-nums">{stats}</span>
+        {byline && (
+          <span className="flex min-w-0 items-center gap-1.5 text-xs text-text-muted [&_svg]:size-3.5 [&_svg]:shrink-0">
+            {byline}
+          </span>
+        )}
       </div>
       {actions && (
         <div className="absolute top-2 right-2 rounded-sm bg-surface shadow-sm">

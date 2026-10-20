@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Button, EmptyState } from "@wayline/ui";
+import type { TripSummary } from "@wayline/domain";
+import { Button, cn, EmptyState } from "@wayline/ui";
 import { Plus, Route } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTrips } from "../../data/queries";
@@ -8,6 +9,8 @@ import { TripListItem } from "./TripListItem";
 export function TripListPage() {
   const { t } = useTranslation("tripList");
   const trips = useTrips();
+  const own = trips.data?.filter((trip) => !trip.shared) ?? [];
+  const shared = trips.data?.filter((trip) => trip.shared) ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-4 px-4 pt-5 pb-8 md:gap-8 md:px-6 md:py-10">
@@ -50,21 +53,52 @@ export function TripListPage() {
           }
         />
       ) : (
-        <section className="flex flex-col gap-3.5">
-          <h2 className="text-md font-bold text-text-muted max-md:sr-only">
-            {t("yourTrips")}
-          </h2>
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
-            {trips.data.map((trip) => (
-              <TripListItem key={trip.id} trip={trip} />
-            ))}
-          </div>
-        </section>
+        <>
+          <TripSection
+            title={t("yourTrips")}
+            trips={own}
+            showTitleOnPhone={shared.length > 0}
+          />
+          <TripSection
+            title={t("sharedWithYou")}
+            trips={shared}
+            showTitleOnPhone
+          />
+        </>
       )}
 
       <p className="pt-2 text-center text-xs text-text-muted md:hidden">
         {t("phoneHint")}
       </p>
     </div>
+  );
+}
+
+function TripSection({
+  title,
+  trips,
+  showTitleOnPhone,
+}: {
+  title: string;
+  trips: TripSummary[];
+  showTitleOnPhone: boolean;
+}) {
+  if (trips.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-3.5">
+      <h2
+        className={cn(
+          "text-md font-bold text-text-muted",
+          !showTitleOnPhone && "max-md:sr-only",
+        )}
+      >
+        {title}
+      </h2>
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
+        {trips.map((trip) => (
+          <TripListItem key={trip.id} trip={trip} />
+        ))}
+      </div>
+    </section>
   );
 }

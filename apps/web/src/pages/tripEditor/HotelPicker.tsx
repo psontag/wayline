@@ -21,6 +21,9 @@ export function HotelPicker({
   const hotels = useHotels(open ? stage?.end : undefined);
   if (!stage) return null;
   const { hotel, end } = stage;
+  const toggle = !editor.readOnly && (
+    <ToggleButton open={open} onClick={() => setOpen(!open)} />
+  );
 
   return (
     <div className="flex flex-col gap-2">
@@ -30,12 +33,12 @@ export function HotelPicker({
           stars={hotel.stars}
           distance={distanceKm(hotel.coord, end.coord) * 1000}
           website={hotel.website}
-          action={<ToggleButton open={open} onClick={() => setOpen(!open)} />}
+          action={toggle || undefined}
         />
       ) : (
         <div className="flex items-center justify-between gap-2 text-sm text-text-muted">
           {t("stage.noHotel")}
-          <ToggleButton open={open} onClick={() => setOpen(!open)} />
+          {toggle}
         </div>
       )}
       {open && (

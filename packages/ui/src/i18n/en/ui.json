@@ -49,7 +49,8 @@
     "empty": "No matches"
   },
   "dialog": {
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "close": "Close"
   },
   "weather": {
     "at": "{{distance}} · {{time}}",

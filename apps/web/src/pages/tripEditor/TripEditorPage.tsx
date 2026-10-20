@@ -15,10 +15,11 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
-import { useNetwork, useTrip } from "../../data/queries";
+import { useMe, useNetwork, useTrip } from "../../data/queries";
 import { StageList } from "./StageList";
 import { StageProfile } from "./StageProfile";
 import { useStopOptions } from "./StopPicker";
+import { ShareDialog } from "./ShareDialog";
 import { TripHeader } from "./TripHeader";
 import { TripMap } from "./TripMap";
 import { tripStops } from "./tripArea";
@@ -31,11 +32,22 @@ export function TripEditorPage() {
   const { t } = useTranslation("tripEditor");
   const { tripId } = useParams({ from: "/trips/$tripId" });
   const trip = useTrip(tripId);
+  const me = useMe();
 
-  if (trip.data) return <TripEditor trip={trip.data} />;
+  if (trip.data && me.isSuccess) {
+    // Someone else's trip, shared with me.
+    const readOnly = me.data !== null && trip.data.owner !== me.data;
+    return (
+      <TripEditor
+        trip={trip.data}
+        readOnly={readOnly}
+        canShare={me.data !== null && !readOnly}
+      />
+    );
+  }
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-text-muted">
-      {trip.isError ? (
+      {trip.isError || me.isError ? (
         <>
           <p>{t("notFound")}</p>
           <Button asChild>
@@ -49,15 +61,27 @@ export function TripEditorPage() {
   );
 }
 
-function TripEditor({ trip }: { trip: Trip }) {
+function TripEditor({
+  trip,
+  readOnly,
+  canShare,
+}: {
+  trip: Trip;
+  readOnly: boolean;
+  canShare: boolean;
+}) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
   const search = useSearch({ from: "/trips/$tripId" });
   const navigate = useNavigate({ from: "/trips/$tripId" });
-  const editor = useTripEditor(trip);
+  const editor = useTripEditor(trip, readOnly);
   const network = useNetwork(networkArea(tripStops(trip)));
   const isPhone = useIsPhone();
   const [hoverKm, setHoverKm] = useState<number>();
+  const [sharing, setSharing] = useState(false);
+  const shareDialog = canShare && (
+    <ShareDialog trip={trip} open={sharing} onOpenChange={setSharing} />
+  );
 
   const selected = Math.min(search.stage ?? 0, trip.stages.length - 1);
   const select = (stage: number) => {
@@ -74,17 +98,18 @@ function TripEditor({ trip }: { trip: Trip }) {
 
   const isLast = selected === trip.stages.length - 1;
   const options = useStopOptions(trip, selected);
-  const alternatives = isLast
-    ? []
-    : options
-        .filter((o) => !o.current)
-        .map(({ place, distance }) => ({
-          place,
-          label: t("stage.alternative", {
-            name: place.name,
-            distance: format.distance(distance),
-          }),
-        }));
+  const alternatives =
+    isLast || readOnly
+      ? []
+      : options
+          .filter((o) => !o.current)
+          .map(({ place, distance }) => ({
+            place,
+            label: t("stage.alternative", {
+              name: place.name,
+              distance: format.distance(distance),
+            }),
+          }));
 
   const toast = editor.note && (
     <Toast
@@ -101,9 +126,11 @@ function TripEditor({ trip }: { trip: Trip }) {
     return (
       <ToastProvider>
         {toast}
+        {shareDialog}
         <PhoneTripEditor
           trip={trip}
           editor={editor}
+          onShare={canShare ? () => setSharing(true) : undefined}
           selected={selected}
           onSelect={select}
           network={network}
@@ -120,7 +147,13 @@ function TripEditor({ trip }: { trip: Trip }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <TripHeader trip={trip} editor={editor} />
+      {shareDialog}
+      <TripHeader
+        trip={trip}
+        editor={editor}
+        canShare={canShare}
+        onShare={() => setSharing(true)}
+      />
       <div className="flex min-h-0 flex-1 flex-col overflow-auto lg:flex-row lg:overflow-hidden">
         <div className="flex min-w-0 flex-col lg:flex-1">
           <div className="relative aspect-square shrink-0 lg:aspect-auto lg:min-h-0 lg:flex-1">

@@ -16,4 +16,8 @@ export interface TripStore {
   delete(id: string): Promise<void>;
   /** Copy with a new id. The name is the caller's choice. */
   duplicate(id: string, name: string): Promise<Trip>;
+  /** Emails of friends who can view the trip. Only for the owner. */
+  shares(id: string): Promise<string[]>;
+  /** Replaces the emails. Returns them as stored. */
+  setShares(id: string, emails: string[]): Promise<string[]>;
 }

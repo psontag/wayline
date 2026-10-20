@@ -160,6 +160,12 @@ export const Trip = z.object({
 });
 export type Trip = z.infer<typeof Trip>;
 
+/** Body of PUT /api/trips/:id/shares: everyone who can view the trip. */
+export const Shares = z.object({
+  emails: z.array(z.email().toLowerCase()).max(50),
+});
+export type Shares = z.infer<typeof Shares>;
+
 export const WeatherSample = z.object({
   /** Local time "YYYY-MM-DDTHH:MM" */
   time: z.string(),

@@ -16,6 +16,8 @@ export type TripSummary = {
   name: string;
   kind: TripKind;
   owner: string;
+  /** Someone else's trip, shared with the current user. */
+  shared?: boolean;
   startDate?: string;
   updatedAt: string;
   stageCount: number;

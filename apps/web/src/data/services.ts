@@ -9,7 +9,7 @@ import {
   type WeatherProvider,
 } from "@wayline/providers";
 import { ApiRouting } from "./ApiRouting";
-import { ApiTripStore, withMovedTrips } from "./ApiTripStore";
+import { ApiTripStore, fetchMe, withMovedTrips } from "./ApiTripStore";
 import { createTripGenerator } from "./generator";
 import { LocalTripStore } from "./LocalTripStore";
 import type { TripGenerator } from "./TripGenerator";
@@ -17,6 +17,8 @@ import type { TripStore } from "./TripStore";
 
 /** Everything screens need from outside. Real APIs replace only this file. */
 export type Services = {
+  /** Email of the logged-in user. Null without a server: all trips are mine. */
+  me: () => Promise<string | null>;
   trips: TripStore;
   generator: TripGenerator;
   routing: RoutingProvider;
@@ -65,13 +67,14 @@ export function createServices(): Services {
       ? new ApiRouting()
       : new FakeRouting((bbox) => graphs.get(bbox));
   // VITE_TRIPS=api saves trips on the server. Default: browser storage.
-  const trips =
-    import.meta.env.VITE_TRIPS === "api"
-      ? withMovedTrips(new ApiTripStore(), new LocalTripStore())
-      : new LocalTripStore({
-          loadSample: () => fetchJson(`${MOCK_DATA}/sample-trip.json`),
-        });
+  const onServer = import.meta.env.VITE_TRIPS === "api";
+  const trips = onServer
+    ? withMovedTrips(new ApiTripStore(), new LocalTripStore())
+    : new LocalTripStore({
+        loadSample: () => fetchJson(`${MOCK_DATA}/sample-trip.json`),
+      });
   return {
+    me: async () => (onServer ? fetchMe() : null),
     trips,
     generator: createTripGenerator({ dataUrl: url }),
     routing,

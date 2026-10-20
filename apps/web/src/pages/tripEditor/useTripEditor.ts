@@ -16,8 +16,11 @@ export function toHotel({ osmId, name, coord, stars, website }: HotelOption) {
   return hotel;
 }
 
-/** Edits of a trip with undo and redo. Every edit saves right away. */
-export function useTripEditor(trip: Trip) {
+/**
+ * Edits of a trip with undo and redo. Every edit saves right away.
+ * Read-only for trips shared with the user.
+ */
+export function useTripEditor(trip: Trip, readOnly = false) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
   const { routing, lodging } = useServices();
@@ -27,7 +30,7 @@ export function useTripEditor(trip: Trip) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<EditorNote>();
 
-  const canEdit = !busy && !save.isPending;
+  const canEdit = !readOnly && !busy && !save.isPending;
   const saveState: SaveState =
     save.isPending || busy ? "saving" : save.isError ? "error" : "saved";
 
@@ -43,6 +46,7 @@ export function useTripEditor(trip: Trip) {
     save.mutate({ ...target, updatedAt: trip.updatedAt });
 
   return {
+    readOnly,
     canEdit,
     saveState,
     note,
