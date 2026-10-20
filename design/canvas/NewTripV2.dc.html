@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New trip, one form</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="width: 100%; height: 900px; display: flex; flex-direction: column; background: {{c.bg}}; color: {{c.text}}; font-family: Manrope, system-ui, sans-serif; font-size: 14px; overflow: hidden">
+
+<header style="height: 56px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 16px; background: {{c.surface}}; border-bottom: 1px solid {{c.border}}">
+<a href="TripList.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; font-size: 17px; letter-spacing: -0.02em">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 18c4-1 5-6 9-6s5 5 9 4" stroke="{{c.route}}" stroke-width="3" stroke-linecap="round"></path><circle cx="3" cy="18" r="2" fill="{{c.text}}"></circle><circle cx="21" cy="16" r="2" fill="{{c.text}}"></circle></svg>
+wayline</a>
+<div style="width: 1px; height: 24px; background: {{c.border}}"></div>
+<span style="font-weight: 700; font-size: 15px">New trip</span>
+</header>
+
+<div style="flex: 1; min-height: 0; display: flex; flex-wrap: wrap">
+
+<div style="flex: 999 1 640px; min-width: 0; height: 100%; position: relative; background: {{c.mapLand}}; overflow: hidden">
+<svg width="100%" height="100%" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of northern Bavaria with the start and end of the trip" style="display: block">
+<rect x="0" y="0" width="900" height="600" fill="{{c.mapLand}}"></rect>
+<path d="M150 60 C230 30 290 80 270 140 C250 200 170 190 140 150 C120 120 110 80 150 60 Z" fill="{{c.mapForest}}"></path>
+<path d="M460 40 C560 10 690 40 700 110 C710 170 600 200 520 190 C450 180 400 80 460 40 Z" fill="{{c.mapForest}}"></path>
+<path d="M660 420 C740 390 860 420 870 480 C880 540 760 555 700 540 C640 525 610 450 660 420 Z" fill="{{c.mapForest}}"></path>
+<path d="M0 500 C120 480 200 440 300 370 C380 315 520 330 640 360 C720 380 820 405 900 380" fill="none" stroke="{{c.mapWater}}" stroke-width="8" stroke-linecap="round"></path>
+<path d="M0 330 L900 450" fill="none" stroke="{{c.mapRoad}}" stroke-width="3"></path>
+<path d="M260 0 L380 600" fill="none" stroke="{{c.mapRoad}}" stroke-width="2.5"></path>
+<path d="M600 0 L700 600" fill="none" stroke="{{c.mapRoad}}" stroke-width="2.5"></path>
+<path d="M60 520 C200 500 300 420 420 380 C540 340 700 380 900 360" fill="none" stroke="{{c.mapNet}}" stroke-width="3"></path>
+<path d="M120 0 C160 120 260 200 330 260 C400 320 420 420 460 600" fill="none" stroke="{{c.mapNet}}" stroke-width="3"></path>
+<path d="M500 0 C540 100 600 200 640 300 C680 400 760 460 900 520" fill="none" stroke="{{c.mapNet}}" stroke-width="3"></path>
+<sc-if value="{{isLoop}}" hint-placeholder-val="{{ false }}">
+<circle cx="100" cy="460" r="{{loopR}}" fill="{{c.regionFill}}" stroke="{{c.casing}}" stroke-width="2" stroke-dasharray="8 6"></circle>
+</sc-if>
+<g font-family="Manrope, sans-serif" font-size="13" font-weight="600" fill="{{c.text}}">
+<circle cx="560" cy="150" r="4" fill="{{c.text}}"></circle><text x="572" y="155">Kronach</text>
+<circle cx="640" cy="330" r="4" fill="{{c.text}}"></circle><text x="652" y="335">Kulmbach</text>
+<circle cx="230" cy="330" r="4" fill="{{c.text}}"></circle><text x="242" y="335">Lichtenfels</text>
+</g>
+<circle cx="100" cy="460" r="11" fill="{{c.accent}}" stroke="{{c.casing}}" stroke-width="2.5"></circle>
+<text x="100" y="465" text-anchor="middle" font-size="12" font-weight="800" fill="{{c.onAccent}}" font-family="Manrope, sans-serif">A</text>
+<text x="118" y="486" font-size="13" font-weight="700" fill="{{c.text}}" font-family="Manrope, sans-serif">Bamberg</text>
+<sc-if value="{{isAB}}" hint-placeholder-val="{{ true }}">
+<g>
+<circle cx="330" cy="140" r="11" fill="{{c.text}}" stroke="{{c.surface}}" stroke-width="2.5"></circle>
+<text x="330" y="145" text-anchor="middle" font-size="12" font-weight="800" fill="{{c.bg}}" font-family="Manrope, sans-serif">B</text>
+<text x="348" y="145" font-size="13" font-weight="700" fill="{{c.text}}" font-family="Manrope, sans-serif">Coburg</text>
+</g>
+</sc-if>
+</svg>
+<div style="position: absolute; left: 12px; bottom: 12px; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: {{c.surface}}; border: 1px solid {{c.border}}; border-radius: 6px; font-size: 12px; color: {{c.muted}}">
+<span style="width: 14px; height: 4px; border-radius: 2px; background: {{c.mapNet}}"></span>Signed cycling routes
+</div>
+<div style="position: absolute; top: 12px; left: 12px; padding: 8px 12px; background: {{c.surface}}; border: 1px solid {{c.border}}; border-radius: 6px; font-size: 13px; color: {{c.muted}}; box-shadow: {{c.shadow}}">Click the map to set {{mapHint}}</div>
+<div style="position: absolute; right: 12px; bottom: 8px; font-size: 11px; color: {{c.muted}}">© OpenStreetMap · OpenFreeMap</div>
+</div>
+
+<form style="flex: 1 1 400px; max-width: 440px; height: 100%; box-sizing: border-box; background: {{c.surface}}; border-left: 1px solid {{c.border}}; display: flex; flex-direction: column; min-width: 0; margin: 0">
+<div style="flex: 1; min-height: 0; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700">Length</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; gap: 2px; border-radius: 6px; background: {{c.hover}}">
+<sc-for list="{{lengths}}" as="o" hint-placeholder-count="2">
+<button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="font: inherit; font-size: 13px; font-weight: {{o.weight}}; height: 34px; border-radius: 4px; border: none; background: {{o.bg}}; color: {{o.color}}; box-shadow: {{o.shadow}}; cursor: pointer">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700">Shape</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{shapes}}" as="m" hint-placeholder-count="2">
+<button type="button" onClick="{{m.pick}}" aria-pressed="{{m.pressed}}" style="font: inherit; text-align: left; padding: 10px 12px; border-radius: 6px; border: 1px solid {{m.border}}; background: {{m.bg}}; color: {{c.text}}; cursor: pointer; display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 700">{{m.label}}</span>
+<span style="font-size: 12px; color: {{c.muted}}">{{m.hint}}</span>
+</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px; position: relative">
+<label for="v2-start" style="font-size: 13px; font-weight: 700">Start</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 4px; border: 2px solid {{c.casing}}; background: {{c.surface}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<input id="v2-start" value="Bam" role="combobox" aria-expanded="{{openStr}}" style="font: inherit; border: none; outline: none; background: transparent; color: {{c.text}}; flex: 1; min-width: 0">
+</div>
+<sc-if value="{{showSearch}}" hint-placeholder-val="{{ true }}">
+<ul role="listbox" aria-label="Places" style="list-style: none; margin: 0; padding: 4px; position: absolute; top: 70px; left: 0; right: 0; z-index: 2; background: {{c.surface}}; border: 1px solid {{c.border}}; border-radius: 6px; box-shadow: {{c.shadow}}; display: flex; flex-direction: column">
+<li role="option" aria-selected="true" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 4px; background: {{c.hover}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"></path></svg>
+<span style="display: flex; flex-direction: column; flex: 1; min-width: 0"><span style="font-weight: 700">Bamberg</span><span style="font-size: 12px; color: {{c.muted}}">Town · station 0.8 km</span></span>
+</li>
+<li role="option" aria-selected="false" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 4px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"></path></svg>
+<span style="display: flex; flex-direction: column; flex: 1; min-width: 0"><span style="font-weight: 700">Bamberg-Gaustadt</span><span style="font-size: 12px; color: {{c.muted}}">Town</span></span>
+</li>
+<li role="option" aria-selected="false" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 4px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"></path></svg>
+<span style="display: flex; flex-direction: column; flex: 1; min-width: 0"><span style="font-weight: 700">Hallstadt bei Bamberg</span><span style="font-size: 12px; color: {{c.muted}}">Town · station 0.3 km</span></span>
+</li>
+<li role="option" aria-selected="false" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 4px; border-top: 1px solid {{c.border}}; color: {{c.muted}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="14" rx="2"></rect><path d="M5 11h14M9 21l-2-4M15 21l2-4"></path></svg>
+<span style="display: flex; flex-direction: column; flex: 1; min-width: 0"><span style="font-weight: 600; color: {{c.text}}">Bamberg</span><span style="font-size: 12px">Train station</span></span>
+</li>
+</ul>
+</sc-if>
+</div>
+
+<sc-if value="{{isAB}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="v2-end" style="font-size: 13px; font-weight: 700">End</label>
+<div style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"></path></svg>
+<input id="v2-end" value="Coburg" style="font: inherit; border: none; outline: none; background: transparent; color: {{c.text}}; flex: 1; min-width: 0">
+</div>
+</div>
+</sc-if>
+
+<fieldset style="border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+<legend style="font-size: 13px; font-weight: 700; padding: 0; margin-bottom: 8px">When</legend>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="v2-date" style="font-size: 12px; font-weight: 600; color: {{c.muted}}">{{startDateLabel}}</label>
+<input id="v2-date" value="Sat 12 Jun" style="font: inherit; height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="v2-time" style="font-size: 12px; font-weight: 600; color: {{c.muted}}">Start at</label>
+<select id="v2-time" onChange="{{setStart}}" style="font: inherit; height: 40px; padding: 0 10px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; font-variant-numeric: tabular-nums">
+<sc-for list="{{startOptions}}" as="o" hint-placeholder-count="6"><option value="{{o.value}}" selected="{{o.selected}}">{{o.label}}</option></sc-for>
+</select>
+</div>
+<sc-if value="{{isMulti}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="v2-end-date" style="font-size: 12px; font-weight: 600; color: {{c.muted}}">Last day</label>
+<select id="v2-end-date" onChange="{{setEnd}}" style="font: inherit; height: 40px; padding: 0 10px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}">
+<sc-for list="{{endOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.value}}" selected="{{o.selected}}">{{o.label}}</option></sc-for>
+</select>
+</div>
+</sc-if>
+<sc-if value="{{isMulti}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="v2-back" style="font-size: 12px; font-weight: 600; color: {{c.muted}}">Back by</label>
+<select id="v2-back" onChange="{{setBack}}" style="font: inherit; height: 40px; padding: 0 10px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; font-variant-numeric: tabular-nums">
+<sc-for list="{{backOptions}}" as="o" hint-placeholder-count="6"><option value="{{o.value}}" selected="{{o.selected}}">{{o.label}}</option></sc-for>
+</select>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{isMulti}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<ol aria-label="Days" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat({{dayCount}}, minmax(0, 1fr)); gap: 4px">
+<sc-for list="{{days}}" as="d" hint-placeholder-count="3">
+<li style="display: flex; flex-direction: column; gap: 4px; padding: 8px; border-radius: 6px; background: {{c.bg}}; min-width: 0">
+<span style="font-size: 12px; font-weight: 700">{{d.date}}</span>
+<span aria-hidden="true" style="height: 6px; border-radius: 3px; background: {{c.hover}}; overflow: hidden; display: flex"><span style="width: {{d.pct}}; background: {{d.color}}"></span></span>
+<span style="font-size: 12px; font-variant-numeric: tabular-nums">{{d.km}}</span>
+<span style="font-size: 11px; color: {{c.muted}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{d.note}}</span>
+</li>
+</sc-for>
+</ol>
+<span style="font-size: 12px; color: {{c.muted}}">Weather, hotels and arrival times use these dates.</span>
+</div>
+</sc-if>
+</fieldset>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="v2-km" style="font-size: 13px; font-weight: 700">{{kmLabel}}</label>
+<input id="v2-km" value="{{kmValue}}" style="font: inherit; height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; font-variant-numeric: tabular-nums">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="v2-up" style="font-size: 13px; font-weight: 700">{{ascentLabel}}</label>
+<input id="v2-up" value="900 m" style="font: inherit; height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 4px; border: 1px solid {{c.border}}; background: {{c.surface}}; color: {{c.text}}; font-variant-numeric: tabular-nums">
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700">Profile</span>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 3px; gap: 2px; border-radius: 6px; background: {{c.hover}}">
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 700; height: 34px; border-radius: 4px; border: none; background: {{c.surface}}; color: {{c.text}}; box-shadow: 0 1px 2px rgba(0,0,0,0.12)">Touring</button>
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 600; height: 34px; border-radius: 4px; border: none; background: transparent; color: {{c.muted}}">Fast</button>
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 600; height: 34px; border-radius: 4px; border: none; background: transparent; color: {{c.muted}}">Scenic</button>
+<button type="button" style="font: inherit; font-size: 13px; font-weight: 600; height: 34px; border-radius: 4px; border: none; background: transparent; color: {{c.muted}}">Quiet</button>
+</div>
+</div>
+
+</div>
+
+<div style="padding: 16px 20px; border-top: 1px solid {{c.border}}; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<span style="font-size: 12px; color: {{c.muted}}">{{summary}}</span>
+<a href="ProposalsV2.dc.html" style="font-weight: 800; height: 44px; padding: 0 20px; border-radius: 4px; background: {{c.accent}}; color: {{c.onAccent}}; display: flex; align-items: center; gap: 8px; text-decoration: none; white-space: nowrap">Find routes
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+</div>
+</form>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"showSearch":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var dark = this.props.dark ?? false;
+    var showSearch = this.props.showSearch ?? false;
+    var light = {
+      bg: '#F6F7F9', surface: '#FFFFFF', text: '#15181D', muted: '#5A616C', border: '#E1E4EA', hover: '#EEF0F4',
+      accent: '#FFB088', onAccent: '#3B1503', accentSoft: '#FFEDE3', route: '#FF9A73', casing: '#B4532A', switchOff: '#C3C8D0',
+      regionFill: 'rgba(255,176,136,0.10)', mapNet: '#9DB7A0',
+      mapLand: '#F1F2F4', mapWater: '#C9E0F5', mapForest: '#E0EEDD', mapRoad: '#FFFFFF',
+      shadow: '0 1px 2px rgba(16,18,22,0.08), 0 4px 12px rgba(16,18,22,0.06)'
+    };
+    var darkT = {
+      bg: '#101216', surface: '#171A20', text: '#EDEFF3', muted: '#A0A7B3', border: '#2A2F38', hover: '#20242C',
+      accent: '#FFB088', onAccent: '#2A0F02', accentSoft: '#2D211B', route: '#FFA67F', casing: '#FFB088', switchOff: '#3A404A',
+      regionFill: 'rgba(255,176,136,0.08)', mapNet: '#4E6B57',
+      mapLand: '#171A1F', mapWater: '#1E2E40', mapForest: '#1A2520', mapRoad: '#262A31',
+      shadow: '0 1px 2px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3)'
+    };
+    var c = dark ? darkT : light;
+    var s = this.state || {};
+    var len = s.len || 'multi';
+    var shape = s.shape || 'ab';
+    var start = s.start ?? 13;
+    var back = s.back ?? 17;
+    var lastDay = s.lastDay ?? 2;
+    var isMulti = len === 'multi';
+    var isAB = shape === 'ab';
+
+    var lengths = [{ id: 'one', label: 'One day' }, { id: 'multi', label: 'Several days' }].map(function (o) {
+      var on = o.id === len;
+      return Object.assign({}, o, {
+        pressed: on ? 'true' : 'false', weight: on ? 700 : 600,
+        bg: on ? c.surface : 'transparent', color: on ? c.text : c.muted,
+        shadow: on ? '0 1px 2px rgba(0,0,0,0.12)' : 'none',
+        pick: function () { self.setState({ len: o.id }); }
+      });
+    });
+    var shapes = [
+      { id: 'ab', label: 'A to B', hint: 'Start and end differ' },
+      { id: 'loop', label: 'Loop', hint: 'Ends where it starts' }
+    ].map(function (m) {
+      var on = m.id === shape;
+      return Object.assign({}, m, {
+        pressed: on ? 'true' : 'false',
+        border: on ? c.casing : c.border,
+        bg: on ? c.accentSoft : c.surface,
+        pick: function () { self.setState({ shape: m.id }); }
+      });
+    });
+    // A full riding day is 09:00 to 17:00. A later start or an earlier
+    // return makes that day shorter by the same share.
+    var hh = function (h) { return (h < 10 ? '0' : '') + h + ':00'; };
+    var share = function (hours) { return Math.max(0.25, Math.min(1, hours / 8)); };
+    var kmFor = function (f) { return Math.round(70 * f / 5) * 5; };
+    var dates = ['Sat 12 Jun', 'Sun 13 Jun', 'Mon 14 Jun', 'Tue 15 Jun', 'Wed 16 Jun'];
+    var short = ['Sat 12', 'Sun 13', 'Mon 14', 'Tue 15', 'Wed 16'];
+    var days = [];
+    for (var i = 0; i <= lastDay; i++) {
+      var f = 1, note = 'Full day';
+      if (i === 0) { f = share(17 - start); note = 'From ' + hh(start); }
+      if (i === lastDay) { f = Math.min(f, share(back - 9)); note = i === 0 ? note : 'Back by ' + hh(back); }
+      days.push({ date: short[i], km: 'about ' + kmFor(f) + ' km', note: note,
+        pct: Math.round(f * 100) + '%', color: f < 1 ? c.casing : c.route });
+    }
+    var opts = function (from, to, cur) {
+      var out = [];
+      for (var h = from; h <= to; h++) out.push({ value: String(h), label: hh(h), selected: h === cur });
+      return out;
+    };
+    var endOptions = [1, 2, 3, 4].map(function (i) { return { value: String(i), label: dates[i], selected: i === lastDay }; });
+    var isShort = days[0] && days[0].pct !== '100%' || days[lastDay] && days[lastDay].pct !== '100%';
+    var kinds = (isMulti ? (lastDay + 1) + ' days' : 'One day') + ' · ' + (isAB ? 'A to B' : 'Loop');
+    return {
+      c: c, lengths: lengths, shapes: shapes, days: days, dayCount: lastDay + 1,
+      startOptions: opts(7, 16, start), backOptions: opts(11, 20, back), endOptions: endOptions,
+      setStart: function (e) { self.setState({ start: Number(e.target.value) }); },
+      setBack: function (e) { self.setState({ back: Number(e.target.value) }); },
+      setEnd: function (e) { self.setState({ lastDay: Number(e.target.value) }); },
+      startDateLabel: isMulti ? 'First day' : 'Date',
+      isMulti: isMulti, isAB: isAB, isLoop: !isAB,
+      loopR: isMulti ? 260 : 150,
+      showSearch: showSearch, openStr: showSearch ? 'true' : 'false',
+      kmLabel: isMulti ? 'Km per day' : 'Distance',
+      kmValue: isMulti ? '70 km' : '60 km',
+      ascentLabel: isMulti ? 'Max ascent per day' : 'Max ascent',
+      mapHint: isAB ? 'start or end' : 'the start',
+      summary: kinds + (isMulti && isShort ? ' · shorter first or last day' : '')
+    };
+  }
+}
+</script>
+</body>
+</html>

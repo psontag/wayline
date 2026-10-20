@@ -4,11 +4,12 @@ How Wayline turns a few inputs into trip proposals.
 
 ## Input
 
-- Kind: `one-way` or `multi-day-loop`
-- Region (map area) or start station
+- Kind: `one-way`, `multi-day-loop` or `day-loop`. A one-way trip of one day is a one-day A to B.
+- Region (map area) or start place. One-way: end place (optional).
 - Number of days
-- Target km per day, max ascent per day
-- Profile, hotel budget, start date (optional)
+- Target km per day, max ascent per day. One day: the distance and max ascent.
+- Day shares (optional): share of a full day per stage, see below
+- Profile, hotel budget, start date, start time, back-by time
 - Theme (optional)
 
 ## Output
@@ -51,8 +52,10 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 
 1. **Load the graph** for the request area: the tiles within half the trip length of the start (loops), or the full length (one-way without an end).
 2. **Pick start and end.**
-   - One-way: pairs of stations with the right distance. Prefilter pairs by straight-line distance. If the user picked an end station, use only that one.
-   - Multi-day loop: one station. Start and end are the same.
+   - A place within 2 km of a station starts or ends at the station. Else at the nearest network node within 5 km of the place.
+   - One-way: pairs of stations with the right distance. Prefilter pairs by straight-line distance. If the user picked an end, use only that one.
+   - Loops: one place. Start and end are the same.
+   - One day from A to B: the direct path first. Then paths up to 20–40 % longer, capped by the distance asked for, that share at most 60 % of the direct one.
 3. **Search paths.**
    - Shortest path with cost = length / score^k.
    - Variety: raise the cost of used edges and search again (penalty method).
@@ -60,7 +63,7 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
    - The leg from A to B avoids edges near the start (cost × 8).
    - Time limit of about 2 s.
 4. **Filter** by length (within 12 % of the target), ascent and surface, using edge data. Drop loops whose middle part (20–80 % of the length) comes within 4 % of the length, or 4 km, of the start. Drop paths that ride back along themselves: parts within 1.5 km of an earlier part more than 10 km back may add up to 4 % of the length (min 4 km). A short touch, like a river bend, is fine.
-5. **Cut into stages.** See below.
+5. **Cut into stages.** See below. Each stage becomes one leg per piece of about 10 km, so an edit routes only the legs it touches.
 6. **Rank** and pick 3–5 diverse proposals.
 7. **Route** the chosen proposals. Waypoints are graph nodes about every 10 km, so the router follows the graph path. Proposals share nodes, so legs hit the cache. If routing fails, the proposal keeps the graph path.
 8. **Find hotels** at each stop from the OSM hotel data.
@@ -71,14 +74,18 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 Stops must be towns with hotels. For a route of length L and n days:
 
 1. Collect towns near the route with their position (km from start). Only towns with a named hotel within 2 km count.
-2. Choose n − 1 towns with dynamic programming. Cost per stage: deviation from target km. If no cut fits, the path is dropped. Not allowed:
-   - a stage that climbs more than the max ascent
-   - a stage shorter than 0.5× or longer than 1.35× the target km
+2. Choose n − 1 towns with dynamic programming. Cost per stage: deviation from its target km. If no cut fits, the path is dropped. Not allowed:
+   - a stage that climbs more than its max ascent
+   - a stage shorter than 0.5× or longer than 1.35× its target km
    - two stops closer than a quarter of the target km in a straight line
    - on loops: a stop closer to the start than 15 km (or 10 % of the length)
-3. Keep the best 2–3 towns per stop as alternatives.
+3. Keep up to 3 alternatives per stop: towns with hotels that make the stage about 10 or 20 % shorter or longer, clearly apart from each other and from the stop. Fewer if the path has none.
 
-On edit, cutting runs only between locked stops.
+### Day shares
+
+A full riding day is 09:00 to 17:00. The first day starts at the start time, the last day ends by the back-by time. Their share of a full day is the hours left divided by 8, from 0.25 to 1. Days in between are full.
+
+A stage aims for km per day × share and climbs at most max ascent per day × share. The trip keeps the shares in its settings, so a later version can let the user set them per day.
 
 ## Progress and failure
 
@@ -96,8 +103,9 @@ The Web Worker reports phases:
 
 | Mode | How |
 |---|---|
-| Route A to B | Route directly with the chosen profile. No graph search. |
-| Day loop | Graph search for a loop of the given length. |
+| Route A to B (`/route`) | Route directly with the chosen profile. No graph search. |
+| One day A to B | Graph search. Each proposal has a character: direct, longer or scenic. |
+| Day loop | Graph search for a loop of the given length, without stops. |
 
 ## Profiles
 

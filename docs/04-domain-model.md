@@ -5,6 +5,7 @@
 ```
 Trip
  ├─ settings
+ ├─ proposed: Stage[]?
  └─ Stage[]
      ├─ start: Place
      ├─ end: Stop
@@ -24,6 +25,7 @@ Trip
 | `startDate` | Optional. Without it, no dates or weather. |
 | `settings` | See below |
 | `stages` | Ordered list. A single route is a trip with one stage. |
+| `proposed` | Optional. The stages as proposed, kept when a proposal is opened. A changed stage can go back to them. |
 | `sharedWith` | Emails of friends who can view |
 
 ### Settings
@@ -34,7 +36,9 @@ Trip
 | `kmPerDay` | Target distance per stage |
 | `maxAscentPerDay` | Meters |
 | `hotelBudget` | Price range |
-| `startTime` | Daily start time. Default 09:00. |
+| `startTime` | Start on the first day. Default 09:00. Later days start at 09:00. |
+| `backBy` | Optional. Latest arrival on the last day. |
+| `dayShares` | Optional. Share of a full day per stage, 0.25 to 1. Targets for km and ascent scale with it. Missing means full days. |
 | `avgSpeed` | Default 18 km/h. Used for weather timing. |
 
 The hotel rating filter (none, 7+, 8+, 9+) is a user preference, not a trip setting. It sits next to the Booking.com link.
@@ -45,9 +49,9 @@ The hotel rating filter (none, 7+, 8+, 9+) is a user preference, not a trip sett
 |---|---|
 | `start` | Place. The end of the previous stage, or the trip start. |
 | `end` | Stop |
-| `via` | User-set via points |
+| `via` | User-set via points. Each one is a join between two legs. |
 | `hotel` | Selected hotel at the end. Empty on the last stage. |
-| `legs` | Stored, see below |
+| `legs` | Stored, see below. Generated stages have one leg per piece of about 10 km. |
 | `stats` | Distance, ascent, descent, surface mix |
 
 ### Place
@@ -93,8 +97,10 @@ Derived when shown: dates, weather, booking links.
 
 | Change | Recomputed |
 |---|---|
-| Move or add a via point | Legs and stats of that stage |
-| Move a stop | Legs and stats of this and the next stage. The stop is locked. |
+| Move or add a via point | The two legs next to it and the stats of that stage |
+| Remove a via point | The two legs next to it become one |
+| Move a stop | Only the leg that passes the new stop, split at it. This and the next stage get new stats. The stop is locked. |
+| Revert a stage | Route, stop and hotel as proposed. The next stage starts at the proposed stop. |
 | Select a hotel | Stop moves to the hotel and is locked. Same as moving a stop. |
 | Change start date | Dates and weather |
 | Change profile | Nothing until "Re-route" |
@@ -104,7 +110,9 @@ After an edit, the UI shows downstream changes, e.g. "Day 3 now ends in Lichtenf
 
 Stage dates: `startDate + stage index`.
 
-Weather per stage uses the expected time at each point, from `startTime` and `avgSpeed`.
+Weather per stage uses the expected time at each point, from the stage start time and `avgSpeed`.
+
+A stage is changed when its legs, stop or hotel differ from `proposed`. Old trips without `proposed` have no revert.
 
 ## Storage
 
