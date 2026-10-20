@@ -5,6 +5,7 @@ import {
   type GenerateProgress,
   type GenerateRequest,
   type GenerateResult,
+  type LonLat,
   type Places,
   type Proposal,
   Theme,
@@ -55,6 +56,11 @@ const START_KM = 5;
 const LOOP_AVOID = { share: 0.08, minKm: 5, factor: 8 };
 /** The middle of a loop must not come closer to the start than this. */
 const LOOP_GAP = { share: 0.04, minKm: 4 };
+/**
+ * Parts of a path within gapKm of an earlier part more than afterKm back
+ * may add up to maxShare of the length (at least minKm).
+ */
+const SPUR = { gapKm: 1.5, afterKm: 10, maxShare: 0.04, minKm: 4 };
 
 export type PlannerOptions = {
   onProgress?: (progress: GenerateProgress) => void;
@@ -305,7 +311,10 @@ export class Planner {
         if (sharedKm > MAX_SHARED * km) continue;
 
         const points = pathPoints(graph, c.nodes[0] ?? 0, steps);
-        if (isLoop && comesBack(graph, points, totalKm)) {
+        if (
+          (isLoop && comesBack(graph, points, totalKm)) ||
+          doublesBack(graph, points, isLoop)
+        ) {
           fails.length++;
           continue;
         }
@@ -361,6 +370,50 @@ function comesBack(graph: Graph, points: PathPoint[], totalKm: number) {
       p.km < 0.8 * total &&
       distanceKm(home, graph.coord(p.node)) < gap,
   );
+}
+
+/**
+ * Does the path ride back along itself, like a spur out and back on a
+ * parallel road? A short touch, like a river bend, is fine. Loops may meet
+ * themselves at the start.
+ */
+export function doublesBack(
+  graph: Graph,
+  points: PathPoint[],
+  isLoop: boolean,
+): boolean {
+  const total = points.at(-1)?.km ?? 0;
+  const limit = Math.max(SPUR.minKm, SPUR.maxShare * total);
+  const atEnds = (km: number) => km < 0.1 * total || km > 0.9 * total;
+  // Grid of earlier points, with cells about gapKm wide.
+  const cell = SPUR.gapKm / 75;
+  const key = (x: number, y: number) => `${x},${y}`;
+  const grid = new Map<string, { coord: LonLat; km: number }[]>();
+  let doubled = 0;
+  let prevKm = 0;
+  for (const p of points) {
+    const coord = graph.coord(p.node);
+    const cx = Math.floor(coord[0] / cell);
+    const cy = Math.floor(coord[1] / cell);
+    let near = false;
+    for (let dx = -1; dx <= 1 && !near; dx++) {
+      for (let dy = -1; dy <= 1 && !near; dy++) {
+        near = (grid.get(key(cx + dx, cy + dy)) ?? []).some(
+          (a) =>
+            p.km - a.km > SPUR.afterKm &&
+            !(isLoop && atEnds(a.km) && atEnds(p.km)) &&
+            distanceKm(a.coord, coord) < SPUR.gapKm,
+        );
+      }
+    }
+    if (near) doubled += p.km - prevKm;
+    if (doubled > limit) return true;
+    prevKm = p.km;
+    const list = grid.get(key(cx, cy)) ?? [];
+    list.push({ coord, km: p.km });
+    grid.set(key(cx, cy), list);
+  }
+  return false;
 }
 
 /** Loads the whole network and places of a small, untiled source. */

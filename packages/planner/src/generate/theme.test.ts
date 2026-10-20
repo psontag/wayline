@@ -1,6 +1,7 @@
 import type { NetworkEdge, RouteNetwork } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
 import { Graph } from "../graph/Graph";
+import { doublesBack } from "./generate";
 import { themeBoost, themeShare, themeValue } from "./theme";
 
 const scenery = {
@@ -68,5 +69,38 @@ describe("themes", () => {
     expect(themeValue(graph, steps, "water")).toBeCloseTo(0.15);
     expect(themeValue(graph, steps, "culture")).toBe(1);
     expect(themeValue(graph, steps, "wine")).toBeCloseTo(0.25);
+  });
+});
+
+describe("doublesBack", () => {
+  // Nodes 1 km apart on a line going east, then a few going back west.
+  function path(eastKm: number, backKm: number) {
+    const coords: [number, number][] = [];
+    for (let i = 0; i <= eastKm; i++) coords.push([8 + i / 73, 49]);
+    for (let i = 1; i <= backKm; i++)
+      coords.push([8 + (eastKm - i) / 73, 49.005]);
+    const network: RouteNetwork = {
+      version: "t",
+      nodes: coords.map(([lon, lat], id) => ({
+        id,
+        lon,
+        lat,
+        kind: "junction",
+        hotelCount: 0,
+      })),
+      edges: [],
+    };
+    const points = coords.map((_, i) => ({ node: i, km: i, ascent: 0 }));
+    return { graph: new Graph(network), points };
+  }
+
+  it("finds a long ride back along the same way", () => {
+    const { graph, points } = path(40, 20);
+    expect(doublesBack(graph, points, false)).toBe(true);
+  });
+
+  it("allows a short touch", () => {
+    const { graph, points } = path(40, 3);
+    expect(doublesBack(graph, points, false)).toBe(false);
   });
 });
