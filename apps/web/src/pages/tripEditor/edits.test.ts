@@ -1,4 +1,4 @@
-import { type LonLat, parseTrip } from "@wayline/domain";
+import { type LonLat, parseTrip, type Stage, type Trip } from "@wayline/domain";
 import { straightLeg } from "@wayline/planner";
 import { describe, expect, it } from "vitest";
 import sample from "../../../public/data/mock/oberfranken/sample-trip.json";
@@ -41,7 +41,7 @@ describe("moveStop", () => {
 describe("moveStop on a planned route", () => {
   // Two days east along the 49th parallel, three legs each.
   const at = (lon: number): LonLat => [lon, 49];
-  const stage = (id: string, lons: number[], end: string) => ({
+  const stage = (id: string, lons: number[], end: string): Stage => ({
     id,
     start: { name: "S", kind: "town" as const, coord: at(lons[0]!) },
     end: {
@@ -57,7 +57,7 @@ describe("moveStop on a planned route", () => {
       .map((lon, i) => straightLeg(at(lons[i]!), at(lon), meta)),
     stats: trip.stages[0]!.stats,
   });
-  const planned = {
+  const planned: Trip = {
     ...trip,
     stages: [
       stage("a", [10, 10.2, 10.4, 10.6], "Mitte"),
@@ -84,7 +84,7 @@ describe("moveStop on a planned route", () => {
     expect(second!.start.name).toBe("Neu");
     expect(second!.legs.slice(1)).toEqual(planned.stages[1]!.legs);
     // The whole trip is as long as before.
-    const km = (t: typeof planned) =>
+    const km = (t: Trip) =>
       t.stages.reduce(
         (sum, s) => sum + s.legs.reduce((a, l) => a + l.distance, 0),
         0,
