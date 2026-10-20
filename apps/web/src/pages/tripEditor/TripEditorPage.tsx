@@ -132,7 +132,8 @@ function TripEditor({
           enabled: editor.canEdit,
           tapToAdd,
           preview: (leg, at) => editor.preview(selected, leg, at),
-          onAddVia: (leg, at) => void editor.insertVia(selected, leg, at),
+          onAddVia: (leg, at, keep) =>
+            void editor.insertVia(selected, leg, at, keep),
           onMoveVia: (coord, at) => void editor.moveVia(selected, coord, at),
           onRemoveVia: (coord) => void editor.removeVia(selected, coord),
           proposed,

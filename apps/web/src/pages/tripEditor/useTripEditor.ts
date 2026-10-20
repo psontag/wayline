@@ -126,8 +126,8 @@ export function useTripEditor(trip: Trip, readOnly = false) {
       const stage = trip.stages[index];
       return stage ? previewVia(stage, leg, at, tools) : Promise.resolve([]);
     },
-    insertVia: (index: number, leg: number, at: LonLat) =>
-      run(() => insertVia(trip, index, leg, at, tools), routeNote(index)),
+    insertVia: (index: number, leg: number, at: LonLat, keep = false) =>
+      run(() => insertVia(trip, index, leg, at, tools, keep), routeNote(index)),
     moveVia: (index: number, coord: LonLat, at: LonLat) =>
       run(() => moveVia(trip, index, coord, at, tools), routeNote(index)),
     removeVia: (index: number, coord: LonLat) =>

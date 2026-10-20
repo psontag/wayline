@@ -102,13 +102,18 @@ export async function previewVia(
   return legs.flatMap((l) => decodeLine(l.geometry));
 }
 
-/** Adds a via point on a leg of a stage. Only that leg is routed again. */
+/**
+ * Adds a via point on a leg of a stage. Only that leg is routed again.
+ * A via point on the old route changes nothing, unless `keep` asks for it
+ * as a handle to drag.
+ */
 export async function insertVia(
   trip: Trip,
   index: number,
   leg: number,
   at: LonLat,
   tools: RouteTools,
+  keep = false,
 ): Promise<Trip> {
   const stage = trip.stages[index];
   const points = stage && legPoints(stage);
@@ -116,10 +121,10 @@ export async function insertVia(
   const to = points?.[leg + 1];
   if (!stage || !from || !to) return trip;
   const routed = await routeThrough(from, at, to, tools);
-  // The via point ended up on the old route: nothing changes.
+  // The via point ended up on the old route.
   const old = stage.legs[leg]?.distance ?? 0;
   const km = routed.legs.reduce((sum, l) => sum + l.distance, 0);
-  if (Math.abs(km - old) < SAME_ROUTE_M) return trip;
+  if (!keep && Math.abs(km - old) < SAME_ROUTE_M) return trip;
   const legs = [
     ...stage.legs.slice(0, leg),
     ...routed.legs,

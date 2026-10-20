@@ -98,7 +98,8 @@ export type RouteEditing = {
   tapToAdd?: boolean;
   /** Route of a leg through a point, while the point is dragged. */
   preview: (leg: number, at: LonLat) => Promise<LonLat[]>;
-  onAddVia: (leg: number, at: LonLat) => void;
+  /** keep: add it even if the route stays the same, as a handle. */
+  onAddVia: (leg: number, at: LonLat, keep?: boolean) => void;
   onMoveVia: (coord: LonLat, at: LonLat) => void;
   onRemoveVia: (coord: LonLat) => void;
   /** Proposed routes of changed stages, drawn dotted. */
@@ -286,7 +287,7 @@ export function TripMap({
     if (typeof props?.leg === "number" && route?.tapToAdd && route.enabled) {
       const line = legLines[props.leg];
       if (map && line) {
-        route.onAddVia(props.leg, nearestOnLine(map, line, event.point));
+        route.onAddVia(props.leg, nearestOnLine(map, line, event.point), true);
       }
       return;
     }
