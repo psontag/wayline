@@ -11,7 +11,8 @@ Every push to `main` deploys the app to `https://wayline-api.<subdomain>.workers
    - the tunnel `wayline-brouter`
    - the Workers VPC service `wayline-brouter`: the Worker's way through the tunnel to `brouter:17777`
    - the workers.dev subdomain, if the account has none
-   - the Access app on the workers.dev address, with the emails from `ACCESS_EMAILS`, one-time PIN login and 30-day sessions
+   - the one-time PIN login method (a code by email)
+   - the Access app on the workers.dev address, with the emails from `ACCESS_EMAILS`, straight to the one-time PIN login, 30-day sessions
 4. Applies D1 migrations.
 5. Builds and deploys the Worker with the ids from step 3 (`cloudflare.config.ts`).
 6. Checks that the app asks for a login. The deploy fails if it answers without one.
@@ -34,7 +35,7 @@ These steps need a login, a card or a secret, so they can't be automated.
    | Cloudflare Tunnel | Edit |
    | Connectivity Directory | Admin |
    | Access: Apps and Policies | Edit |
-   | Access: Organizations, Identity Providers, and Groups | Read |
+   | Access: Organizations, Identity Providers, and Groups | Edit |
    | Workers Tail | Read |
 
 4. **GitHub** → Settings → Secrets and variables → Actions:
