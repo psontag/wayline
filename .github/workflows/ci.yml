@@ -106,12 +106,20 @@ jobs:
         working-directory: apps/api
         run: pnpm exec cf deploy --message "${{ github.sha }}"
 
-      # The app must ask for a login. A 200 means Access is not in front of it.
+      # The app must ask for a login. A new workers.dev address can take a
+      # few minutes before TLS works, so wait for an answer first.
       - name: Check that Access protects the app
         run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" "$WAYLINE_URL/api/health")
+          for i in $(seq 30); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" "$WAYLINE_URL/api/health" || true)
+            [ "$status" != "000" ] && break
+            sleep 10
+          done
           echo "GET /api/health without login: $status"
-          if [ "$status" = "200" ]; then
-            echo "::error::$WAYLINE_URL answers without login"
-            exit 1
-          fi
+          case "$status" in
+            302 | 401 | 403) ;;
+            *)
+              echo "::error::$WAYLINE_URL answered $status without login, expected a redirect to Access"
+              exit 1
+              ;;
+          esac
