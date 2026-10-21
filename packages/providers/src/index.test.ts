@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { cellOf, FakeWeather, MockLodging, MockNetworkSource } from "./index";
+import {
+  cellOf,
+  FakeWeather,
+  fitsBudget,
+  MockNetworkSource,
+  OsmLodging,
+} from "./index";
 import { readMockFile } from "./mock/testData";
 
 const source = new MockNetworkSource(readMockFile);
@@ -33,9 +39,9 @@ describe("MockNetworkSource", () => {
   });
 });
 
-describe("MockLodging", () => {
+describe("OsmLodging", () => {
   it("finds hotels near a town, nearest first", async () => {
-    const hotels = await new MockLodging(source).hotelsNear(bayreuth, {
+    const hotels = await new OsmLodging(source).hotelsNear(bayreuth, {
       radiusKm: 3,
     });
     expect(hotels.length).toBeGreaterThan(3);
@@ -44,8 +50,24 @@ describe("MockLodging", () => {
   });
 
   it("returns nothing far from any hotel", async () => {
-    const hotels = await new MockLodging(source).hotelsNear([0, 0]);
+    const hotels = await new OsmLodging(source).hotelsNear([0, 0]);
     expect(hotels).toEqual([]);
+  });
+
+  it("searches the stop radius by default", async () => {
+    const hotels = await new OsmLodging(source).hotelsNear(bayreuth);
+    expect(hotels.every((h) => h.distanceKm <= 2)).toBe(true);
+  });
+
+  it("lists hotels that fit the budget first", async () => {
+    const hotels = await new OsmLodging(source).hotelsNear(bayreuth, {
+      budget: "low",
+      radiusKm: 3,
+      limit: 50,
+    });
+    const fits = hotels.map((h) => fitsBudget(h, "low"));
+    expect(fits.indexOf(false)).toBeGreaterThan(-1);
+    expect(fits.slice(fits.indexOf(false))).not.toContain(true);
   });
 });
 

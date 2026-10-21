@@ -11,6 +11,7 @@ import {
   routePoints,
   sampleAt,
   stageStartTime,
+  type HotelBudget,
   type Stop,
   type Trip,
   weatherAlongStage,
@@ -176,12 +177,12 @@ export function useWeather(trip: Trip | undefined, stageIndex: number) {
   });
 }
 
-/** Hotels near a stop, nearest first. */
-export function useHotels(stop: Stop | undefined) {
+/** Hotels near a stop. Those that fit the budget first, each nearest first. */
+export function useHotels(stop: Stop | undefined, budget?: HotelBudget) {
   const { lodging } = useServices();
   return useQuery({
-    queryKey: queryKeys.hotels(stop?.coord ?? [0, 0]),
+    queryKey: [...queryKeys.hotels(stop?.coord ?? [0, 0]), budget],
     enabled: !!stop,
-    queryFn: () => (stop ? lodging.hotelsNear(stop.coord) : []),
+    queryFn: () => (stop ? lodging.hotelsNear(stop.coord, { budget }) : []),
   });
 }

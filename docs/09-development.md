@@ -51,6 +51,12 @@ Routing switches:
 | `BROUTER_URL=http://localhost:17777` | `apps/api/.dev.vars` | The Worker routes with the local BRouter instead of `fakeBrouterLeg`. |
 | `VITE_ROUTING=api` | `apps/web/.env.local` | The web app routes through `POST /api/route` (`ApiRouting`) instead of `FakeRouting` on the route network. The generator routes the chosen proposals too. |
 
+Weather:
+
+| Setting | Where | Effect |
+|---|---|---|
+| `VITE_WEATHER=open-meteo` | `apps/web/.env.local` | The web app asks Open-Meteo (`OpenMeteoWeather`). Default: `FakeWeather`. The deploy sets it. |
+
 Trips and login:
 
 | Setting | Where | Effect |

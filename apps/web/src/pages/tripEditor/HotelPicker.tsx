@@ -18,7 +18,10 @@ export function HotelPicker({
   const { t } = useTranslation("tripEditor");
   const [open, setOpen] = useState(false);
   const stage = trip.stages[index];
-  const hotels = useHotels(open ? stage?.end : undefined);
+  const hotels = useHotels(
+    open ? stage?.end : undefined,
+    trip.settings.hotelBudget,
+  );
   if (!stage) return null;
   const { hotel, end } = stage;
   const toggle = !editor.readOnly && (
