@@ -145,7 +145,10 @@ export function useTripEditor(trip: Trip, readOnly = false) {
           route: (points: LonLat[]) =>
             routing.route(points, { profile: trip.settings.profile }),
           nearestHotel: async (coord) => {
-            const [nearest] = await lodging.hotelsNear(coord, { limit: 1 });
+            const [nearest] = await lodging.hotelsNear(coord, {
+              limit: 1,
+              budget: trip.settings.hotelBudget,
+            });
             return nearest && toHotel(nearest);
           },
         });

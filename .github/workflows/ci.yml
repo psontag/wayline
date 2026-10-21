@@ -101,6 +101,7 @@ jobs:
           # Route and save trips through the Worker, not in the browser.
           VITE_ROUTING: api
           VITE_TRIPS: api
+          VITE_WEATHER: open-meteo
 
       - name: Deploy
         working-directory: apps/api

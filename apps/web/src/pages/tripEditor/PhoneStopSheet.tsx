@@ -42,7 +42,10 @@ export function PhoneStopSheet({
     (o) => o.current || !readOnly,
   );
   const stage = trip.stages[index];
-  const hotels = useHotels(open && !readOnly ? stage?.end : undefined);
+  const hotels = useHotels(
+    open && !readOnly ? stage?.end : undefined,
+    trip.settings.hotelBudget,
+  );
   if (!stage || index === trip.stages.length - 1) return null;
 
   const { end, hotel } = stage;

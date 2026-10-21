@@ -3,7 +3,8 @@ import type { LonLat } from "@wayline/domain";
 import {
   FakeWeather,
   type LodgingProvider,
-  MockLodging,
+  OpenMeteoWeather,
+  OsmLodging,
   openSource,
   type RouteNetworkSource,
   type RoutingProvider,
@@ -11,6 +12,7 @@ import {
 } from "@wayline/providers";
 import { ApiRouting } from "./ApiRouting";
 import { ApiTripStore, fetchMe, withMovedTrips } from "./ApiTripStore";
+import { indexedDbForecastCache } from "./forecastCache";
 import { createTripGenerator } from "./generator";
 import { LocalTripStore } from "./LocalTripStore";
 import type { TripGenerator } from "./TripGenerator";
@@ -84,8 +86,8 @@ export function createServices(): Services {
     trips,
     generator: createTripGenerator({ dataUrl: url }),
     routing,
-    weather: new FakeWeather(),
-    lodging: new MockLodging(network),
+    weather: createWeather(),
+    lodging: new OsmLodging(network),
     network,
     async snap(coord) {
       const graph = await graphs.get(bboxAround([coord], 2));
@@ -93,4 +95,13 @@ export function createServices(): Services {
       return node === undefined ? coord : graph.coord(node);
     },
   };
+}
+
+/** VITE_WEATHER=open-meteo asks Open-Meteo. Default: made-up weather. */
+function createWeather(): WeatherProvider {
+  if (import.meta.env.VITE_WEATHER !== "open-meteo") return new FakeWeather();
+  return new OpenMeteoWeather({
+    fetch: (url) => fetch(url),
+    cache: indexedDbForecastCache(),
+  });
 }

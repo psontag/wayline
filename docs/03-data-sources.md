@@ -8,7 +8,7 @@ All limits are for free plans. Check them again before relying on them. They cha
 |---|---|---|---|
 | Cycling routes, towns, stations | OpenStreetMap (Geofabrik extracts) | Free | Pipeline |
 | Routing | BRouter | Free | Worker |
-| Weather | Open-Meteo | Free | Worker |
+| Weather | Open-Meteo | Free | Browser |
 | Hotels | OpenStreetMap | Free | Pipeline |
 | Ratings, prices, booking | Booking.com search link | Free | Browser (link only) |
 | Train connections | bahn.de link | Free | Browser (link only) |
@@ -58,8 +58,9 @@ Later, as a fallback router only.
 - Free for non-commercial use. Below 10,000 calls per day, 5,000 per hour, 600 per minute.
 - Forecast up to 16 days. Hourly wind speed and direction.
 - Several locations in one request. One call can cover a whole stage.
-- No API key.
-- No shared cache. The browser caches forecasts in IndexedDB.
+- No API key. Sends CORS headers, so the browser calls it directly. The limit counts per user.
+- No shared cache. The browser caches forecasts in IndexedDB for 2 hours.
+- Hourly values: `temperature_2m`, `precipitation`, `precipitation_probability`, `wind_speed_10m`, `wind_direction_10m`. `timezone=auto` gives local times.
 
 ## Hotels
 
@@ -70,7 +71,9 @@ Google Places is not used. Its terms (section 3.2.3 (e)) forbid using Places dat
 ### OSM hotels
 
 - Tags: `tourism=hotel`, `tourism=guest_house`, `tourism=motel`.
-- The pipeline extracts them with name, location, stars (`stars=*`) and website if present.
+- The pipeline extracts them with name, location, stars (`stars=*`) and website if present. Hotels without a name are left out.
+- A hotel belongs to a stop within 2 km. The generator and the editor use the same rule.
+- OSM has no prices. The budget uses kind and stars instead: `fitsBudget` in `packages/providers/src/osm/hotels.ts`. Hotels that fit the budget are picked and listed first.
 - Deployed as static assets with the other geodata. No runtime API calls.
 - Hotels in OSM are fairly complete in Germany, but not everywhere.
 

@@ -8,9 +8,10 @@ Wayline runs on Cloudflare and in the browser. The only server is BRouter on the
 Browser (React SPA)
  ├─ UI: map, stage editor, elevation, weather
  ├─ Web Worker: planner (generation, stages, scoring, GPX)
+ ├─ weather → Open-Meteo
  └─ calls → Cloudflare Worker (one hostname, behind Access)
               ├─ static assets: the SPA and geodata (/data/*)
-              ├─ /api: routing, weather, trips
+              ├─ /api: routing, trips
               ├─ storage: trips and route legs in D1
               └─ routing → VPC binding → tunnel → BRouter (owner's machine)
 
@@ -65,7 +66,7 @@ The planner only depends on interfaces from `packages/providers`.
 | Data | Shared cache | Browser cache | Key |
 |---|---|---|---|
 | Route leg | D1 table `legs` with `expires_at`. A daily Cron Trigger deletes expired rows. | IndexedDB | see below |
-| Weather | none, the Worker passes requests through | IndexedDB, 2 h | 0.1° cell |
+| Weather | none, the browser calls Open-Meteo | IndexedDB, 2 h | 0.1° cell |
 | Geodata | Static assets, cached at the edge | IndexedDB per dataset version | dataset version |
 
 Leg keys:
@@ -74,7 +75,7 @@ Leg keys:
 - custom points: coordinates at 5 decimals
 - all legs also carry the provider and a profile content hash
 
-Weather: fetch the full forecast once per 0.1° cell.
+Weather: fetch the full 16-day forecast once per 0.1° cell. The cells of a stage go out as one request.
 
 Routes are built from legs between fixed points: stations, towns and junctions. Proposals share many legs, so most requests hit the cache.
 
@@ -114,7 +115,6 @@ All API errors have one shape:
 | `DELETE /api/trips/:id` | Delete a trip |
 | `GET/PUT /api/trips/:id/shares` | Emails a trip is shared with. Owner only. |
 | `POST /api/route` | Route a leg |
-| `GET /api/weather` | Forecast for a cell |
 | `GET /data/*` | Geodata (static assets) |
 
 ## Geodata

@@ -1,6 +1,7 @@
 import type {
   BBox,
   Hotel,
+  HotelBudget,
   Leg,
   LonLat,
   Manifest,
@@ -44,10 +45,13 @@ export type HotelOption = Hotel & {
 };
 
 export interface LodgingProvider {
-  /** Hotels near a point, nearest first. */
+  /**
+   * Hotels near a point, by default within the stop radius. Those that fit
+   * the budget come first, each group nearest first.
+   */
   hotelsNear(
     coord: LonLat,
-    options?: { radiusKm?: number; limit?: number },
+    options?: { radiusKm?: number; limit?: number; budget?: HotelBudget },
   ): Promise<HotelOption[]>;
 }
 
