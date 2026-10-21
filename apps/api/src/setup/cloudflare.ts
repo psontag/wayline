@@ -104,7 +104,8 @@ export async function setup(options: SetupOptions): Promise<SetupResult> {
   const tunnel = await ensureTunnel(api, log);
   const service = await ensureService(api, tunnel, log);
   const host = `${NAMES.worker}.${await ensureSubdomain(api, options.accountId, log)}.workers.dev`;
-  const aud = await ensureAccessApp(api, host, emails, log);
+  const otp = await ensureOneTimePin(api, log);
+  const aud = await ensureAccessApp(api, host, emails, otp, log);
 
   return {
     WAYLINE_D1_ID: database,
@@ -233,11 +234,30 @@ async function ensureSubdomain(
   return subdomain;
 }
 
+/** Login with a code by email. Friends need no account anywhere. */
+async function ensureOneTimePin(api: Api, log: (m: string) => void) {
+  const idps = await api<{ id: string; type: string }[]>(
+    "GET",
+    "/access/identity_providers",
+  );
+  const otp = idps.find((i) => i.type === "onetimepin");
+  if (otp) return otp.id;
+  log("Adding the one-time PIN login");
+  const created = await api<{ id: string }>(
+    "POST",
+    "/access/identity_providers",
+    { name: "One-time PIN", type: "onetimepin", config: {} },
+  );
+  return created.id;
+}
+
 type AccessApp = {
   id: string;
   aud: string;
   domain: string;
   session_duration?: string;
+  allowed_idps?: string[];
+  auto_redirect_to_identity?: boolean;
   policies?: {
     name: string;
     decision: string;
@@ -249,6 +269,7 @@ async function ensureAccessApp(
   api: Api,
   host: string,
   emails: string[],
+  otp: string,
   log: (m: string) => void,
 ) {
   const wanted = {
@@ -257,6 +278,9 @@ async function ensureAccessApp(
     domain: host,
     session_duration: SESSION_DURATION,
     app_launcher_visible: false,
+    // Straight to the email code, no choice of login.
+    allowed_idps: [otp],
+    auto_redirect_to_identity: true,
     policies: [
       {
         name: NAMES.policy,
@@ -279,6 +303,9 @@ async function ensureAccessApp(
   );
   const same =
     app.session_duration === SESSION_DURATION &&
+    app.allowed_idps?.length === 1 &&
+    app.allowed_idps[0] === otp &&
+    app.auto_redirect_to_identity === true &&
     allowed.size === emails.length &&
     emails.every((e) => allowed.has(e));
   if (!same) {

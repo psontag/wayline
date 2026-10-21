@@ -11,6 +11,7 @@ function fakeCloudflare({ zeroTrust = true, subdomain = "psontag" } = {}) {
     tunnels: [] as { id: string; name: string }[],
     services: [] as Record<string, unknown>[],
     apps: [] as Record<string, unknown>[],
+    idps: [] as { id: string; type: string }[],
     subdomain: subdomain as string | undefined,
   };
   const calls: Call[] = [];
@@ -68,6 +69,12 @@ function fakeCloudflare({ zeroTrust = true, subdomain = "psontag" } = {}) {
       state.subdomain = body.subdomain;
       return ok(body);
     }
+    if (route === "GET /access/identity_providers") return ok(state.idps);
+    if (route === "POST /access/identity_providers") {
+      const idp = { id: id(), type: body.type };
+      state.idps.push(idp);
+      return ok(idp);
+    }
     if (route === "GET /access/apps") return ok(state.apps);
     if (route === "POST /access/apps") {
       const app = { ...body, id: id(), aud: "aud-1" };
@@ -109,8 +116,11 @@ describe("Cloudflare setup", () => {
       http_port: 17777,
       host: { hostname: "brouter", resolver_network: { tunnel_id: "id-2" } },
     });
+    expect(cf.state.idps).toEqual([{ id: "id-4", type: "onetimepin" }]);
     expect(cf.state.apps[0]).toMatchObject({
       domain: "wayline-api.psontag.workers.dev",
+      allowed_idps: ["id-4"],
+      auto_redirect_to_identity: true,
       policies: [
         { decision: "allow", include: [{ email: { email: "a@x.de" } }] },
       ],
@@ -130,13 +140,29 @@ describe("Cloudflare setup", () => {
     expect(writes(cf.calls)).toEqual([]);
   });
 
+  it("switches an existing app to the one-time PIN login", async () => {
+    const cf = fakeCloudflare();
+    await setup({ ...base, emails: ["a@x.de"], fetch: cf.fetch });
+    // As the first deploy left it: no login method chosen.
+    Object.assign(cf.state.apps[0]!, {
+      allowed_idps: [],
+      auto_redirect_to_identity: false,
+    });
+    cf.calls.length = 0;
+    await setup({ ...base, emails: ["a@x.de"], fetch: cf.fetch });
+    expect(writes(cf.calls).map((c) => c.method + " " + c.path)).toEqual([
+      "PUT /access/apps/id-5",
+    ]);
+    expect(cf.state.apps[0]).toMatchObject({ allowed_idps: ["id-4"] });
+  });
+
   it("updates the allowed emails", async () => {
     const cf = fakeCloudflare();
     await setup({ ...base, emails: ["a@x.de"], fetch: cf.fetch });
     cf.calls.length = 0;
     await setup({ ...base, emails: ["a@x.de", " b@x.de "], fetch: cf.fetch });
     expect(writes(cf.calls).map((c) => c.method + " " + c.path)).toEqual([
-      "PUT /access/apps/id-4",
+      "PUT /access/apps/id-5",
     ]);
     expect(JSON.stringify(cf.state.apps[0])).toContain("b@x.de");
   });
