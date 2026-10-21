@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { NAMES, setup, tunnelToken } from "./cloudflare";
 
@@ -176,5 +177,22 @@ describe("Cloudflare setup", () => {
     expect(await tunnelToken({ ...base, fetch: cf.fetch })).toBe(
       "tunnel-token",
     );
+  });
+});
+
+describe("setup script", () => {
+  // CI runs it with plain Node, which only strips types. Vitest compiles
+  // TypeScript fully, so check that Node can load it.
+  it("runs in Node without a build step", () => {
+    const script = new URL(
+      "../../scripts/setup-cloudflare.ts",
+      import.meta.url,
+    );
+    const { status, stderr } = spawnSync(process.execPath, [script.pathname], {
+      env: { PATH: process.env.PATH },
+      encoding: "utf8",
+    });
+    expect(stderr).toContain("Set CLOUDFLARE_API_TOKEN");
+    expect(status).toBe(1);
   });
 });
