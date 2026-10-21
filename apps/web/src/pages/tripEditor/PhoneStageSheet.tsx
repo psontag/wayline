@@ -19,7 +19,9 @@ import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
 import { downloadTripGpx } from "../../data/gpx";
+import { StageChange } from "./StageList";
 import { StageProfile } from "./StageProfile";
+import type { TripEditorState } from "./useTripEditor";
 import { forecastFrom, stageWind } from "./stageWeather";
 
 export type PhoneStageSheetProps = {
@@ -30,6 +32,7 @@ export type PhoneStageSheetProps = {
   hoverKm?: number;
   onHoverKm: (km: number | undefined) => void;
   onOpenStop: () => void;
+  editor: TripEditorState;
 };
 
 /** Sheet content: day picker and the selected stage. */
@@ -41,6 +44,7 @@ export function PhoneStageSheet({
   hoverKm,
   onHoverKm,
   onOpenStop,
+  editor,
 }: PhoneStageSheetProps) {
   const { t } = useTranslation("tripEditor");
   const { t: tUi } = useTranslation("ui");
@@ -141,6 +145,7 @@ export function PhoneStageSheet({
           />
         </div>
 
+        <StageChange trip={trip} index={selected} editor={editor} />
         {!isLast && (
           <LinkRow
             icon={<BedDouble aria-hidden />}

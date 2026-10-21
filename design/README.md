@@ -14,6 +14,9 @@ The files need the canvas runtime to render. Read them as HTML and CSS: they hol
 | `PhoneTrip.dc.html` | Phone trip view with bottom sheet |
 | `PhoneStage.dc.html` | Phone stop and hotel picker |
 | `PhoneList.dc.html` | Phone trip list |
+| `NewTripV2.dc.html` | New trip: one form for one day or several days, loop or A to B, with dates that set short days |
+| `ProposalsV2.dc.html` | Proposals with the days on every card and on the map |
+| `TripEditorV2.dc.html` | Trip editor after a route change: proposed route, Revert, stop alternatives |
 
 Each file has a `light` and a `dark` token set in its script block. The tokens in `packages/ui/src/tokens.css` must match them.
 

@@ -46,6 +46,50 @@ describe("cutStages", () => {
     expect(stops?.[0]?.alternatives.map((a) => a.km)).toEqual([80]);
   });
 
+  it("offers towns that make the stage clearly shorter or longer", () => {
+    // A town every 5 km from 40 to 110 km.
+    const towns = Array.from({ length: 15 }, (_, i) => {
+      const t = town(0);
+      const km = 40 + i * 5;
+      return {
+        ...t,
+        node: 200 + i,
+        index: km / 10,
+        km,
+        coord: [8 + km * 0.0137, 49] as LonLat,
+      };
+    });
+    const stops = cutStages(points, [...towns, town(15), town(22)], {
+      days: 4,
+      kmPerDay: 75,
+      maxAscentPerDay: 2000,
+    });
+    const stop = stops![0]!;
+    const kms = stop.alternatives.map((a) => a.km);
+    expect(kms.length).toBeLessThanOrEqual(3);
+    expect(kms.length).toBeGreaterThanOrEqual(2);
+    for (const km of kms) {
+      expect(Math.abs(km - stop.km)).toBeGreaterThanOrEqual(3);
+      expect(Math.abs(km - stop.km)).toBeLessThanOrEqual(0.3 * stop.km);
+    }
+    expect(kms.some((km) => km < stop.km)).toBe(true);
+    expect(kms.some((km) => km > stop.km)).toBe(true);
+  });
+
+  it("aims for a shorter first day with a smaller share", () => {
+    const towns = [3, 4, 5, 7, 8, 10, 11, 15, 16, 18, 19, 22, 23].map((i) =>
+      town(i),
+    );
+    const stops = cutStages(points, towns, {
+      ...options,
+      dayShares: [0.5, 1, 1, 1],
+    });
+    const [a, b] = stops!.map((s) => s.km);
+    // 300 km in 3.5 days: about 43 km, then about 86 km per day.
+    expect(a).toBeLessThanOrEqual(50);
+    expect(b! - a!).toBeGreaterThan(1.5 * a!);
+  });
+
   it("avoids stages that climb too much", () => {
     // Flat for 100 km, then 10 m per km.
     const hilly = points.map((p) => ({

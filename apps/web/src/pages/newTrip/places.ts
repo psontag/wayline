@@ -1,6 +1,14 @@
-import type { Place, Places } from "@wayline/domain";
+import { distanceKm, type Place, type Places } from "@wayline/domain";
 
-/** Stations and towns on the route network, stations first. */
+/** A trip starts or ends at a station this close to the chosen town. */
+export const STATION_KM = 2;
+
+const PLACE_RANK = { city: 0, town: 1, village: 2 };
+
+/**
+ * Towns and stations on the route network. Towns first, bigger ones
+ * first, so an empty search shows well-known towns.
+ */
 export function placeOptions(places: Places): Place[] {
   const stations = places.stations
     .filter((s) => s.nodeId !== null)
@@ -12,13 +20,33 @@ export function placeOptions(places: Places): Place[] {
     }));
   const towns = places.towns
     .filter((t) => t.nodeId !== null)
+    .sort(
+      (a, b) =>
+        PLACE_RANK[a.place] - PLACE_RANK[b.place] ||
+        b.hotelCount - a.hotelCount,
+    )
     .map((t): Place => ({
       name: t.name,
       kind: "town",
       coord: [t.lon, t.lat],
       osmId: t.id,
     }));
-  return [...stations, ...towns];
+  return [...towns, ...stations];
+}
+
+/** The nearest station within STATION_KM of a town, and how far it is. */
+export function nearbyStation(
+  place: Place,
+  list: Place[],
+): { station: Place; km: number } | undefined {
+  if (place.kind !== "town") return undefined;
+  let best: { station: Place; km: number } | undefined;
+  for (const station of list) {
+    if (station.kind !== "station") continue;
+    const km = distanceKm(place.coord, station.coord);
+    if (km <= STATION_KM && (!best || km < best.km)) best = { station, km };
+  }
+  return best;
 }
 
 export function placeKey(place: Place): string {
@@ -28,10 +56,11 @@ export function placeKey(place: Place): string {
 /**
  * Places whose name matches the query. Names that start with it come
  * first, then names with a word that starts with it, then the rest.
+ * Towns come before stations of the same rank.
  */
 export function searchPlaces(list: Place[], query: string, limit = 8) {
   const q = normalize(query.trim());
-  if (!q) return list.filter((p) => p.kind === "station").slice(0, limit);
+  if (!q) return list.filter((p) => p.kind === "town").slice(0, limit);
   const ranked: { place: Place; rank: number }[] = [];
   for (const place of list) {
     const name = normalize(place.name);
@@ -39,7 +68,7 @@ export function searchPlaces(list: Place[], query: string, limit = 8) {
     if (at < 0) continue;
     const wordStart = at === 0 || /[\s\-(]/.test(name[at - 1] ?? "");
     const rank = (at === 0 ? 0 : wordStart ? 1 : 2) * 2;
-    ranked.push({ place, rank: rank + (place.kind === "station" ? 0 : 1) });
+    ranked.push({ place, rank: rank + (place.kind === "station" ? 1 : 0) });
   }
   return ranked
     .sort(

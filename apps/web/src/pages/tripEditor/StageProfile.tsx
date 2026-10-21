@@ -3,6 +3,8 @@ import {
   expectedTimeAtKm,
   localTimeToDate,
   type RouteNetwork,
+  routePoints,
+  stageStartTime,
   type Trip,
 } from "@wayline/domain";
 import {
@@ -17,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { stageTimes } from "./StageList";
 import { forecastFrom, stripItems } from "./stageWeather";
+import { isChanged } from "./routeEdits";
 import { profilePoints } from "./surfaceProfile";
 
 export type StageProfileProps = {
@@ -47,6 +50,11 @@ export function StageProfile({
     () => (legs ? profilePoints(legs, network) : []),
     [legs, network],
   );
+  const proposed = isChanged(trip, index) ? trip.proposed?.[index] : undefined;
+  const compare = useMemo(
+    () => (proposed ? routePoints(proposed.legs) : []),
+    [proposed],
+  );
   const weather = useWeather(trip, index);
   if (!stage) return null;
 
@@ -74,7 +82,7 @@ export function StageProfile({
             localTimeToDate(
               expectedTimeAtKm(
                 date,
-                trip.settings.startTime,
+                stageStartTime(trip.settings, index),
                 trip.settings.avgSpeed,
                 hoverKm,
               ),
@@ -125,6 +133,7 @@ export function StageProfile({
       </div>
       <ElevationProfile
         points={points}
+        compare={compare}
         hoverKm={hoverKm}
         onHoverKm={onHoverKm}
         aria-label={t("profile.label", {

@@ -23,6 +23,8 @@ export function useOpenProposal() {
       const now = new Date().toISOString();
       const saved = await save.mutateAsync({
         ...proposal.trip,
+        // Kept, so a changed stage can go back to the proposal.
+        proposed: proposal.trip.stages,
         id: crypto.randomUUID(),
         createdAt: now,
         updatedAt: now,

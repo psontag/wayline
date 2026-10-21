@@ -1,8 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
-  addDays,
   type GenerateRequest,
-  localTimeToDate,
   type Proposal,
   type Theme,
 } from "@wayline/domain";
@@ -218,10 +216,13 @@ function ProposalItem({
         via.length ? t("card.via", { stops: format.list(via) }) : trip.name
       }
       subtitle={[
-        t(
-          `card.subtitle.${trip.kind === "one-way" ? "one-way" : "multi-day-loop"}`,
-          { from, to },
-        ),
+        ...(proposal.character
+          ? [t(`card.character.${proposal.character}`)]
+          : []),
+        t(`card.subtitle.${trip.kind === "one-way" ? "one-way" : "loop"}`, {
+          from,
+          to,
+        }),
         ...(theme && themeValue !== undefined
           ? [t(`card.theme.${theme}`, { share: format.percent(themeValue) })]
           : []),
@@ -236,6 +237,24 @@ function ProposalItem({
         },
       ]}
       profile={profile}
+      days={trip.stages.map((stage, i) => {
+        const share = trip.settings.dayShares?.[i] ?? 1;
+        return {
+          label: t("card.day", { day: i + 1 }),
+          route: t("card.stage", {
+            from: stage.start.name,
+            to: stage.end.name,
+          }),
+          stats: t("card.stageStats", {
+            distance: format.distance(stage.stats.distance),
+            ascent: format.elevation(stage.stats.ascent),
+          }),
+          distance: stage.stats.distance,
+          ...(share < 1
+            ? { tag: t(share <= 0.5 ? "card.halfDay" : "card.shortDay") }
+            : {}),
+        };
+      })}
       footer={
         routeNames.length
           ? t("card.routes", { routes: routeNames.join(" · ") })
@@ -245,39 +264,6 @@ function ProposalItem({
       onSelect={onSelect}
       onHover={onHover}
     >
-      <ol className="flex flex-col gap-2 border-t border-border pt-3">
-        {trip.stages.map((stage, i) => (
-          <li
-            key={stage.id}
-            className="flex items-baseline justify-between gap-3 text-sm"
-          >
-            <span className="flex min-w-0 flex-col">
-              <span className="text-xs text-text-muted">
-                {trip.startDate
-                  ? t("card.dayDate", {
-                      day: i + 1,
-                      date: format.date(
-                        localTimeToDate(addDays(trip.startDate, i)),
-                      ),
-                    })
-                  : t("card.day", { day: i + 1 })}
-              </span>
-              <span className="truncate font-semibold">
-                {t("card.stage", {
-                  from: stage.start.name,
-                  to: stage.end.name,
-                })}
-              </span>
-            </span>
-            <span className="shrink-0 text-text-muted tabular-nums">
-              {t("card.stageStats", {
-                distance: format.distance(stage.stats.distance),
-                ascent: format.elevation(stage.stats.ascent),
-              })}
-            </span>
-          </li>
-        ))}
-      </ol>
       <span className="text-xs text-text-muted tabular-nums">
         {t("card.score", { score: format.percent(proposal.score) })}
       </span>

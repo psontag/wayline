@@ -41,6 +41,10 @@
   },
   "stage": {
     "alternative": "{{name}} · {{distance}}",
+    "changed": "Changed",
+    "longer": "{{distance}} longer than proposed",
+    "shorter": "{{distance}} shorter than proposed",
+    "revert": "Revert",
     "bookHotels": "Hotels in {{place}} on Booking.com",
     "rating": "Rating",
     "ratingAny": "Any",
@@ -66,11 +70,18 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "selectStage": "Day {{day}}: {{place}}",
-    "network": "Signed cycling routes"
+    "network": "Signed cycling routes",
+    "proposed": "Proposed route",
+    "dragHint": "Drag the route to change it",
+    "tapHint": "Tap the route to add a via point",
+    "removeVia": "Via point {{n}}. Click to remove, drag to move."
   },
   "note": {
     "nextStage": "Day {{day}} now starts in {{place}} and is {{distance}}.",
     "lastStage": "Day {{day}} now ends in {{place}}.",
+    "routeChanged": "Day {{day}} is now {{distance}}. Arrival, weather and alternatives are updated.",
+    "reverted": "Day {{day}} is back as proposed.",
+    "sameRoute": "The best way through that point is the same route.",
     "undo": "Undo"
   },
   "phone": {

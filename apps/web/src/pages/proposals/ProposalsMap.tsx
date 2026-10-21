@@ -1,10 +1,16 @@
-import type { LonLat, Place, Proposal } from "@wayline/domain";
+import {
+  decodeLine,
+  type LonLat,
+  type Place,
+  type Proposal,
+} from "@wayline/domain";
 import {
   EndpointMarker,
   IconButton,
   MapControlGroup,
   MapLegend,
   ProposalMarker,
+  StopMarker,
   useTheme,
   useThemeTokens,
 } from "@wayline/ui";
@@ -101,6 +107,23 @@ export function ProposalsMap({
     [proposals, routes, highlighted],
   );
 
+  // The highlighted proposal day by day, in alternating colors.
+  const shown = proposals.find((p) => p.id === highlighted);
+  const days = useMemo<FeatureCollection<LineString>>(
+    () => ({
+      type: "FeatureCollection",
+      features: (shown?.trip.stages ?? []).map((stage, i) => ({
+        type: "Feature",
+        properties: { color: i % 2 ? "b" : "a" },
+        geometry: {
+          type: "LineString",
+          coordinates: stage.legs.flatMap((leg) => decodeLine(leg.geometry)),
+        },
+      })),
+    }),
+    [shown],
+  );
+
   const ends = useMemo(() => {
     const first = proposals[0]?.trip;
     if (!first) return places;
@@ -162,11 +185,6 @@ export function ProposalsMap({
     if (typeof id === "string") onSelect(id);
   };
 
-  const isHighlighted: FilterSpecification = [
-    "==",
-    ["get", "highlighted"],
-    true,
-  ];
   const notHighlighted: FilterSpecification = [
     "==",
     ["get", "highlighted"],
@@ -209,22 +227,6 @@ export function ProposalsMap({
             paint={{ "line-color": tokens.routeDimmed, "line-width": 5 }}
           />
           <Layer
-            id="selected-casing"
-            beforeId={labelLayerId}
-            type="line"
-            filter={isHighlighted}
-            layout={lineLayout}
-            paint={{ "line-color": tokens.routeCasing, "line-width": 11 }}
-          />
-          <Layer
-            id="selected-line"
-            beforeId={labelLayerId}
-            type="line"
-            filter={isHighlighted}
-            layout={lineLayout}
-            paint={{ "line-color": tokens.routeSelected, "line-width": 7 }}
-          />
-          <Layer
             id="proposal-hit"
             type="line"
             layout={lineLayout}
@@ -232,6 +234,31 @@ export function ProposalsMap({
               "line-color": tokens.route,
               "line-width": 18,
               "line-opacity": 0,
+            }}
+          />
+        </Source>
+        <Source id="days" type="geojson" data={days}>
+          <Layer
+            id="day-casing"
+            beforeId={labelLayerId}
+            type="line"
+            layout={lineLayout}
+            paint={{ "line-color": tokens.routeCasing, "line-width": 11 }}
+          />
+          <Layer
+            id="day-line"
+            beforeId={labelLayerId}
+            type="line"
+            layout={lineLayout}
+            paint={{
+              "line-color": [
+                "match",
+                ["get", "color"],
+                "a",
+                tokens.routeSelected,
+                tokens.stageB,
+              ],
+              "line-width": 7,
             }}
           />
         </Source>
@@ -248,6 +275,23 @@ export function ProposalsMap({
             <EndpointMarker
               name={place.name}
               station={place.kind === "station"}
+            />
+          </Marker>
+        ))}
+        {shown?.trip.stages.slice(0, -1).map((stage, i) => (
+          <Marker
+            key={`${shown.id}-${stage.id}`}
+            longitude={stage.end.coord[0]}
+            latitude={stage.end.coord[1]}
+            anchor="left"
+            offset={[-14, 0]}
+            style={{ zIndex: 1 }}
+          >
+            <StopMarker
+              day={i + 1}
+              name={stage.end.name}
+              aria-label={t("map.stop", { day: i + 1, place: stage.end.name })}
+              onClick={() => onSelect(shown.id)}
             />
           </Marker>
         ))}

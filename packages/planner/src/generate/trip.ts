@@ -10,6 +10,7 @@ import {
 } from "@wayline/domain";
 import type { Graph, PathStep } from "../graph/Graph";
 import { pathToLeg } from "../graph/leg";
+import { endNode, legSteps } from "./route";
 import { type Stop, STOP_KM } from "./stages";
 import type { Stops } from "./stops";
 
@@ -26,7 +27,7 @@ export type TripParts = {
   stops: Stop[];
 };
 
-/** Builds a draft trip from a cut path. One leg per stage. */
+/** Builds a draft trip from a cut path. One leg per piece of about 10 km. */
 export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
   const { request } = p;
   const meta = { provider: GRAPH_PROVIDER, profileHash: request.profile };
@@ -40,8 +41,18 @@ export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
 
   const stages: Stage[] = ends.map((end, i) => {
     const start = i === 0 ? p.start : stripStop(ends[i - 1] ?? end);
-    const steps = stageSteps[i] ?? [];
-    const legs = [pathToLeg(graph, steps, start.coord, end.coord, meta)];
+    const pieces = legSteps(graph, stageSteps[i] ?? []);
+    const legs = pieces.map((steps, k) => {
+      const from =
+        k === 0
+          ? start.coord
+          : graph.coord(endNode(graph, pieces[k - 1] ?? []) ?? 0);
+      const to =
+        k === pieces.length - 1
+          ? end.coord
+          : graph.coord(endNode(graph, steps) ?? 0);
+      return pathToLeg(graph, steps, from, to, meta);
+    });
     const last = i === ends.length - 1;
     const hotel = last
       ? undefined
@@ -73,6 +84,8 @@ export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
       maxAscentPerDay: request.maxAscentPerDay,
       ...(request.hotelBudget ? { hotelBudget: request.hotelBudget } : {}),
       startTime: request.startTime,
+      ...(request.backBy ? { backBy: request.backBy } : {}),
+      ...(request.dayShares ? { dayShares: request.dayShares } : {}),
       avgSpeed: 18,
     },
     stages,

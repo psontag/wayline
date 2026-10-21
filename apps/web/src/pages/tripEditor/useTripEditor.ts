@@ -6,8 +6,17 @@ import { useTranslation } from "react-i18next";
 import { useSaveTrip } from "../../data/queries";
 import { useServices } from "../../data/ServicesProvider";
 import { moveStop, setHotel, setLocked } from "./edits";
+import {
+  insertVia,
+  moveVia,
+  previewVia,
+  removeVia,
+  revertStage,
+  type RouteTools,
+} from "./routeEdits";
 
-export type EditorNote = { id: number; message: string };
+/** Message after an edit. Undo is offered unless nothing changed. */
+export type EditorNote = { id: number; message: string; changed: boolean };
 
 export function toHotel({ osmId, name, coord, stars, website }: HotelOption) {
   const hotel: Hotel = { osmId, name, coord };
@@ -23,7 +32,7 @@ export function toHotel({ osmId, name, coord, stars, website }: HotelOption) {
 export function useTripEditor(trip: Trip, readOnly = false) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
-  const { routing, lodging } = useServices();
+  const { routing, lodging, snap } = useServices();
   const save = useSaveTrip();
   const [past, setPast] = useState<Trip[]>([]);
   const [future, setFuture] = useState<Trip[]>([]);
@@ -39,11 +48,43 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     setPast((p) => [...p.slice(-49), trip]);
     setFuture([]);
     save.mutate(next);
-    if (message) setNote({ id: Date.now(), message });
+    if (message) setNote({ id: Date.now(), message, changed: true });
   };
 
   const restore = (target: Trip) =>
     save.mutate({ ...target, updatedAt: trip.updatedAt });
+
+  const tools: RouteTools = {
+    route: (points: LonLat[]) =>
+      routing.route(points, { profile: trip.settings.profile }),
+    snap,
+  };
+
+  /** Runs an edit that routes, then saves it with a note. */
+  const run = async (edit: () => Promise<Trip>, note: (t: Trip) => string) => {
+    if (!canEdit) return;
+    setBusy(true);
+    try {
+      const next = await edit();
+      if (next !== trip) commit(next, note(next));
+      else {
+        setNote({
+          id: Date.now(),
+          message: t("note.sameRoute"),
+          changed: false,
+        });
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Note after a route change of one stage. */
+  const routeNote = (index: number) => (next: Trip) =>
+    t("note.routeChanged", {
+      day: index + 1,
+      distance: format.distance(next.stages[index]?.stats.distance ?? 0),
+    });
 
   return {
     readOnly,
@@ -80,6 +121,22 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     setHotel(index: number, hotel: Hotel) {
       if (canEdit) commit(setHotel(trip, index, hotel));
     },
+    /** The route through a dragged point, for a live preview. */
+    preview: (index: number, leg: number, at: LonLat) => {
+      const stage = trip.stages[index];
+      return stage ? previewVia(stage, leg, at, tools) : Promise.resolve([]);
+    },
+    insertVia: (index: number, leg: number, at: LonLat, keep = false) =>
+      run(() => insertVia(trip, index, leg, at, tools, keep), routeNote(index)),
+    moveVia: (index: number, coord: LonLat, at: LonLat) =>
+      run(() => moveVia(trip, index, coord, at, tools), routeNote(index)),
+    removeVia: (index: number, coord: LonLat) =>
+      run(() => removeVia(trip, index, coord, tools), routeNote(index)),
+    revert: (index: number) =>
+      run(
+        () => revertStage(trip, index, tools),
+        () => t("note.reverted", { day: index + 1 }),
+      ),
     async moveStop(index: number, place: Place) {
       if (!canEdit) return;
       setBusy(true);

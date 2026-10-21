@@ -7,6 +7,10 @@ export {
 } from "./components/Button";
 export { Card, type CardProps } from "./components/Card";
 export {
+  ChangeNotice,
+  type ChangeNoticeProps,
+} from "./components/ChangeNotice";
+export {
   Badge,
   Chip,
   type BadgeProps,
@@ -65,6 +69,7 @@ export {
 } from "./components/ConfirmDialog";
 export { Dialog, type DialogProps } from "./components/Dialog";
 export { DateField, type DateFieldProps } from "./components/DateField";
+export { DayStrip, type DayStripItem } from "./components/DayStrip";
 export { EmptyState, type EmptyStateProps } from "./components/EmptyState";
 export { NumberInput, type NumberInputProps } from "./components/NumberInput";
 export {
@@ -119,6 +124,7 @@ export {
   ProposalCard,
   ProposalCardSkeleton,
   type ProposalCardProps,
+  type ProposalDay,
   type ProposalStat,
 } from "./components/ProposalCard";
 export {

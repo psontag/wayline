@@ -34,8 +34,8 @@ Map tokens:
 |---|---|
 | `route`, `route-casing` | Route line and its outline |
 | `route-dimmed` | Unselected proposals |
-| `route-selected` | Selected proposal or stage |
-| `stage-a`, `stage-b` | Stages alternate between these two |
+| `route-selected` | Selected proposal or stage. Odd days of the highlighted proposal. |
+| `stage-a`, `stage-b` | Stages alternate between these two. `stage-b` also marks even days of the highlighted proposal. |
 | `marker`, `via-point` | Stops and via points |
 | `network` | Signed cycling routes, a quiet layer below the route |
 
@@ -152,3 +152,10 @@ The same thing always has the same name in the UI. Translations use one fixed te
 | Day loop | A one-day ride that ends where it starts |
 | Multi-day loop | A multi-day trip that ends where it starts |
 | Theme | What a trip should lean toward: Nature, Rivers & lakes, Wine or Culture |
+| Length | One day or several days |
+| Shape | A to B or loop |
+| Back by | Latest arrival on the last day |
+| Half day, short day | A day shortened by a late start or an early back-by time |
+| Proposed route | The route of a stage as proposed, shown after a change |
+| Changed, Revert | A stage that differs from its proposal, and the action that restores it |
+| Direct, longer, scenic | Characters of one-day A to B proposals |

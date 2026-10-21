@@ -39,6 +39,7 @@ Tests the biggest risk early.
 Before: test which Booking.com URL filters work.
 
 - Stages with locked stops
+- One editor for every planned trip: route dragging on every day, revert to the proposal
 - Weather with wind
 - OSM hotels
 - Booking.com and bahn.de links
@@ -48,10 +49,12 @@ Before: test which Booking.com URL filters work.
 
 - Proposals with progress
 - Stage alternatives
+- One form for one day or several days, loop or A to B
+- Shorter first and last days from the start and back-by times
 
 ## 7. Day loops
 
-- Loop suggestions for a start point and distance
+- Loop suggestions for a start point and distance. Part of the one form, done with the editor work.
 
 ## Later
 

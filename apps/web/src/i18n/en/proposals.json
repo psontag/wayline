@@ -8,13 +8,16 @@
     "label": "Search inputs",
     "kind": {
       "one-way": "One-way",
-      "multi-day-loop": "Multi-day loop"
+      "multi-day-loop": "Multi-day loop",
+      "day-loop": "Day loop"
     },
     "places": "{{from}} → {{to}}",
     "loopFrom": "From {{from}}",
     "days_one": "{{count}} day",
     "days_other": "{{count}} days",
     "kmPerDay": "{{distance}} per day",
+    "distance": "{{distance}}",
+    "shortDays": "Shorter first or last day",
     "maxAscent": "Max {{ascent}}",
     "profile": {
       "touring": "Touring",
@@ -44,7 +47,7 @@
   "done": {
     "count_one": "{{count}} proposal",
     "count_other": "{{count}} proposals",
-    "hint": "Hover to compare, select to see the stages"
+    "hint": "Hover to compare on the map, select to open"
   },
   "cancelled": {
     "title": "Search cancelled",
@@ -78,16 +81,22 @@
   },
   "card": {
     "subtitle": {
-      "one-way": "{{from}} → {{to}} by train both ways",
-      "multi-day-loop": "Loop from {{from}}"
+      "one-way": "{{from}} → {{to}}",
+      "loop": "Loop from {{from}}"
     },
+    "character": {
+      "direct": "Direct",
+      "scenic": "Scenic",
+      "longer": "Longer"
+    },
+    "halfDay": "Half day",
+    "shortDay": "Short day",
     "distance": "Distance",
     "ascent": "Ascent",
     "paved": "Paved",
     "longestDay": "Longest day",
     "via": "Via {{stops}}",
     "day": "Day {{day}}",
-    "dayDate": "Day {{day}} · {{date}}",
     "stage": "{{from}} → {{to}}",
     "stageStats": "{{distance}} · {{ascent}}",
     "routes": "Routes: {{routes}}",
@@ -106,6 +115,7 @@
   "map": {
     "label": "Map with the proposals",
     "select": "Select proposal {{number}}",
+    "stop": "Stop {{day}}: {{place}}",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "network": "Signed cycling routes"

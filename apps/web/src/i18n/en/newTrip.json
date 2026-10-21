@@ -2,14 +2,19 @@
   "title": "New trip",
   "loading": "Loading places",
   "loadFailed": "Could not load the places.",
-  "kind": {
-    "legend": "Kind of trip",
-    "one-way": {
-      "label": "One-way trip",
-      "hint": "Train out, train back"
+  "length": {
+    "label": "Length",
+    "one": "One day",
+    "multi": "Several days"
+  },
+  "shape": {
+    "label": "Shape",
+    "ab": {
+      "label": "A to B",
+      "hint": "Start and end differ"
     },
-    "multi-day-loop": {
-      "label": "Multi-day loop",
+    "loop": {
+      "label": "Loop",
       "hint": "Ends where it starts"
     }
   },
@@ -20,11 +25,27 @@
   "placeKind": {
     "station": "Train station",
     "town": "Town",
+    "townWithStation": "Town · station {{distance}}",
     "custom": "Point on the map"
   },
-  "days": "Days",
+  "when": {
+    "label": "When",
+    "date": "Date",
+    "firstDay": "First day",
+    "startAt": "Start at",
+    "lastDay": "Last day",
+    "backBy": "Back by",
+    "days": "Days of the trip",
+    "dayKm": "about {{distance}}",
+    "from": "From {{time}}",
+    "backByDay": "Back by {{time}}",
+    "fullDay": "Full day",
+    "hint": "Weather, hotels and arrival times use these dates."
+  },
+  "distance": "Distance",
   "kmPerDay": "Km per day",
   "maxAscentPerDay": "Max ascent per day",
+  "maxAscent": "Max ascent",
   "hotelBudget": "Hotel budget",
   "budget": {
     "low": "Up to €80",
@@ -59,21 +80,18 @@
       "culture": "Past castles, monasteries, old towns and museums."
     }
   },
-  "startDate": "Start date",
-  "optional": "(optional)",
-  "startTime": "Start time",
   "unit": {
     "km": "km",
     "m": "m"
   },
   "summary_one": "{{count}} day · about {{distance}}",
   "summary_other": "{{count}} days · about {{distance}}",
-  "submit": "Find trips",
+  "submit": "Find routes",
   "errors": {
     "startRequired": "Choose a start.",
     "endRequired": "Choose an end.",
-    "endSameAsStart": "Choose an end other than the start. For a round trip, pick Multi-day loop.",
-    "days": "Choose 1 to 14 days.",
+    "endSameAsStart": "Choose an end other than the start. For a round trip, pick Loop.",
+    "lastDay": "Choose a last day 1 to 13 days after the first.",
     "kmPerDay": "Enter 20 to 250 km.",
     "maxAscentPerDay": "Enter 100 to 5,000 m."
   },

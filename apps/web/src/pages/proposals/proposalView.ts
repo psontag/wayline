@@ -1,4 +1,5 @@
 import {
+  dayShares,
   type FailedLimit,
   type GenerateProgress,
   type GenerateRequest,
@@ -143,11 +144,23 @@ export function relaxOptions(
       options.push(lessKm);
       break;
     case "days":
-      if (fewerDays >= 1) {
+      if (fewerDays >= (request.kind === "multi-day-loop" ? 2 : 1)) {
         options.push({
           change: "days",
           value: fewerDays,
-          request: { ...request, days: fewerDays },
+          request: {
+            ...request,
+            days: fewerDays,
+            ...(request.dayShares
+              ? {
+                  dayShares: dayShares(
+                    fewerDays,
+                    request.startTime,
+                    request.backBy,
+                  ),
+                }
+              : {}),
+          },
         });
       }
       options.push(lessKm);

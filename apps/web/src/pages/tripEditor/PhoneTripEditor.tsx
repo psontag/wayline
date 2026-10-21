@@ -22,7 +22,12 @@ import { useTranslation } from "react-i18next";
 import { downloadTripGpx } from "../../data/gpx";
 import { PhoneStageSheet } from "./PhoneStageSheet";
 import { PhoneStopSheet } from "./PhoneStopSheet";
-import { type MapAlternative, type MapPadding, TripMap } from "./TripMap";
+import {
+  type MapAlternative,
+  type MapPadding,
+  type RouteEditing,
+  TripMap,
+} from "./TripMap";
 import type { TripEditorState } from "./useTripEditor";
 
 // The sheet's rounded corners overlap the map, so the map shows through them.
@@ -39,6 +44,8 @@ export type PhoneTripEditorProps = {
   hoverKm?: number;
   onHoverKm: (km: number | undefined) => void;
   hover?: LonLat;
+  /** Route edits of the selected stage. */
+  route?: RouteEditing;
   /** The note after an edit. */
   toast: ReactNode;
   /** Opens the share dialog. Only for the owner of a trip on the server. */
@@ -57,6 +64,7 @@ export function PhoneTripEditor({
   hoverKm,
   onHoverKm,
   hover,
+  route,
   toast,
   onShare,
 }: PhoneTripEditorProps) {
@@ -83,6 +91,7 @@ export function PhoneTripEditor({
           alternatives={alternatives}
           onPickAlternative={onPickAlternative}
           hover={hover}
+          route={route}
           padding={padding}
           controls={false}
         >
@@ -95,6 +104,7 @@ export function PhoneTripEditor({
       <BottomSheet snap={snap} onSnapChange={setSnap} label={t("phone.sheet")}>
         <PhoneStageSheet
           trip={trip}
+          editor={editor}
           selected={selected}
           onSelect={onSelect}
           network={network}

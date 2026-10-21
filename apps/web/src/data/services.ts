@@ -1,4 +1,5 @@
-import { AreaCache, FakeRouting, Graph } from "@wayline/planner";
+import { AreaCache, bboxAround, FakeRouting, Graph } from "@wayline/planner";
+import type { LonLat } from "@wayline/domain";
 import {
   FakeWeather,
   type LodgingProvider,
@@ -25,7 +26,12 @@ export type Services = {
   weather: WeatherProvider;
   lodging: LodgingProvider;
   network: RouteNetworkSource;
+  /** Nearest node of the route network, or the point itself if none is close. */
+  snap: (coord: LonLat) => Promise<LonLat>;
 };
+
+/** A dragged via point moves to a network node this close. */
+const SNAP_KM = 0.5;
 
 const MOCK_DATA = "/data/mock/oberfranken";
 
@@ -81,5 +87,10 @@ export function createServices(): Services {
     weather: new FakeWeather(),
     lodging: new MockLodging(network),
     network,
+    async snap(coord) {
+      const graph = await graphs.get(bboxAround([coord], 2));
+      const node = graph.nearestNode(coord, { maxKm: SNAP_KM });
+      return node === undefined ? coord : graph.coord(node);
+    },
   };
 }

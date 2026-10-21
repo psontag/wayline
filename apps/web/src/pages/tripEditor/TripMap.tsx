@@ -7,16 +7,19 @@ import {
 import {
   AlternativeMarker,
   EndpointMarker,
+  GhostViaMarker,
   HoverMarker,
   IconButton,
   MapControlGroup,
+  MapHint,
   MapLegend,
   StopMarker,
   useTheme,
   useThemeTokens,
+  ViaMarker,
 } from "@wayline/ui";
 import type { FeatureCollection, LineString } from "geojson";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, Route } from "lucide-react";
 import {
   type FilterSpecification,
   type LngLatBoundsLike,
@@ -34,6 +37,11 @@ import MapGL, {
   Source,
 } from "react-map-gl/maplibre";
 import { NetworkLayer } from "../../components/NetworkLayer";
+import {
+  nearestOnLine,
+  type RouteDrag,
+  useRouteDrag,
+} from "../../components/useRouteDrag";
 import { tripStops } from "./tripArea";
 import { useHiddenPlaceLabels } from "../../components/placeLabels";
 
@@ -79,7 +87,27 @@ export type TripMapProps = {
   controls?: boolean;
   /** Overlays, e.g. a toast. */
   children?: ReactNode;
+  /** Route edits of the selected stage. Without them, the route is fixed. */
+  route?: RouteEditing;
 };
+
+export type RouteEditing = {
+  /** False while an edit is saved. */
+  enabled: boolean;
+  /** Tap the line to add a via point. For touch, where a drag pans. */
+  tapToAdd?: boolean;
+  /** Route of a leg through a point, while the point is dragged. */
+  preview: (leg: number, at: LonLat) => Promise<LonLat[]>;
+  /** keep: add it even if the route stays the same, as a handle. */
+  onAddVia: (leg: number, at: LonLat, keep?: boolean) => void;
+  onMoveVia: (coord: LonLat, at: LonLat) => void;
+  onRemoveVia: (coord: LonLat) => void;
+  /** Proposed routes of changed stages, drawn dotted. */
+  proposed: LonLat[][];
+};
+
+/** Waits this long after the last move before a preview is routed. */
+const PREVIEW_MS = 120;
 
 function bounds(coords: LonLat[]): LngLatBoundsLike {
   let [w, s, e, n] = [180, 90, -180, -90];
@@ -103,6 +131,7 @@ export function TripMap({
   padding = defaultPadding,
   controls = true,
   children,
+  route,
 }: TripMapProps) {
   const { t } = useTranslation("tripEditor");
   const { resolvedTheme } = useTheme();
@@ -134,6 +163,91 @@ export function TripMap({
     }),
     [lines, selected],
   );
+
+  // Legs of the selected stage, to drag the route.
+  const legLines = useMemo(
+    () =>
+      (trip.stages[selected]?.legs ?? []).map((leg) =>
+        decodeLine(leg.geometry),
+      ),
+    [trip.stages, selected],
+  );
+  const legData = useMemo<FeatureCollection<LineString>>(
+    () => ({
+      type: "FeatureCollection",
+      features: legLines.map((coordinates, leg) => ({
+        type: "Feature",
+        properties: { leg },
+        geometry: { type: "LineString", coordinates },
+      })),
+    }),
+    [legLines],
+  );
+  const routeDrag = useRouteDrag({
+    mapRef,
+    lines: legLines,
+    enabled: !!route?.enabled && !route.tapToAdd,
+    onDrop: (leg, at) => route?.onAddVia(leg, at),
+  });
+  const { drag, ghost } = routeDrag;
+  const ghostAt = drag?.at ?? ghost;
+
+  // The route through the dragged point, routed shortly after each move.
+  // It belongs to one drag position and is ignored for any other.
+  const [routed, setRouted] = useState<{ drag: RouteDrag; line: LonLat[] }>();
+  // The latest preview function, so a new one does not restart the timer.
+  const previewFn = useRef(route?.preview);
+  useEffect(() => {
+    previewFn.current = route?.preview;
+  });
+  useEffect(() => {
+    if (!drag) return;
+    let stale = false;
+    const timer = setTimeout(() => {
+      void previewFn.current?.(drag.leg, drag.at).then((line) => {
+        if (!stale) setRouted({ drag, line });
+      });
+    }, PREVIEW_MS);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [drag]);
+  const previewData = useMemo<FeatureCollection<LineString>>(() => {
+    const preview = routed && routed.drag === drag ? routed.line : [];
+    const points = trip.stages[selected]?.legs ?? [];
+    const leg = drag && points[drag.leg];
+    const coordinates = preview.length
+      ? preview
+      : leg && drag
+        ? [leg.from, drag.at, leg.to]
+        : [];
+    return {
+      type: "FeatureCollection",
+      features: coordinates.length
+        ? [
+            {
+              type: "Feature",
+              properties: { routed: preview.length > 0 },
+              geometry: { type: "LineString", coordinates },
+            },
+          ]
+        : [],
+    };
+  }, [routed, drag, trip.stages, selected]);
+  const proposedData = useMemo<FeatureCollection<LineString>>(
+    () => ({
+      type: "FeatureCollection",
+      features: (route?.proposed ?? []).map((coordinates) => ({
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates },
+      })),
+    }),
+    [route?.proposed],
+  );
+  // A via marker drag can end with a click on it. That must not remove it.
+  const draggedVia = useRef(false);
 
   // Zoom to the stage when the selection changes, not on first load.
   const shown = useRef(selected);
@@ -168,7 +282,16 @@ export function TripMap({
   };
 
   const onClick = (event: MapLayerMouseEvent) => {
-    const index = event.features?.[0]?.properties?.index;
+    const props = event.features?.[0]?.properties;
+    const map = mapRef.current;
+    if (typeof props?.leg === "number" && route?.tapToAdd && route.enabled) {
+      const line = legLines[props.leg];
+      if (map && line) {
+        route.onAddVia(props.leg, nearestOnLine(map, line, event.point), true);
+      }
+      return;
+    }
+    const index = props?.index;
     if (typeof index === "number") onSelect(index);
   };
 
@@ -191,12 +314,30 @@ export function TripMap({
         style={{ position: "absolute", inset: "0" }}
         onLoad={onStyle}
         onStyleData={onStyle}
-        interactiveLayerIds={["stage-hit"]}
+        interactiveLayerIds={["stage-hit", "leg-hit"]}
         onClick={onClick}
         onMouseEnter={() => setCursor("pointer")}
-        onMouseLeave={() => setCursor(undefined)}
-        cursor={cursor}
+        onMouseLeave={() => {
+          setCursor(undefined);
+          routeDrag.onMouseLeave();
+        }}
+        onMouseMove={routeDrag.onMouseMove}
+        onMouseDown={routeDrag.onMouseDown}
+        cursor={drag ? "grabbing" : ghost ? "grab" : cursor}
       >
+        <Source id="proposed" type="geojson" data={proposedData}>
+          <Layer
+            id="proposed-line"
+            beforeId={labelLayerId}
+            type="line"
+            layout={lineLayout}
+            paint={{
+              "line-color": tokens.textMuted,
+              "line-width": 4,
+              "line-dasharray": [0.5, 2],
+            }}
+          />
+        </Source>
         <Source id="stages" type="geojson" data={data}>
           <Layer
             id="stage-casing"
@@ -250,7 +391,31 @@ export function TripMap({
             }}
           />
         </Source>
-        <NetworkLayer around={tripStops(trip)} beforeId="stage-casing" />
+        <Source id="legs" type="geojson" data={legData}>
+          <Layer
+            id="leg-hit"
+            type="line"
+            layout={lineLayout}
+            paint={{
+              "line-color": tokens.route,
+              "line-width": 20,
+              "line-opacity": 0,
+            }}
+          />
+        </Source>
+        <Source id="drag-preview" type="geojson" data={previewData}>
+          <Layer
+            id="drag-preview"
+            type="line"
+            layout={lineLayout}
+            paint={{
+              "line-color": tokens.viaPoint,
+              "line-width": 4,
+              "line-dasharray": [1, 1.5],
+            }}
+          />
+        </Source>
+        <NetworkLayer around={tripStops(trip)} beforeId="proposed-line" />
 
         {first && (
           <Marker
@@ -313,6 +478,40 @@ export function TripMap({
             />
           </Marker>
         ))}
+        {route &&
+          trip.stages[selected]?.via.map((via, index) => (
+            <Marker
+              // Index keys keep the marker while its point moves.
+              key={index}
+              longitude={via.coord[0]}
+              latitude={via.coord[1]}
+              draggable={route.enabled}
+              onDragStart={() => (draggedVia.current = true)}
+              onDragEnd={(e) => {
+                route.onMoveVia(via.coord, [e.lngLat.lng, e.lngLat.lat]);
+                // The click, if any, comes right after the drag ends.
+                setTimeout(() => (draggedVia.current = false));
+              }}
+              style={{ zIndex: 3 }}
+            >
+              <ViaMarker
+                aria-label={t("map.removeVia", { n: index + 1 })}
+                disabled={!route.enabled}
+                onClick={() =>
+                  !draggedVia.current && route.onRemoveVia(via.coord)
+                }
+              />
+            </Marker>
+          ))}
+        {ghostAt && (
+          <Marker
+            longitude={ghostAt[0]}
+            latitude={ghostAt[1]}
+            style={{ zIndex: 3, pointerEvents: "none" }}
+          >
+            <GhostViaMarker />
+          </Marker>
+        )}
         {hover && (
           <Marker
             longitude={hover[0]}
@@ -325,7 +524,21 @@ export function TripMap({
       </MapGL>
       {controls && (
         <div className="absolute bottom-3 left-3 z-panel">
-          <MapLegend items={[{ label: t("map.network"), line: "network" }]} />
+          <MapLegend
+            items={[
+              { label: t("map.network"), line: "network" },
+              ...(route?.proposed.length
+                ? [{ label: t("map.proposed"), line: "dashed" as const }]
+                : []),
+            ]}
+          />
+        </div>
+      )}
+      {route && (
+        <div className="pointer-events-none absolute top-3 left-3 z-panel">
+          <MapHint icon={<Route aria-hidden />}>
+            {t(route.tapToAdd ? "map.tapHint" : "map.dragHint")}
+          </MapHint>
         </div>
       )}
       {controls && (

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   bahnUrl,
   bookingUrl,
+  dayShares,
   decodeLine,
   encodeLine,
   expectedTimeAtKm,
@@ -13,6 +14,7 @@ import {
   SCHEMA_VERSION,
   sampleAt,
   stageDates,
+  stageStartTime,
   statsFromLegs,
   weatherAlongStage,
   windShares,
@@ -85,6 +87,30 @@ describe("expectedTimeAtKm", () => {
     expect(expectedTimeAtKm("2027-06-12", "09:00", 18, 45)).toBe(
       "2027-06-12T11:30",
     );
+  });
+});
+
+describe("dayShares", () => {
+  it("shortens the first and last day by the time lost", () => {
+    expect(dayShares(3, "13:00", "17:00")).toEqual([0.5, 1, 1]);
+    expect(dayShares(3, "09:00", "13:00")).toEqual([1, 1, 0.5]);
+    expect(dayShares(2, "07:00")).toEqual([1, 1]);
+  });
+
+  it("never goes below a quarter day", () => {
+    expect(dayShares(2, "16:00", "10:00")).toEqual([0.25, 0.25]);
+  });
+
+  it("keeps a one-day trip full", () => {
+    expect(dayShares(1, "15:00", "16:00")).toEqual([1]);
+  });
+});
+
+describe("stageStartTime", () => {
+  it("starts later days at nine", () => {
+    const settings = { startTime: "13:00" };
+    expect(stageStartTime(settings, 0)).toBe("13:00");
+    expect(stageStartTime(settings, 1)).toBe("09:00");
   });
 });
 
