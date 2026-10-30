@@ -24,7 +24,8 @@
   },
   "dayList": {
     "distance": "Distance",
-    "ascent": "Ascent"
+    "ascent": "Ascent",
+    "ridingTime": "Riding time"
   },
   "stage": {
     "locked": "Locked",
