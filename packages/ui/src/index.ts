@@ -99,6 +99,11 @@ export {
   type WeatherStripItem,
 } from "./components/WeatherStrip";
 export { HotelRow, type HotelRowProps } from "./components/HotelRow";
+export {
+  StopChoices,
+  type StopChoice,
+  type StopChoicesProps,
+} from "./components/StopChoices";
 export { SaveStatus, type SaveState } from "./components/SaveStatus";
 export { TextLink, type TextLinkProps } from "./components/TextLink";
 export {

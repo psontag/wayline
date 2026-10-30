@@ -7,10 +7,15 @@ import { focusRing } from "./Button";
 
 export type HotelRowProps = {
   name: string;
+  kind?: "hotel" | "guest_house" | "motel";
   stars?: number;
-  /** Meters from the route. */
-  distance: number;
+  /** Meters from the route, shown as "1.2 km from route". */
+  distance?: number;
+  /** Meters of riding off the route, shown as "+1.2 km". */
+  detour?: number;
   website?: string;
+  /** Booking.com search for this hotel. */
+  booking?: string;
   /** E.g. a Change or Choose button. */
   action?: ReactNode;
   /** card: outlined box without the bed icon, for lists on phones. */
@@ -19,12 +24,15 @@ export type HotelRowProps = {
   selected?: boolean;
 };
 
-/** A hotel with stars, distance to the route and its website. */
+/** A hotel with kind, stars, distance to the route and links. */
 export function HotelRow({
   name,
+  kind,
   stars,
   distance,
+  detour,
   website,
+  booking,
   action,
   variant = "plain",
   selected = false,
@@ -32,11 +40,19 @@ export function HotelRow({
   const { t } = useTranslation("ui");
   const format = useFormat();
   const meta = [
+    kind && t(`hotel.kind.${kind}`),
     stars ? t("hotel.stars", { count: stars }) : undefined,
-    t("hotel.fromRoute", { distance: format.distance(distance) }),
+    distance !== undefined &&
+      t("hotel.fromRoute", { distance: format.distance(distance) }),
+    detour !== undefined &&
+      t("hotel.detour", { distance: format.distance(detour) }),
   ]
     .filter(Boolean)
     .join(" · ");
+  const links = [
+    website && { href: website, label: t("hotel.website") },
+    booking && { href: booking, label: t("hotel.booking") },
+  ].filter((l) => !!l);
 
   return (
     <div
@@ -62,11 +78,12 @@ export function HotelRow({
         >
           {name}
         </span>
-        <span className="flex items-center gap-2 text-xs text-text-muted tabular-nums">
+        <span className="flex flex-wrap items-center gap-x-2 text-xs text-text-muted tabular-nums">
           {meta}
-          {website && (
+          {links.map(({ href, label }) => (
             <a
-              href={website}
+              key={label}
+              href={href}
               target="_blank"
               rel="noreferrer"
               className={cn(
@@ -74,10 +91,10 @@ export function HotelRow({
                 focusRing,
               )}
             >
-              {t("hotel.website")}
+              {label}
               <ExternalLink className="size-3" aria-hidden />
             </a>
-          )}
+          ))}
         </span>
       </div>
       {action}

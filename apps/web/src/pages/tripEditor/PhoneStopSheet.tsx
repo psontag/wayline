@@ -1,9 +1,5 @@
-import {
-  addDays,
-  distanceKm,
-  localTimeToDate,
-  type Trip,
-} from "@wayline/domain";
+import { addDays, localTimeToDate, type Trip } from "@wayline/domain";
+import { detourKm } from "@wayline/providers";
 import {
   Button,
   ChoiceCard,
@@ -14,9 +10,8 @@ import {
 } from "@wayline/ui";
 import { Lock, LockOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useHotels } from "../../data/queries";
-import { BookingLink } from "./BookingLink";
-import { useStopOptions } from "./StopPicker";
+import { BookingLink, hotelBookingUrl } from "./BookingLink";
+import { useStopHotels, useStopOptions } from "./stopChoices";
 import { toHotel, type TripEditorState } from "./useTripEditor";
 
 export type PhoneStopSheetProps = {
@@ -42,13 +37,15 @@ export function PhoneStopSheet({
     (o) => o.current || !readOnly,
   );
   const stage = trip.stages[index];
-  const hotels = useHotels(
-    open && !readOnly ? stage?.end : undefined,
-    trip.settings.hotelBudget,
-  );
+  const { hotels, route } = useStopHotels(trip, index);
   if (!stage || index === trip.stages.length - 1) return null;
 
   const { end, hotel } = stage;
+  const chosen = hotel && hotels.find((h) => h.osmId === hotel.osmId);
+  const others = readOnly
+    ? []
+    : hotels.filter((option) => option.osmId !== hotel?.osmId);
+  const booking = (name: string) => hotelBookingUrl(trip, index, name);
   const day = trip.startDate
     ? t("phone.dayDate", {
         day: index + 1,
@@ -126,9 +123,11 @@ export function PhoneStopSheet({
             variant="card"
             selected
             name={hotel.name}
+            kind={chosen?.kind}
             stars={hotel.stars}
-            distance={distanceKm(hotel.coord, end.coord) * 1000}
+            distance={(chosen?.detourKm ?? detourKm(hotel.coord, route)) * 1000}
             website={hotel.website}
+            booking={booking(hotel.name)}
             action={
               !readOnly && (
                 <Button size="sm" aria-disabled>
@@ -138,28 +137,28 @@ export function PhoneStopSheet({
             }
           />
         )}
-        {hotels.data
-          ?.filter((option) => option.osmId !== hotel?.osmId)
-          .map((option) => (
-            <HotelRow
-              key={option.osmId}
-              variant="card"
-              name={option.name}
-              stars={option.stars}
-              distance={option.distanceKm * 1000}
-              website={option.website}
-              action={
-                <Button
-                  size="sm"
-                  disabled={!editor.canEdit}
-                  onClick={() => editor.setHotel(index, toHotel(option))}
-                >
-                  {t("phone.pick")}
-                </Button>
-              }
-            />
-          ))}
-        {hotels.data?.length === 0 && !hotel && (
+        {others.map((option) => (
+          <HotelRow
+            key={option.osmId}
+            variant="card"
+            name={option.name}
+            kind={option.kind}
+            stars={option.stars}
+            detour={option.detourKm * 1000}
+            website={option.website}
+            booking={booking(option.name)}
+            action={
+              <Button
+                size="sm"
+                disabled={!editor.canEdit}
+                onClick={() => editor.setHotel(index, toHotel(option))}
+              >
+                {t("phone.pick")}
+              </Button>
+            }
+          />
+        ))}
+        {hotels.length === 0 && !hotel && (
           <p className="text-sm text-text-muted">
             {t("stage.noHotelsNear", { place: end.name })}
           </p>

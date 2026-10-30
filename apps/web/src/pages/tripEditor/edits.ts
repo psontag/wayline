@@ -5,6 +5,7 @@ import {
   type Leg,
   type LonLat,
   type Place,
+  type RoutePoint,
   type Stage,
   routePoints,
   statsFromLegs,
@@ -151,30 +152,76 @@ export async function moveStop(
   return { ...trip, stages };
 }
 
+/** A stage if it ended at another place. Meters. */
+export type StageIfEnding = {
+  distance: number;
+  ascent: number;
+  /** Length of the next stage. Missing on the last stage. */
+  nextDistance?: number;
+};
+
 /**
- * Rough stage length if it ended at the place: the km of the nearest route
- * point of this or the next stage, plus the way off the route.
+ * Rough stage if it ended at the place: km and ascent at the nearest route
+ * point of this or the next stage, plus the way off the route. The way off
+ * the route also counts for the next stage.
  */
-export function distanceIfEndingAt(
+export function stageIfEndingAt(
   stage: Stage,
   next: Stage | undefined,
   place: LonLat,
-): number {
+): StageIfEnding {
   const own = routePoints(stage.legs);
+  const after = next ? routePoints(next.legs) : [];
   const length = own.at(-1)?.km ?? 0;
+  const ownAscent = ascentAlong(own, stage.stats.ascent);
+  const afterAscent = ascentAlong(after, next?.stats.ascent ?? 0);
   const candidates = [
-    ...own,
-    ...(next
-      ? routePoints(next.legs).map((p) => ({ ...p, km: p.km + length }))
-      : []),
+    ...own.map((p, i) => ({ ...p, ascent: ownAscent[i] ?? 0 })),
+    ...after.map((p, i) => ({
+      ...p,
+      km: p.km + length,
+      ascent: stage.stats.ascent + (afterAscent[i] ?? 0),
+    })),
   ];
-  let best = { km: length, off: Infinity };
+  const total = length + (after.at(-1)?.km ?? 0);
+  let best = { km: length, ascent: stage.stats.ascent, off: Infinity };
   // Every few points is precise enough for a label.
   for (let i = 0; i < candidates.length; i += 3) {
     const p = candidates[i];
     if (!p) continue;
     const off = distanceKm(p.coord, place);
-    if (off < best.off) best = { km: p.km, off };
+    if (off < best.off) best = { km: p.km, ascent: p.ascent, off };
   }
-  return Math.round((best.km + best.off) * 1000);
+  const off = best.off === Infinity ? 0 : best.off;
+  const out: StageIfEnding = {
+    distance: Math.round((best.km + off) * 1000),
+    ascent: Math.round(best.ascent),
+  };
+  if (next) out.nextDistance = Math.round((total - best.km + off) * 1000);
+  return out;
+}
+
+/** Climbs smaller than this count as noise. Meters. */
+const ASCENT_NOISE = 5;
+
+/**
+ * Ascent from the start at each point. Small ups and downs are left out,
+ * then the sum is scaled to the stage ascent, so the end matches it.
+ */
+export function ascentAlong(points: RoutePoint[], total: number): number[] {
+  const out: number[] = [];
+  let sum = 0;
+  let low = points[0]?.ele ?? 0;
+  for (const { ele } of points) {
+    if (ele < low) low = ele;
+    else if (ele - low >= ASCENT_NOISE) {
+      sum += ele - low;
+      low = ele;
+    }
+    out.push(sum);
+  }
+  const length = points.at(-1)?.km ?? 0;
+  if (sum > 0) return out.map((a) => (a / sum) * total);
+  // A flat profile: spread the ascent over the km.
+  return points.map((p) => (length ? (p.km / length) * total : 0));
 }

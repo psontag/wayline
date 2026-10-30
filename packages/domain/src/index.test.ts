@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bahnUrl,
+  bookingHotelUrl,
   bookingUrl,
   dayShares,
   decodeLine,
@@ -224,6 +225,18 @@ describe("links", () => {
     );
     expect(bookingUrl({ town: "Bad Rodach" })).toBe(
       "https://www.booking.com/searchresults.html?ss=Bad%20Rodach&group_adults=1&no_rooms=1",
+    );
+  });
+
+  it("builds the Booking.com link for one hotel", () => {
+    expect(
+      bookingHotelUrl({
+        hotel: "Gasthof Hirsch",
+        town: "Kronach",
+        date: "2027-06-13",
+      }),
+    ).toBe(
+      "https://www.booking.com/searchresults.html?ss=Gasthof%20Hirsch%20Kronach&checkin=2027-06-13&checkout=2027-06-14&group_adults=1&no_rooms=1",
     );
   });
 

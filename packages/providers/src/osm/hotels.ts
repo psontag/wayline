@@ -12,7 +12,20 @@ const KM_PER_LAT = 110.57;
 const KM_PER_LON = 111.32 * Math.cos((50 * Math.PI) / 180);
 
 /** A hotel belongs to a stop within this distance. */
-export const HOTEL_KM = 2;
+export const HOTEL_KM = 5;
+
+/** Riding km per straight km, for a detour without routing. */
+const DETOUR_FACTOR = 1.3;
+
+/**
+ * Rough riding km from the nearest route point to a place. Without a route,
+ * from the stop itself.
+ */
+export function detourKm(at: LonLat, route: LonLat[]): number {
+  let best = Infinity;
+  for (const p of route) best = Math.min(best, distanceKm(at, p));
+  return best === Infinity ? 0 : best * DETOUR_FACTOR;
+}
 
 /** Does a hotel fit the budget? OSM has no prices, so kind and stars stand in. */
 export function fitsBudget(
@@ -40,15 +53,17 @@ export function toHotel(h: GeoHotel): Hotel {
   return hotel;
 }
 
-/** Hotels that fit the budget first, each group nearest first. */
-export function byBudget<T extends Pick<GeoHotel, "kind" | "stars">>(
-  hotels: T[],
-  budget?: HotelBudget,
-): T[] {
-  return [
-    ...hotels.filter((h) => fitsBudget(h, budget)),
-    ...hotels.filter((h) => !fitsBudget(h, budget)),
-  ];
+/**
+ * Hotels that fit the budget first, each group by detour. Without a
+ * detour, the order stays.
+ */
+export function byBudget<
+  T extends Pick<GeoHotel, "kind" | "stars"> & { detourKm?: number },
+>(hotels: T[], budget?: HotelBudget): T[] {
+  const fits = (h: T) => (fitsBudget(h, budget) ? 0 : 1);
+  return [...hotels].sort(
+    (a, b) => fits(a) - fits(b) || (a.detourKm ?? 0) - (b.detourKm ?? 0),
+  );
 }
 
 /** Spatial index over the hotels of places.json. */

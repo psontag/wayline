@@ -18,7 +18,7 @@ import { networkArea } from "../../components/NetworkLayer";
 import { useMe, useNetwork, useTrip } from "../../data/queries";
 import { StageList } from "./StageList";
 import { StageProfile } from "./StageProfile";
-import { useStopOptions } from "./StopPicker";
+import { useStopOptions } from "./stopChoices";
 import { ShareDialog } from "./ShareDialog";
 import { TripHeader } from "./TripHeader";
 import { isChanged } from "./routeEdits";

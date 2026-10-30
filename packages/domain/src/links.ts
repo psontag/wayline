@@ -19,17 +19,34 @@ export function bookingUrl(opts: {
   budget?: HotelBudget;
   minRating?: MinRating;
 }): string {
-  const params: [string, string][] = [["ss", opts.town]];
-  if (opts.date) {
-    params.push(["checkin", opts.date], ["checkout", addDays(opts.date, 1)]);
-  }
-  params.push(["group_adults", "1"], ["no_rooms", "1"]);
+  const params = searchParams(opts.town, opts.date);
   const filters = [
     opts.minRating && `review_score=${opts.minRating}`,
     opts.budget && `price=${budgetPrice[opts.budget]}`,
   ].filter(Boolean);
   if (filters.length) params.push(["nflt", filters.join(";")]);
   return `https://www.booking.com/searchresults.html?${query(params)}`;
+}
+
+/**
+ * Booking.com search for one hotel by name and town, for one night. It
+ * shows the live price and rating of that place, if Booking lists it.
+ */
+export function bookingHotelUrl(opts: {
+  hotel: string;
+  town: string;
+  /** Check-in date "YYYY-MM-DD". Without it, Booking asks for dates. */
+  date?: string;
+}): string {
+  const params = searchParams(`${opts.hotel} ${opts.town}`, opts.date);
+  return `https://www.booking.com/searchresults.html?${query(params)}`;
+}
+
+function searchParams(text: string, date?: string): [string, string][] {
+  const params: [string, string][] = [["ss", text]];
+  if (date) params.push(["checkin", date], ["checkout", addDays(date, 1)]);
+  params.push(["group_adults", "1"], ["no_rooms", "1"]);
+  return params;
 }
 
 /** bahn.de connection search between two stations. */

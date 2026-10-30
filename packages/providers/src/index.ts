@@ -19,11 +19,12 @@ export {
 } from "./openMeteo/OpenMeteoWeather";
 export {
   byBudget,
+  detourKm,
   fitsBudget,
   HOTEL_KM,
   HotelIndex,
   toHotel,
 } from "./osm/hotels";
-export { OsmLodging } from "./osm/OsmLodging";
+export { OsmLodging, toOption } from "./osm/OsmLodging";
 export { openSource } from "./openSource";
 export { mergeTiles, TiledNetworkSource, tileKeys } from "./TiledNetworkSource";
