@@ -69,14 +69,14 @@
     "stars_one": "{{count}} star",
     "stars_other": "{{count}} stars",
     "fromRoute": "{{distance}} from route",
-    "detour": "+{{distance}}",
+    "detour": "+{{distance}} detour",
     "website": "Website",
-    "booking": "Booking.com",
     "kind": {
       "hotel": "Hotel",
       "guest_house": "Guest house",
       "motel": "Motel"
-    }
+    },
+    "booking": "Booking.com"
   },
   "stopChoices": {
     "stop": "Stop",

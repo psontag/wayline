@@ -162,3 +162,33 @@ export function useStopHotels(trip: Trip, index: number) {
     return { hotels, route, loading: !places };
   }, [trip, index, places]);
 }
+
+/**
+ * Map data for the selected day: hotels at the stop, and beds per
+ * alternative by name. Beds count in-budget hotels when the trip has a
+ * budget. The hotels fit TripMap's `hotels` prop.
+ */
+export function useMapHotels(trip: Trip, index: number) {
+  const { hotels } = useStopHotels(trip, index);
+  const options = useStopOptions(trip, index);
+  return useMemo(() => {
+    const beds = new Map<string, number>();
+    for (const { place, beds: b } of options) {
+      if (b) beds.set(place.name, b.inBudget ?? b.total);
+    }
+    return {
+      hotels: hotels.map(
+        ({ osmId, name, kind, stars, coord, detourKm, website }) => ({
+          osmId,
+          name,
+          kind,
+          coord,
+          detourKm,
+          ...(stars === undefined ? {} : { stars }),
+          ...(website === undefined ? {} : { website }),
+        }),
+      ),
+      beds,
+    };
+  }, [hotels, options]);
+}

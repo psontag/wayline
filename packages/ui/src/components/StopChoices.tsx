@@ -37,7 +37,7 @@ export function StopChoices({
   const { t } = useTranslation("ui");
   const format = useFormat();
   const withBudget = choices.some((c) => c.beds?.inBudget !== undefined);
-  const cell = "px-1.5 py-1.5 text-right";
+  const cell = "px-1.5 py-1.5 text-right whitespace-nowrap";
 
   return (
     <div className="flex w-full flex-col gap-1.5">
@@ -47,16 +47,16 @@ export function StopChoices({
             <th className="px-1.5 pb-1 text-left font-semibold">
               {t("stopChoices.stop")}
             </th>
-            <th className="px-1.5 pb-1 text-right font-semibold">
+            <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
               {t("stopChoices.today")}
             </th>
-            <th className="px-1.5 pb-1 text-right font-semibold">
+            <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
               {t("stopChoices.ascent")}
             </th>
-            <th className="px-1.5 pb-1 text-right font-semibold">
+            <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
               {t("stopChoices.tomorrow")}
             </th>
-            <th className="px-1.5 pb-1 text-right font-semibold">
+            <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
               {t("stopChoices.beds")}
             </th>
           </tr>
@@ -79,7 +79,7 @@ export function StopChoices({
                     : pick && "cursor-pointer hover:bg-hover",
                 )}
               >
-                <td className="max-w-0 px-1.5 py-1.5 text-left">
+                <td className="w-full max-w-0 px-1.5 py-1.5 text-left">
                   <div className="flex items-center gap-1">
                     {c.current ? (
                       <Check className="size-3.5 shrink-0" aria-hidden />

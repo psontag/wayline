@@ -52,7 +52,7 @@ describe("bedsNear", () => {
 describe("townSize", () => {
   it("finds the town by OSM id, else by name nearby", () => {
     expect(townSize(index.towns, stage!.end)).toBe("town");
-    const { osmId: _, ...noId } = stage!.end;
+    const noId = { ...stage!.end, osmId: undefined };
     expect(townSize(index.towns, noId)).toBe("town");
     expect(townSize(index.towns, { ...noId, name: "Nowhere" })).toBeUndefined();
   });
