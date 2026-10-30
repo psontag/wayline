@@ -819,11 +819,6 @@ function TripDemos() {
   );
 }
 
-const proposalProfile = Array.from(
-  { length: 40 },
-  (_, i) => 300 + 120 * Math.sin(i / 4) + 4 * i,
-);
-
 function ProposalDemos() {
   const { t } = useTranslation("devComponents");
   const format = useFormat();
@@ -832,7 +827,16 @@ function ProposalDemos() {
     { value: format.distance(252_000), label: t("demo.distance") },
     { value: format.elevation(2340), label: t("demo.ascent") },
     { value: format.percent(0.84), label: t("demo.paved") },
-    { value: format.distance(78_000), label: t("demo.longestDay") },
+  ];
+  const days = [
+    { label: "1", place: "Coburg", distance: format.distance(21_000) },
+    {
+      label: "2",
+      place: "Kronach",
+      distance: format.distance(29_000),
+      tag: t("demo.shortDay"),
+    },
+    { label: "3", place: "Bayreuth", distance: format.distance(11_000) },
   ];
   return (
     <Section title={t("section.proposals")}>
@@ -845,10 +849,20 @@ function ProposalDemos() {
           <ProposalCard
             key={n}
             number={n}
+            color={n === 1 ? "best" : "nature"}
             title={t("demo.proposalTitle")}
             subtitle={t("demo.proposalSubtitle")}
+            tags={n === 2 ? [t("demo.flattest")] : []}
             stats={stats}
-            profile={proposalProfile}
+            chart={
+              <ElevationProfile
+                axes
+                points={profile}
+                dayBreaks={[21, 50]}
+                aria-label={t("demo.elevation")}
+              />
+            }
+            days={days}
             footer={t("demo.proposalRoutes")}
             selected={selected === n}
             onSelect={() => setSelected(n)}
