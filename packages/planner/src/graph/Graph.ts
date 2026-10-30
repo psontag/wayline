@@ -14,6 +14,37 @@ const KM_PER_LON = 111.32 * Math.cos((50 * Math.PI) / 180);
 
 export type EdgeLine = { coords: LonLat[]; elevation: number[] };
 
+/** Rises and drops smaller than this are DEM noise, like trees in a forest. */
+const CLIMB_HYSTERESIS_M = 10;
+
+/**
+ * Ascent and descent of an elevation profile, without noise. The DEM is a
+ * surface model, so summing every step gives about three times what the
+ * router reports. Never less than the net change.
+ */
+export function filteredClimb(elevation: number[]): {
+  ascent: number;
+  descent: number;
+} {
+  let ascent = 0;
+  let descent = 0;
+  let ref = elevation[0] ?? 0;
+  for (const x of elevation) {
+    if (x > ref + CLIMB_HYSTERESIS_M) {
+      ascent += x - ref;
+      ref = x;
+    } else if (x < ref - CLIMB_HYSTERESIS_M) {
+      descent += ref - x;
+      ref = x;
+    }
+  }
+  const net = (elevation.at(-1) ?? 0) - (elevation[0] ?? 0);
+  return {
+    ascent: Math.round(Math.max(ascent, net)),
+    descent: Math.round(Math.max(descent, -net)),
+  };
+}
+
 /** One step of a path: an edge and the direction it is used in. */
 export type PathStep = { edge: number; forward: boolean };
 
@@ -35,10 +66,12 @@ export class Graph {
   constructor(network: RouteNetwork) {
     this.version = network.version;
     this.nodes = network.nodes;
-    this.edges = network.edges;
+    this.edges = network.edges.map((e) =>
+      e.elevation.length > 1 ? { ...e, ...filteredClimb(e.elevation) } : e,
+    );
     this.adjacency = network.nodes.map(() => []);
     this.hasScenery = network.edges.some((e) => e.scenery);
-    for (const e of network.edges) {
+    for (const e of this.edges) {
       this.edgesAt(e.from).push(e.id);
       if (e.to !== e.from) this.edgesAt(e.to).push(e.id);
     }

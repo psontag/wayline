@@ -62,11 +62,12 @@ const MIN_SCENERY = {
   nature: { gain: 0.08, min: 0.5 },
   sights: { gain: 0.05, min: 0.2 },
 };
-/**
- * Flat climbs at most this share of the best proposal per km. Hilly
- * climbs at least the inverse.
- */
-const CLIMB_GAIN = 0.85;
+/** Flat climbs at most this share of best. */
+const FLAT_SHARE = 0.85;
+/** Hilly climbs at least this many times as much as best. */
+const HILLY_GAIN = 1.5;
+/** Hilly aims for this share of the max ascent. */
+const HILLY_TARGET = 0.65;
 /** The flavour of the theme picked in the form goes first. */
 const THEME_FLAVOUR: Record<Theme, Flavour> = {
   nature: "nature",
@@ -114,8 +115,8 @@ type Pick = {
   steps: PathStep[];
   stops: Stop[];
   km: number;
-  /** Meters per km. */
-  climb: number;
+  /** Meters. */
+  ascent: number;
   shared: number;
   flavour?: Flavour;
 };
@@ -177,7 +178,7 @@ export class Planner {
           steps,
           stops: [],
           km,
-          climb: climbPerKm(graph, start, steps),
+          ascent: pathAscent(graph, start, steps),
           shared: 0,
         };
         totalKm = Math.min(totalKm, LONGER.max * km);
@@ -409,7 +410,7 @@ export class Planner {
     }
     const km = pathKm(graph, steps);
     const ascent = points.at(-1)?.ascent ?? 0;
-    return { nodes: c.nodes, steps, stops, km, climb: ascent / km, shared: 0 };
+    return { nodes: c.nodes, steps, stops, km, ascent, shared: 0 };
   }
 
   /**
@@ -474,7 +475,8 @@ export class Planner {
   /**
    * One proposal per flavour, each searched with its own edge costs. A
    * flavour is dropped if its path shares too much with an earlier one or
-   * adds nothing over the best proposal.
+   * adds nothing. Flat and hilly are searched last, so they can be held
+   * to the least and the most climbing of all.
    */
   private pickFlavours(
     candidates: (costs: Costs) => Candidate[],
@@ -487,17 +489,28 @@ export class Planner {
     let best: Pick | undefined;
     let ck: Check | undefined;
     let tries = 0;
-    for (const flavour of flavourOrder(request.theme, graph.hasScenery)) {
+    const order = flavourOrder(request.theme, graph.hasScenery);
+    const climbs: Flavour[] = ["flat", "hilly"];
+    const search = [
+      ...order.filter((f) => !climbs.includes(f)),
+      ...climbs.filter((f) => order.includes(f)),
+    ];
+    for (const flavour of search) {
       const startedAt = Date.now();
       const costs = new Costs(graph, request, flavour);
+      // Once per edge: compounding pushes late flavours into detours.
       for (const p of picks) {
-        for (const s of p.steps) {
-          costs.penalty[s.edge] =
-            (costs.penalty[s.edge] ?? 1) * VARIETY_PENALTY;
-        }
+        for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
       }
       const list = candidates(costs);
       ck ??= this.checker(list, request, totalKm);
+      // Hilly keeps the path that climbs most, until one reaches the target.
+      const target =
+        flavour === "hilly"
+          ? (HILLY_TARGET * request.maxAscentPerDay * totalKm) /
+            request.kmPerDay
+          : 0;
+      let found: Pick | undefined;
       let mine = 0;
       for (const c of list) {
         if (tries === MAX_TRIES) break;
@@ -514,14 +527,18 @@ export class Planner {
         if (flavour === "best") best ??= p;
         const shared = Math.max(0, ...picks.map((q) => sharedKm(graph, p, q)));
         if (shared > MAX_SHARED * p.km) continue;
-        if (!addsFlavour(graph, flavour, p, best)) continue;
-        picks.push({ ...p, shared: shared / p.km, flavour });
-        break;
+        if (!addsFlavour(graph, flavour, p, best, picks)) continue;
+        if (!found || p.ascent > found.ascent) {
+          found = { ...p, shared: shared / p.km, flavour };
+        }
+        if (found.ascent >= target) break;
       }
+      if (found) picks.push(found);
     }
     progress(tries);
+    const rank = (p: Pick) => order.indexOf(p.flavour ?? "best");
     return {
-      picks,
+      picks: picks.sort((a, b) => rank(a) - rank(b)),
       failedLimit: ck ? failedLimit(ck, request) : emptyLimit(request),
     };
   }
@@ -539,20 +556,34 @@ export function flavourOrder(theme: Theme | undefined, scenery: boolean) {
   ];
 }
 
-/** Does a path add its flavour over the best one? */
+/**
+ * Does a path add its flavour? Flat must climb least and hilly most of
+ * all proposals so far, both clearly apart from best. Scenery flavours
+ * must have more scenery than best.
+ */
 function addsFlavour(
   graph: Graph,
   flavour: Flavour,
   p: Pick,
   best: Pick | undefined,
+  picks: Pick[],
 ): boolean {
+  const ascents = picks.map((q) => q.ascent);
   switch (flavour) {
     case "best":
       return true;
     case "flat":
-      return !!best && p.climb <= CLIMB_GAIN * best.climb;
+      return (
+        !!best &&
+        p.ascent <= FLAT_SHARE * best.ascent &&
+        p.ascent < Math.min(...ascents)
+      );
     case "hilly":
-      return !!best && p.climb * CLIMB_GAIN >= best.climb;
+      return (
+        !!best &&
+        p.ascent >= HILLY_GAIN * best.ascent &&
+        p.ascent > Math.max(...ascents)
+      );
     case "nature":
     case "sights": {
       const { gain, min } = MIN_SCENERY[flavour];
@@ -576,10 +607,9 @@ function emptyLimit(request: GenerateRequest): FailedLimit {
   return request.region ? "area" : "days";
 }
 
-/** Meters climbed per km along a path. */
-function climbPerKm(graph: Graph, start: number, steps: PathStep[]): number {
-  const km = pathKm(graph, steps);
-  return km ? (pathPoints(graph, start, steps).at(-1)?.ascent ?? 0) / km : 0;
+/** Meters climbed along a path. */
+function pathAscent(graph: Graph, start: number, steps: PathStep[]): number {
+  return pathPoints(graph, start, steps).at(-1)?.ascent ?? 0;
 }
 
 /** Share of km on signed cycle routes. */

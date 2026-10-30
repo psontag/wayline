@@ -154,27 +154,30 @@ Each flavour searches with its own edge costs.
 |---|---|
 | `best` | The usual cost, without the theme |
 | `nature` | Boosts forest, nature reserves and water together: 1 − (1 − green)(1 − water) |
-| `flat` | Climb factor × (1 + 3 × climb / average allowed) |
-| `hilly` | Climbing up to the average allowed costs up to 2.5× less. Climbing more costs the climb factor squared. Stages still keep the max ascent. |
+| `flat` | Climb factor × (1 + climb / average allowed) |
+| `hilly` | (max(1, s))² / (1 + 30 × min(s, 1)), s = climb / average allowed. Keeps the path that climbs most of its tries, until one reaches 65 % of the max ascent. Stages still keep the max ascent. |
 | `sights` | Boosts max(culture, wine) |
 
 - Order: the flavour of the form theme first (`nature`, `water` → nature; `culture`, `wine` → sights), then best, then the rest.
-- Each flavour raises the cost of edges of earlier proposals (penalty method) and tries candidates best first. After the first proposal, each flavour gets about 60 candidates or 1.5 s.
+- Flat and hilly are searched last, so they can be held to the least and the most climbing.
+- Each flavour raises the cost of edges of earlier proposals ×2, once per edge (penalty method), and tries candidates best first. After the first proposal, each flavour gets about 60 candidates or 1.5 s.
 - A flavour is dropped when its path shares more than 40 % of its km with an earlier proposal, or when it adds nothing over best:
 
 | Flavour | Needs |
 |---|---|
 | `nature` | ≥ 50 % fit, and 8 points more than best |
 | `sights` | ≥ 20 % fit, and 5 points more than best |
-| `flat` | ≤ 85 % of the climbing per km of best |
-| `hilly` | ≥ 1 / 0.85 of the climbing per km of best |
+| `flat` | ≤ 85 % of the ascent of best, and less than every other proposal |
+| `hilly` | ≥ 1.5 × the ascent of best, and more than every other proposal |
 
 - Without scenery data there is no nature or sights flavour.
 - Each proposal has `signedShare`: the share of km on signed cycle routes.
 
 ## Climbing
 
-Edges that climb more steeply than the daily average allowed (max ascent per day / km per day) cost more: twice as steep costs twice as much. This keeps hilly forests and valleys from failing the ascent limit.
+Edge ascent drops rises and falls under 10 m (hysteresis on the edge profile). The DEM is a surface model, so trees add noise. Without the filter, ascent comes out about 3× what the router reports.
+
+Edges that climb more steeply than 40 % of the daily average allowed (max ascent per day / km per day) cost more: twice as steep costs twice as much.
 
 ## Hotel budget
 

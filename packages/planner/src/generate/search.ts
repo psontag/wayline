@@ -47,25 +47,35 @@ export function climbFactor(
   return Math.max(1, ascent / lengthKm / allowedPerKm);
 }
 
+/**
+ * Share of the daily average climb an edge may have before it costs more.
+ * Below 1, so the usual search does not pick hills it could avoid.
+ */
+const CLIMB_FREE = 0.4;
 /** Flat flavour: cost grows by this per unit of climb over the average allowed. */
-const FLAT_PENALTY = 3;
+const FLAT_PENALTY = 1;
 /** Hilly flavour: an edge climbing at the average allowed costs 1 / (1 + this) as much. */
-const HILLY_REWARD = 1.5;
+const HILLY_REWARD = 30;
 
-/** Climb part of the edge cost for a flavour. */
+/**
+ * Climb part of the edge cost for a flavour. allowedPerKm is the daily
+ * average: max ascent per day / km per day.
+ */
 export function flavourClimb(
   ascent: number,
   lengthKm: number,
   allowedPerKm: number,
   flavour?: Flavour,
 ): number {
-  const base = climbFactor(ascent, lengthKm, allowedPerKm);
+  const base = climbFactor(ascent, lengthKm, CLIMB_FREE * allowedPerKm);
   if (lengthKm <= 0) return base;
   const steep = ascent / lengthKm / allowedPerKm;
   if (flavour === "flat") return base * (1 + FLAT_PENALTY * steep);
-  // Climbing over the average allowed stays expensive.
+  // Hilly seeks climbs. Over the daily average the cost grows with the
+  // square, so very steep edges cost more than flat ground.
   if (flavour === "hilly") {
-    return (base * base) / (1 + HILLY_REWARD * Math.min(steep, 1));
+    const over = Math.max(1, steep);
+    return (over * over) / (1 + HILLY_REWARD * Math.min(steep, 1));
   }
   return base;
 }
@@ -96,7 +106,7 @@ export class Costs {
       GenerateRequest,
       "profile" | "region" | "theme" | "kmPerDay" | "maxAscentPerDay"
     >,
-    flavour?: Flavour,
+    readonly flavour?: Flavour,
   ) {
     const { profile, region, theme } = request;
     const k = SCORE_POWER[profile];
