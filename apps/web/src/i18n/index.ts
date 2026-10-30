@@ -6,7 +6,6 @@ import devComponents from "./en/devComponents.json";
 import map from "./en/map.json";
 import newTrip from "./en/newTrip.json";
 import proposals from "./en/proposals.json";
-import route from "./en/route.json";
 import settings from "./en/settings.json";
 import tripEditor from "./en/tripEditor.json";
 import tripList from "./en/tripList.json";
@@ -22,7 +21,6 @@ export const resources = {
     map,
     newTrip,
     proposals,
-    route,
     settings,
     tripEditor,
     tripList,
