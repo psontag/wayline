@@ -6,7 +6,8 @@ export type TripCardProps = {
   title: ReactNode;
   badge?: ReactNode;
   dates: string;
-  stats: string;
+  /** Usually a row of `Stat`s. */
+  stats: ReactNode;
   /** Extra line at the bottom, e.g. who shared the trip. */
   byline?: ReactNode;
   /** Line of the trip as [lon, lat] points. */
@@ -41,7 +42,9 @@ export function TripCard({
           {badge}
         </div>
         <span className="text-sm text-text-muted">{dates}</span>
-        <span className="text-sm tabular-nums">{stats}</span>
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm tabular-nums">
+          {stats}
+        </span>
         {byline && (
           <span className="flex min-w-0 items-center gap-1.5 text-xs text-text-muted [&_svg]:size-3.5 [&_svg]:shrink-0">
             {byline}

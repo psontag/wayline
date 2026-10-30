@@ -970,9 +970,21 @@ function ProposalDemos() {
   const format = useFormat();
   const [selected, setSelected] = useState(2);
   const stats = [
-    { value: format.distance(252_000), label: t("demo.distance") },
-    { value: format.elevation(2340), label: t("demo.ascent") },
-    { value: format.percent(0.84), label: t("demo.paved") },
+    {
+      icon: "distance" as const,
+      value: format.distance(252_000),
+      label: t("demo.distance"),
+    },
+    {
+      icon: "ascent" as const,
+      value: format.elevation(2340),
+      label: t("demo.ascent"),
+    },
+    {
+      icon: "ridingTime" as const,
+      value: format.duration(15.5),
+      label: t("icon.ridingTime"),
+    },
   ];
   const days = [
     { label: "1", place: "Coburg", distance: format.distance(21_000) },
@@ -1000,6 +1012,7 @@ function ProposalDemos() {
             subtitle={t("demo.proposalSubtitle")}
             tags={n === 2 ? [t("demo.flattest")] : []}
             stats={stats}
+            surface={{ paved: 84, gravel: 12, unpaved: 4 }}
             chart={
               <ElevationProfile
                 axes

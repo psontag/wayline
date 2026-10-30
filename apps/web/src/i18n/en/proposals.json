@@ -15,6 +15,9 @@
     "loopFrom": "From {{from}}",
     "days_one": "{{count}} day",
     "days_other": "{{count}} days",
+    "dates_one": "{{dates}}",
+    "dates_other": "{{dates}} · {{count}} days",
+    "date": "{{date}}",
     "kmPerDay": "{{distance}} per day",
     "distance": "{{distance}}",
     "shortDays": "Shorter first or last day",
@@ -105,7 +108,8 @@
       "tailwind": "Mostly tailwind",
       "headwind": "Headwind on day {{day}}"
     },
-    "chart": "Elevation over {{distance}}, highest point {{elevation}}"
+    "chart": "Elevation over {{distance}}, highest point {{elevation}}",
+    "ridingTime": "Riding time"
   },
   "map": {
     "label": "Map with the proposals",

@@ -6,6 +6,7 @@ import {
   type LonLat,
   pointAtKm,
   type Proposal,
+  ridingHours,
   type RoutePoint,
   routePoints,
   type Trip,
@@ -25,6 +26,11 @@ export function proposalStats(trip: Trip) {
     distance: stats.distance,
     ascent: stats.ascent,
     paved: stats.surface.paved,
+    surface: stats.surface,
+    ridingHours: trip.stages.reduce(
+      (sum, stage) => sum + ridingHours(stage.stats, trip.settings.avgSpeed),
+      0,
+    ),
   };
 }
 

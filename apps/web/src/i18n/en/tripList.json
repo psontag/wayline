@@ -19,8 +19,13 @@
   },
   "noDate": "No date yet",
   "dateRange": "{{start}} – {{end}}",
-  "stats": "{{distance}} · {{ascent}}",
-  "statsWithStages": "{{distance}} · {{ascent}} · {{count}} stages",
+  "stat": {
+    "distance": "Distance",
+    "ascent": "Ascent",
+    "stages": "Stages",
+    "stageCount_one": "{{count}} stage",
+    "stageCount_other": "{{count}} stages"
+  },
   "actions": "Trip actions",
   "duplicate": "Duplicate",
   "delete": "Delete",

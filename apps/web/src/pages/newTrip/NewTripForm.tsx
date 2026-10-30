@@ -332,6 +332,7 @@ export function NewTripForm({
                     return (
                       <FormField
                         label={t(length === "one" ? "distance" : "kmPerDay")}
+                        icon="distance"
                         htmlFor={`${id}-km`}
                         error={error}
                         errorId={`${id}-km-error`}
@@ -357,6 +358,7 @@ export function NewTripForm({
                         label={t(
                           length === "one" ? "maxAscent" : "maxAscentPerDay",
                         )}
+                        icon="ascent"
                         htmlFor={`${id}-ascent`}
                         error={error}
                         errorId={`${id}-ascent-error`}
@@ -379,6 +381,7 @@ export function NewTripForm({
                     {(field) => (
                       <FormField
                         label={t("hotelBudget")}
+                        icon="budget"
                         htmlFor={`${id}-budget`}
                       >
                         <Select
