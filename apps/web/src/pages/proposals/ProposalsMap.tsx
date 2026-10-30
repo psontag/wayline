@@ -9,7 +9,7 @@ import {
   IconButton,
   MapControlGroup,
   MapLegend,
-  ProposalMarker,
+  RouteLabel,
   StopMarker,
   useTheme,
   useThemeTokens,
@@ -17,6 +17,7 @@ import {
 import type { FeatureCollection, LineString } from "geojson";
 import { Minus, Plus } from "lucide-react";
 import {
+  type DataDrivenPropertyValueSpecification,
   type FilterSpecification,
   type LngLatBoundsLike,
   setWorkerUrl,
@@ -35,6 +36,7 @@ import MapGL, {
 import { NetworkLayer } from "../../components/NetworkLayer";
 import { useHiddenPlaceLabels } from "../../components/placeLabels";
 import { labelPoints, tripPoints } from "./proposalView";
+import { flavourOf, routeColorKey, routeColorToken } from "./routeColor";
 
 setWorkerUrl(workerUrl);
 
@@ -47,12 +49,20 @@ const mapStyles = {
 const padding = { top: 56, right: 120, bottom: 40, left: 56 };
 const lineLayout = { "line-cap": "round", "line-join": "round" } as const;
 
+// Free elevation tiles, no key needed.
+const terrainTiles = [
+  "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+];
+const hillshadeStrength = { light: 0.25, dark: 0.35 };
+
 export type ProposalsMapProps = {
   proposals: Proposal[];
   /** Start and end of the request, shown before any proposal is there. */
   places: Place[];
   /** Proposal shown on top, e.g. the selected or hovered one. */
   highlighted?: string;
+  /** Day of the highlighted proposal to show at full strength. */
+  highlightedDay?: number;
   onSelect: (id: string) => void;
 };
 
@@ -72,11 +82,12 @@ function bounds(coords: LonLat[]): LngLatBoundsLike | undefined {
 
 const regionBounds: LngLatBoundsLike = [10.45, 49.59, 12.26, 50.52];
 
-/** All proposals on one map. Unselected ones are dimmed. */
+/** All proposals on one map, each in its own color. */
 export function ProposalsMap({
   proposals,
   places,
   highlighted,
+  highlightedDay,
   onSelect,
 }: ProposalsMapProps) {
   const { t } = useTranslation("proposals");
@@ -91,30 +102,40 @@ export function ProposalsMap({
     [proposals],
   );
   const labels = useMemo(() => labelPoints(routes), [routes]);
+  const colors = useMemo(
+    () => proposals.map((p, i) => tokens[routeColorToken[routeColorKey(p, i)]]),
+    [proposals, tokens],
+  );
 
   const data = useMemo<FeatureCollection<LineString>>(
     () => ({
       type: "FeatureCollection",
       features: proposals.map((p, i) => ({
         type: "Feature",
-        properties: { id: p.id, highlighted: p.id === highlighted },
+        properties: {
+          id: p.id,
+          highlighted: p.id === highlighted,
+          color: colors[i] ?? tokens.routeBest,
+        },
         geometry: {
           type: "LineString",
           coordinates: (routes[i] ?? []).map((point) => point.coord),
         },
       })),
     }),
-    [proposals, routes, highlighted],
+    [proposals, routes, highlighted, colors, tokens.routeBest],
   );
 
-  // The highlighted proposal day by day, in alternating colors.
-  const shown = proposals.find((p) => p.id === highlighted);
+  // The highlighted proposal day by day, so one day can stand out.
+  const shownIndex = proposals.findIndex((p) => p.id === highlighted);
+  const shown = proposals[shownIndex];
+  const shownColor = colors[shownIndex] ?? tokens.routeBest;
   const days = useMemo<FeatureCollection<LineString>>(
     () => ({
       type: "FeatureCollection",
       features: (shown?.trip.stages ?? []).map((stage, i) => ({
         type: "Feature",
-        properties: { color: i % 2 ? "b" : "a" },
+        properties: { day: i + 1 },
         geometry: {
           type: "LineString",
           coordinates: stage.legs.flatMap((leg) => decodeLine(leg.geometry)),
@@ -190,6 +211,15 @@ export function ProposalsMap({
     ["get", "highlighted"],
     false,
   ];
+  const dayOpacity = (dimmed: number) =>
+    highlightedDay === undefined
+      ? 1
+      : ([
+          "case",
+          ["==", ["get", "day"], highlightedDay],
+          1,
+          dimmed,
+        ] satisfies DataDrivenPropertyValueSpecification<number>);
 
   return (
     <div className="absolute inset-0" role="region" aria-label={t("map.label")}>
@@ -209,22 +239,39 @@ export function ProposalsMap({
         onMouseLeave={() => setCursor(undefined)}
         cursor={cursor}
       >
-        <Source id="proposals" type="geojson" data={data}>
+        <Source
+          id="terrain"
+          type="raster-dem"
+          tiles={terrainTiles}
+          encoding="terrarium"
+          tileSize={256}
+          maxzoom={15}
+        >
           <Layer
-            id="proposal-casing"
+            id="hillshade"
             beforeId={labelLayerId}
-            type="line"
-            filter={notHighlighted}
-            layout={lineLayout}
-            paint={{ "line-color": tokens.surface, "line-width": 8 }}
+            type="hillshade"
+            paint={{
+              "hillshade-shadow-color": tokens.hillshadeShadow,
+              "hillshade-highlight-color": tokens.hillshadeHighlight,
+              "hillshade-accent-color": tokens.hillshadeShadow,
+              "hillshade-exaggeration": hillshadeStrength[resolvedTheme],
+              "hillshade-illumination-anchor": "map",
+            }}
           />
+        </Source>
+        <Source id="proposals" type="geojson" data={data}>
           <Layer
             id="proposal-line"
             beforeId={labelLayerId}
             type="line"
             filter={notHighlighted}
             layout={lineLayout}
-            paint={{ "line-color": tokens.routeDimmed, "line-width": 5 }}
+            paint={{
+              "line-color": ["get", "color"],
+              "line-width": 3,
+              "line-opacity": 0.5,
+            }}
           />
           <Layer
             id="proposal-hit"
@@ -243,7 +290,11 @@ export function ProposalsMap({
             beforeId={labelLayerId}
             type="line"
             layout={lineLayout}
-            paint={{ "line-color": tokens.routeCasing, "line-width": 11 }}
+            paint={{
+              "line-color": tokens.routeOutline,
+              "line-width": 9,
+              "line-opacity": dayOpacity(0.15),
+            }}
           />
           <Layer
             id="day-line"
@@ -251,18 +302,13 @@ export function ProposalsMap({
             type="line"
             layout={lineLayout}
             paint={{
-              "line-color": [
-                "match",
-                ["get", "color"],
-                "a",
-                tokens.routeSelected,
-                tokens.stageB,
-              ],
-              "line-width": 7,
+              "line-color": shownColor,
+              "line-width": 6,
+              "line-opacity": dayOpacity(0.4),
             }}
           />
         </Source>
-        <NetworkLayer around={stopCoords} beforeId="proposal-casing" />
+        <NetworkLayer around={stopCoords} beforeId="proposal-line" subtle />
 
         {ends.map((place) => (
           <Marker
@@ -299,6 +345,7 @@ export function ProposalsMap({
           const at = labels[i];
           if (!at) return null;
           const selected = p.id === highlighted;
+          const flavour = flavourOf(p);
           return (
             <Marker
               key={p.id}
@@ -306,8 +353,9 @@ export function ProposalsMap({
               latitude={at[1]}
               style={{ zIndex: selected ? 2 : 1 }}
             >
-              <ProposalMarker
-                number={i + 1}
+              <RouteLabel
+                label={flavour ? t(`flavour.${flavour}`) : String(i + 1)}
+                color={routeColorKey(p, i)}
                 selected={selected}
                 aria-label={t("map.select", { number: i + 1 })}
                 onClick={() => onSelect(p.id)}

@@ -60,6 +60,14 @@ const textPairs = [
   ["on-inverse", "inverse"],
 ] as const;
 
+const routeColors = [
+  "route-best",
+  "route-nature",
+  "route-flat",
+  "route-hilly",
+  "route-sights",
+] as const;
+
 const colors = readColors();
 
 describe.each(["light", "dark"] as const)("%s theme", (theme) => {
@@ -67,6 +75,11 @@ describe.each(["light", "dark"] as const)("%s theme", (theme) => {
 
   it.each(textPairs)("%s on %s is at least 4.5:1", (fg, bg) => {
     const ratio = contrast(get(tokens, fg), get(tokens, bg));
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(routeColors)("on-route on %s is at least 4.5:1", (route) => {
+    const ratio = contrast(get(tokens, "on-route"), get(tokens, route));
     expect(ratio).toBeGreaterThanOrEqual(4.5);
   });
 

@@ -47,13 +47,16 @@ function useNetworkLines(bbox: BBox | undefined) {
 /**
  * Signed cycling routes around the given points as a quiet layer.
  * beforeId keeps it below our route lines, since it may load after them.
+ * subtle makes it fainter, for maps where the routes matter more.
  */
 export function NetworkLayer({
   around,
   beforeId,
+  subtle = false,
 }: {
   around: LonLat[];
   beforeId?: string;
+  subtle?: boolean;
 }) {
   const tokens = useThemeTokens();
   const { data } = useNetworkLines(networkArea(around));
@@ -67,7 +70,10 @@ export function NetworkLayer({
         layout={{ "line-cap": "round", "line-join": "round" }}
         paint={{
           "line-color": tokens.network,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 8, 1.25, 12, 3],
+          "line-width": subtle
+            ? ["interpolate", ["linear"], ["zoom"], 8, 1, 12, 2]
+            : ["interpolate", ["linear"], ["zoom"], 8, 1.25, 12, 3],
+          "line-opacity": subtle ? 0.35 : 1,
         }}
       />
     </Source>
