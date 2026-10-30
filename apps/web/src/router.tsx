@@ -8,7 +8,6 @@ import { AppShell } from "./components/AppShell";
 import { DevComponentsPage } from "./pages/DevComponentsPage";
 import { validateNewTripSearch } from "./pages/newTrip/search";
 import { validateProposalsSearch } from "./pages/proposals/search";
-import { validateRouteSearch } from "./pages/route/search";
 import { SettingsPage } from "./pages/settings/SettingsPage";
 import { validateTripEditorSearch } from "./pages/tripEditor/search";
 import { TripListPage } from "./pages/tripList/TripListPage";
@@ -56,16 +55,6 @@ const tripEditorRoute = createRoute({
   ),
 });
 
-const routeRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/route",
-  validateSearch: validateRouteSearch,
-  component: lazyRouteComponent(
-    () => import("./pages/route/RoutePage"),
-    "RoutePage",
-  ),
-});
-
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
@@ -89,7 +78,6 @@ const routeTree = rootRoute.addChildren([
   newTripRoute,
   proposalsRoute,
   tripEditorRoute,
-  routeRoute,
   settingsRoute,
   mapRoute,
   devComponentsRoute,

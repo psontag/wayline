@@ -105,7 +105,6 @@ The Web Worker reports phases:
 
 | Mode | How |
 |---|---|
-| Route A to B (`/route`) | Route directly with the chosen profile. No graph search. |
 | One day A to B | Graph search. Each proposal has a character: direct, longer or scenic. No flavours. |
 | Day loop | Graph search for a loop of the given length, without stops. |
 

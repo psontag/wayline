@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { TripSummary } from "@wayline/domain";
 import { Button, cn, EmptyState } from "@wayline/ui";
-import { Plus, Route } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTrips } from "../../data/queries";
 import { TripListItem } from "./TripListItem";
@@ -19,12 +19,6 @@ export function TripListPage() {
           {t("title")}
         </h1>
         <div className="flex gap-2 max-md:hidden">
-          <Button asChild>
-            <Link to="/route">
-              <Route aria-hidden />
-              {t("routeAToB")}
-            </Link>
-          </Button>
           <Button asChild variant="primary">
             <Link to="/new">
               <Plus aria-hidden />
