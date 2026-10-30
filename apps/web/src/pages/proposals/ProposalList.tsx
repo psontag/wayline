@@ -24,6 +24,7 @@ import {
   progressValue,
   proposalStats,
   relaxOptions,
+  tripRidingHours,
   type Relaxed,
   windTag,
 } from "./proposalView";
@@ -256,7 +257,7 @@ function ProposalItem({
         },
         {
           icon: "ridingTime",
-          value: format.duration(stats.ridingHours),
+          value: format.duration(tripRidingHours(trip)),
           label: t("card.ridingTime"),
         },
       ]}

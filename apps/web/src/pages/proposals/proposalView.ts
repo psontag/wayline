@@ -27,11 +27,15 @@ export function proposalStats(trip: Trip) {
     ascent: stats.ascent,
     paved: stats.surface.paved,
     surface: stats.surface,
-    ridingHours: trip.stages.reduce(
-      (sum, stage) => sum + ridingHours(stage.stats, trip.settings.avgSpeed),
-      0,
-    ),
   };
+}
+
+/** Riding time of the whole trip in hours, without breaks. */
+export function tripRidingHours(trip: Trip): number {
+  return trip.stages.reduce(
+    (sum, stage) => sum + ridingHours(stage.stats, trip.settings.avgSpeed),
+    0,
+  );
 }
 
 /** km from the trip start where each day after the first starts. */
