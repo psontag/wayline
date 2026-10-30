@@ -155,7 +155,7 @@ export function PhoneStageSheet({
                       icon="stars"
                       value={String(hotel.stars)}
                       label={tUi("hotel.stars", { count: hotel.stars })}
-                      className="font-normal text-text-muted"
+                      muted
                     />
                   )}
                 </span>

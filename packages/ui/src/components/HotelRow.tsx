@@ -41,7 +41,6 @@ export function HotelRow({
 }: HotelRowProps) {
   const { t } = useTranslation("ui");
   const format = useFormat();
-  const meta = "font-normal text-text-muted";
   const links = [
     website && { href: website, label: t("hotel.website") },
     booking && { href: booking, label: t("hotel.booking") },
@@ -79,7 +78,7 @@ export function HotelRow({
               icon="stars"
               value={String(stars)}
               label={t("hotel.stars", { count: stars })}
-              className={meta}
+              muted
             />
           )}
           {distance !== undefined && (
@@ -88,7 +87,7 @@ export function HotelRow({
               icon="distance"
               value={format.distance(distance)}
               label={t("hotel.fromRouteLabel")}
-              className={meta}
+              muted
             />
           )}
           {detour !== undefined && (
@@ -99,7 +98,7 @@ export function HotelRow({
                 distance: format.distance(detour),
               })}
               label={t("hotel.detourLabel")}
-              className={meta}
+              muted
             />
           )}
           {links.map(({ href, label }) => (

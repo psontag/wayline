@@ -8,7 +8,7 @@ import {
   Label,
   SegmentedControl,
   Select,
-  StageCard,
+  StageDetails,
   StatBlock,
   Stat,
   statIcons,
@@ -65,7 +65,7 @@ import {
   ChoiceGroup,
   FloatingButton,
   FloatingTitle,
-  InfoTile,
+  DayWeather,
   LinkRow,
   SheetDialog,
 } from "@wayline/ui";
@@ -157,6 +157,7 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
   const profileLabelId = useId();
   const [profile, setProfile] = useState("touring");
   const [selectedDay, setSelectedDay] = useState(2);
+  const selectedStage = stages.find((s) => s.day === selectedDay);
   const [locked, setLocked] = useState<Record<number, boolean>>({
     1: true,
     2: true,
@@ -309,53 +310,81 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
       <IconDemos />
 
       <Section title={t("section.stages")}>
-        <div className="flex max-w-panel flex-col gap-2 rounded-md bg-surface p-3">
-          {stages.map((stage) => (
-            <StageCard
-              key={stage.day}
-              {...stage}
-              to={stage.day === 2 ? stop : stage.to}
-              selected={stage.day === selectedDay}
-              onSelect={() => setSelectedDay(stage.day)}
-              locked={locked[stage.day] ?? false}
-              onLockedChange={(value) =>
-                setLocked({ ...locked, [stage.day]: value })
-              }
-              alternatives={alternatives.map((alt) => (
-                <Chip
-                  key={alt.name}
-                  selected={alt.name === stop}
-                  onClick={() => setStop(alt.name)}
+        <div className="flex max-w-panel flex-col rounded-md bg-surface">
+          <DayList
+            className="p-3"
+            start={stages[0].from}
+            days={stages.map((stage) => ({
+              label: String(stage.day),
+              place: stage.day === 2 ? stop : stage.to,
+              date: format.date(stage.date),
+              distance: format.distance(stage.distance),
+              ascent: format.elevation(stage.ascent),
+              ridingTime: format.duration(stage.ridingHours),
+              tag: locked[stage.day] ? t("demo.locked") : undefined,
+            }))}
+            selectedDay={selectedDay}
+            onSelectDay={setSelectedDay}
+            details={
+              selectedStage && (
+                <StageDetails
+                  surface={selectedStage.surface}
+                  weather={{
+                    temperature: selectedStage.temperature,
+                    feelsLike: selectedStage.feelsLike,
+                    rain: selectedStage.day === 2 ? 1.2 : 0,
+                    wind: selectedStage.wind,
+                  }}
+                  locked={locked[selectedDay] ?? false}
+                  onLockedChange={(value) =>
+                    setLocked({ ...locked, [selectedDay]: value })
+                  }
+                  alternatives={
+                    <div className="flex flex-wrap gap-1.5">
+                      {alternatives.map((alt) => (
+                        <Chip
+                          key={alt.name}
+                          selected={alt.name === stop}
+                          onClick={() => setStop(alt.name)}
+                        >
+                          {t("demo.alternative", {
+                            name: alt.name,
+                            distance: format.distance(alt.distance),
+                          })}
+                        </Chip>
+                      ))}
+                    </div>
+                  }
                 >
-                  {t("demo.alternative", {
-                    name: alt.name,
-                    distance: format.distance(alt.distance),
-                  })}
-                </Chip>
-              ))}
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <Button asChild variant="primary" size="sm" className="flex-1">
-                  <a
-                    href="https://www.booking.com"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {t("demo.bookHotels", { place: stop })}
-                    <ExternalLink aria-hidden />
-                  </a>
-                </Button>
-                <div className="w-20 shrink-0">
-                  <Select
-                    size="sm"
-                    aria-label={t("demo.rating")}
-                    defaultValue="8"
-                    options={ratingOptions(t("demo.ratingAny"))}
-                  />
-                </div>
-              </div>
-            </StageCard>
-          ))}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      asChild
+                      variant="primary"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <a
+                        href="https://www.booking.com"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {t("demo.bookHotels", { place: stop })}
+                        <ExternalLink aria-hidden />
+                      </a>
+                    </Button>
+                    <div className="w-20 shrink-0">
+                      <Select
+                        size="sm"
+                        aria-label={t("demo.rating")}
+                        defaultValue="8"
+                        options={ratingOptions(t("demo.ratingAny"))}
+                      />
+                    </div>
+                  </div>
+                </StageDetails>
+              )
+            }
+          />
         </div>
       </Section>
 
@@ -667,10 +696,12 @@ function PhoneParts() {
           </Chip>
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <InfoTile label={t("demo.weather")} value={t("demo.weatherValue")} />
-        <InfoTile label={t("demo.wind")} value={t("demo.windValue")} />
-      </div>
+      <DayWeather
+        temperature={{ min: 17, max: 23 }}
+        feelsLike={14}
+        rain={0}
+        wind={{ kind: "head", share: 0.45, speedKmh: 16 }}
+      />
       <LinkRow
         icon={<BedDouble aria-hidden />}
         title={t("demo.stop")}
@@ -715,7 +746,11 @@ function PhoneParts() {
         title={t("demo.whereToStop")}
         subtitle="Day 2 · Sun 13 Jun · from Coburg"
       >
-        <InfoTile label={t("demo.wind")} value={t("demo.windValue")} />
+        <DayWeather
+          temperature={{ min: 17, max: 23 }}
+          rain={0}
+          wind={{ kind: "head", share: 0.45, speedKmh: 16 }}
+        />
       </SheetDialog>
     </Section>
   );

@@ -169,7 +169,6 @@ export {
   FloatingTitle,
   type FloatingButtonProps,
 } from "./components/FloatingBar";
-export { InfoTile } from "./components/InfoTile";
 export { LinkRow, type LinkRowProps } from "./components/LinkRow";
 export {
   ChoiceCard,
