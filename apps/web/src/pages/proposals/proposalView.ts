@@ -64,25 +64,25 @@ const measures: Measure[] = [
     tag: "flattest",
     value: (p) => proposalStats(p.trip).ascent,
     most: false,
-    clear: (best, next) => next - best >= Math.max(100, best * 0.15),
+    clear: (best, next) => next - best >= Math.max(50, best * 0.1),
   },
   {
     tag: "mostPaved",
     value: (p) => proposalStats(p.trip).paved,
     most: true,
-    clear: (best, next) => best - next >= 0.05,
+    clear: (best, next) => best - next >= 0.03,
   },
   {
     tag: "mostSigned",
     value: (p) => (p as Proposal & { signedShare?: number }).signedShare,
     most: true,
-    clear: (best, next) => best - next >= 0.1,
+    clear: (best, next) => best - next >= 0.05,
   },
   {
     tag: "shortest",
     value: (p) => proposalStats(p.trip).distance,
     most: false,
-    clear: (best, next) => next - best >= Math.max(5000, best * 0.05),
+    clear: (best, next) => next - best >= Math.max(3000, best * 0.03),
   },
 ];
 
