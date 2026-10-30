@@ -119,5 +119,12 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "network": "Signed cycling routes"
+  },
+  "flavour": {
+    "best": "Best overall",
+    "nature": "Nature and water",
+    "flat": "Flat and easy",
+    "hilly": "Hilly",
+    "sights": "Towns and sights"
   }
 }

@@ -128,9 +128,11 @@ export {
   type ProposalStat,
 } from "./components/ProposalCard";
 export {
-  ProposalMarker,
-  type ProposalMarkerProps,
-} from "./components/ProposalMarker";
+  RouteLabel,
+  routeColorClasses,
+  type RouteColor,
+  type RouteLabelProps,
+} from "./components/RouteLabel";
 export { ProgressBar, type ProgressBarProps } from "./components/ProgressBar";
 export {
   MessagePanel,
