@@ -217,5 +217,7 @@ describe("Planner on the Heidelberg tiles", () => {
     expect(others.length).toBeGreaterThan(0);
     // Weinheim has a station within 2 km.
     expect(direct!.trip.stages[0]!.end.kind).toBe("station");
+    // The name keeps the towns the user picked.
+    expect(direct!.trip.name).toBe("Heidelberg – Weinheim");
   });
 });
