@@ -8,6 +8,8 @@ export type StatProps = {
   /** Tooltip and accessible name of the icon, e.g. "Distance". */
   label: string;
   size?: "sm" | "md";
+  /** Secondary info, e.g. in a hotel row. */
+  muted?: boolean;
   className?: string;
 };
 
@@ -17,6 +19,7 @@ export function Stat({
   value,
   label,
   size = "md",
+  muted = false,
   className,
 }: StatProps) {
   const Icon = statIcons[icon];
@@ -24,10 +27,13 @@ export function Stat({
     <Tooltip label={label}>
       <span
         className={cn(
-          "inline-flex items-center whitespace-nowrap text-text tabular-nums",
-          size === "md"
-            ? "gap-1.5 text-base font-bold"
-            : "gap-1 text-xs font-semibold",
+          "inline-flex items-center whitespace-nowrap tabular-nums",
+          size === "md" ? "gap-1.5 text-base" : "gap-1 text-xs",
+          muted
+            ? "font-normal text-text-muted"
+            : size === "md"
+              ? "font-bold text-text"
+              : "font-semibold text-text",
           className,
         )}
       >

@@ -29,10 +29,12 @@ export {
   type SelectProps,
 } from "./components/Select";
 export {
-  StageCard,
-  type StageCardProps,
+  DayWeather,
+  StageDetails,
+  type DayWeatherProps,
+  type StageDetailsProps,
   type Wind,
-} from "./components/StageCard";
+} from "./components/StageDetails";
 export { StatBlock, type StatBlockProps } from "./components/StatBlock";
 export { Stat, type StatProps } from "./components/Stat";
 export {
@@ -167,7 +169,6 @@ export {
   FloatingTitle,
   type FloatingButtonProps,
 } from "./components/FloatingBar";
-export { InfoTile } from "./components/InfoTile";
 export { LinkRow, type LinkRowProps } from "./components/LinkRow";
 export {
   ChoiceCard,

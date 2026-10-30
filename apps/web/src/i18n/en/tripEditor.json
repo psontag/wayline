@@ -30,12 +30,12 @@
     "day-loop": "Day loop"
   },
   "summary": {
-    "stages": "Stages",
+    "days": "Days",
     "stageCount_one": "{{count}} day",
     "stageCount_other": "{{count}} days",
     "distance": "Distance",
     "ascent": "Ascent",
-    "paved": "Paved",
+    "ridingTime": "Riding time",
     "trainTo": "Train to {{station}} on bahn.de",
     "trainFrom": "Train from {{station}} on bahn.de"
   },
@@ -52,7 +52,8 @@
     "noHotelsNear": "No hotels found near {{place}}",
     "moreHotels_one": "{{count}} more in {{place}}",
     "moreHotels_other": "{{count}} more in {{place}}",
-    "choose": "Choose"
+    "choose": "Choose",
+    "locked": "Locked"
   },
   "profile": {
     "title": "Day {{day}} · {{from}} → {{to}}",
@@ -90,19 +91,11 @@
     "route": "{{from}} → {{to}}",
     "day": "Day {{day}}",
     "dayDate": "Day {{day}} · {{date}}",
-    "weather": "Weather",
-    "wind": "Wind",
-    "weatherValue": "{{min}}–{{max}}, {{condition}}",
-    "condition": {
-      "dry": "dry",
-      "rain": "rain"
-    },
     "noStartDate": "No start date",
     "loading": "Loading",
     "forecastFrom": "Forecast from {{date}}",
     "stop": "Stop: {{place}}",
     "noHotel": "No hotel picked yet",
-    "hotel": "{{name}} · {{stars}}",
     "elevation": "Elevation",
     "exportStage": "Export this stage as GPX",
     "stageFileName": "{{name}}, day {{day}}",

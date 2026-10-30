@@ -14,10 +14,14 @@ export type DayListItem = {
   label: string;
   /** Where the day ends, e.g. "Bergrheinfeld". */
   place: string;
+  /** "Fri 6 Nov", below the place. */
+  date?: string;
   /** "65 km" */
   distance: string;
   /** "380 m" */
   ascent?: string;
+  /** "3 h 30" */
+  ridingTime?: string;
   /** Short note, e.g. "Half day". */
   tag?: string;
   /** Fill of the day badge. Defaults to the stop marker color. */
@@ -26,6 +30,10 @@ export type DayListItem = {
 
 export type DayListProps = {
   days: DayListItem[];
+  /** Where the first day starts. Shown as a dot above day 1. */
+  start?: string;
+  /** Shown under the selected day, next to the timeline. */
+  details?: ReactNode;
   /** Called with the day number (from 1) under the pointer, or undefined. */
   onHoverDay?: (day: number | undefined) => void;
   /** Day number (from 1). */
@@ -41,9 +49,14 @@ const colorClasses: Record<DayColor, string> = {
   "stage-b": "bg-stage-b",
 };
 
-/** Days of a trip as a timeline of numbered stops, with km and ascent columns. */
+/**
+ * Days of a trip as a timeline of numbered stops, with km, ascent and
+ * riding time columns. The selected day can show details.
+ */
 export function DayList({
   days,
+  start,
+  details,
   onHoverDay,
   selectedDay,
   onSelectDay,
@@ -51,6 +64,7 @@ export function DayList({
 }: DayListProps) {
   const { t } = useTranslation("ui");
   const hasAscent = days.some((day) => day.ascent);
+  const hasRidingTime = days.some((day) => day.ridingTime);
 
   return (
     <div className={cn("flex flex-col text-sm", className)}>
@@ -58,7 +72,22 @@ export function DayList({
         <span className="flex-1" />
         <ColumnIcon icon="distance" label={t("dayList.distance")} />
         {hasAscent && <ColumnIcon icon="ascent" label={t("dayList.ascent")} />}
+        {hasRidingTime && (
+          <ColumnIcon icon="ridingTime" label={t("dayList.ridingTime")} />
+        )}
       </div>
+      {start && (
+        <div className="flex gap-2 px-1.5">
+          <span className="flex w-6 shrink-0 flex-col items-center">
+            <Line hidden />
+            <span className="size-2.5 shrink-0 rounded-full border-2 border-marker bg-surface" />
+            <Line hidden={false} />
+          </span>
+          <span className="min-w-0 truncate py-1 text-xs font-semibold text-text-muted">
+            {start}
+          </span>
+        </div>
+      )}
       <ol className="flex flex-col">
         {days.map((day, i) => {
           const n = i + 1;
@@ -66,7 +95,7 @@ export function DayList({
           const content = (
             <>
               <span className="flex w-6 shrink-0 flex-col items-center">
-                <Line hidden={i === 0} />
+                <Line hidden={i === 0 && !start} />
                 <span
                   className={cn(
                     "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-extrabold tabular-nums",
@@ -82,9 +111,16 @@ export function DayList({
                 </span>
                 <Line hidden={i === days.length - 1} />
               </span>
-              <span className="flex min-w-0 flex-1 items-center gap-2 py-2.5">
-                <span className="min-w-0 truncate font-bold">{day.place}</span>
-                {day.tag && <Badge className="shrink-0">{day.tag}</Badge>}
+              <span className="flex min-w-0 flex-1 flex-col justify-center py-2.5">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="min-w-0 truncate font-bold">
+                    {day.place}
+                  </span>
+                  {day.tag && <Badge className="shrink-0">{day.tag}</Badge>}
+                </span>
+                {day.date && (
+                  <span className="text-xs text-text-muted">{day.date}</span>
+                )}
               </span>
               <span className="w-14 shrink-0 self-center text-right font-semibold tabular-nums">
                 {day.distance}
@@ -92,6 +128,11 @@ export function DayList({
               {hasAscent && (
                 <span className="w-12 shrink-0 self-center text-right text-text-muted tabular-nums">
                   {day.ascent}
+                </span>
+              )}
+              {hasRidingTime && (
+                <span className="w-14 shrink-0 self-center text-right text-text-muted tabular-nums">
+                  {day.ridingTime}
                 </span>
               )}
             </>
@@ -108,6 +149,14 @@ export function DayList({
               >
                 {content}
               </Row>
+              {selected && details && (
+                <div className="flex gap-2 px-1.5">
+                  <span className="flex w-6 shrink-0 flex-col items-center">
+                    <Line hidden={i === days.length - 1} />
+                  </span>
+                  <div className="min-w-0 flex-1 pt-2 pb-4">{details}</div>
+                </div>
+              )}
             </li>
           );
         })}
@@ -154,7 +203,7 @@ function ColumnIcon({ icon, label }: { icon: StatIcon; label: string }) {
       <span
         className={cn(
           "flex shrink-0 justify-end text-text-muted",
-          icon === "distance" ? "w-14" : "w-12",
+          icon === "ascent" ? "w-12" : "w-14",
         )}
       >
         <Icon role="img" aria-label={label} className="size-3.5" />

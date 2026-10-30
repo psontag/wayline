@@ -79,6 +79,7 @@ function TripEditor({
   const network = useNetwork(networkArea(tripStops(trip)));
   const isPhone = useIsPhone();
   const [hoverKm, setHoverKm] = useState<number>();
+  const [hoveredDay, setHoveredDay] = useState<number>();
   const [sharing, setSharing] = useState(false);
   const shareDialog = canShare && (
     <ShareDialog trip={trip} open={sharing} onOpenChange={setSharing} />
@@ -196,6 +197,7 @@ function TripEditor({
               trip={trip}
               selected={selected}
               onSelect={select}
+              hovered={hoveredDay}
               alternatives={alternatives}
               onPickAlternative={(place) =>
                 void editor.moveStop(selected, place)
@@ -246,6 +248,7 @@ function TripEditor({
               trip={trip}
               selected={selected}
               onSelect={select}
+              onHover={setHoveredDay}
               editor={editor}
             />
           </div>

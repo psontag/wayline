@@ -24,15 +24,12 @@
   },
   "dayList": {
     "distance": "Distance",
-    "ascent": "Ascent"
+    "ascent": "Ascent",
+    "ridingTime": "Riding time"
   },
   "stage": {
-    "day": "Day {{day}} · {{date}}",
-    "route": "{{from}} → {{to}}",
-    "stop": "Stop: <strong>{{name}}</strong>",
     "locked": "Locked",
     "lock": "Lock",
-    "dayOnly": "Day {{day}}",
     "temperatureRange": "{{min}}–{{max}}",
     "windWithSpeed": "{{wind}} · {{speed}}",
     "wind": {
@@ -40,8 +37,13 @@
       "tail": "{{share}} tailwind",
       "cross": "{{share}} crosswind"
     },
-    "riding": "About {{duration}} riding",
-    "feelsLike": "{{range}}, feels like {{feelsLike}}"
+    "feelsLike": "{{range}}, feels like {{feelsLike}}",
+    "whereToStop": "Where to stop",
+    "temperature": "Temperature",
+    "rain": "Rain",
+    "rainUpTo": "Up to {{amount}}/h",
+    "dry": "Dry",
+    "windLabel": "Wind"
   },
   "toast": {
     "close": "Close"
@@ -72,7 +74,6 @@
   "hotel": {
     "stars_one": "{{count}} star",
     "stars_other": "{{count}} stars",
-    "fromRoute": "{{distance}} from route",
     "detour": "+{{distance}} detour",
     "website": "Website",
     "kind": {
@@ -80,7 +81,10 @@
       "guest_house": "Guest house",
       "motel": "Motel"
     },
-    "booking": "Booking.com"
+    "booking": "Booking.com",
+    "fromRouteLabel": "Distance from the route",
+    "detourValue": "+{{distance}}",
+    "detourLabel": "Detour from the route"
   },
   "stopChoices": {
     "stop": "Stop",

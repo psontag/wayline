@@ -88,16 +88,12 @@
     "noResultAction": "Allow up to 1,000 m per day",
     "back": "Back to trips",
     "day": "Day {{day}}",
-    "weather": "Weather",
-    "wind": "Wind",
     "stop": "Stop: Kronach",
     "stopTown": "Stop town",
     "current": "Current",
     "picked": "Picked",
     "pick": "Pick",
     "whereToStop": "Where to stop",
-    "weatherValue": "17–23 °C, dry",
-    "windValue": "45 % headwind",
     "sharedBy": "Shared by anna@example.com",
     "shareTitle": "Share trip",
     "shareText": "Friends can open this trip and export it, but not change it.",
@@ -107,7 +103,8 @@
     "rideHeadwind": "Dry · headwind after 14:00",
     "bestReason": "dry, mostly tailwind",
     "halfDay": "Half day",
-    "hoveredDay": "Hovered day: {{day}}"
+    "hoveredDay": "Hovered day: {{day}}",
+    "locked": "Locked"
   },
   "icon": {
     "distance": "Distance",

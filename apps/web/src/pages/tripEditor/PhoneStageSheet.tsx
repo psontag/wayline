@@ -2,19 +2,22 @@ import {
   addDays,
   bahnUrl,
   localTimeToDate,
+  ridingHours,
   type RouteNetwork,
   type Trip,
 } from "@wayline/domain";
 import {
   Button,
   Chip,
-  InfoTile,
+  DayWeather,
   LinkRow,
+  Stat,
+  statIcons,
   SurfaceBar,
   TextLink,
   useFormat,
 } from "@wayline/ui";
-import { BedDouble, Download, TrainFront } from "lucide-react";
+import { Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
@@ -67,7 +70,6 @@ export function PhoneStageSheet({
     });
   }
   const data = weather.data;
-  const wind = data && stageWind(data);
 
   return (
     <>
@@ -87,7 +89,7 @@ export function PhoneStageSheet({
       {/* Bottom padding: at full height the lowest part of the sheet is
           off screen. */}
       <div className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-auto px-4 pb-24">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1.5">
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-xs text-text-muted">
               {date
@@ -104,61 +106,62 @@ export function PhoneStageSheet({
               })}
             </h2>
           </div>
-          <div className="flex shrink-0 flex-col items-end tabular-nums">
-            <span className="text-md font-extrabold">
-              {format.distance(stage.stats.distance)}
-            </span>
-            <span className="text-xs text-text-muted">
-              {format.elevation(stage.stats.ascent)}
-            </span>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Stat
+              icon="distance"
+              value={format.distance(stage.stats.distance)}
+              label={t("summary.distance")}
+            />
+            <Stat
+              icon="ascent"
+              value={format.elevation(stage.stats.ascent)}
+              label={t("summary.ascent")}
+            />
+            <Stat
+              icon="ridingTime"
+              value={format.duration(
+                ridingHours(stage.stats, trip.settings.avgSpeed),
+              )}
+              label={t("summary.ridingTime")}
+            />
           </div>
         </div>
 
-        <SurfaceBar shares={stage.stats.surface} />
+        <SurfaceBar shares={stage.stats.surface} caption />
 
-        <div className="grid grid-cols-2 gap-2">
-          <InfoTile
-            label={t("phone.weather")}
-            value={
-              data
-                ? t("phone.weatherValue", {
-                    min: Math.round(data.temperature.min),
-                    max: format.temperature(data.temperature.max),
-                    condition: t(
-                      data.maxPrecipitation >= 0.1
-                        ? "phone.condition.rain"
-                        : "phone.condition.dry",
-                    ),
-                  })
-                : fallback
-            }
+        {data ? (
+          <DayWeather
+            temperature={data.temperature}
+            feelsLike={data.feelsLike.min}
+            rain={data.maxPrecipitation}
+            wind={stageWind(data)}
           />
-          <InfoTile
-            label={t("phone.wind")}
-            value={
-              wind
-                ? tUi(`stage.wind.${wind.kind}`, {
-                    share: format.percent(wind.share),
-                  })
-                : fallback
-            }
-          />
-        </div>
+        ) : (
+          <p className="text-sm text-text-muted">{fallback}</p>
+        )}
 
         <StageChange trip={trip} index={selected} editor={editor} />
         {!isLast && (
           <LinkRow
-            icon={<BedDouble aria-hidden />}
+            icon={<statIcons.beds aria-hidden />}
             title={t("phone.stop", { place: stage.end.name })}
             subtitle={
-              hotel
-                ? hotel.stars
-                  ? t("phone.hotel", {
-                      name: hotel.name,
-                      stars: tUi("hotel.stars", { count: hotel.stars }),
-                    })
-                  : hotel.name
-                : t("phone.noHotel")
+              hotel ? (
+                <span className="flex items-center gap-2">
+                  <span className="truncate">{hotel.name}</span>
+                  {!!hotel.stars && (
+                    <Stat
+                      size="sm"
+                      icon="stars"
+                      value={String(hotel.stars)}
+                      label={tUi("hotel.stars", { count: hotel.stars })}
+                      muted
+                    />
+                  )}
+                </span>
+              ) : (
+                t("phone.noHotel")
+              )
             }
             onClick={onOpenStop}
           />
@@ -173,7 +176,7 @@ export function PhoneStageSheet({
             target="_blank"
             rel="noreferrer"
           >
-            <TrainFront aria-hidden />
+            <statIcons.train aria-hidden />
             {t("summary.trainTo", { station: stage.start.name })}
           </TextLink>
         )}
@@ -183,7 +186,7 @@ export function PhoneStageSheet({
             target="_blank"
             rel="noreferrer"
           >
-            <TrainFront aria-hidden />
+            <statIcons.train aria-hidden />
             {t("summary.trainFrom", { station: stage.end.name })}
           </TextLink>
         )}
