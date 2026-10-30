@@ -83,7 +83,13 @@ export function Combobox({
         <Popover.Content
           align="start"
           sideOffset={4}
-          style={{ width: "var(--radix-popover-trigger-width)" }}
+          collisionPadding={8}
+          // As wide as the names need, at least the field, at most the screen.
+          style={{
+            width: "max-content",
+            minWidth: "var(--radix-popover-trigger-width)",
+            maxWidth: "min(var(--container-sm), 100vw - 2 * var(--spacing-2))",
+          }}
           className="z-popover overflow-hidden rounded-md border border-border bg-surface-raised text-text shadow-md"
         >
           <Command shouldFilter={false} loop>
