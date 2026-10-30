@@ -8,6 +8,7 @@ import {
   placeIndex,
   routeNear,
   stopChoices,
+  withRouted,
   stopHotels,
   townSize,
 } from "./stopChoices";
@@ -37,6 +38,21 @@ describe("stopChoices", () => {
     const [choice] = stopChoices(trip, 0);
     expect(choice!.beds).toBeUndefined();
     expect(choice!.size).toBeUndefined();
+  });
+});
+
+describe("withRouted", () => {
+  it("uses routed km for alternatives and keeps the current stop", () => {
+    const choices = stopChoices(trip, 0);
+    const current = choices.find((c) => c.current)!;
+    const other = choices.find((c) => !c.current)!;
+    const routed = new Map([
+      [other.place.name, { distance: 1000, ascent: 5, nextDistance: 2000 }],
+      [current.place.name, { distance: 9, ascent: 9 }],
+    ]);
+    const [first, ...rest] = withRouted(choices, routed);
+    expect(first).toMatchObject({ place: other.place, distance: 1000 });
+    expect(rest.find((c) => c.current)).toEqual(current);
   });
 });
 
