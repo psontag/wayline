@@ -13,6 +13,8 @@ export type ProposalDay = {
   place: string;
   /** "65 km" */
   distance: string;
+  /** "380 m" */
+  ascent?: string;
   /** Short note, e.g. "Half day". */
   tag?: string;
 };
@@ -133,6 +135,11 @@ export function ProposalCard({
                   <span className="ml-auto shrink-0 text-text-muted tabular-nums">
                     {day.distance}
                   </span>
+                  {day.ascent && (
+                    <span className="w-12 shrink-0 text-right text-text-muted tabular-nums">
+                      {day.ascent}
+                    </span>
+                  )}
                 </li>
               ))}
             </ol>
