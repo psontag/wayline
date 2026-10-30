@@ -101,5 +101,10 @@
     "area": "Area with route data",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out"
+  },
+  "detour": {
+    "text": "{{from}} to {{to}} is about {{distance}} by bike. Longer routes make detours.",
+    "fit": "Plan {{distance}} per day",
+    "fitOne": "Plan {{distance}}"
   }
 }

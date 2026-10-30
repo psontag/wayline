@@ -160,6 +160,27 @@ export type StageIfEnding = {
   nextDistance?: number;
 };
 
+/** The stage if it ended at the place, routed the same way as moveStop. */
+export async function routedStageIfEnding(
+  trip: Trip,
+  index: number,
+  place: Place,
+  route: RouteFn,
+): Promise<StageIfEnding> {
+  const moved = await moveStop(trip, index, place, {
+    route,
+    nearestHotel: async () => undefined,
+  });
+  const stage = moved.stages[index];
+  const next = moved.stages[index + 1];
+  const out: StageIfEnding = {
+    distance: stage?.stats.distance ?? 0,
+    ascent: stage?.stats.ascent ?? 0,
+  };
+  if (next) out.nextDistance = next.stats.distance;
+  return out;
+}
+
 /**
  * Rough stage if it ended at the place: km and ascent at the nearest route
  * point of this or the next stage, plus the way off the route. The way off

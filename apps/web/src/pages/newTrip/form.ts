@@ -1,6 +1,7 @@
 import {
   addDays,
   dayShares,
+  distanceKm,
   GenerateRequest,
   HotelBudget,
   IsoDate,
@@ -114,6 +115,26 @@ export function fromKind(kind?: TripKind): {
 export function toKind(length: TripLength, shape: TripShape) {
   if (shape === "ab") return "one-way" as const;
   return length === "one" ? ("day-loop" as const) : ("multi-day-loop" as const);
+}
+
+// Bike routes are about this much longer than the straight line.
+const ROUTE_FACTOR = 1.3;
+
+/**
+ * For A to B: the likely route km and km per day that fit them, when the
+ * planned km are much longer, so the routes would make big detours.
+ * `days` counts short days as parts of a day.
+ */
+export function detour(
+  v: NewTripValues,
+  days: number,
+): { km: number; kmPerDay: number } | undefined {
+  if (v.shape !== "ab" || !v.start || !v.end || !v.kmPerDay) return undefined;
+  const km = distanceKm(v.start.coord, v.end.coord) * ROUTE_FACTOR;
+  if (days * v.kmPerDay < km * 1.5) return undefined;
+  const kmPerDay = Math.max(limits.kmPerDay.min, Math.round(km / days / 5) * 5);
+  if (kmPerDay >= v.kmPerDay) return undefined;
+  return { km: Math.round(km / 5) * 5, kmPerDay };
 }
 
 /** Days of the trip in the form. One for a one-day trip. */

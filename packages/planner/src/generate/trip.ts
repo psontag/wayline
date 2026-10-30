@@ -77,7 +77,7 @@ export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
   return {
     schemaVersion: TRIP_SCHEMA_VERSION,
     id: p.id,
-    name: tripName(request.kind, p.start, ends),
+    name: tripName(request, p.start, ends),
     owner: "me",
     createdAt: stamp,
     updatedAt: stamp,
@@ -113,17 +113,22 @@ function stripStop(s: StopPlace): Place {
 
 /**
  * One-way: "Start – End". Loop: "Start – Stop – Start" with the stop in
- * the middle of the trip.
+ * the middle of the trip. Uses the places the user picked: the stages may
+ * start and end at a nearby station instead, for the train links.
  */
 function tripName(
-  kind: GenerateRequest["kind"],
+  request: GenerateRequest,
   start: Place,
   ends: StopPlace[],
 ): string {
-  const end = ends.at(-1)?.name ?? start.name;
-  if (kind === "one-way" || ends.length < 2) return `${start.name} – ${end}`;
+  const from = request.startStation?.name ?? start.name;
+  const last = ends.at(-1)?.name ?? start.name;
+  if (request.kind === "one-way") {
+    return `${from} – ${request.endStation?.name ?? last}`;
+  }
+  if (ends.length < 2) return `${from} – ${last}`;
   const middle = ends[Math.floor((ends.length - 1) / 2)]?.name ?? "";
-  return `${start.name} – ${middle} – ${end}`;
+  return `${from} – ${middle} – ${last}`;
 }
 
 /** Signed routes by km on the path, longest first. */

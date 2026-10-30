@@ -17,10 +17,14 @@ import {
   type HotelOption,
   toOption,
 } from "@wayline/providers";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useServices } from "../../data/ServicesProvider";
-import { stageIfEndingAt, type StageIfEnding } from "./edits";
+import {
+  routedStageIfEnding,
+  stageIfEndingAt,
+  type StageIfEnding,
+} from "./edits";
 
 export type TownSize = GeoTown["place"];
 
@@ -142,10 +146,50 @@ export function stopChoices(
   return [current, ...others].sort((a, b) => a.distance - b.distance);
 }
 
-/** The stop and its alternatives, shortest stage first. */
+/** Replaces estimates with routed numbers, by place name. */
+export function withRouted(
+  choices: StopChoice[],
+  routed: Map<string, StageIfEnding>,
+): StopChoice[] {
+  return choices
+    .map((c) => {
+      const r = c.current ? undefined : routed.get(c.place.name);
+      return r ? { ...c, ...r } : c;
+    })
+    .sort((a, b) => a.distance - b.distance);
+}
+
+/**
+ * The stop and its alternatives, shortest stage first. Alternatives show an
+ * estimate until they are routed the same way picking them routes.
+ */
 export function useStopOptions(trip: Trip, index: number): StopChoice[] {
   const places = usePlaceIndex();
-  return useMemo(() => stopChoices(trip, index, places), [trip, index, places]);
+  const { routing } = useServices();
+  const alternatives = useMemo(
+    () => trip.stages[index]?.end.alternatives ?? [],
+    [trip, index],
+  );
+  const routed = useQueries({
+    queries: alternatives.map((place) => ({
+      queryKey: ["stopRoute", trip.id, trip.updatedAt, index, place.name],
+      queryFn: () =>
+        routedStageIfEnding(trip, index, place, (points) =>
+          routing.route(points, { profile: trip.settings.profile }),
+        ),
+      staleTime: Infinity,
+    })),
+    // Structurally shared, so the array only changes with new data.
+    combine: (results) => results.map((r) => r.data),
+  });
+  return useMemo(() => {
+    const byName = new Map<string, StageIfEnding>();
+    alternatives.forEach((place, i) => {
+      const r = routed[i];
+      if (r) byName.set(place.name, r);
+    });
+    return withRouted(stopChoices(trip, index, places), byName);
+  }, [trip, index, places, alternatives, routed]);
 }
 
 /** Hotels at the stop of a stage, with the route to measure detours. */
