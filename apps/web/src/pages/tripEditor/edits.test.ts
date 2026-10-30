@@ -2,7 +2,13 @@ import { type LonLat, parseTrip, type Stage, type Trip } from "@wayline/domain";
 import { straightLeg } from "@wayline/planner";
 import { describe, expect, it } from "vitest";
 import sample from "../../../public/data/mock/oberfranken/sample-trip.json";
-import { ascentAlong, moveStop, setLocked, stageIfEndingAt } from "./edits";
+import {
+  ascentAlong,
+  moveStop,
+  routedStageIfEnding,
+  setLocked,
+  stageIfEndingAt,
+} from "./edits";
 
 const trip = parseTrip(sample);
 const meta = { provider: "test", profileHash: "touring" };
@@ -35,6 +41,22 @@ describe("moveStop", () => {
       second!.legs.reduce((km, l) => km + l.distance, 0),
     );
     expect(next.stages[2]).toBe(trip.stages[2]);
+  });
+});
+
+describe("routedStageIfEnding", () => {
+  it("gives the km the stage has after picking the place", async () => {
+    const place = trip.stages[0]!.end.alternatives[0]!;
+    const choice = await routedStageIfEnding(trip, 0, place, route);
+    const next = await moveStop(trip, 0, place, {
+      route,
+      nearestHotel: async () => hotel,
+    });
+    expect(choice).toEqual({
+      distance: next.stages[0]!.stats.distance,
+      ascent: next.stages[0]!.stats.ascent,
+      nextDistance: next.stages[1]!.stats.distance,
+    });
   });
 });
 
