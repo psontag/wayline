@@ -50,8 +50,8 @@
     "ratingAny": "Any",
     "noHotel": "No hotel picked",
     "noHotelsNear": "No hotels found near {{place}}",
-    "change": "Change",
-    "done": "Done",
+    "moreHotels_one": "{{count}} more in {{place}}",
+    "moreHotels_other": "{{count}} more in {{place}}",
     "choose": "Choose"
   },
   "profile": {

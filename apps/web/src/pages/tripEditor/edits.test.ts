@@ -2,7 +2,7 @@ import { type LonLat, parseTrip, type Stage, type Trip } from "@wayline/domain";
 import { straightLeg } from "@wayline/planner";
 import { describe, expect, it } from "vitest";
 import sample from "../../../public/data/mock/oberfranken/sample-trip.json";
-import { distanceIfEndingAt, moveStop, setLocked } from "./edits";
+import { ascentAlong, moveStop, setLocked, stageIfEndingAt } from "./edits";
 
 const trip = parseTrip(sample);
 const meta = { provider: "test", profileHash: "touring" };
@@ -101,10 +101,60 @@ describe("setLocked", () => {
   });
 });
 
-describe("distanceIfEndingAt", () => {
-  it("is close to the stage length for the current stop", () => {
-    const stage = trip.stages[0]!;
-    const km = distanceIfEndingAt(stage, trip.stages[1], stage.end.coord);
-    expect(Math.abs(km - stage.stats.distance)).toBeLessThan(2000);
+describe("stageIfEndingAt", () => {
+  const [stage, next] = trip.stages;
+
+  it("matches the stage for the current stop", () => {
+    const at = stageIfEndingAt(stage!, next, stage!.end.coord);
+    expect(Math.abs(at.distance - stage!.stats.distance)).toBeLessThan(2000);
+    expect(Math.abs(at.ascent - stage!.stats.ascent)).toBeLessThan(30);
+    expect(Math.abs(at.nextDistance! - next!.stats.distance)).toBeLessThan(
+      2000,
+    );
+  });
+
+  it("moves km and ascent between today and tomorrow", () => {
+    const place = stage!.end.alternatives[0]!;
+    const at = stageIfEndingAt(stage!, next, place.coord);
+    const both = stage!.stats.distance + next!.stats.distance;
+    // The way off the route counts twice.
+    expect(at.distance + at.nextDistance!).toBeGreaterThanOrEqual(both - 2000);
+    expect(at.ascent).toBeLessThanOrEqual(
+      stage!.stats.ascent + next!.stats.ascent,
+    );
+    expect(at.distance > stage!.stats.distance).toBe(
+      at.ascent >= stage!.stats.ascent,
+    );
+  });
+
+  it("has no next stage on the last day", () => {
+    const last = trip.stages.at(-1)!;
+    expect(stageIfEndingAt(last, undefined, last.end.coord).nextDistance).toBe(
+      undefined,
+    );
+  });
+});
+
+describe("ascentAlong", () => {
+  const point = (km: number, ele: number) => ({
+    coord: [0, 0] as LonLat,
+    km,
+    ele,
+  });
+
+  it("ignores small ups and downs and ends at the stage ascent", () => {
+    const points = [
+      point(0, 100),
+      point(1, 102),
+      point(2, 100),
+      point(3, 150),
+      point(4, 140),
+      point(5, 190),
+    ];
+    expect(ascentAlong(points, 50)).toEqual([0, 0, 0, 25, 25, 50]);
+  });
+
+  it("spreads the ascent over the km on a flat profile", () => {
+    expect(ascentAlong([point(0, 100), point(2, 100)], 10)).toEqual([0, 10]);
   });
 });

@@ -1,5 +1,6 @@
 import {
   addDays,
+  bookingHotelUrl,
   bookingUrl,
   type MinRating,
   type Trip,
@@ -8,6 +9,16 @@ import { Button, Label, Select } from "@wayline/ui";
 import { ExternalLink } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+
+/** Booking.com search for one hotel at a stop, with the stage dates. */
+export function hotelBookingUrl(trip: Trip, index: number, hotel: string) {
+  const stage = trip.stages[index];
+  return bookingHotelUrl({
+    hotel,
+    town: stage?.end.name ?? "",
+    date: trip.startDate && addDays(trip.startDate, index),
+  });
+}
 
 const ratings = ["any", "70", "80", "90"] as const;
 type Rating = (typeof ratings)[number];

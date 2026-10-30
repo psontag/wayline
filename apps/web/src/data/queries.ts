@@ -14,9 +14,7 @@ import {
   sampleAt,
   stageSpeed,
   stageStartTime,
-  type HotelBudget,
   type StageWeather,
-  type Stop,
   type Trip,
   type WeatherSample,
   weatherAlongStage,
@@ -30,7 +28,6 @@ export const queryKeys = {
   shares: (id: string) => ["shares", id] as const,
   trip: (id: string) => ["trip", id] as const,
   forecast: (cell: LonLat) => ["forecast", ...cell] as const,
-  hotels: (coord: LonLat) => ["hotels", ...coord] as const,
 };
 
 /** Email of the logged-in user. Null without a server. */
@@ -246,14 +243,4 @@ async function stageWeather(
     forecastAt,
     daylight: first?.daylight.find((d) => d.date === date),
   };
-}
-
-/** Hotels near a stop. Those that fit the budget first, each nearest first. */
-export function useHotels(stop: Stop | undefined, budget?: HotelBudget) {
-  const { lodging } = useServices();
-  return useQuery({
-    queryKey: [...queryKeys.hotels(stop?.coord ?? [0, 0]), budget],
-    enabled: !!stop,
-    queryFn: () => (stop ? lodging.hotelsNear(stop.coord, { budget }) : []),
-  });
 }

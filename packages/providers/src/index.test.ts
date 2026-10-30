@@ -56,7 +56,22 @@ describe("OsmLodging", () => {
 
   it("searches the stop radius by default", async () => {
     const hotels = await new OsmLodging(source).hotelsNear(bayreuth);
-    expect(hotels.every((h) => h.distanceKm <= 2)).toBe(true);
+    expect(hotels.every((h) => h.distanceKm <= 5)).toBe(true);
+  });
+
+  it("sorts by detour from the route", async () => {
+    // A route that passes east of the town.
+    const route: [number, number][] = [
+      [11.62, 49.9],
+      [11.62, 50.0],
+    ];
+    const hotels = await new OsmLodging(source).hotelsNear(bayreuth, {
+      route,
+      limit: 50,
+    });
+    const detours = hotels.map((h) => h.detourKm);
+    expect(detours).toEqual([...detours].sort((a, b) => a - b));
+    expect(hotels[0]!.coord[0]).toBeGreaterThan(bayreuth[0]);
   });
 
   it("lists hotels that fit the budget first", async () => {

@@ -1,4 +1,5 @@
 import {
+  decodeLine,
   distanceKm,
   type GenerateRequest,
   type Place,
@@ -56,7 +57,11 @@ export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
     const last = i === ends.length - 1;
     const hotel = last
       ? undefined
-      : places.pickHotel(end.coord, request.hotelBudget);
+      : places.pickHotel(
+          end.coord,
+          request.hotelBudget,
+          legs.flatMap((leg) => decodeLine(leg.geometry)),
+        );
     return {
       id: `stage-${i + 1}`,
       start,

@@ -10,6 +10,7 @@ import {
 } from "@wayline/domain";
 import {
   byBudget,
+  detourKm,
   fitsBudget,
   HOTEL_KM,
   HotelIndex,
@@ -106,9 +107,20 @@ export class Stops {
     ).length;
   }
 
-  /** Nearest hotel that fits the budget, else the nearest one. */
-  pickHotel(coord: LonLat, budget?: HotelBudget): Hotel | undefined {
-    const [h] = byBudget(this.hotelsNear(coord), budget);
+  /**
+   * Hotel with the shortest detour from the route that fits the budget,
+   * else the one with the shortest detour.
+   */
+  pickHotel(
+    coord: LonLat,
+    budget?: HotelBudget,
+    route: LonLat[] = [coord],
+  ): Hotel | undefined {
+    const near = this.hotelsNear(coord).map((h) => ({
+      ...h,
+      detourKm: detourKm([h.lon, h.lat], route),
+    }));
+    const [h] = byBudget(near, budget);
     return h && toHotel(h);
   }
 }

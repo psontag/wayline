@@ -70,6 +70,24 @@
       "hotel": "Hotel",
       "guest_house": "Guest house",
       "motel": "Motel"
+    },
+    "booking": "Booking.com"
+  },
+  "stopChoices": {
+    "stop": "Stop",
+    "today": "Today",
+    "ascent": "Ascent",
+    "tomorrow": "Tomorrow",
+    "beds": "Beds",
+    "bedsInBudget": "{{inBudget}} of {{total}}",
+    "bedsNote": "Beds: hotels within {{radius}}.",
+    "bedsNoteBudget": "Beds: hotels within {{radius}} that fit your budget, of all.",
+    "none": "–",
+    "choose": "Stop in {{name}}",
+    "size": {
+      "village": "Village",
+      "town": "Town",
+      "city": "City"
     }
   },
   "marker": {

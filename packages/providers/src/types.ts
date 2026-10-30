@@ -45,16 +45,24 @@ export type HotelOption = Hotel & {
   kind: "hotel" | "guest_house" | "motel";
   /** Straight-line distance from the search point. */
   distanceKm: number;
+  /** Rough riding km from the nearest route point. */
+  detourKm: number;
 };
 
 export interface LodgingProvider {
   /**
    * Hotels near a point, by default within the stop radius. Those that fit
-   * the budget come first, each group nearest first.
+   * the budget come first, each group by detour from the route. Without a
+   * route, the detour is from the point.
    */
   hotelsNear(
     coord: LonLat,
-    options?: { radiusKm?: number; limit?: number; budget?: HotelBudget },
+    options?: {
+      radiusKm?: number;
+      limit?: number;
+      budget?: HotelBudget;
+      route?: LonLat[];
+    },
   ): Promise<HotelOption[]>;
 }
 
