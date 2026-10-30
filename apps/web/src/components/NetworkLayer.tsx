@@ -71,9 +71,9 @@ export function NetworkLayer({
         paint={{
           "line-color": tokens.network,
           "line-width": subtle
-            ? ["interpolate", ["linear"], ["zoom"], 8, 1, 12, 2]
+            ? ["interpolate", ["linear"], ["zoom"], 8, 1.25, 12, 2.5]
             : ["interpolate", ["linear"], ["zoom"], 8, 1.25, 12, 3],
-          "line-opacity": subtle ? 0.35 : 1,
+          "line-opacity": subtle ? 0.6 : 1,
         }}
       />
     </Source>

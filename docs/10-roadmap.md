@@ -10,7 +10,7 @@ Vertical slices. Look and feel first. Each slice ends with a working, deployed a
 - Translation setup
 - Map page
 
-## 2. Route A to B end to end
+## 2. Routing end to end
 
 - BRouter through the Worker, legs cached in D1
 - Route on the map with elevation profile

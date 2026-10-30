@@ -157,6 +157,16 @@ Rules:
 
 ## Map
 
+Every screen uses `AppMap` (`apps/web/src/components/map/AppMap.tsx`). It owns:
+
+- base style and theme switch
+- hillshade
+- signed cycling routes: `full`, `quiet` or `off`
+- zoom buttons, legend, hint and attribution
+- fitting to points, with padding for panels and sheets
+
+Screens add only their own sources, layers and markers as children. Line and fill layers use `MapLayer`, so they sit below the base map labels. Screens don't set a base style, controls or their own fitting.
+
 - Base styles: OpenFreeMap Positron (light) and Dark.
 - Map and chart colors come from a `useThemeTokens()` hook. It reads the resolved CSS variables and re-applies them on theme change.
 - When the base style swaps, our own layers are added again.

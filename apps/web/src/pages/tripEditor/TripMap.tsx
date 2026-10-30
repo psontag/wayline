@@ -10,35 +10,24 @@ import {
   GhostViaMarker,
   HotelMarker,
   HoverMarker,
-  IconButton,
-  MapControlGroup,
   MapHint,
-  MapLegend,
   StopMarker,
-  useTheme,
   useThemeTokens,
   ViaMarker,
 } from "@wayline/ui";
 import type { FeatureCollection, LineString } from "geojson";
-import { Minus, Plus, Route } from "lucide-react";
-import {
-  type FilterSpecification,
-  type LngLatBoundsLike,
-  setWorkerUrl,
-} from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
-import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+import { Route } from "lucide-react";
+import type { FilterSpecification } from "maplibre-gl";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import MapGL, {
+import {
   Layer,
   type MapLayerMouseEvent,
   type MapRef,
   Marker,
   Source,
 } from "react-map-gl/maplibre";
-import { HillshadeLayer } from "../../components/HillshadeLayer";
-import { NetworkLayer } from "../../components/NetworkLayer";
+import { AppMap, MapLayer, type MapPadding } from "../../components/map/AppMap";
 import {
   nearestOnLine,
   type RouteDrag,
@@ -46,30 +35,8 @@ import {
 } from "../../components/useRouteDrag";
 import type { MapHotel } from "./mapTypes";
 import { tripStops } from "./tripArea";
-import { useHiddenPlaceLabels } from "../../components/placeLabels";
 
-// MapLibre finds its worker next to its own module. Vite moves both.
-setWorkerUrl(workerUrl);
-
-const mapStyles = {
-  light: "https://tiles.openfreemap.org/styles/positron",
-  dark: "https://tiles.openfreemap.org/styles/dark",
-};
-
-export type MapPadding = {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-};
-
-// Marker labels sit right of the point, so keep more room on that side.
-const defaultPadding: MapPadding = {
-  top: 56,
-  right: 120,
-  bottom: 40,
-  left: 56,
-};
+export type { MapPadding };
 
 const lineLayout = { "line-cap": "round", "line-join": "round" } as const;
 
@@ -123,17 +90,6 @@ export type RouteEditing = {
 /** Waits this long after the last move before a preview is routed. */
 const PREVIEW_MS = 120;
 
-function bounds(coords: LonLat[]): LngLatBoundsLike {
-  let [w, s, e, n] = [180, 90, -180, -90];
-  for (const [lon, lat] of coords) {
-    w = Math.min(w, lon);
-    e = Math.max(e, lon);
-    s = Math.min(s, lat);
-    n = Math.max(n, lat);
-  }
-  return [w, s, e, n];
-}
-
 /** Trip on the map in one color. The selected day is full strength. */
 export function TripMap({
   trip,
@@ -146,17 +102,14 @@ export function TripMap({
   selectedHotelId,
   onSelectHotel,
   hover,
-  padding = defaultPadding,
+  padding,
   controls = true,
   children,
   route,
 }: TripMapProps) {
   const { t } = useTranslation("tripEditor");
-  const { resolvedTheme } = useTheme();
   const tokens = useThemeTokens();
   const mapRef = useRef<MapRef>(null);
-  const [labelLayerId, setLabelLayerId] = useState<string>();
-  const [cursor, setCursor] = useState<string>();
   const [activeHotel, setActiveHotel] = useState<string>();
 
   const lines = useMemo(
@@ -268,45 +221,24 @@ export function TripMap({
   // A via marker drag can end with a click on it. That must not remove it.
   const draggedVia = useRef(false);
 
-  // Zoom to the stage when the selection changes, not on first load,
-  // and not while the route is dragged.
-  const shown = useRef(selected);
+  // Zoom to the stage when the selection changes, keeping its stop choices
+  // and hotels in view. Not while the route is dragged.
   const dragging = !!drag;
-  useEffect(() => {
-    if (shown.current === selected) return;
-    shown.current = selected;
-    if (dragging) return;
-    const line = lines[selected];
-    if (line?.length) {
-      // Keep the stop choices and hotels in view too.
-      const around = [
-        ...alternatives.map(({ place }) => place.coord),
-        ...hotels.map((hotel) => hotel.coord),
-      ];
-      mapRef.current?.fitBounds(bounds([...line, ...around]), {
-        padding,
-        maxZoom: 12,
-        duration: matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? 0
-          : 600,
-      });
-    }
-  }, [selected, lines, padding, dragging, alternatives, hotels]);
+  const [fitDay, setFitDay] = useState(selected);
+  if (!dragging && fitDay !== selected) setFitDay(selected);
+  const fit = [
+    ...(lines[selected] ?? []),
+    ...alternatives.map(({ place }) => place.coord),
+    ...hotels.map((hotel) => hotel.coord),
+  ];
 
   const first = trip.stages[0];
   const last = trip.stages.at(-1);
-  const hideLabels = useHiddenPlaceLabels(mapRef, [
+  const hiddenLabels = [
     ...(first ? [first.start.name] : []),
     ...trip.stages.map((stage) => stage.end.name),
     ...alternatives.map(({ place }) => place.name),
-  ]);
-
-  // Our layers go below the first label layer, so place names stay readable.
-  const onStyle = () => {
-    const layers = mapRef.current?.getStyle()?.layers ?? [];
-    setLabelLayerId(layers.find((layer) => layer.type === "symbol")?.id);
-    hideLabels();
-  };
+  ];
 
   const onClick = (event: MapLayerMouseEvent) => {
     const props = event.features?.[0]?.properties;
@@ -326,291 +258,242 @@ export function TripMap({
   const notSelected: FilterSpecification = ["==", ["get", "selected"], false];
 
   return (
-    <div
-      className="absolute inset-0"
-      role="region"
-      aria-label={t("map.label", { day: selected + 1 })}
+    <AppMap
+      label={t("map.label", { day: selected + 1 })}
+      fit={fit}
+      fitKey={fitDay}
+      initialFit={lines.flat()}
+      padding={padding}
+      networkAround={tripStops(trip)}
+      hiddenLabels={hiddenLabels}
+      legend={
+        route?.proposed.length
+          ? [{ label: t("map.proposed"), line: "dashed" }]
+          : []
+      }
+      controls={controls}
+      hint={
+        route && (
+          <MapHint icon={<Route aria-hidden />}>
+            {t(route.tapToAdd ? "map.tapHint" : "map.dragHint")}
+          </MapHint>
+        )
+      }
+      overlay={children}
+      mapRef={mapRef}
+      interactiveLayerIds={["stage-hit", "leg-hit"]}
+      cursor={drag ? "grabbing" : ghost ? "grab" : undefined}
+      onClick={onClick}
+      onMouseMove={routeDrag.onMouseMove}
+      onMouseDown={routeDrag.onMouseDown}
+      onMouseLeave={routeDrag.onMouseLeave}
     >
-      <MapGL
-        ref={mapRef}
-        initialViewState={{
-          bounds: bounds(lines.flat()),
-          fitBoundsOptions: { padding },
-        }}
-        mapStyle={mapStyles[resolvedTheme]}
-        style={{ position: "absolute", inset: "0" }}
-        onLoad={onStyle}
-        onStyleData={onStyle}
-        interactiveLayerIds={["stage-hit", "leg-hit"]}
-        onClick={onClick}
-        onMouseEnter={() => setCursor("pointer")}
-        onMouseLeave={() => {
-          setCursor(undefined);
-          routeDrag.onMouseLeave();
-        }}
-        onMouseMove={routeDrag.onMouseMove}
-        onMouseDown={routeDrag.onMouseDown}
-        cursor={drag ? "grabbing" : ghost ? "grab" : cursor}
-      >
-        <HillshadeLayer beforeId={labelLayerId} />
-        <Source id="proposed" type="geojson" data={proposedData}>
-          <Layer
-            id="proposed-line"
-            beforeId={labelLayerId}
-            type="line"
-            layout={lineLayout}
-            paint={{
-              "line-color": tokens.textMuted,
-              "line-width": 4,
-              "line-dasharray": [0.5, 2],
-            }}
-          />
-        </Source>
-        <Source id="stages" type="geojson" data={data}>
-          <Layer
-            id="stage-line"
-            beforeId={labelLayerId}
-            type="line"
-            filter={notSelected}
-            layout={lineLayout}
-            paint={{
-              "line-color": tokens.routeSelected,
-              "line-width": 5,
-              "line-opacity": ["case", ["get", "hovered"], 0.85, 0.45],
-            }}
-          />
-          <Layer
-            id="selected-casing"
-            beforeId={labelLayerId}
-            type="line"
-            filter={isSelected}
-            layout={lineLayout}
-            paint={{ "line-color": tokens.routeOutline, "line-width": 10 }}
-          />
-          <Layer
-            id="selected-line"
-            beforeId={labelLayerId}
-            type="line"
-            filter={isSelected}
-            layout={lineLayout}
-            paint={{ "line-color": tokens.routeSelected, "line-width": 7 }}
-          />
-          <Layer
-            id="stage-hit"
-            type="line"
-            layout={lineLayout}
-            paint={{
-              "line-color": tokens.route,
-              "line-width": 18,
-              "line-opacity": 0,
-            }}
-          />
-        </Source>
-        <Source id="legs" type="geojson" data={legData}>
-          <Layer
-            id="leg-hit"
-            type="line"
-            layout={lineLayout}
-            paint={{
-              "line-color": tokens.route,
-              "line-width": 20,
-              "line-opacity": 0,
-            }}
-          />
-        </Source>
-        <Source id="drag-preview" type="geojson" data={previewData}>
-          <Layer
-            id="drag-preview"
-            type="line"
-            layout={lineLayout}
-            paint={{
-              "line-color": tokens.viaPoint,
-              "line-width": 4,
-              "line-dasharray": [1, 1.5],
-            }}
-          />
-        </Source>
-        <NetworkLayer
-          around={tripStops(trip)}
-          beforeId="proposed-line"
-          subtle
+      <Source id="proposed" type="geojson" data={proposedData}>
+        <MapLayer
+          id="proposed-line"
+          type="line"
+          layout={lineLayout}
+          paint={{
+            "line-color": tokens.textMuted,
+            "line-width": 4,
+            "line-dasharray": [0.5, 2],
+          }}
         />
+      </Source>
+      <Source id="stages" type="geojson" data={data}>
+        <MapLayer
+          id="stage-line"
+          type="line"
+          filter={notSelected}
+          layout={lineLayout}
+          paint={{
+            "line-color": tokens.routeSelected,
+            "line-width": 5,
+            "line-opacity": ["case", ["get", "hovered"], 0.85, 0.45],
+          }}
+        />
+        <MapLayer
+          id="selected-casing"
+          type="line"
+          filter={isSelected}
+          layout={lineLayout}
+          paint={{ "line-color": tokens.routeOutline, "line-width": 10 }}
+        />
+        <MapLayer
+          id="selected-line"
+          type="line"
+          filter={isSelected}
+          layout={lineLayout}
+          paint={{ "line-color": tokens.routeSelected, "line-width": 7 }}
+        />
+        <Layer
+          id="stage-hit"
+          type="line"
+          layout={lineLayout}
+          paint={{
+            "line-color": tokens.route,
+            "line-width": 18,
+            "line-opacity": 0,
+          }}
+        />
+      </Source>
+      <Source id="legs" type="geojson" data={legData}>
+        <Layer
+          id="leg-hit"
+          type="line"
+          layout={lineLayout}
+          paint={{
+            "line-color": tokens.route,
+            "line-width": 20,
+            "line-opacity": 0,
+          }}
+        />
+      </Source>
+      <Source id="drag-preview" type="geojson" data={previewData}>
+        <Layer
+          id="drag-preview"
+          type="line"
+          layout={lineLayout}
+          paint={{
+            "line-color": tokens.viaPoint,
+            "line-width": 4,
+            "line-dasharray": [1, 1.5],
+          }}
+        />
+      </Source>
 
-        {first && (
+      {first && (
+        <Marker
+          longitude={first.start.coord[0]}
+          latitude={first.start.coord[1]}
+          anchor="left"
+          offset={[-12, 0]}
+        >
+          <EndpointMarker
+            name={first.start.name}
+            station={first.start.kind === "station"}
+          />
+        </Marker>
+      )}
+      {last && (
+        <Marker
+          longitude={last.end.coord[0]}
+          latitude={last.end.coord[1]}
+          anchor="left"
+          offset={[-12, 0]}
+        >
+          <EndpointMarker
+            name={last.end.name}
+            station={last.end.kind === "station"}
+          />
+        </Marker>
+      )}
+      {alternatives.map(({ place, label, beds }) => (
+        <Marker
+          key={place.name}
+          longitude={place.coord[0]}
+          latitude={place.coord[1]}
+          anchor="left"
+          offset={[-8, 0]}
+        >
+          <AlternativeMarker
+            label={label}
+            beds={beds}
+            onClick={() => onPickAlternative?.(place)}
+          />
+        </Marker>
+      ))}
+      {trip.stages.slice(0, -1).map((stage, index) => (
+        <Marker
+          key={stage.id}
+          longitude={stage.end.coord[0]}
+          latitude={stage.end.coord[1]}
+          anchor="left"
+          // Center the circle on the stop. It is larger when selected.
+          offset={[index === selected ? -20 : -16, 0]}
+          style={{ zIndex: index === selected ? 2 : 1 }}
+        >
+          <StopMarker
+            day={index + 1}
+            name={stage.end.name}
+            selected={index === selected}
+            aria-label={t("map.selectStage", {
+              day: index + 1,
+              place: stage.end.name,
+            })}
+            onClick={() => onSelect(index)}
+          />
+        </Marker>
+      ))}
+      {hotels.map((hotel) => (
+        <Marker
+          key={hotel.osmId}
+          longitude={hotel.coord[0]}
+          latitude={hotel.coord[1]}
+          style={{
+            zIndex:
+              activeHotel === hotel.osmId
+                ? 4
+                : hotel.osmId === selectedHotelId
+                  ? 2
+                  : 1,
+          }}
+        >
+          <HotelMarker
+            name={hotel.name}
+            kind={hotel.kind}
+            stars={hotel.stars}
+            detour={hotel.detourKm * 1000}
+            website={hotel.website}
+            selected={hotel.osmId === selectedHotelId}
+            onClick={() => onSelectHotel?.(hotel.osmId)}
+            onActiveChange={(active) =>
+              setActiveHotel((id) =>
+                active ? hotel.osmId : id === hotel.osmId ? undefined : id,
+              )
+            }
+          />
+        </Marker>
+      ))}
+      {route &&
+        trip.stages[selected]?.via.map((via, index) => (
           <Marker
-            longitude={first.start.coord[0]}
-            latitude={first.start.coord[1]}
-            anchor="left"
-            offset={[-12, 0]}
-          >
-            <EndpointMarker
-              name={first.start.name}
-              station={first.start.kind === "station"}
-            />
-          </Marker>
-        )}
-        {last && (
-          <Marker
-            longitude={last.end.coord[0]}
-            latitude={last.end.coord[1]}
-            anchor="left"
-            offset={[-12, 0]}
-          >
-            <EndpointMarker
-              name={last.end.name}
-              station={last.end.kind === "station"}
-            />
-          </Marker>
-        )}
-        {alternatives.map(({ place, label, beds }) => (
-          <Marker
-            key={place.name}
-            longitude={place.coord[0]}
-            latitude={place.coord[1]}
-            anchor="left"
-            offset={[-8, 0]}
-          >
-            <AlternativeMarker
-              label={label}
-              beds={beds}
-              onClick={() => onPickAlternative?.(place)}
-            />
-          </Marker>
-        ))}
-        {trip.stages.slice(0, -1).map((stage, index) => (
-          <Marker
-            key={stage.id}
-            longitude={stage.end.coord[0]}
-            latitude={stage.end.coord[1]}
-            anchor="left"
-            // Center the circle on the stop. It is larger when selected.
-            offset={[index === selected ? -20 : -16, 0]}
-            style={{ zIndex: index === selected ? 2 : 1 }}
-          >
-            <StopMarker
-              day={index + 1}
-              name={stage.end.name}
-              selected={index === selected}
-              aria-label={t("map.selectStage", {
-                day: index + 1,
-                place: stage.end.name,
-              })}
-              onClick={() => onSelect(index)}
-            />
-          </Marker>
-        ))}
-        {hotels.map((hotel) => (
-          <Marker
-            key={hotel.osmId}
-            longitude={hotel.coord[0]}
-            latitude={hotel.coord[1]}
-            style={{
-              zIndex:
-                activeHotel === hotel.osmId
-                  ? 4
-                  : hotel.osmId === selectedHotelId
-                    ? 2
-                    : 1,
+            // Index keys keep the marker while its point moves.
+            key={index}
+            longitude={via.coord[0]}
+            latitude={via.coord[1]}
+            draggable={route.enabled}
+            onDragStart={() => (draggedVia.current = true)}
+            onDragEnd={(e) => {
+              route.onMoveVia(via.coord, [e.lngLat.lng, e.lngLat.lat]);
+              // The click, if any, comes right after the drag ends.
+              setTimeout(() => (draggedVia.current = false));
             }}
+            style={{ zIndex: 3 }}
           >
-            <HotelMarker
-              name={hotel.name}
-              kind={hotel.kind}
-              stars={hotel.stars}
-              detour={hotel.detourKm * 1000}
-              website={hotel.website}
-              selected={hotel.osmId === selectedHotelId}
-              onClick={() => onSelectHotel?.(hotel.osmId)}
-              onActiveChange={(active) =>
-                setActiveHotel((id) =>
-                  active ? hotel.osmId : id === hotel.osmId ? undefined : id,
-                )
+            <ViaMarker
+              aria-label={t("map.removeVia", { n: index + 1 })}
+              disabled={!route.enabled}
+              onClick={() =>
+                !draggedVia.current && route.onRemoveVia(via.coord)
               }
             />
           </Marker>
         ))}
-        {route &&
-          trip.stages[selected]?.via.map((via, index) => (
-            <Marker
-              // Index keys keep the marker while its point moves.
-              key={index}
-              longitude={via.coord[0]}
-              latitude={via.coord[1]}
-              draggable={route.enabled}
-              onDragStart={() => (draggedVia.current = true)}
-              onDragEnd={(e) => {
-                route.onMoveVia(via.coord, [e.lngLat.lng, e.lngLat.lat]);
-                // The click, if any, comes right after the drag ends.
-                setTimeout(() => (draggedVia.current = false));
-              }}
-              style={{ zIndex: 3 }}
-            >
-              <ViaMarker
-                aria-label={t("map.removeVia", { n: index + 1 })}
-                disabled={!route.enabled}
-                onClick={() =>
-                  !draggedVia.current && route.onRemoveVia(via.coord)
-                }
-              />
-            </Marker>
-          ))}
-        {ghostAt && (
-          <Marker
-            longitude={ghostAt[0]}
-            latitude={ghostAt[1]}
-            style={{ zIndex: 3, pointerEvents: "none" }}
-          >
-            <GhostViaMarker />
-          </Marker>
-        )}
-        {hover && (
-          <Marker
-            longitude={hover[0]}
-            latitude={hover[1]}
-            style={{ zIndex: 3 }}
-          >
-            <HoverMarker />
-          </Marker>
-        )}
-      </MapGL>
-      {controls && (
-        <div className="absolute bottom-3 left-3 z-panel">
-          <MapLegend
-            items={[
-              { label: t("map.network"), line: "network" },
-              ...(route?.proposed.length
-                ? [{ label: t("map.proposed"), line: "dashed" as const }]
-                : []),
-            ]}
-          />
-        </div>
+      {ghostAt && (
+        <Marker
+          longitude={ghostAt[0]}
+          latitude={ghostAt[1]}
+          style={{ zIndex: 3, pointerEvents: "none" }}
+        >
+          <GhostViaMarker />
+        </Marker>
       )}
-      {route && (
-        <div className="pointer-events-none absolute top-3 left-3 z-panel">
-          <MapHint icon={<Route aria-hidden />}>
-            {t(route.tapToAdd ? "map.tapHint" : "map.dragHint")}
-          </MapHint>
-        </div>
+      {hover && (
+        <Marker longitude={hover[0]} latitude={hover[1]} style={{ zIndex: 3 }}>
+          <HoverMarker />
+        </Marker>
       )}
-      {controls && (
-        <div className="absolute top-3 right-3 z-panel">
-          <MapControlGroup>
-            <IconButton
-              label={t("map.zoomIn")}
-              icon={<Plus aria-hidden />}
-              size="sm"
-              onClick={() => mapRef.current?.zoomIn()}
-            />
-            <IconButton
-              label={t("map.zoomOut")}
-              icon={<Minus aria-hidden />}
-              size="sm"
-              onClick={() => mapRef.current?.zoomOut()}
-            />
-          </MapControlGroup>
-        </div>
-      )}
-      {children}
-    </div>
+    </AppMap>
   );
 }
