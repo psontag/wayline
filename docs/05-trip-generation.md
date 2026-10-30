@@ -14,7 +14,9 @@ How Wayline turns a few inputs into trip proposals.
 
 ## Output
 
-3–5 proposals. Each is a full trip with stages, hotels at stops, stats and, if dated, weather. Proposals should differ from each other, not be small variations of one route.
+Up to 5 proposals. Each is a full trip with stages, hotels at stops, stats and, if dated, weather. Proposals should differ from each other, not be small variations of one route.
+
+Multi-day trips and loops get one proposal per flavour (see below). One day from A to B gets proposals with a character instead.
 
 ## Route network
 
@@ -44,7 +46,7 @@ Edge score is higher for:
 
 Search, filtering, stage cutting and ranking run on the graph, without the router. The router is called only:
 
-- for the chosen 3–5 proposals: one multi-waypoint request per stage
+- for the chosen proposals: one multi-waypoint request per stage
 - for short connections to stations and towns
 - for user edits
 
@@ -64,7 +66,7 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
    - Time limit of about 2 s.
 4. **Filter** by length (within 12 % of the target), ascent and surface, using edge data. Drop loops whose middle part (20–80 % of the length) comes within 4 % of the length, or 4 km, of the start. Drop paths that ride back along themselves: parts within 1.5 km of an earlier part more than 10 km back may add up to 4 % of the length (min 4 km). A short touch, like a river bend, is fine.
 5. **Cut into stages.** See below. Each stage becomes one leg per piece of about 10 km, so an edit routes only the legs it touches.
-6. **Rank** and pick 3–5 diverse proposals.
+6. **Pick** one proposal per flavour, or up to 5 diverse ones for one day from A to B.
 7. **Route** the chosen proposals. Waypoints are graph nodes about every 10 km, so the router follows the graph path. Proposals share nodes, so legs hit the cache. If routing fails, the proposal keeps the graph path.
 8. **Find hotels** at each stop from the OSM hotel data.
 9. **Add weather** if the start date is within the forecast range.
@@ -104,7 +106,7 @@ The Web Worker reports phases:
 | Mode | How |
 |---|---|
 | Route A to B (`/route`) | Route directly with the chosen profile. No graph search. |
-| One day A to B | Graph search. Each proposal has a character: direct, longer or scenic. |
+| One day A to B | Graph search. Each proposal has a character: direct, longer or scenic. No flavours. |
 | Day loop | Graph search for a loop of the given length, without stops. |
 
 ## Profiles
@@ -138,11 +140,37 @@ A theme makes the search prefer edges with that scenery. Edge scenery comes from
 | `wine` | vineyard share × 4, max 1 | share of km in vineyards |
 | `culture` | sights per km × 2, max 1 | share of km near a sight |
 
-- Search: the edge score is multiplied by 1 + 1.2 × fit, before the power k.
+- Search: the edge score is multiplied by 1 + 1.2 × fit × q², before the power k. q is the way quality: edge score / network class score (paved and quiet 1, gravel 0.85, main road 0.7). So scenery on gravel or next to a main road does not beat a paved, quiet way with a bit less scenery.
 - Ranking: the proposal score is multiplied by 0.5 + 0.5 × mean fit.
 - Without scenery data, a theme changes nothing.
 
 Across the network: forest 43 % of km, nature reserves and parks 29 %, water 17 %, vineyards 1.4 %, near a sight 39 %.
+
+## Flavours
+
+Each flavour searches with its own edge costs.
+
+| Flavour | Edge cost |
+|---|---|
+| `best` | The usual cost, without the theme |
+| `nature` | Boosts forest, nature reserves and water together: 1 − (1 − green)(1 − water) |
+| `flat` | Climb factor × (1 + 3 × climb / average allowed) |
+| `hilly` | Climbing up to the average allowed costs up to 2.5× less. Climbing more costs the climb factor squared. Stages still keep the max ascent. |
+| `sights` | Boosts max(culture, wine) |
+
+- Order: the flavour of the form theme first (`nature`, `water` → nature; `culture`, `wine` → sights), then best, then the rest.
+- Each flavour raises the cost of edges of earlier proposals (penalty method) and tries candidates best first. After the first proposal, each flavour gets about 60 candidates or 1.5 s.
+- A flavour is dropped when its path shares more than 40 % of its km with an earlier proposal, or when it adds nothing over best:
+
+| Flavour | Needs |
+|---|---|
+| `nature` | ≥ 50 % fit, and 8 points more than best |
+| `sights` | ≥ 20 % fit, and 5 points more than best |
+| `flat` | ≤ 85 % of the climbing per km of best |
+| `hilly` | ≥ 1 / 0.85 of the climbing per km of best |
+
+- Without scenery data there is no nature or sights flavour.
+- Each proposal has `signedShare`: the share of km on signed cycle routes.
 
 ## Climbing
 

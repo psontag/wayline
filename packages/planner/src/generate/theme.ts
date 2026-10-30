@@ -1,4 +1,9 @@
-import type { NetworkEdge, Theme } from "@wayline/domain";
+import type {
+  Flavour,
+  NetworkClass,
+  NetworkEdge,
+  Theme,
+} from "@wayline/domain";
 import type { Graph, PathStep } from "../graph/Graph";
 
 /** How much a fully themed edge raises its score. */
@@ -30,9 +35,67 @@ export function themeShare(edge: NetworkEdge, theme: Theme): number {
   }
 }
 
+/** Network part of the edge score. Same as NETWORK_SCORE in pipeline/graph.py. */
+const NETWORK_SCORE: Record<NetworkClass, number> = {
+  icn: 1,
+  ncn: 0.95,
+  rcn: 0.85,
+  lcn: 0.75,
+  connector: 0.4,
+};
+
+/**
+ * 0 to 1: the surface and main-road part of the edge score. 1 is paved
+ * and quiet, gravel is 0.85, a main road 0.7.
+ */
+export function wayQuality(edge: NetworkEdge): number {
+  return Math.min(1, edge.score / NETWORK_SCORE[edge.network]);
+}
+
+/**
+ * Score factor for an edge with this share of scenery. The boost shrinks
+ * with the square of the way quality, so scenery on gravel or next to a
+ * main road does not beat a paved, quiet way with a bit less scenery.
+ */
+export function sceneryBoost(edge: NetworkEdge, share: number): number {
+  return 1 + THEME_WEIGHT * share * wayQuality(edge) ** 2;
+}
+
 /** Score factor for an edge: 1 without a theme. */
 export function themeBoost(edge: NetworkEdge, theme?: Theme): number {
-  return theme ? 1 + THEME_WEIGHT * themeShare(edge, theme) : 1;
+  return theme ? sceneryBoost(edge, themeShare(edge, theme)) : 1;
+}
+
+/** Flavours that lean toward scenery. */
+export type SceneryFlavour = Extract<Flavour, "nature" | "sights">;
+
+/**
+ * 0 to 1: how well an edge fits a scenery flavour. Nature joins forest,
+ * reserves and water. Sights joins culture and wine.
+ */
+export function flavourShare(edge: NetworkEdge, flavour: SceneryFlavour) {
+  if (flavour === "sights") {
+    return Math.max(themeShare(edge, "culture"), themeShare(edge, "wine"));
+  }
+  const green = themeShare(edge, "nature");
+  const water = themeShare(edge, "water");
+  return 1 - (1 - green) * (1 - water);
+}
+
+/** Share of km that fits a scenery flavour. */
+export function flavourValue(
+  graph: Graph,
+  steps: PathStep[],
+  flavour: SceneryFlavour,
+): number {
+  let km = 0;
+  let value = 0;
+  for (const { edge } of steps) {
+    const e = graph.edge(edge);
+    km += e.lengthKm;
+    value += flavourShare(e, flavour) * e.lengthKm;
+  }
+  return km ? value / km : 0;
 }
 
 /**
