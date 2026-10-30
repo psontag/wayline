@@ -12,8 +12,6 @@ Vertical slices. Look and feel first. Each slice ends with a working, deployed a
 
 ## 2. Route A to B end to end
 
-Before: email the BRouter operator.
-
 - BRouter through the Worker, legs cached in D1
 - Route on the map with elevation profile
 - Via points
@@ -56,8 +54,15 @@ Before: test which Booking.com URL filters work.
 
 - Loop suggestions for a start point and distance. Part of the one form, done with the editor work.
 
+## 8. Polish
+
+Current focus. Small fixes, look and feel.
+
 ## Later
 
+- Router in a Cloudflare Worker instead of the tunnel to a local BRouter
+- Open items of slices 5–7: bahn.de links with date, time and home station; climbing and hotel stops
+- Route data for all of Germany
 - Custom domain
 - ORS fallback
 - Rate limiter and budget
