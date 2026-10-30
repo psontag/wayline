@@ -33,6 +33,7 @@ import MapGL, {
   Marker,
   Source,
 } from "react-map-gl/maplibre";
+import { HillshadeLayer } from "../../components/HillshadeLayer";
 import { NetworkLayer } from "../../components/NetworkLayer";
 import { useHiddenPlaceLabels } from "../../components/placeLabels";
 import { labelPoints, tripPoints } from "./proposalView";
@@ -48,12 +49,6 @@ const mapStyles = {
 // Endpoint labels sit right of the point, so keep more room on that side.
 const padding = { top: 56, right: 120, bottom: 40, left: 56 };
 const lineLayout = { "line-cap": "round", "line-join": "round" } as const;
-
-// Free elevation tiles, no key needed.
-const terrainTiles = [
-  "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
-];
-const hillshadeStrength = { light: 0.25, dark: 0.35 };
 
 export type ProposalsMapProps = {
   proposals: Proposal[];
@@ -239,27 +234,7 @@ export function ProposalsMap({
         onMouseLeave={() => setCursor(undefined)}
         cursor={cursor}
       >
-        <Source
-          id="terrain"
-          type="raster-dem"
-          tiles={terrainTiles}
-          encoding="terrarium"
-          tileSize={256}
-          maxzoom={15}
-        >
-          <Layer
-            id="hillshade"
-            beforeId={labelLayerId}
-            type="hillshade"
-            paint={{
-              "hillshade-shadow-color": tokens.hillshadeShadow,
-              "hillshade-highlight-color": tokens.hillshadeHighlight,
-              "hillshade-accent-color": tokens.hillshadeShadow,
-              "hillshade-exaggeration": hillshadeStrength[resolvedTheme],
-              "hillshade-illumination-anchor": "map",
-            }}
-          />
-        </Source>
+        <HillshadeLayer beforeId={labelLayerId} />
         <Source id="proposals" type="geojson" data={data}>
           <Layer
             id="proposal-line"
