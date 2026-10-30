@@ -1,6 +1,11 @@
 import { bahnUrl, tripStats, type Trip } from "@wayline/domain";
-import { StatBlock, TextLink, useFormat } from "@wayline/ui";
-import { TrainFront } from "lucide-react";
+import {
+  Stat,
+  statIcons,
+  SurfaceBar,
+  TextLink,
+  useFormat,
+} from "@wayline/ui";
 import { useTranslation } from "react-i18next";
 
 /** Totals of the trip and train links at both ends. */
@@ -12,25 +17,25 @@ export function TripSummary({ trip }: { trip: Trip }) {
   const end = trip.stages.at(-1)?.end;
 
   return (
-    <div className="flex flex-col gap-2.5 border-b border-border p-4">
-      <div className="grid grid-cols-4 gap-2">
-        <StatBlock
+    <div className="flex flex-col gap-3 border-b border-border p-4">
+      <div className="flex flex-wrap gap-x-5 gap-y-1">
+        <Stat
+          icon="dates"
           value={t("summary.stageCount", { count: trip.stages.length })}
-          label={t("summary.stages")}
+          label={t("summary.days")}
         />
-        <StatBlock
+        <Stat
+          icon="distance"
           value={format.distance(stats.distance)}
           label={t("summary.distance")}
         />
-        <StatBlock
+        <Stat
+          icon="ascent"
           value={format.elevation(stats.ascent)}
           label={t("summary.ascent")}
         />
-        <StatBlock
-          value={format.percent(stats.surface.paved)}
-          label={t("summary.paved")}
-        />
       </div>
+      <SurfaceBar shares={stats.surface} caption />
       {(start?.kind === "station" || end?.kind === "station") && (
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           {start?.kind === "station" && (
@@ -39,7 +44,7 @@ export function TripSummary({ trip }: { trip: Trip }) {
               target="_blank"
               rel="noreferrer"
             >
-              <TrainFront aria-hidden />
+              <statIcons.train aria-hidden />
               {t("summary.trainTo", { station: start.name })}
             </TextLink>
           )}
@@ -49,7 +54,7 @@ export function TripSummary({ trip }: { trip: Trip }) {
               target="_blank"
               rel="noreferrer"
             >
-              <TrainFront aria-hidden />
+              <statIcons.train aria-hidden />
               {t("summary.trainFrom", { station: end.name })}
             </TextLink>
           )}

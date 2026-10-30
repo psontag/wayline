@@ -84,6 +84,8 @@ export type TripMapProps = {
   trip: Trip;
   selected: number;
   onSelect: (index: number) => void;
+  /** Day under the pointer in the day list. */
+  hovered?: number;
   /** Other towns for the selected stop. */
   alternatives?: MapAlternative[];
   onPickAlternative?: (place: Place) => void;
@@ -137,6 +139,7 @@ export function TripMap({
   trip,
   selected,
   onSelect,
+  hovered,
   alternatives = [],
   onPickAlternative,
   hotels = [],
@@ -169,11 +172,15 @@ export function TripMap({
       type: "FeatureCollection",
       features: lines.map((coordinates, index) => ({
         type: "Feature",
-        properties: { index, selected: index === selected },
+        properties: {
+          index,
+          selected: index === selected,
+          hovered: index === hovered,
+        },
         geometry: { type: "LineString", coordinates },
       })),
     }),
-    [lines, selected],
+    [lines, selected, hovered],
   );
 
   // Legs of the selected stage, to drag the route.
@@ -369,7 +376,7 @@ export function TripMap({
             paint={{
               "line-color": tokens.routeSelected,
               "line-width": 5,
-              "line-opacity": 0.45,
+              "line-opacity": ["case", ["get", "hovered"], 0.85, 0.45],
             }}
           />
           <Layer

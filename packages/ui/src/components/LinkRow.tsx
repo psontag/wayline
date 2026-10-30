@@ -9,7 +9,7 @@ export type LinkRowProps = Omit<
 > & {
   icon?: ReactNode;
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
 };
 
 /** Outlined row that opens a detail view. */
@@ -25,7 +25,7 @@ export function LinkRow({
       type="button"
       className={cn(
         "flex w-full items-center gap-2.5 rounded-md border border-border bg-surface p-3 text-left text-base text-text transition-colors hover:bg-hover",
-        "[&_svg]:size-4 [&_svg]:shrink-0",
+        "[&>svg]:size-4 [&>svg]:shrink-0",
         focusRing,
         className,
       )}

@@ -4,7 +4,7 @@ import {
   ridingHours,
   type Trip,
 } from "@wayline/domain";
-import { ChangeNotice, StageCard, useFormat } from "@wayline/ui";
+import { ChangeNotice, DayList, StageDetails, useFormat } from "@wayline/ui";
 import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
@@ -18,44 +18,56 @@ export type StageListProps = {
   trip: Trip;
   selected: number;
   onSelect: (index: number) => void;
+  onHover: (index: number | undefined) => void;
   editor: TripEditorState;
 };
 
-/** All stages. The selected one shows stop, hotel and booking. */
+/** All days as a timeline. The selected one shows stop, hotel and booking. */
 export function StageList({
   trip,
   selected,
   onSelect,
+  onHover,
   editor,
 }: StageListProps) {
+  const { t } = useTranslation("tripEditor");
+  const format = useFormat();
+  const { avgSpeed } = trip.settings;
+
   return (
-    <ol className="flex flex-col gap-2 p-3">
-      {trip.stages.map((stage, index) => (
-        <li key={stage.id}>
-          <StageItem
-            trip={trip}
-            index={index}
-            selected={index === selected}
-            onSelect={() => onSelect(index)}
-            editor={editor}
-          />
-        </li>
-      ))}
-    </ol>
+    <DayList
+      className="p-3"
+      start={trip.stages[0]?.start.name}
+      days={trip.stages.map((stage, index) => ({
+        label: String(index + 1),
+        place: stage.end.name,
+        date: trip.startDate
+          ? format.date(localTimeToDate(addDays(trip.startDate, index)))
+          : undefined,
+        distance: format.distance(stage.stats.distance),
+        ascent: format.elevation(stage.stats.ascent),
+        ridingTime: format.duration(ridingHours(stage.stats, avgSpeed)),
+        tag: isChanged(trip, index)
+          ? t("stage.changed")
+          : stage.end.locked
+            ? t("stage.locked")
+            : undefined,
+      }))}
+      selectedDay={selected + 1}
+      onSelectDay={(day) => onSelect(day - 1)}
+      onHoverDay={(day) => onHover(day === undefined ? undefined : day - 1)}
+      details={<SelectedStage trip={trip} index={selected} editor={editor} />}
+    />
   );
 }
 
-export function StageItem({
+function SelectedStage({
   trip,
   index,
-  selected,
-  onSelect,
   editor,
 }: {
   trip: Trip;
   index: number;
-  selected: boolean;
-  onSelect: () => void;
   editor: TripEditorState;
 }) {
   const stage = trip.stages[index];
@@ -64,33 +76,26 @@ export function StageItem({
   const isLast = index === trip.stages.length - 1;
 
   return (
-    <StageCard
-      day={index + 1}
-      date={
-        trip.startDate
-          ? localTimeToDate(addDays(trip.startDate, index))
+    <StageDetails
+      surface={stage.stats.surface}
+      weather={
+        weather
+          ? {
+              temperature: weather.temperature,
+              feelsLike: weather.feelsLike.min,
+              rain: weather.maxPrecipitation,
+              wind: stageWind(weather),
+            }
           : undefined
       }
-      from={stage.start.name}
-      to={stage.end.name}
-      distance={stage.stats.distance}
-      ascent={stage.stats.ascent}
-      surface={stage.stats.surface}
-      temperature={weather?.temperature}
-      feelsLike={weather?.feelsLike.min}
-      wind={weather ? stageWind(weather) : undefined}
-      ridingHours={ridingHours(stage.stats, trip.settings.avgSpeed)}
       locked={stage.end.locked}
       onLockedChange={
         editor.readOnly
           ? undefined
           : (locked) => editor.setLocked(index, locked)
       }
-      selected={selected}
-      onSelect={onSelect}
-      color={index % 2 ? "b" : "a"}
       alternatives={
-        selected && !isLast && !editor.readOnly ? (
+        !isLast && !editor.readOnly ? (
           <StopPicker trip={trip} index={index} editor={editor} />
         ) : undefined
       }
@@ -102,7 +107,7 @@ export function StageItem({
           <BookingLink trip={trip} index={index} />
         </>
       )}
-    </StageCard>
+    </StageDetails>
   );
 }
 

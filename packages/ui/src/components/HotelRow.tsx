@@ -1,9 +1,11 @@
-import { BedDouble, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
+import { statIcons } from "../icons";
 import { focusRing } from "./Button";
+import { Stat } from "./Stat";
 
 export type HotelRowProps = {
   name: string;
@@ -39,16 +41,7 @@ export function HotelRow({
 }: HotelRowProps) {
   const { t } = useTranslation("ui");
   const format = useFormat();
-  const meta = [
-    kind && t(`hotel.kind.${kind}`),
-    stars ? t("hotel.stars", { count: stars }) : undefined,
-    distance !== undefined &&
-      t("hotel.fromRoute", { distance: format.distance(distance) }),
-    detour !== undefined &&
-      t("hotel.detour", { distance: format.distance(detour) }),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const meta = "font-normal text-text-muted";
   const links = [
     website && { href: website, label: t("hotel.website") },
     booking && { href: booking, label: t("hotel.booking") },
@@ -67,7 +60,7 @@ export function HotelRow({
       )}
     >
       {variant === "plain" && (
-        <BedDouble className="size-4 shrink-0" aria-hidden />
+        <statIcons.beds className="size-4 shrink-0" aria-hidden />
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <span
@@ -78,8 +71,37 @@ export function HotelRow({
         >
           {name}
         </span>
-        <span className="flex flex-wrap items-center gap-x-2 text-xs text-text-muted tabular-nums">
-          {meta}
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-muted tabular-nums">
+          {kind && <span>{t(`hotel.kind.${kind}`)}</span>}
+          {!!stars && (
+            <Stat
+              size="sm"
+              icon="stars"
+              value={String(stars)}
+              label={t("hotel.stars", { count: stars })}
+              className={meta}
+            />
+          )}
+          {distance !== undefined && (
+            <Stat
+              size="sm"
+              icon="distance"
+              value={format.distance(distance)}
+              label={t("hotel.fromRouteLabel")}
+              className={meta}
+            />
+          )}
+          {detour !== undefined && (
+            <Stat
+              size="sm"
+              icon="distance"
+              value={t("hotel.detourValue", {
+                distance: format.distance(detour),
+              })}
+              label={t("hotel.detourLabel")}
+              className={meta}
+            />
+          )}
           {links.map(({ href, label }) => (
             <a
               key={label}
