@@ -416,6 +416,7 @@ function TripEditorParts() {
           onHoverKm={setHoverKm}
           aria-label={t("demo.elevation")}
         />
+        <ElevationProfile axes points={[]} aria-label={t("demo.elevation")} />
         <div className="border-t border-border pt-2">
           <WeatherTimeline
             hours={hours}

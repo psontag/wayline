@@ -27,6 +27,11 @@ export function createFormat(language: string) {
     style: "percent",
     maximumFractionDigits: 0,
   });
+  const grade = new Intl.NumberFormat(locale, {
+    style: "percent",
+    maximumFractionDigits: 1,
+    signDisplay: "exceptZero",
+  });
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   const mm = new Intl.NumberFormat(locale, {
     style: "unit",
@@ -57,6 +62,8 @@ export function createFormat(language: string) {
     speed: (kmh: number) => speed.format(kmh),
     /** 86 %. Input as share from 0 to 1. */
     percent: (share: number) => percent.format(share),
+    /** +4.5 %, the slope of a road. Input as share. */
+    grade: (share: number) => grade.format(share),
     /** Sat 12 Jun. Some engines put a comma after the weekday; drop it. */
     date: (d: Date) =>
       date

@@ -19,4 +19,10 @@ describe("duration", () => {
     expect(clock(9.5)).toBe("09:30");
     expect(rain(1.25)).toBe("1.3 mm");
   });
+  it("formats grades with a sign", () => {
+    const { grade } = createFormat("en");
+    expect(grade(0.0452)).toBe("+4.5%");
+    expect(grade(-0.03)).toBe("-3%");
+    expect(grade(0)).toBe("0%");
+  });
 });
