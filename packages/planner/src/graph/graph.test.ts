@@ -5,6 +5,7 @@ import {
   type RouteNetwork,
 } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
+import { filteredClimb } from "./Graph";
 import { dijkstra, Graph, pathToLeg, shortestPath } from "./index";
 
 // Square with a nice long way (0-1-2) and a short ugly way (0-3-2).
@@ -42,8 +43,8 @@ function edge(
     network: "rcn",
     routes: [],
     score: 1,
-    ascent: 20,
-    descent: 5,
+    ascent: 15,
+    descent: 0,
     geometry: encodeLine([
       [a.lon, a.lat],
       [b.lon, b.lat],
@@ -124,12 +125,28 @@ describe("pathToLeg", () => {
       provider: "fake",
       profileHash: "touring",
     });
-    // Edge 3 forward (20 up, 5 down), edge 2 reversed (5 up, 20 down).
-    expect(leg.ascent).toBe(25);
-    expect(leg.descent).toBe(25);
+    // Edge 3 forward (15 up), edge 2 reversed (15 down).
+    expect(leg.ascent).toBe(15);
+    expect(leg.descent).toBe(15);
     expect(decodeLine(leg.geometry)).toHaveLength(4);
     expect(leg.elevation).toHaveLength(4);
     expect(leg.distance).toBeGreaterThan(16_000);
     expect(leg.surface.gravel).toBeCloseTo(8 / (leg.distance / 1000), 2);
+  });
+});
+
+describe("filteredClimb", () => {
+  it("drops small bumps but keeps real climbs", () => {
+    // Trees in the DEM: ±5 m noise on a 40 m climb.
+    expect(filteredClimb([300, 305, 300, 306, 320, 315, 340])).toEqual({
+      ascent: 40,
+      descent: 0,
+    });
+    expect(filteredClimb([300, 330, 310, 330])).toEqual({
+      ascent: 50,
+      descent: 20,
+    });
+    // Never less than the net change.
+    expect(filteredClimb([300, 308])).toEqual({ ascent: 8, descent: 0 });
   });
 });

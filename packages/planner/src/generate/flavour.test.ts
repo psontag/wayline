@@ -3,7 +3,7 @@ import { MockNetworkSource, TiledNetworkSource } from "@wayline/providers";
 import { readDataFile, readMockFile } from "@wayline/providers/testing";
 import { describe, expect, it } from "vitest";
 import { flavourOrder, loadPlanner, Planners } from "./generate";
-import { climbFactor, flavourClimb } from "./search";
+import { flavourClimb } from "./search";
 
 const heidelberg: GenerateRequest = {
   kind: "multi-day-loop",
@@ -40,13 +40,17 @@ function checkFlavours(proposals: Proposal[]) {
 
 describe("flavours", () => {
   it("climbs less on flat and more on hilly, within the limit", () => {
+    // Daily average 10 m/km. 5 m/km is free for best, 8 m/km is not.
     const allowed = 10;
-    const mild = climbFactor(50, 10, allowed);
-    expect(flavourClimb(50, 10, allowed, "flat")).toBeGreaterThan(2 * mild);
-    expect(flavourClimb(50, 10, allowed, "hilly")).toBeLessThan(mild);
-    // Steeper than allowed costs more than flat ground, even on hilly.
-    expect(flavourClimb(300, 10, allowed, "hilly")).toBeGreaterThan(1);
-    expect(flavourClimb(50, 10, allowed, "best")).toBe(mild);
+    expect(flavourClimb(30, 10, allowed, "best")).toBe(1);
+    expect(flavourClimb(80, 10, allowed, "best")).toBe(2);
+    expect(flavourClimb(30, 10, allowed, "flat")).toBeGreaterThan(1);
+    expect(flavourClimb(80, 10, allowed, "hilly")).toBeLessThan(
+      flavourClimb(30, 10, allowed, "hilly"),
+    );
+    expect(flavourClimb(80, 10, allowed, "hilly")).toBeLessThan(0.1);
+    // Far steeper than allowed costs more than flat ground, even on hilly.
+    expect(flavourClimb(600, 10, allowed, "hilly")).toBeGreaterThan(1);
   });
 
   it("puts the theme from the form first, then best", () => {
@@ -79,6 +83,25 @@ describe("flavours", () => {
       const share = (p: Proposal) =>
         (p.themes?.nature ?? 0) + (p.themes?.water ?? 0);
       expect(share(nature)).toBeGreaterThan(share(best));
+    }
+  });
+
+  it("keeps flat the least and hilly the most climbing", async () => {
+    const proposals = await generate(heidelberg);
+    const ascent = (p: Proposal) =>
+      p.trip.stages.reduce((sum, s) => sum + s.stats.ascent, 0);
+    const best = proposals.find((p) => p.flavour === "best");
+    const hilly = proposals.find((p) => p.flavour === "hilly");
+    const flat = proposals.find((p) => p.flavour === "flat");
+    expect(hilly).toBeDefined();
+    if (!best || !hilly) return;
+    expect(ascent(hilly)).toBeGreaterThanOrEqual(1.5 * ascent(best));
+    for (const p of proposals) {
+      if (p !== hilly) expect(ascent(p)).toBeLessThan(ascent(hilly));
+      if (flat && p !== flat) expect(ascent(p)).toBeGreaterThan(ascent(flat));
+    }
+    for (const s of hilly.trip.stages) {
+      expect(s.stats.ascent).toBeLessThanOrEqual(heidelberg.maxAscentPerDay);
     }
   });
 
