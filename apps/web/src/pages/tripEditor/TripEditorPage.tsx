@@ -18,7 +18,7 @@ import { networkArea } from "../../components/NetworkLayer";
 import { useMe, useNetwork, useTrip } from "../../data/queries";
 import { StageList } from "./StageList";
 import { StageProfile } from "./StageProfile";
-import { useStopOptions } from "./stopChoices";
+import { useMapHotels, useStopOptions } from "./stopChoices";
 import { ShareDialog } from "./ShareDialog";
 import { TripHeader } from "./TripHeader";
 import { isChanged } from "./routeEdits";
@@ -99,6 +99,7 @@ function TripEditor({
 
   const isLast = selected === trip.stages.length - 1;
   const options = useStopOptions(trip, selected);
+  const mapHotels = useMapHotels(trip, selected);
   const alternatives =
     isLast || readOnly
       ? []
@@ -106,6 +107,7 @@ function TripEditor({
           .filter((o) => !o.current)
           .map(({ place, distance }) => ({
             place,
+            beds: mapHotels.beds.get(place.name),
             label: t("stage.alternative", {
               name: place.name,
               distance: format.distance(distance),
@@ -198,6 +200,20 @@ function TripEditor({
               onPickAlternative={(place) =>
                 void editor.moveStop(selected, place)
               }
+              hotels={isLast ? [] : mapHotels.hotels}
+              selectedHotelId={stage?.hotel?.osmId}
+              onSelectHotel={(osmId) => {
+                const h = mapHotels.hotels.find((x) => x.osmId === osmId);
+                if (!h) return;
+                const { name, coord, stars, website } = h;
+                editor.setHotel(selected, {
+                  osmId,
+                  name,
+                  coord,
+                  ...(stars === undefined ? {} : { stars }),
+                  ...(website === undefined ? {} : { website }),
+                });
+              }}
               hover={hover}
               route={routeEditing(false)}
             >
