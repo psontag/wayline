@@ -55,7 +55,7 @@ import {
   ProgressBar,
   ProposalCard,
   ProposalCardSkeleton,
-  ProposalMarker,
+  RouteLabel,
   ChoiceCard,
   ChoiceGroup,
   FloatingButton,
@@ -859,8 +859,11 @@ function ProposalDemos() {
         <ProposalCardSkeleton />
       </div>
       <div className="flex items-center gap-3">
-        <ProposalMarker number={1} />
-        <ProposalMarker number={2} selected />
+        <RouteLabel label="1" color="best" selected />
+        <RouteLabel label="2" color="nature" />
+        <RouteLabel label="3" color="flat" />
+        <RouteLabel label="4" color="hilly" />
+        <RouteLabel label="5" color="sights" />
       </div>
       <Card padding="none">
         <MessagePanel

@@ -33,9 +33,13 @@ Map tokens:
 | Token | Use |
 |---|---|
 | `route`, `route-casing` | Route line and its outline |
-| `route-dimmed` | Unselected proposals |
-| `route-selected` | Selected proposal or stage. Odd days of the highlighted proposal. |
-| `stage-a`, `stage-b` | Stages alternate between these two. `stage-b` also marks even days of the highlighted proposal. |
+| `route-dimmed` | Unselected routes in the legend |
+| `route-selected` | Selected stage |
+| `stage-a`, `stage-b` | Stages in the trip editor alternate between these two |
+| `route-best`, `route-nature`, `route-flat`, `route-hilly`, `route-sights` | One color per proposal on the proposals map, by flavour or list order |
+| `on-route` | Text on a route color |
+| `route-outline` | Casing of the highlighted proposal |
+| `hillshade-shadow`, `hillshade-highlight` | Terrain shading on the proposals map |
 | `marker`, `via-point` | Stops and via points |
 | `network` | Signed cycling routes, a quiet layer below the route |
 
@@ -74,6 +78,15 @@ Color values:
 | `marker` | `#15181D` | `#EDEFF3` |
 | `via-point` | `#B4532A` | `#FFB088` |
 | `network` | `#9DB7A0` | `#4E6B57` |
+| `route-best` | `#FF9A73` | `#FFA67F` |
+| `route-nature` | `#3FB37A` | `#62D197` |
+| `route-flat` | `#4F9FF0` | `#6DB4FF` |
+| `route-hilly` | `#A685EC` | `#BB9EFF` |
+| `route-sights` | `#EE7FB4` | `#FF93C6` |
+| `on-route` | `#15181D` | `#101216` |
+| `route-outline` | `#3A3F48` | `#0B0C0F` |
+| `hillshade-shadow` | `#5A616C` | `#000000` |
+| `hillshade-highlight` | `#FFFFFF` | `#8B93A0` |
 
 Other tokens:
 
