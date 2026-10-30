@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import placesJson from "../../../public/data/mock/oberfranken/places.json";
 import {
   defaultValues,
+  detour,
   formDays,
   fromRequest,
   newTripSchema,
@@ -121,5 +122,24 @@ describe("new trip form", () => {
     const request = toRequest({ ...defaults, theme: "water" });
     expect(request.theme).toBe("water");
     expect(fromRequest(request, defaults).theme).toBe("water");
+  });
+
+  it("suggests km per day when A to B is much shorter than planned", () => {
+    const place = (name: string, coord: [number, number]) => ({
+      name,
+      kind: "town" as const,
+      coord,
+    });
+    const ab = {
+      ...defaults,
+      shape: "ab" as const,
+      start: place("Bamberg", [10.887, 49.892]),
+      end: place("Würzburg", [9.931, 49.793]),
+      kmPerDay: 70,
+    };
+    // About 70 km apart, so about 90 km by bike.
+    expect(detour(ab, 3)).toEqual({ km: 90, kmPerDay: 30 });
+    expect(detour({ ...ab, kmPerDay: 30 }, 3)).toBeUndefined();
+    expect(detour({ ...ab, shape: "loop" }, 3)).toBeUndefined();
   });
 });

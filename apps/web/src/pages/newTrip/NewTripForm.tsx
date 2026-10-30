@@ -35,6 +35,7 @@ import { useTranslation } from "react-i18next";
 import {
   backByTimes,
   defaultValues,
+  detour,
   formDays,
   fromRequest,
   isFormError,
@@ -402,6 +403,14 @@ export function NewTripForm({
               </div>
             )}
           </form.Subscribe>
+          <form.Subscribe selector={(s) => s.values}>
+            {(values) => (
+              <DetourHint
+                values={values}
+                onFit={(km) => form.setFieldValue("kmPerDay", km)}
+              />
+            )}
+          </form.Subscribe>
 
           <form.Field name="profile">
             {(field) => (
@@ -506,6 +515,42 @@ function Days({ values }: { values: NewTripValues }) {
         }))}
       />
       <span className="text-xs text-text-muted">{t("when.hint")}</span>
+    </div>
+  );
+}
+
+/** Says when the planned km are much longer than the way from A to B. */
+function DetourHint({
+  values,
+  onFit,
+}: {
+  values: NewTripValues;
+  onFit: (kmPerDay: number) => void;
+}) {
+  const { t } = useTranslation("newTrip");
+  const format = useFormat();
+  const shares = values.length === "one" ? [1] : sharesOf(values);
+  const fit =
+    shares &&
+    detour(
+      values,
+      shares.reduce((a, b) => a + b, 0),
+    );
+  if (!fit) return null;
+  return (
+    <div className="flex items-center gap-3 rounded-md bg-selected px-3 py-2 text-sm">
+      <span className="min-w-0 flex-1">
+        {t("detour.text", {
+          from: values.start?.name,
+          to: values.end?.name,
+          distance: format.distance(fit.km * 1000),
+        })}
+      </span>
+      <Button size="sm" type="button" onClick={() => onFit(fit.kmPerDay)}>
+        {t(values.length === "one" ? "detour.fitOne" : "detour.fit", {
+          distance: format.distance(fit.kmPerDay * 1000),
+        })}
+      </Button>
     </div>
   );
 }
