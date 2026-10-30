@@ -13,7 +13,8 @@
     "trips": "Trip cards, menus and dialogs",
     "tripEditor": "Trip editor",
     "proposals": "Proposals",
-    "phone": "Phone"
+    "phone": "Phone",
+    "icons": "Icons, stats and day list"
   },
   "demo": {
     "planTrip": "Plan trip",
@@ -104,6 +105,23 @@
     "email": "Email",
     "rideRain": "Rain until 09:00 · mostly tailwind",
     "rideHeadwind": "Dry · headwind after 14:00",
-    "bestReason": "dry, mostly tailwind"
+    "bestReason": "dry, mostly tailwind",
+    "halfDay": "Half day",
+    "hoveredDay": "Hovered day: {{day}}"
+  },
+  "icon": {
+    "distance": "Distance",
+    "ascent": "Ascent",
+    "ridingTime": "Riding time",
+    "signed": "Signed routes",
+    "beds": "Beds",
+    "stars": "Stars",
+    "rain": "Rain",
+    "wind": "Wind",
+    "temperature": "Temperature",
+    "daylight": "Daylight",
+    "train": "Train",
+    "dates": "Dates",
+    "budget": "Budget"
   }
 }

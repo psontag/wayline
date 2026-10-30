@@ -15,7 +15,16 @@
     "summary": "Surface: {{paved}} paved, {{gravel}} gravel, {{unpaved}} unpaved",
     "paved": "Paved",
     "gravel": "Gravel",
-    "unpaved": "Unpaved"
+    "unpaved": "Unpaved",
+    "share": {
+      "paved": "{{share}} paved",
+      "gravel": "{{share}} gravel",
+      "unpaved": "{{share}} unpaved"
+    }
+  },
+  "dayList": {
+    "distance": "Distance",
+    "ascent": "Ascent"
   },
   "stage": {
     "locked": "Locked",

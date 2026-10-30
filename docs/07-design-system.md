@@ -120,6 +120,34 @@ Other tokens:
 - Font: Manrope, system fonts as fallback. Tabular numbers for all stats.
 - Look: cool greys, tight corners (4–6 px), one pastel accent (peach). Dark text on pastel fills. Light mode routes get a deeper outline.
 
+## Icons
+
+Stats use a fixed set of Lucide icons, exported as `statIcons` from `packages/ui/src/icons.ts`.
+
+| Key | Icon | Meaning |
+|---|---|---|
+| `distance` | `MoveHorizontal` | Distance |
+| `ascent` | `TrendingUp` | Ascent |
+| `ridingTime` | `Clock` | Riding time |
+| `signed` | `Signpost` | Share on signed routes |
+| `beds` | `BedDouble` | Beds, places to sleep |
+| `stars` | `Star` | Hotel stars |
+| `rain` | `CloudRain` | Rain |
+| `wind` | `Wind` | Wind |
+| `temperature` | `Thermometer` | Temperature |
+| `daylight` | `Sunset` | Sunrise and sunset |
+| `train` | `TrainFront` | Train station, train link |
+| `dates` | `CalendarDays` | Dates of a trip |
+| `budget` | `Euro` | Hotel budget |
+
+Rules:
+
+- One meaning per icon. Don't use these icons for anything else.
+- Repeated stats are icon plus value (`Stat`). The label is the tooltip and the aria-label.
+- Lists show icons only in column headers, not in every row (`DayList`).
+- No icons on headings, flavour labels or plain buttons. Only known actions (zoom, close, more) are icon-only.
+- The paved share is shown as the surface bar (`SurfaceBar`), not as a number.
+
 ## Dark mode
 
 - Default follows the system setting. The user can override it in Settings.

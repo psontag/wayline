@@ -17,9 +17,12 @@ const segments = [
 /** Thin bar with the paved, gravel and unpaved shares of a route. */
 export function SurfaceBar({
   shares,
+  caption = false,
   className,
 }: {
   shares: SurfaceShares;
+  /** Show the shares as text below, e.g. "97% paved · 2% gravel". */
+  caption?: boolean;
   className?: string;
 }) {
   const { t } = useTranslation("ui");
@@ -27,7 +30,7 @@ export function SurfaceBar({
   const total = shares.paved + shares.gravel + shares.unpaved || 1;
   const percent = (value: number) => format.percent(value / total);
 
-  return (
+  const bar = (
     <div
       role="img"
       aria-label={t("surface.summary", {
@@ -37,7 +40,7 @@ export function SurfaceBar({
       })}
       className={cn(
         "flex h-1.5 gap-0.5 overflow-hidden rounded-full",
-        className,
+        !caption && className,
       )}
     >
       {segments.map(({ key, color }) =>
@@ -45,6 +48,22 @@ export function SurfaceBar({
           <div key={key} className={color} style={{ flexGrow: shares[key] }} />
         ) : null,
       )}
+    </div>
+  );
+  if (!caption) return bar;
+
+  // Shares below half a percent would read as "0%".
+  const parts = segments
+    .filter(({ key }) => shares[key] / total >= 0.005)
+    .map(({ key }) =>
+      t(`surface.share.${key}`, { share: percent(shares[key]) }),
+    );
+  return (
+    <div className={cn("flex flex-col gap-1", className)}>
+      {bar}
+      <span aria-hidden className="text-2xs text-text-muted tabular-nums">
+        {parts.join(" · ")}
+      </span>
     </div>
   );
 }

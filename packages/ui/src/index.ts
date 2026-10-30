@@ -34,6 +34,14 @@ export {
   type Wind,
 } from "./components/StageCard";
 export { StatBlock, type StatBlockProps } from "./components/StatBlock";
+export { Stat, type StatProps } from "./components/Stat";
+export {
+  DayList,
+  type DayColor,
+  type DayListItem,
+  type DayListProps,
+} from "./components/DayList";
+export { statIcons, type StatIcon } from "./icons";
 export {
   SurfaceBar,
   SurfaceLegend,
