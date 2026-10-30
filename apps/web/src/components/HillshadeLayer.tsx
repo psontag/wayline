@@ -1,11 +1,16 @@
 import { useTheme, useThemeTokens } from "@wayline/ui";
+import type { PropertyValueSpecification } from "maplibre-gl";
 import { Layer, Source } from "react-map-gl/maplibre";
 
 // Free elevation tiles, no key needed.
 const terrainTiles = [
   "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
 ];
-const strength = { light: 0.25, dark: 0.35 };
+// Stronger when zoomed out, where the relief looks flat.
+const strength = {
+  light: ["interpolate", ["linear"], ["zoom"], 7, 0.6, 12, 0.35],
+  dark: ["interpolate", ["linear"], ["zoom"], 7, 0.55, 12, 0.4],
+} satisfies Record<"light" | "dark", PropertyValueSpecification<number>>;
 
 /** Soft terrain shading below the routes. */
 export function HillshadeLayer({ beforeId }: { beforeId?: string }) {

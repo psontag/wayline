@@ -255,6 +255,7 @@ function ProposalItem({
           label: String(i + 1),
           place: stage.end.name,
           distance: format.distance(stage.stats.distance),
+          ascent: format.elevation(stage.stats.ascent),
           ...(share < 1
             ? { tag: t(share <= 0.5 ? "card.halfDay" : "card.shortDay") }
             : {}),
