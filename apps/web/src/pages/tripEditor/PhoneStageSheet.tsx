@@ -196,6 +196,11 @@ export function PhoneStageSheet({
           hoverKm={hoverKm}
           onHoverKm={onHoverKm}
           variant="sheet"
+          onRideStartChange={
+            editor.readOnly
+              ? undefined
+              : (start) => editor.setRideStart(selected, start)
+          }
         />
 
         <Button

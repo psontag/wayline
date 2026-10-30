@@ -24,14 +24,15 @@
     "locked": "Locked",
     "lock": "Lock",
     "dayOnly": "Day {{day}}",
-    "times": "{{start}}–{{end}}",
     "temperatureRange": "{{min}}–{{max}}",
     "windWithSpeed": "{{wind}} · {{speed}}",
     "wind": {
       "head": "{{share}} headwind",
       "tail": "{{share}} tailwind",
       "cross": "{{share}} crosswind"
-    }
+    },
+    "riding": "About {{duration}} riding",
+    "feelsLike": "{{range}}, feels like {{feelsLike}}"
   },
   "toast": {
     "close": "Close"
@@ -53,12 +54,6 @@
     "close": "Close"
   },
   "weather": {
-    "at": "{{distance}} · {{time}}",
-    "condition": {
-      "sun": "Dry",
-      "cloud": "Cloudy",
-      "rain": "Rain"
-    },
     "wind": {
       "head": "Head",
       "tail": "Tail",
@@ -80,5 +75,16 @@
     "expand": "Expand sheet",
     "collapse": "Collapse sheet",
     "close": "Close"
+  },
+  "timeline": {
+    "label": "Rain and feels-like temperature by hour",
+    "windLabel": "Wind by hour",
+    "window": "Ride window",
+    "ride": "Ride {{start}}–{{end}}",
+    "best": "Best start {{time}} · {{reason}}",
+    "atBest": "Best start · {{reason}}",
+    "gust": "G {{speed}}",
+    "afterSunset": "Ends after sunset at {{time}}",
+    "beforeSunrise": "Starts before sunrise at {{time}}"
   }
 }

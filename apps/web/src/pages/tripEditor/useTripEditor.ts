@@ -14,6 +14,7 @@ import {
   revertStage,
   type RouteTools,
 } from "./routeEdits";
+import { withRideStart } from "./stageWeather";
 
 /** Message after an edit. Undo is offered unless nothing changed. */
 export type EditorNote = { id: number; message: string; changed: boolean };
@@ -117,6 +118,17 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     },
     setLocked(index: number, locked: boolean) {
       if (canEdit) commit(setLocked(trip, index, locked));
+    },
+    /** Start of the ride window of a stage, "HH:MM". */
+    setRideStart(index: number, start: string) {
+      if (!canEdit) return;
+      const settings = withRideStart(
+        trip.settings,
+        index,
+        start,
+        trip.stages.length,
+      );
+      commit({ ...trip, settings });
     },
     setHotel(index: number, hotel: Hotel) {
       if (canEdit) commit(setHotel(trip, index, hotel));

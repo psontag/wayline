@@ -57,13 +57,13 @@
   "profile": {
     "title": "Day {{day}} · {{from}} → {{to}}",
     "totals": "{{distance}} · {{ascent}}",
-    "totalsWithTimes": "{{distance}} · {{ascent}} · {{start}}–{{end}}",
     "at": "{{distance}} · {{elevation}}",
     "atWithTime": "{{distance}} · {{elevation}} · {{time}}",
     "label": "Elevation of day {{day}}. Highest point {{elevation}} at {{distance}}.",
     "noStartDate": "Set a start date to see the weather.",
     "forecastFrom": "Forecast from {{date}}",
-    "loadingWeather": "Loading weather"
+    "loadingWeather": "Loading weather",
+    "totalsWithRiding": "{{distance}} · {{ascent}} · about {{duration}} riding"
   },
   "map": {
     "label": "Map of the trip. Day {{day}} is selected.",
@@ -137,5 +137,33 @@
     "failed": "Could not save. Try again.",
     "accessNote": "Friends also need to be on the Wayline login list.",
     "done": "Done"
+  },
+  "timeline": {
+    "summary": "{{rain}} · {{wind}}",
+    "reason": "{{rain}}, {{wind}}",
+    "rain": {
+      "none": "Dry",
+      "all": "Rain all the way",
+      "until": "Rain until {{time}}",
+      "from": "Rain from {{time}}",
+      "between": "Rain {{from}}–{{to}}"
+    },
+    "headwind": {
+      "none": "no headwind",
+      "all": "headwind all the way",
+      "until": "headwind until {{time}}",
+      "from": "headwind after {{time}}",
+      "between": "headwind {{from}}–{{to}}"
+    },
+    "mostly": {
+      "head": "mostly headwind",
+      "tail": "mostly tailwind",
+      "cross": "mostly crosswind"
+    },
+    "rainKind": {
+      "dry": "dry",
+      "light": "light rain",
+      "wet": "rain"
+    }
   }
 }

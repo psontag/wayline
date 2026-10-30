@@ -26,9 +26,11 @@ export type StageCardProps = {
   ascent: number;
   surface: SurfaceShares;
   temperature?: { min: number; max: number };
+  /** Lowest feels-like temperature on the ride. */
+  feelsLike?: number;
   wind?: Wind;
-  /** Expected start and arrival. */
-  times?: { start: Date; end: Date };
+  /** Riding time in hours, without breaks. */
+  ridingHours?: number;
   locked: boolean;
   /** Without it, the lock is only shown, not a button. */
   onLockedChange?: (locked: boolean) => void;
@@ -159,8 +161,9 @@ function CompactMeta({ temperature, wind, to, locked }: StageCardProps) {
 function SelectedDetails({
   surface,
   temperature,
+  feelsLike,
   wind,
-  times,
+  ridingHours,
   to,
   locked,
   onLockedChange,
@@ -170,28 +173,33 @@ function SelectedDetails({
   const { t } = useTranslation("ui");
   const format = useFormat();
   const windText = useWindText(wind, true);
+  const range =
+    temperature &&
+    t("stage.temperatureRange", {
+      min: Math.round(temperature.min),
+      max: format.temperature(temperature.max),
+    });
 
   return (
     <div className="flex flex-col gap-3">
       <SurfaceBar shares={surface} />
-      {(temperature || wind || times) && (
+      {(temperature || wind || ridingHours !== undefined) && (
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm tabular-nums">
-          {times && (
+          {ridingHours !== undefined && (
             <span className="flex items-center gap-1.5">
               <Clock className="size-4" aria-hidden />
-              {t("stage.times", {
-                start: format.time(times.start),
-                end: format.time(times.end),
-              })}
+              {t("stage.riding", { duration: format.duration(ridingHours) })}
             </span>
           )}
           {temperature && (
             <span className="flex items-center gap-1.5">
               <Sun className="size-4" aria-hidden />
-              {t("stage.temperatureRange", {
-                min: Math.round(temperature.min),
-                max: format.temperature(temperature.max),
-              })}
+              {feelsLike === undefined
+                ? range
+                : t("stage.feelsLike", {
+                    range,
+                    feelsLike: format.temperature(feelsLike),
+                  })}
             </span>
           )}
           {wind && (

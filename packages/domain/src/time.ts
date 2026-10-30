@@ -65,10 +65,52 @@ export function dayShares(
   return shares.map((s) => Math.round(s * 100) / 100);
 }
 
-/** Start time of a stage: the trip start on day one, DAY_START after. */
+/**
+ * Start time of a stage: the chosen ride start if set, else the trip start
+ * on day one and DAY_START after.
+ */
 export function stageStartTime(
-  settings: { startTime: string },
+  settings: { startTime: string; rideStarts?: (string | null)[] },
   index: number,
 ): string {
-  return index === 0 ? settings.startTime : DAY_START;
+  return (
+    settings.rideStarts?.[index] ??
+    (index === 0 ? settings.startTime : DAY_START)
+  );
+}
+
+/** Extra riding minutes per 100 m of ascent, on top of km ÷ avgSpeed. */
+export const CLIMB_MINUTES_PER_100M = 6;
+
+/** Riding hours of a stage. Breaks are not included. */
+export function ridingHours(
+  stats: { distance: number; ascent: number },
+  avgSpeed: number,
+): number {
+  return (
+    stats.distance / 1000 / avgSpeed +
+    (stats.ascent / 100) * (CLIMB_MINUTES_PER_100M / 60)
+  );
+}
+
+/** km/h over the whole stage, with time for climbing included. */
+export function stageSpeed(
+  stats: { distance: number; ascent: number },
+  avgSpeed: number,
+): number {
+  const h = ridingHours(stats, avgSpeed);
+  return h > 0 ? stats.distance / 1000 / h : avgSpeed;
+}
+
+/** "09:00" + 1.5 → "10:30". Wraps after midnight. */
+export function addHours(time: string, h: number): string {
+  const minutes = Math.round((hours(time) + h) * 60);
+  const m = ((minutes % 1440) + 1440) % 1440;
+  const pad = (v: number) => String(v).padStart(2, "0");
+  return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+}
+
+/** "10:30" → 10.5 */
+export function timeToHours(time: string): number {
+  return hours(time);
 }

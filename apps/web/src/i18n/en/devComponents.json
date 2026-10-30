@@ -101,6 +101,9 @@
     "shareTitle": "Share trip",
     "shareText": "Friends can open this trip and export it, but not change it.",
     "done": "Done",
-    "email": "Email"
+    "email": "Email",
+    "rideRain": "Rain until 09:00 · mostly tailwind",
+    "rideHeadwind": "Dry · headwind after 14:00",
+    "bestReason": "dry, mostly tailwind"
   }
 }

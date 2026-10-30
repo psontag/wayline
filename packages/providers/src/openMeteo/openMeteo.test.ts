@@ -44,8 +44,9 @@ describe("openMeteoUrl", () => {
     expect(url.searchParams.get("latitude")).toBe("49.85,50.25");
     expect(url.searchParams.get("longitude")).toBe("10.85,11.35");
     expect(url.searchParams.get("hourly")).toBe(
-      "temperature_2m,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m",
+      "temperature_2m,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,apparent_temperature,wind_gusts_10m",
     );
+    expect(url.searchParams.get("daily")).toBe("sunrise,sunset");
     expect(url.searchParams.get("forecast_days")).toBe("16");
     expect(url.searchParams.get("timezone")).toBe("auto");
   });
@@ -65,6 +66,13 @@ describe("parseOpenMeteo", () => {
     expect(sample.precipitationProbability).toBeGreaterThanOrEqual(0);
     expect(sample.precipitationProbability).toBeLessThanOrEqual(1);
     expect(sample.windDirection).toBeLessThanOrEqual(360);
+    expect(sample.windGusts).toBeGreaterThanOrEqual(sample.windSpeed);
+    expect(typeof sample.apparentTemperature).toBe("number");
+    expect(first!.daylight[0]).toEqual({
+      date: "2026-10-21",
+      sunrise: "2026-10-21T06:47",
+      sunset: "2026-10-21T17:13",
+    });
   });
 
   it("reads a single location as an object", () => {

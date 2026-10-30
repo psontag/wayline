@@ -1,8 +1,7 @@
 import {
   localTimeToDate,
-  expectedTimeAtKm,
   addDays,
-  stageStartTime,
+  ridingHours,
   type Trip,
 } from "@wayline/domain";
 import { ChangeNotice, StageCard, useFormat } from "@wayline/ui";
@@ -46,21 +45,6 @@ export function StageList({
   );
 }
 
-/** Expected start and arrival of a stage, if the trip has a start date. */
-export function stageTimes(trip: Trip, index: number) {
-  const stage = trip.stages[index];
-  if (!trip.startDate || !stage) return undefined;
-  const date = addDays(trip.startDate, index);
-  const startTime = stageStartTime(trip.settings, index);
-  const { avgSpeed } = trip.settings;
-  return {
-    start: localTimeToDate(`${date}T${startTime}`),
-    end: localTimeToDate(
-      expectedTimeAtKm(date, startTime, avgSpeed, stage.stats.distance / 1000),
-    ),
-  };
-}
-
 export function StageItem({
   trip,
   index,
@@ -93,8 +77,9 @@ export function StageItem({
       ascent={stage.stats.ascent}
       surface={stage.stats.surface}
       temperature={weather?.temperature}
+      feelsLike={weather?.feelsLike.min}
       wind={weather ? stageWind(weather) : undefined}
-      times={stageTimes(trip, index)}
+      ridingHours={ridingHours(stage.stats, trip.settings.avgSpeed)}
       locked={stage.end.locked}
       onLockedChange={
         editor.readOnly

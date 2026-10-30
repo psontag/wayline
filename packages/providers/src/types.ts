@@ -1,5 +1,6 @@
 import type {
   BBox,
+  Daylight,
   Hotel,
   HotelBudget,
   Leg,
@@ -29,6 +30,8 @@ export type Forecast = {
   cell: LonLat;
   /** Hourly, from today 00:00 to the end of the forecast range. */
   samples: WeatherSample[];
+  /** Sunrise and sunset per day of the range. */
+  daylight: Daylight[];
 };
 
 export interface WeatherProvider {

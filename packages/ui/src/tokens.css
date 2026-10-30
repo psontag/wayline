@@ -57,6 +57,11 @@
   --color-marker: #15181d;
   --color-via-point: #b4532a;
   --color-network: #9db7a0;
+  --color-rain: #3d84d6;
+  --color-wind-head: #c2412d;
+  --color-wind-cross: #b7791f;
+  --color-wind-tail: #2f9e6b;
+  --color-night: #e4e7ec;
 
   /* Spacing: 4 px steps. Also used for widths and heights. */
   --spacing-0: 0px;
@@ -213,6 +218,11 @@
       --color-marker: #edeff3;
       --color-via-point: #ffb088;
       --color-network: #4e6b57;
+      --color-rain: #6ab0f5;
+      --color-wind-head: #ff8f7d;
+      --color-wind-cross: #f2cf7e;
+      --color-wind-tail: #5ccb97;
+      --color-night: #0b0d11;
       --color-scrim: rgb(0 0 0 / 0.55);
       --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
       --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
@@ -262,6 +272,11 @@
     --color-marker: #15181d;
     --color-via-point: #b4532a;
     --color-network: #9db7a0;
+    --color-rain: #3d84d6;
+    --color-wind-head: #c2412d;
+    --color-wind-cross: #b7791f;
+    --color-wind-tail: #2f9e6b;
+    --color-night: #e4e7ec;
     --color-scrim: rgb(16 18 22 / 0.35);
     --shadow-sm: 0 1px 2px rgb(16 18 22 / 0.12);
     --shadow-md:
@@ -311,6 +326,11 @@
     --color-marker: #edeff3;
     --color-via-point: #ffb088;
     --color-network: #4e6b57;
+    --color-rain: #6ab0f5;
+    --color-wind-head: #ff8f7d;
+    --color-wind-cross: #f2cf7e;
+    --color-wind-tail: #5ccb97;
+    --color-night: #0b0d11;
     --color-scrim: rgb(0 0 0 / 0.55);
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
