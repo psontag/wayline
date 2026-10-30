@@ -39,7 +39,7 @@ Map tokens:
 | `route-best`, `route-nature`, `route-flat`, `route-hilly`, `route-sights` | One color per proposal on the proposals map, by flavour or list order |
 | `on-route` | Text on a route color |
 | `route-outline` | Casing of the highlighted proposal |
-| `hillshade-shadow`, `hillshade-highlight` | Terrain shading on the proposals map |
+| `hillshade-shadow`, `hillshade-highlight` | Terrain shading on the maps |
 | `marker`, `via-point` | Stops and via points |
 | `network` | Signed cycling routes, a quiet layer below the route |
 

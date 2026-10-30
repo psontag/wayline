@@ -38,6 +38,7 @@ import {
   ElevationProfile,
   EndpointMarker,
   GhostViaMarker,
+  HotelMarker,
   HotelRow,
   HoverMarker,
   InlineEdit,
@@ -471,6 +472,23 @@ function TripEditorParts() {
         <StopMarker day={2} name="Kronach" selected />
         <AlternativeMarker
           label={t("demo.alternative", { name: "Küps", distance: "56 km" })}
+        />
+        <AlternativeMarker
+          label={t("demo.alternative", { name: "Mitwitz", distance: "61 km" })}
+          beds={4}
+        />
+        <HotelMarker
+          name="Hotel Krone"
+          kind="hotel"
+          stars={3}
+          detour={1200}
+          website="https://example.com"
+        />
+        <HotelMarker
+          name="Pension Rose"
+          kind="guest_house"
+          detour={400}
+          selected
         />
         <HoverMarker />
         <ViaMarker aria-label={t("demo.removeVia")} />

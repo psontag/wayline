@@ -105,10 +105,13 @@ export {
   AlternativeMarker,
   EndpointMarker,
   GhostViaMarker,
+  HotelMarker,
   HoverMarker,
   StopMarker,
   ViaMarker,
   type AlternativeMarkerProps,
+  type HotelKind,
+  type HotelMarkerProps,
   type StopMarkerProps,
   type ViaMarkerProps,
 } from "./components/MapMarker";

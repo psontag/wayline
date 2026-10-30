@@ -69,7 +69,17 @@
     "stars_one": "{{count}} star",
     "stars_other": "{{count}} stars",
     "fromRoute": "{{distance}} from route",
-    "website": "Website"
+    "detour": "+{{distance}} detour",
+    "website": "Website",
+    "kind": {
+      "hotel": "Hotel",
+      "guest_house": "Guest house",
+      "motel": "Motel"
+    }
+  },
+  "marker": {
+    "beds_one": "{{count}} place to sleep",
+    "beds_other": "{{count}} places to sleep"
   },
   "save": {
     "saved": "Saved",

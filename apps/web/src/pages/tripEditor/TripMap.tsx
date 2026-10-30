@@ -8,6 +8,7 @@ import {
   AlternativeMarker,
   EndpointMarker,
   GhostViaMarker,
+  HotelMarker,
   HoverMarker,
   IconButton,
   MapControlGroup,
@@ -36,12 +37,14 @@ import MapGL, {
   Marker,
   Source,
 } from "react-map-gl/maplibre";
+import { HillshadeLayer } from "../../components/HillshadeLayer";
 import { NetworkLayer } from "../../components/NetworkLayer";
 import {
   nearestOnLine,
   type RouteDrag,
   useRouteDrag,
 } from "../../components/useRouteDrag";
+import type { MapHotel } from "./mapTypes";
 import { tripStops } from "./tripArea";
 import { useHiddenPlaceLabels } from "../../components/placeLabels";
 
@@ -70,7 +73,12 @@ const defaultPadding: MapPadding = {
 
 const lineLayout = { "line-cap": "round", "line-join": "round" } as const;
 
-export type MapAlternative = { place: Place; label: string };
+export type MapAlternative = {
+  place: Place;
+  label: string;
+  /** Places to sleep there, if known. */
+  beds?: number;
+};
 
 export type TripMapProps = {
   trip: Trip;
@@ -79,6 +87,10 @@ export type TripMapProps = {
   /** Other towns for the selected stop. */
   alternatives?: MapAlternative[];
   onPickAlternative?: (place: Place) => void;
+  /** Hotels near the end stop of the selected day. */
+  hotels?: MapHotel[];
+  selectedHotelId?: string;
+  onSelectHotel?: (osmId: string) => void;
   /** Point that follows the elevation crosshair. */
   hover?: LonLat;
   /** Space around the trip when the map fits it, e.g. for a sheet. */
@@ -120,13 +132,16 @@ function bounds(coords: LonLat[]): LngLatBoundsLike {
   return [w, s, e, n];
 }
 
-/** Trip on the map. Stages alternate in color; the selected one stands out. */
+/** Trip on the map in one color. The selected day is full strength. */
 export function TripMap({
   trip,
   selected,
   onSelect,
   alternatives = [],
   onPickAlternative,
+  hotels = [],
+  selectedHotelId,
+  onSelectHotel,
   hover,
   padding = defaultPadding,
   controls = true,
@@ -139,6 +154,7 @@ export function TripMap({
   const mapRef = useRef<MapRef>(null);
   const [labelLayerId, setLabelLayerId] = useState<string>();
   const [cursor, setCursor] = useState<string>();
+  const [activeHotel, setActiveHotel] = useState<string>();
 
   const lines = useMemo(
     () =>
@@ -153,11 +169,7 @@ export function TripMap({
       type: "FeatureCollection",
       features: lines.map((coordinates, index) => ({
         type: "Feature",
-        properties: {
-          index,
-          color: index % 2 ? "b" : "a",
-          selected: index === selected,
-        },
+        properties: { index, selected: index === selected },
         geometry: { type: "LineString", coordinates },
       })),
     }),
@@ -249,14 +261,22 @@ export function TripMap({
   // A via marker drag can end with a click on it. That must not remove it.
   const draggedVia = useRef(false);
 
-  // Zoom to the stage when the selection changes, not on first load.
+  // Zoom to the stage when the selection changes, not on first load,
+  // and not while the route is dragged.
   const shown = useRef(selected);
+  const dragging = !!drag;
   useEffect(() => {
     if (shown.current === selected) return;
     shown.current = selected;
+    if (dragging) return;
     const line = lines[selected];
     if (line?.length) {
-      mapRef.current?.fitBounds(bounds(line), {
+      // Keep the stop choices and hotels in view too.
+      const around = [
+        ...alternatives.map(({ place }) => place.coord),
+        ...hotels.map((hotel) => hotel.coord),
+      ];
+      mapRef.current?.fitBounds(bounds([...line, ...around]), {
         padding,
         maxZoom: 12,
         duration: matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -264,7 +284,7 @@ export function TripMap({
           : 600,
       });
     }
-  }, [selected, lines, padding]);
+  }, [selected, lines, padding, dragging, alternatives, hotels]);
 
   const first = trip.stages[0];
   const last = trip.stages.at(-1);
@@ -325,6 +345,7 @@ export function TripMap({
         onMouseDown={routeDrag.onMouseDown}
         cursor={drag ? "grabbing" : ghost ? "grab" : cursor}
       >
+        <HillshadeLayer beforeId={labelLayerId} />
         <Source id="proposed" type="geojson" data={proposedData}>
           <Layer
             id="proposed-line"
@@ -340,28 +361,15 @@ export function TripMap({
         </Source>
         <Source id="stages" type="geojson" data={data}>
           <Layer
-            id="stage-casing"
-            beforeId={labelLayerId}
-            type="line"
-            filter={notSelected}
-            layout={lineLayout}
-            paint={{ "line-color": tokens.surface, "line-width": 8 }}
-          />
-          <Layer
             id="stage-line"
             beforeId={labelLayerId}
             type="line"
             filter={notSelected}
             layout={lineLayout}
             paint={{
-              "line-color": [
-                "match",
-                ["get", "color"],
-                "a",
-                tokens.stageA,
-                tokens.stageB,
-              ],
+              "line-color": tokens.routeSelected,
               "line-width": 5,
+              "line-opacity": 0.45,
             }}
           />
           <Layer
@@ -370,7 +378,7 @@ export function TripMap({
             type="line"
             filter={isSelected}
             layout={lineLayout}
-            paint={{ "line-color": tokens.routeCasing, "line-width": 11 }}
+            paint={{ "line-color": tokens.routeOutline, "line-width": 10 }}
           />
           <Layer
             id="selected-line"
@@ -415,7 +423,11 @@ export function TripMap({
             }}
           />
         </Source>
-        <NetworkLayer around={tripStops(trip)} beforeId="proposed-line" />
+        <NetworkLayer
+          around={tripStops(trip)}
+          beforeId="proposed-line"
+          subtle
+        />
 
         {first && (
           <Marker
@@ -443,7 +455,7 @@ export function TripMap({
             />
           </Marker>
         )}
-        {alternatives.map(({ place, label }) => (
+        {alternatives.map(({ place, label, beds }) => (
           <Marker
             key={place.name}
             longitude={place.coord[0]}
@@ -453,6 +465,7 @@ export function TripMap({
           >
             <AlternativeMarker
               label={label}
+              beds={beds}
               onClick={() => onPickAlternative?.(place)}
             />
           </Marker>
@@ -463,7 +476,8 @@ export function TripMap({
             longitude={stage.end.coord[0]}
             latitude={stage.end.coord[1]}
             anchor="left"
-            offset={[-14, 0]}
+            // Center the circle on the stop. It is larger when selected.
+            offset={[index === selected ? -20 : -16, 0]}
             style={{ zIndex: index === selected ? 2 : 1 }}
           >
             <StopMarker
@@ -475,6 +489,36 @@ export function TripMap({
                 place: stage.end.name,
               })}
               onClick={() => onSelect(index)}
+            />
+          </Marker>
+        ))}
+        {hotels.map((hotel) => (
+          <Marker
+            key={hotel.osmId}
+            longitude={hotel.coord[0]}
+            latitude={hotel.coord[1]}
+            style={{
+              zIndex:
+                activeHotel === hotel.osmId
+                  ? 4
+                  : hotel.osmId === selectedHotelId
+                    ? 2
+                    : 1,
+            }}
+          >
+            <HotelMarker
+              name={hotel.name}
+              kind={hotel.kind}
+              stars={hotel.stars}
+              detour={hotel.detourKm * 1000}
+              website={hotel.website}
+              selected={hotel.osmId === selectedHotelId}
+              onClick={() => onSelectHotel?.(hotel.osmId)}
+              onActiveChange={(active) =>
+                setActiveHotel((id) =>
+                  active ? hotel.osmId : id === hotel.osmId ? undefined : id,
+                )
+              }
             />
           </Marker>
         ))}
