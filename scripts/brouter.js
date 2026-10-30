@@ -1,6 +1,7 @@
 // Downloads the BRouter segments for BW, Hessen and Bayern if missing, then
-// starts BRouter in Docker on localhost:17777. With a Cloudflare token in
-// .cloudflare.env it also starts cloudflared, so the deployed app can route.
+// starts BRouter in Docker on localhost:17777. On macOS it starts Docker
+// Desktop if needed. With a Cloudflare token in .cloudflare.env it also
+// starts cloudflared, so the deployed app can route.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -31,7 +32,7 @@ for (const tile of tiles) {
   renameSync(`${file}.part`, file);
 }
 
-if (spawnSync("docker", ["info"], { stdio: "ignore" }).status !== 0) {
+if (!dockerRunning() && !startDocker()) {
   console.error(
     "Docker is not running. Start Docker and run `pnpm brouter` again.",
   );
@@ -76,6 +77,22 @@ function loadTunnelToken() {
   }
   console.log("Starting cloudflared for the tunnel");
   return stdout.trim();
+}
+
+function dockerRunning() {
+  return spawnSync("docker", ["info"], { stdio: "ignore" }).status === 0;
+}
+
+/** Starts Docker Desktop on macOS and waits up to two minutes for it. */
+function startDocker() {
+  if (process.platform !== "darwin") return false;
+  console.log("Starting Docker Desktop");
+  if (spawnSync("open", ["-a", "Docker"]).status !== 0) return false;
+  for (let i = 0; i < 60; i++) {
+    if (dockerRunning()) return true;
+    spawnSync("sleep", ["2"]);
+  }
+  return false;
 }
 
 function run(command, args, env = process.env) {

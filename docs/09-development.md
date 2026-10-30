@@ -32,10 +32,10 @@ Env files, region data and the local D1 are git-ignored, so a new worktree has n
 pnpm setup:worktree
 ```
 
-- Symlinks `apps/api/.dev.vars`, `apps/web/.env.local`, `apps/api/.wrangler/state` and the region data from the main checkout. Then applies migrations.
+- Symlinks `apps/api/.dev.vars`, `apps/web/.env.local`, `apps/api/.wrangler/state`, the region data and the BRouter segments (`.cache/brouter`) from the main checkout. Then applies migrations.
 - All worktrees share one D1 and one set of env files. A change in one applies to all.
 - Only one checkout can run `pnpm dev` at a time. The ports are fixed.
-- `.claude/launch.json` starts `pnpm dev` for the browser pane in the Claude desktop app.
+- `.claude/launch.json` has two configs for the Claude desktop app: `wayline` runs `pnpm dev`, `brouter` runs `pnpm brouter`.
 
 The Worker config is `apps/api/cloudflare.config.ts`. Build settings, such as the assets folder, are in `apps/api/wrangler.config.ts`. `cf` writes generated files to `.cloudflare/` (git-ignored).
 
@@ -100,7 +100,7 @@ The response header `X-Cache` says `HIT` or `MISS`.
 
 ## Local BRouter
 
-A local BRouter covers Baden-Württemberg, Hessen and Bayern. It needs Docker.
+A local BRouter covers Baden-Württemberg, Hessen and Bayern. It needs Docker. On macOS, `pnpm brouter` starts Docker Desktop if it is not running.
 
 ```sh
 pnpm brouter    # BRouter on localhost:17777
