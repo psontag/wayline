@@ -216,6 +216,11 @@ function TripEditor({
             network={network}
             hoverKm={hoverKm}
             onHoverKm={setHoverKm}
+            onRideStartChange={
+              editor.readOnly
+                ? undefined
+                : (start) => editor.setRideStart(selected, start)
+            }
           />
         </div>
         <aside className="flex shrink-0 flex-col border-border bg-surface lg:w-panel lg:border-l">

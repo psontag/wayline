@@ -94,10 +94,10 @@ export {
   type SurfaceKind,
 } from "./components/ElevationProfile";
 export {
-  WeatherStrip,
-  type WeatherCondition,
-  type WeatherStripItem,
-} from "./components/WeatherStrip";
+  WeatherTimeline,
+  type TimelineHour,
+  type WeatherTimelineProps,
+} from "./components/WeatherTimeline";
 export { HotelRow, type HotelRowProps } from "./components/HotelRow";
 export { SaveStatus, type SaveState } from "./components/SaveStatus";
 export { TextLink, type TextLinkProps } from "./components/TextLink";

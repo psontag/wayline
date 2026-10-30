@@ -1,4 +1,4 @@
-import type { LonLat, WeatherSample } from "@wayline/domain";
+import type { Daylight, LonLat, WeatherSample } from "@wayline/domain";
 import type { Forecast, WeatherProvider } from "../types";
 
 /**
@@ -17,7 +17,10 @@ export class FakeWeather implements WeatherProvider {
     for (let h = 0; h < days * 24; h++) {
       samples.push(sampleFor(cell, new Date(start + h * 3_600_000)));
     }
-    return { cell, samples };
+    const daylight = Array.from({ length: days }, (_, d) =>
+      daylightFor(new Date(start + d * 86_400_000)),
+    );
+    return { cell, samples, daylight };
   }
 }
 
@@ -44,13 +47,36 @@ function sampleFor(cell: LonLat, t: Date): WeatherSample {
   const windSpeed =
     6 + 18 * d(7) + 4 * Math.sin((hour / 24) * Math.PI) + 3 * h(8);
 
+  const temperature = round1(mean + daily + (h(9) - 0.5));
   return {
     time: t.toISOString().slice(0, 16),
-    temperature: round1(mean + daily + (h(9) - 0.5)),
+    temperature,
+    // Wind chill, roughly.
+    apparentTemperature: round1(temperature - windSpeed / 8),
+    windGusts: round1(windSpeed * (1.4 + 0.4 * h(11))),
     precipitation: raining ? round1(0.2 + 2.5 * h(10)) : 0,
     precipitationProbability: rainChance,
     windSpeed: round1(windSpeed),
     windDirection: Math.round(windFrom),
+  };
+}
+
+/** Sunrise and sunset around 50° north, local time. */
+function daylightFor(day: Date): Daylight {
+  const date = day.toISOString().slice(0, 10);
+  const yearStart = Date.UTC(day.getUTCFullYear(), 0, 1);
+  const dayOfYear = (day.getTime() - yearStart) / 86_400_000;
+  const length = 12 + 4.2 * Math.sin(((dayOfYear - 80) / 365) * 2 * Math.PI);
+  const noon = 12.75;
+  const at = (h: number) => {
+    const m = Math.round(h * 60);
+    const pad = (v: number) => String(v).padStart(2, "0");
+    return `${date}T${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+  };
+  return {
+    date,
+    sunrise: at(noon - length / 2),
+    sunset: at(noon + length / 2),
   };
 }
 

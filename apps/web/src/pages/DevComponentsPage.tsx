@@ -50,8 +50,8 @@ import {
   TextLink,
   ViaMarker,
   ViaRow,
-  WeatherStrip,
-  type WeatherStripItem,
+  type TimelineHour,
+  WeatherTimeline,
   MessagePanel,
   ProgressBar,
   ProposalCard,
@@ -96,6 +96,8 @@ const stages = [
     ascent: 650,
     surface: { paved: 70, gravel: 18, unpaved: 12 },
     temperature: { min: 15, max: 21 },
+    feelsLike: 13,
+    ridingHours: 4.25,
     wind: { kind: "tail", share: 0.6, speedKmh: 14 },
     color: "a",
   },
@@ -108,6 +110,8 @@ const stages = [
     ascent: 720,
     surface: { paved: 62, gravel: 24, unpaved: 14 },
     temperature: { min: 17, max: 23 },
+    feelsLike: 14,
+    ridingHours: 3.5,
     wind: { kind: "head", share: 0.45, speedKmh: 16 },
     color: "b",
   },
@@ -120,6 +124,8 @@ const stages = [
     ascent: 540,
     surface: { paved: 88, gravel: 12, unpaved: 0 },
     temperature: { min: 16, max: 24 },
+    feelsLike: 15,
+    ridingHours: 4.75,
     wind: { kind: "cross", share: 0.5, speedKmh: 9 },
     color: "a",
   },
@@ -375,22 +381,27 @@ const profile: ProfilePoint[] = Array.from({ length: 61 }, (_, i) => ({
   surface: i > 18 && i < 30 ? "gravel" : i > 44 && i < 50 ? "unpaved" : "paved",
 }));
 
-const weather: WeatherStripItem[] = [0, 10, 20, 30, 40, 50, 60].map(
-  (km, i) => ({
-    distance: km * 1000,
-    time: new Date(2027, 5, 13, 9, Math.round((km / 18) * 60)),
-    temperature: 17 + i,
-    condition: i === 3 ? "cloud" : i === 4 ? "rain" : "sun",
+const hours: TimelineHour[] = Array.from({ length: 12 }, (_, i) => {
+  const hour = 7 + i;
+  const head = hour >= 14;
+  return {
+    hour,
+    rain: hour === 7 ? 1.4 : hour === 8 ? 0.6 : hour === 16 ? 0.2 : 0,
+    rainChance: hour < 9 ? 0.8 : 0.3,
+    feelsLike: 2 + 5 * Math.sin(((hour - 8) / 10) * Math.PI),
     wind: {
-      kind: i < 2 ? "tail" : i < 5 ? "head" : "cross",
-      rotation: i < 2 ? 10 : i < 5 ? 175 : 95,
+      kind: head ? "head" : hour < 11 ? "tail" : "cross",
+      rotation: head ? 170 : hour < 11 ? 10 : 80,
+      speed: 12 + i,
+      gusts: hour === 16 ? 48 : 20 + i,
     },
-  }),
-);
+  };
+});
 
 function TripEditorParts() {
   const { t } = useTranslation("devComponents");
   const [hoverKm, setHoverKm] = useState<number>();
+  const [rideStart, setRideStart] = useState(9);
   const [date, setDate] = useState("2027-06-12");
   const [name, setName] = useState("Franconia, four days");
   const [renaming, setRenaming] = useState(false);
@@ -399,13 +410,25 @@ function TripEditorParts() {
       <Card className="flex flex-col gap-3">
         <SurfaceLegend />
         <ElevationProfile
+          axes
           points={profile}
           hoverKm={hoverKm}
           onHoverKm={setHoverKm}
           aria-label={t("demo.elevation")}
         />
         <div className="border-t border-border pt-2">
-          <WeatherStrip items={weather} />
+          <WeatherTimeline
+            hours={hours}
+            sunrise={7.1}
+            sunset={16.75}
+            start={rideStart}
+            duration={4.25}
+            onStartChange={setRideStart}
+            describe={(h) =>
+              h < 9 ? t("demo.rideRain") : t("demo.rideHeadwind")
+            }
+            best={{ start: 9.5, reason: t("demo.bestReason") }}
+          />
         </div>
       </Card>
       <Card className="flex flex-col gap-3">

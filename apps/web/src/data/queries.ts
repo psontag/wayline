@@ -7,14 +7,18 @@ import {
 import {
   addDays,
   type BBox,
+  type Daylight,
   type LonLat,
+  type RoutePoint,
   routePoints,
   sampleAt,
+  stageSpeed,
   stageStartTime,
   type HotelBudget,
   type StageWeather,
   type Stop,
   type Trip,
+  type WeatherSample,
   weatherAlongStage,
 } from "@wayline/domain";
 import { cellOf, type Forecast } from "@wayline/providers";
@@ -124,6 +128,19 @@ export function useNetwork(bbox: BBox | undefined) {
 const FORECAST_STALE_MS = 2 * 60 * 60 * 1000;
 
 /**
+ * Weather along a stage, plus what is needed to try other start times
+ * without loading the forecasts again.
+ */
+export type StageForecast = StageWeather & {
+  route: RoutePoint[];
+  date: string;
+  /** km/h over the stage, with time for climbing. */
+  speed: number;
+  forecastAt: (coord: LonLat, time: string) => WeatherSample | undefined;
+  daylight?: Daylight;
+};
+
+/**
  * Weather along a stage at the expected time at each km.
  * Data is null when the trip has no start date or the stage is beyond the
  * forecast range. Old data stays visible while new data loads.
@@ -135,7 +152,7 @@ export function useWeather(trip: Trip | undefined, stageIndex: number) {
   const startTime = trip && stageStartTime(trip.settings, stageIndex);
   const avgSpeed = trip?.settings.avgSpeed;
 
-  return useQuery({
+  return useQuery<StageForecast | null>({
     queryKey: [
       "weather",
       stage?.id,
@@ -191,12 +208,13 @@ async function stageWeather(
   trip: Trip,
   stageIndex: number,
   forecast: (cell: LonLat) => Promise<Forecast>,
-): Promise<StageWeather | null> {
+): Promise<StageForecast | null> {
   const stage = trip.stages[stageIndex];
   const date = trip.startDate && addDays(trip.startDate, stageIndex);
   const startTime = stageStartTime(trip.settings, stageIndex);
   const avgSpeed = trip.settings.avgSpeed;
   if (!stage || !date || !startTime || !avgSpeed) return null;
+  const speed = stageSpeed(stage.stats, avgSpeed);
   const points = routePoints(stage.legs);
   const cells = new Map<string, LonLat>();
   for (const p of points) {
@@ -209,14 +227,25 @@ async function stageWeather(
       forecasts.set(cell.join(), await forecast(cell));
     }),
   );
-  return weatherAlongStage(
+  const forecastAt = (coord: LonLat, time: string) => {
+    const f = forecasts.get(cellOf(coord).join());
+    return f && sampleAt(f.samples, time);
+  };
+  const weather = weatherAlongStage(
     points,
-    { date, startTime, avgSpeed },
-    (coord, time) => {
-      const f = forecasts.get(cellOf(coord).join());
-      return f && sampleAt(f.samples, time);
-    },
+    { date, startTime, avgSpeed: speed },
+    forecastAt,
   );
+  if (!weather) return null;
+  const first = points[0] && forecasts.get(cellOf(points[0].coord).join());
+  return {
+    ...weather,
+    route: points,
+    date,
+    speed,
+    forecastAt,
+    daylight: first?.daylight.find((d) => d.date === date),
+  };
 }
 
 /** Hotels near a stop. Those that fit the budget first, each nearest first. */

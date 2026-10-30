@@ -27,6 +27,9 @@ Color tokens are semantic. They name the purpose, not the color.
 | `scrim` | Behind dialogs and sheets |
 | `inverse`, `on-inverse`, `inverse-accent` | Toasts and tooltips |
 | `terrain-paved`, `terrain-gravel`, `terrain-unpaved` | Surface colors in the elevation profile |
+| `rain` | Rain bars in the weather timeline |
+| `wind-head`, `wind-cross`, `wind-tail` | Wind relative to the route |
+| `night` | Dark hours in the weather timeline |
 
 Map tokens:
 
@@ -70,6 +73,11 @@ Color values:
 | `terrain-paved` | `#7E8BA3` | `#AEB9CC` |
 | `terrain-gravel` | `#E8B850` | `#F2CF7E` |
 | `terrain-unpaved` | `#B98E73` | `#D9B49C` |
+| `rain` | `#3D84D6` | `#6AB0F5` |
+| `wind-head` | `#C2412D` | `#FF8F7D` |
+| `wind-cross` | `#B7791F` | `#F2CF7E` |
+| `wind-tail` | `#2F9E6B` | `#5CCB97` |
+| `night` | `#E4E7EC` | `#0B0D11` |
 | `route`, `route-selected` | `#FF9A73` | `#FFA67F` |
 | `route-casing` | `#B4532A` | `#101216` |
 | `route-dimmed` | `#C3C8D0` | `#4B5260` |
@@ -147,6 +155,8 @@ Examples in English:
 | Ascent | `650 m` |
 | Temperature | `22 °C` |
 | Time | 24 h, `14:30` |
+| Duration | `4 h 15`, `45 min` below 1 h, in 5 min steps |
+| Rain | `1.2 mm` |
 | Date | `Sat 12 Jun` |
 
 All formatting goes through shared functions in `packages/ui`. They follow the current locale (see `08-translation.md`).
@@ -172,3 +182,7 @@ The same thing always has the same name in the UI. Translations use one fixed te
 | Proposed route | The route of a stage as proposed, shown after a change |
 | Changed, Revert | A stage that differs from its proposal, and the action that restores it |
 | Direct, longer, scenic | Characters of one-day A to B proposals |
+| Riding time | Time on the bike for a stage, without breaks |
+| Ride window | The hours of a stage on the bike, shown on the weather timeline |
+| Best start | The start time with the least rain, then the least headwind |
+| Feels like | Temperature with wind chill |

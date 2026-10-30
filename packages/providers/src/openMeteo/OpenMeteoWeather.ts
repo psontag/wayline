@@ -1,4 +1,9 @@
-import { type LonLat, WaylineError, type WeatherSample } from "@wayline/domain";
+import {
+  type Daylight,
+  type LonLat,
+  WaylineError,
+  type WeatherSample,
+} from "@wayline/domain";
 import { z } from "zod";
 import type { HttpFetch } from "../brouter/fetch";
 import { cellOf } from "../mock/FakeWeather";
@@ -9,6 +14,8 @@ const FORECAST_DAYS = 16;
 /** Open-Meteo takes many locations per call. Keep URLs short. */
 const MAX_CELLS = 50;
 const STALE_MS = 2 * 60 * 60 * 1000;
+/** Part of the cache key. Bump it when Forecast changes shape. */
+const CACHE_VERSION = 2;
 
 /** Stores forecasts between visits. Each value comes back as it was set. */
 export type ForecastCache = {
@@ -24,16 +31,25 @@ const Hourly = z.object({
   precipitation_probability: z.array(z.number().nullable()),
   wind_speed_10m: z.array(z.number().nullable()),
   wind_direction_10m: z.array(z.number().nullable()),
+  apparent_temperature: z.array(z.number().nullable()),
+  wind_gusts_10m: z.array(z.number().nullable()),
 });
-const Location = z.object({ hourly: Hourly });
+const Daily = z.object({
+  time: z.array(z.string()),
+  sunrise: z.array(z.string()),
+  sunset: z.array(z.string()),
+});
+const Location = z.object({ hourly: Hourly, daily: Daily });
+
+const keys = (shape: object) =>
+  Object.keys(shape)
+    .filter((k) => k !== "time")
+    .join(",");
 
 export function openMeteoUrl(cells: LonLat[], days = FORECAST_DAYS): string {
   const lat = cells.map((c) => c[1]).join(",");
   const lon = cells.map((c) => c[0]).join(",");
-  const hourly = Object.keys(Hourly.shape)
-    .filter((k) => k !== "time")
-    .join(",");
-  return `${BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=${hourly}&forecast_days=${days}&timezone=auto`;
+  return `${BASE_URL}?latitude=${lat}&longitude=${lon}&hourly=${keys(Hourly.shape)}&daily=${keys(Daily.shape)}&forecast_days=${days}&timezone=auto`;
 }
 
 /** Hourly samples in local time. Hours without a temperature are left out. */
@@ -48,8 +64,14 @@ export function parseOpenMeteo(raw: unknown, cells: LonLat[]): Forecast[] {
   }
   return cells.map((cell, i) => {
     const h = list[i]?.hourly;
+    const d = list[i]?.daily;
     const samples: WeatherSample[] = [];
-    if (!h) return { cell, samples };
+    const daylight: Daylight[] = (d?.time ?? []).flatMap((date, j) => {
+      const sunrise = d?.sunrise[j];
+      const sunset = d?.sunset[j];
+      return sunrise && sunset ? [{ date, sunrise, sunset }] : [];
+    });
+    if (!h) return { cell, samples, daylight };
     for (const [j, time] of h.time.entries()) {
       const temperature = h.temperature_2m[j];
       if (temperature == null) continue;
@@ -60,9 +82,11 @@ export function parseOpenMeteo(raw: unknown, cells: LonLat[]): Forecast[] {
         precipitationProbability: (h.precipitation_probability[j] ?? 0) / 100,
         windSpeed: h.wind_speed_10m[j] ?? 0,
         windDirection: h.wind_direction_10m[j] ?? 0,
+        apparentTemperature: h.apparent_temperature[j] ?? temperature,
+        windGusts: h.wind_gusts_10m[j] ?? h.wind_speed_10m[j] ?? 0,
       });
     }
-    return { cell, samples };
+    return { cell, samples, daylight };
   });
 }
 
@@ -100,7 +124,7 @@ export class OpenMeteoWeather implements WeatherProvider {
   }
 
   private async load(cell: LonLat): Promise<Forecast> {
-    const key = cell.join();
+    const key = `v${CACHE_VERSION}:${cell.join()}`;
     const now = this.options.now?.() ?? Date.now();
     const cached = await this.options.cache?.get(key).catch(() => undefined);
     if (cached && now - cached.fetchedAt < STALE_MS) return cached.forecast;

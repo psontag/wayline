@@ -28,6 +28,11 @@ export function createFormat(language: string) {
     maximumFractionDigits: 0,
   });
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+  const mm = new Intl.NumberFormat(locale, {
+    style: "unit",
+    unit: "millimeter",
+    maximumFractionDigits: 1,
+  });
   const date = new Intl.DateTimeFormat(locale, {
     weekday: "short",
     day: "numeric",
@@ -60,6 +65,23 @@ export function createFormat(language: string) {
         .join(""),
     /** 14:30 */
     time: (d: Date) => time.format(d),
+    /** 14:30 from hours as a decimal, e.g. 14.5. */
+    clock: (h: number) => {
+      const m = Math.round(h * 60);
+      return time.format(new Date(2000, 0, 1, Math.floor(m / 60), m % 60));
+    },
+    /** 4 h 15, or 45 min below 1 h. Rounded to 5 min. Input in hours. */
+    duration: (h: number) => {
+      const total = Math.round((h * 60) / 5) * 5;
+      const hours = Math.floor(total / 60);
+      const minutes = total % 60;
+      if (!hours) return `${minutes}\u00a0min`;
+      return minutes
+        ? `${hours}\u00a0h ${String(minutes).padStart(2, "0")}`
+        : `${hours}\u00a0h`;
+    },
+    /** 1.2 mm */
+    rain: (v: number) => mm.format(v),
     /** Kronach, Kulmbach and Coburg */
     list: (items: string[]) => list.format(items),
     /** Sat 12 Jun – Tue 15 Jun */

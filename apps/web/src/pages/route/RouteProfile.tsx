@@ -72,6 +72,7 @@ export function RouteProfile({
         <SurfaceLegend />
       </div>
       <ElevationProfile
+        axes
         points={points}
         hoverKm={hoverKm}
         onHoverKm={onHoverKm}

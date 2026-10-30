@@ -112,6 +112,13 @@ describe("stageStartTime", () => {
     expect(stageStartTime(settings, 0)).toBe("13:00");
     expect(stageStartTime(settings, 1)).toBe("09:00");
   });
+
+  it("uses the chosen ride start", () => {
+    const settings = { startTime: "13:00", rideStarts: [null, "10:30"] };
+    expect(stageStartTime(settings, 0)).toBe("13:00");
+    expect(stageStartTime(settings, 1)).toBe("10:30");
+    expect(stageStartTime(settings, 2)).toBe("09:00");
+  });
 });
 
 describe("relativeWind", () => {
@@ -176,6 +183,8 @@ describe("weather along a stage", () => {
     windSpeed: 15,
     // From the west: tail wind when riding east.
     windDirection: 270,
+    apparentTemperature: 18,
+    windGusts: 25,
   });
 
   it("finds the nearest hourly sample", () => {

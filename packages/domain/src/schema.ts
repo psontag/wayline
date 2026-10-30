@@ -146,6 +146,11 @@ export const Settings = z.object({
    */
   dayShares: z.array(z.number().min(0).max(1)).optional(),
   avgSpeed: z.number().positive().default(18),
+  /**
+   * Ride start per stage, as chosen in the weather timeline. Null or
+   * missing uses stageStartTime's default.
+   */
+  rideStarts: z.array(TimeOfDay.nullable()).optional(),
 });
 export type Settings = z.infer<typeof Settings>;
 
@@ -187,8 +192,20 @@ export const WeatherSample = z.object({
   windSpeed: z.number().nonnegative(),
   /** Degrees the wind comes from. 0 = north, 90 = east. */
   windDirection: z.number().min(0).max(360),
+  /** Feels-like temperature, with wind and humidity. */
+  apparentTemperature: z.number(),
+  /** km/h, strongest gust in this hour. */
+  windGusts: z.number().nonnegative(),
 });
 export type WeatherSample = z.infer<typeof WeatherSample>;
+
+/** Local times "YYYY-MM-DDTHH:MM" of one day. */
+export const Daylight = z.object({
+  date: IsoDate,
+  sunrise: z.string(),
+  sunset: z.string(),
+});
+export type Daylight = z.infer<typeof Daylight>;
 
 // --- Generation -----------------------------------------------------------
 
