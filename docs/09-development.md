@@ -24,6 +24,19 @@ pnpm test
 
 `pnpm dev` runs the web app with Vite on `localhost:5173` and the Worker with `cf dev` on `localhost:8787`. Vite forwards `/api` to the Worker. D1 runs locally.
 
+### Worktrees
+
+Env files, region data and the local D1 are git-ignored, so a new worktree has none of them.
+
+```sh
+pnpm setup:worktree
+```
+
+- Symlinks `apps/api/.dev.vars`, `apps/web/.env.local`, `apps/api/.wrangler/state` and the region data from the main checkout. Then applies migrations.
+- All worktrees share one D1 and one set of env files. A change in one applies to all.
+- Only one checkout can run `pnpm dev` at a time. The ports are fixed.
+- `.claude/launch.json` starts `pnpm dev` for the browser pane in the Claude desktop app.
+
 The Worker config is `apps/api/cloudflare.config.ts`. Build settings, such as the assets folder, are in `apps/api/wrangler.config.ts`. `cf` writes generated files to `.cloudflare/` (git-ignored).
 
 | Command | Does |

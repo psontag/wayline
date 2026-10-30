@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "pnpm --recursive --parallel dev",
     "brouter": "node scripts/brouter.js",
+    "setup:worktree": "node scripts/setup-worktree.js",
     "build": "pnpm --filter @wayline/web build && pnpm --filter @wayline/api build",
     "lint": "eslint .",
     "typecheck": "pnpm --recursive typecheck",
