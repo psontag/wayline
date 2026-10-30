@@ -49,7 +49,7 @@ No technical terms in the summary. Technical details go below, under **For agent
    - Questions for another agent: comment on that agent's issue or PR and link back.
 5. **Record** decisions made during the work as issue comments.
 6. **Open a PR** with `Closes #<n>`. Fill in the PR template, starting with the plain-language summary. UI changes need screenshots. Move the issue to In review.
-7. **Stop** after the PR. The owner reviews and merges.
+7. **Merge** the PR once CI passes (`gh pr merge --merge --delete-branch`). No owner review needed. Make sure the issue is Done on the board.
 
 Screenshots go into the PR. Mockups referenced from issues live in `design/`.
 
