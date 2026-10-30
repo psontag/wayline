@@ -27,6 +27,8 @@ export class Graph {
   readonly edges: NetworkEdge[];
   /** Edge ids at each node. */
   readonly adjacency: number[][];
+  /** Whether edges carry scenery data. The Oberfranken mock has none. */
+  readonly hasScenery: boolean;
   private index: Flatbush;
   private lines = new Map<number, EdgeLine>();
 
@@ -35,6 +37,7 @@ export class Graph {
     this.nodes = network.nodes;
     this.edges = network.edges;
     this.adjacency = network.nodes.map(() => []);
+    this.hasScenery = network.edges.some((e) => e.scenery);
     for (const e of network.edges) {
       this.edgesAt(e.from).push(e.id);
       if (e.to !== e.from) this.edgesAt(e.to).push(e.id);

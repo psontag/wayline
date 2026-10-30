@@ -1,12 +1,14 @@
 import {
   bearing,
   distanceKm,
+  type Flavour,
   type GenerateRequest,
+  type NetworkEdge,
   type Profile,
 } from "@wayline/domain";
 import { dijkstra, type EdgeCost, shortestPath } from "../graph/dijkstra";
 import type { Graph, PathStep } from "../graph/Graph";
-import { themeBoost } from "./theme";
+import { flavourShare, sceneryBoost, themeBoost } from "./theme";
 
 /** cost = length / score^k. A higher k prefers nicer edges more. */
 export const SCORE_POWER: Record<Profile, number> = {
@@ -45,6 +47,41 @@ export function climbFactor(
   return Math.max(1, ascent / lengthKm / allowedPerKm);
 }
 
+/** Flat flavour: cost grows by this per unit of climb over the average allowed. */
+const FLAT_PENALTY = 3;
+/** Hilly flavour: an edge climbing at the average allowed costs 1 / (1 + this) as much. */
+const HILLY_REWARD = 1.5;
+
+/** Climb part of the edge cost for a flavour. */
+export function flavourClimb(
+  ascent: number,
+  lengthKm: number,
+  allowedPerKm: number,
+  flavour?: Flavour,
+): number {
+  const base = climbFactor(ascent, lengthKm, allowedPerKm);
+  if (lengthKm <= 0) return base;
+  const steep = ascent / lengthKm / allowedPerKm;
+  if (flavour === "flat") return base * (1 + FLAT_PENALTY * steep);
+  // Climbing over the average allowed stays expensive.
+  if (flavour === "hilly") {
+    return (base * base) / (1 + HILLY_REWARD * Math.min(steep, 1));
+  }
+  return base;
+}
+
+/** Score factor for scenery. A flavour replaces the theme of the request. */
+function boost(
+  edge: NetworkEdge,
+  flavour?: Flavour,
+  theme?: GenerateRequest["theme"],
+) {
+  if (flavour === "nature" || flavour === "sights") {
+    return sceneryBoost(edge, flavourShare(edge, flavour));
+  }
+  return flavour ? 1 : themeBoost(edge, theme);
+}
+
 /** Ordered candidate: nodes to chain with shortest paths. */
 export type Candidate = { quality: number; nodes: number[] };
 
@@ -59,6 +96,7 @@ export class Costs {
       GenerateRequest,
       "profile" | "region" | "theme" | "kmPerDay" | "maxAscentPerDay"
     >,
+    flavour?: Flavour,
   ) {
     const { profile, region, theme } = request;
     const k = SCORE_POWER[profile];
@@ -76,8 +114,13 @@ export class Costs {
     this.base = Float64Array.from(graph.edges, (e) =>
       inside(e.from) || inside(e.to)
         ? (e.lengthKm *
-            climbFactor(Math.max(e.ascent, e.descent), e.lengthKm, allowed)) /
-          Math.pow(Math.max(e.score, 0.05) * themeBoost(e, theme), k)
+            flavourClimb(
+              Math.max(e.ascent, e.descent),
+              e.lengthKm,
+              allowed,
+              flavour,
+            )) /
+          Math.pow(Math.max(e.score, 0.05) * boost(e, flavour, theme), k)
         : Infinity,
     );
     this.penalty = new Float64Array(graph.edges.length).fill(1);

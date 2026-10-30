@@ -2,6 +2,7 @@ import {
   type BBox,
   distanceKm,
   type FailedLimit,
+  type Flavour,
   type GenerateProgress,
   type GenerateRequest,
   type GenerateResult,
@@ -38,10 +39,10 @@ import {
   stopCandidates,
 } from "./stages";
 import { Stops } from "./stops";
-import { themeFit, themeValue } from "./theme";
+import { flavourValue, themeFit, themeValue } from "./theme";
 import { buildTrip, meanScore, routeNames, splitSteps, viaNames } from "./trip";
 
-/** Proposals to look for. */
+/** Proposals to look for on a one-day A to B trip. */
 const PROPOSALS = 5;
 /** Candidates to try before giving up. */
 const MAX_TRIES = 300;
@@ -49,6 +50,30 @@ const MAX_TRIES = 300;
 const TIME_LIMIT_MS = 2000;
 /** Max share of a proposal on edges of earlier proposals. */
 const MAX_SHARED = 0.4;
+/** Candidates to try per flavour, once some flavour has a proposal. */
+const FLAVOUR_TRIES = 60;
+/** Search time per flavour in ms, once some flavour has a proposal. */
+const FLAVOUR_TIME_MS = 1500;
+/**
+ * A scenery flavour must have at least the min share and this much more
+ * than the best proposal.
+ */
+const MIN_SCENERY = {
+  nature: { gain: 0.08, min: 0.5 },
+  sights: { gain: 0.05, min: 0.2 },
+};
+/**
+ * Flat climbs at most this share of the best proposal per km. Hilly
+ * climbs at least the inverse.
+ */
+const CLIMB_GAIN = 0.85;
+/** The flavour of the theme picked in the form goes first. */
+const THEME_FLAVOUR: Record<Theme, Flavour> = {
+  nature: "nature",
+  water: "nature",
+  wine: "sights",
+  culture: "sights",
+};
 /** Via nodes of two proposals must be at least this far apart. */
 const MIN_VIA_GAP_KM = 10;
 /** A start or end within this distance of a station uses the station. */
@@ -89,7 +114,22 @@ type Pick = {
   steps: PathStep[];
   stops: Stop[];
   km: number;
+  /** Meters per km. */
+  climb: number;
   shared: number;
+  flavour?: Flavour;
+};
+
+/** What the checks on a candidate path need. */
+type Check = {
+  request: GenerateRequest;
+  totalKm: number;
+  isLoop: boolean;
+  home?: LonLat;
+  avoid?: Avoid;
+  hotelNodes: number[];
+  hotelCount: (node: number) => number;
+  fails: { length: number; hotels: number; ascent: number };
 };
 
 /** Generates trip proposals on the route network. See docs/05. */
@@ -137,6 +177,7 @@ export class Planner {
           steps,
           stops: [],
           km,
+          climb: climbPerKm(graph, start, steps),
           shared: 0,
         };
         totalKm = Math.min(totalKm, LONGER.max * km);
@@ -150,11 +191,11 @@ export class Planner {
 
     onProgress?.({ phase: "searching", done: 0, total: MAX_TRIES });
     const vias = this.stops.townNodes();
-    const candidates =
+    const candidates = (c: Costs) =>
       request.kind === "one-way"
         ? oneWayCandidates(
             graph,
-            costs,
+            c,
             start,
             endStation === undefined
               ? this.stops.stationNodes().filter((n) => n !== start)
@@ -163,23 +204,27 @@ export class Planner {
             totalKm,
             endStation === undefined ? undefined : 0,
           )
-        : loopCandidates(graph, costs, start, vias, totalKm);
-    if (!candidates.length && !direct) {
-      return { ok: false, failedLimit: request.region ? "area" : "days" };
-    }
-
-    const found = this.pick(candidates, costs, request, totalKm, (done) => {
+        : loopCandidates(graph, c, start, vias, totalKm);
+    const progress = (done: number) => {
       check();
       onProgress?.({ phase: "searching", done, total: MAX_TRIES });
-    });
-    const picks = direct
-      ? [
-          direct,
-          ...found.picks.filter(
-            (p) => sharedKm(graph, p, direct) < MAX_SHARED_DIRECT * p.km,
-          ),
-        ].slice(0, PROPOSALS)
-      : found.picks;
+    };
+
+    // One-day A to B keeps its characters. Other trips get one per flavour.
+    let found: { picks: Pick[]; failedLimit: FailedLimit };
+    let picks: Pick[];
+    if (direct) {
+      found = this.pick(candidates(costs), costs, request, totalKm, progress);
+      picks = [
+        direct,
+        ...found.picks.filter(
+          (p) => sharedKm(graph, p, direct) < MAX_SHARED_DIRECT * p.km,
+        ),
+      ].slice(0, PROPOSALS);
+    } else {
+      found = this.pickFlavours(candidates, request, totalKm, progress);
+      picks = found.picks;
+    }
     if (!picks.length) return { ok: false, failedLimit: found.failedLimit };
     // Stages are cut during the search, since a path only counts if it cuts.
     onProgress?.({ phase: "cutting", done: picks.length, total: picks.length });
@@ -225,6 +270,7 @@ export class Planner {
         id: `${runId}-${i + 1}`,
         trip,
         score: score(graph, p, totalKm, request),
+        signedShare: signedShare(graph, p.steps),
         routeNames: routeNames(graph, p.steps),
         via: viaNames(graph, this.stops, start, p.steps, [
           trip.stages[0]?.start.name ?? "",
@@ -239,6 +285,7 @@ export class Planner {
               ? "longer"
               : "scenic";
       }
+      if (p.flavour) proposal.flavour = p.flavour;
       if (request.kind === "day-loop" && proposal.via[0]) {
         const home = trip.stages[0]?.start.name ?? "";
         trip.name = `${home} – ${proposal.via[0]} – ${home}`;
@@ -305,6 +352,66 @@ export class Planner {
     return requested;
   }
 
+  /** Shared setup for checking candidate paths. */
+  private checker(
+    candidates: Candidate[],
+    request: GenerateRequest,
+    totalKm: number,
+  ): Check {
+    const isLoop = request.kind !== "one-way";
+    const startNode = candidates[0]?.nodes[0];
+    return {
+      request,
+      totalKm,
+      isLoop,
+      home: startNode === undefined ? undefined : this.graph.coord(startNode),
+      avoid:
+        isLoop && startNode !== undefined
+          ? nearEdges(this.graph, startNode, totalKm)
+          : undefined,
+      hotelNodes: this.stops.hotelNodes(),
+      hotelCount: cache((n: number) =>
+        this.stops.hotelCount(n, request.hotelBudget),
+      ),
+      fails: { length: 0, hotels: 0, ascent: 0 },
+    };
+  }
+
+  /**
+   * The path of a candidate, if it has the right length, does not ride
+   * back along itself and cuts into stages. Counts why others fail.
+   */
+  private fit(c: Candidate, costs: Costs, ck: Check): Pick | undefined {
+    const graph = this.graph;
+    const steps = chainPath(graph, c.nodes, costs, ck.avoid);
+    if (!steps || !acceptable(graph, steps, ck.totalKm)) {
+      ck.fails.length++;
+      return undefined;
+    }
+    const start = c.nodes[0] ?? 0;
+    const points = pathPoints(graph, start, steps);
+    if (
+      (ck.isLoop && comesBack(graph, points, ck.totalKm)) ||
+      doublesBack(graph, points, ck.isLoop)
+    ) {
+      ck.fails.length++;
+      return undefined;
+    }
+    const towns = stopCandidates(graph, points, ck.hotelNodes, ck.hotelCount);
+    const cut = { ...ck.request, home: ck.isLoop ? ck.home : undefined };
+    const stops = cutStages(points, towns, cut);
+    if (!stops) {
+      // Tell a missing town apart from too much climbing.
+      const flat = { ...cut, maxAscentPerDay: Infinity };
+      if (cutStages(points, towns, flat)) ck.fails.ascent++;
+      else ck.fails.hotels++;
+      return undefined;
+    }
+    const km = pathKm(graph, steps);
+    const ascent = points.at(-1)?.ascent ?? 0;
+    return { nodes: c.nodes, steps, stops, km, climb: ascent / km, shared: 0 };
+  }
+
   /**
    * Tries candidates best first. Each kept path raises the cost of its
    * edges for later ones (penalty method), so proposals differ.
@@ -321,21 +428,10 @@ export class Planner {
     const used = new Set<number>();
     const picks: Pick[] = [];
     const tried = new Set<Candidate>();
-    const hotelNodes = this.stops.hotelNodes();
-    const hotelCount = cache((n: number) =>
-      this.stops.hotelCount(n, request.hotelBudget),
-    );
-    const fails = { length: 0, hotels: 0, ascent: 0 };
-    const isLoop = request.kind !== "one-way";
-    const startNode = candidates[0]?.nodes[0];
-    const home = startNode === undefined ? undefined : graph.coord(startNode);
-    const avoid =
-      isLoop && startNode !== undefined
-        ? nearEdges(graph, startNode, totalKm)
-        : undefined;
+    const ck = this.checker(candidates, request, totalKm);
 
     // One-way trips first look for different ends, then allow repeats.
-    const passes = isLoop
+    const passes = ck.isLoop
       ? [(n: number[]) => n.slice(1, -1)]
       : [(n: number[]) => n.slice(1), (n: number[]) => n.slice(1, -1)];
     for (const keyNodes of passes) {
@@ -356,38 +452,15 @@ export class Planner {
 
         tried.add(c);
         if (tried.size % 10 === 0) progress(tried.size);
-        const steps = chainPath(graph, c.nodes, costs, avoid);
-        if (!steps || !acceptable(graph, steps, totalKm)) {
-          fails.length++;
-          continue;
-        }
-        const km = pathKm(graph, steps);
-        const edges = new Set(steps.map((s) => s.edge));
-        let sharedKm = 0;
+        const p = this.fit(c, costs, ck);
+        if (!p) continue;
+        const edges = new Set(p.steps.map((s) => s.edge));
+        let shared = 0;
         for (const e of edges)
-          if (used.has(e)) sharedKm += graph.edge(e).lengthKm;
-        if (sharedKm > MAX_SHARED * km) continue;
+          if (used.has(e)) shared += graph.edge(e).lengthKm;
+        if (shared > MAX_SHARED * p.km) continue;
 
-        const points = pathPoints(graph, c.nodes[0] ?? 0, steps);
-        if (
-          (isLoop && comesBack(graph, points, totalKm)) ||
-          doublesBack(graph, points, isLoop)
-        ) {
-          fails.length++;
-          continue;
-        }
-        const towns = stopCandidates(graph, points, hotelNodes, hotelCount);
-        const cut = { ...request, home: isLoop ? home : undefined };
-        const stops = cutStages(points, towns, cut);
-        if (!stops) {
-          // Tell a missing town apart from too much climbing.
-          const flat = { ...cut, maxAscentPerDay: Infinity };
-          if (cutStages(points, towns, flat)) fails.ascent++;
-          else fails.hotels++;
-          continue;
-        }
-
-        picks.push({ nodes: c.nodes, steps, stops, km, shared: sharedKm / km });
+        picks.push({ ...p, shared: shared / p.km });
         for (const e of edges) {
           used.add(e);
           costs.penalty[e] = (costs.penalty[e] ?? 1) * VARIETY_PENALTY;
@@ -395,17 +468,130 @@ export class Planner {
       }
     }
     progress(tried.size);
-
-    const failedLimit: FailedLimit =
-      fails.ascent > 0 && fails.ascent >= fails.hotels
-        ? "maxAscentPerDay"
-        : fails.hotels > 0
-          ? "hotels"
-          : request.region
-            ? "area"
-            : "days";
-    return { picks, failedLimit };
+    return { picks, failedLimit: failedLimit(ck, request) };
   }
+
+  /**
+   * One proposal per flavour, each searched with its own edge costs. A
+   * flavour is dropped if its path shares too much with an earlier one or
+   * adds nothing over the best proposal.
+   */
+  private pickFlavours(
+    candidates: (costs: Costs) => Candidate[],
+    request: GenerateRequest,
+    totalKm: number,
+    progress: (tries: number) => void,
+  ): { picks: Pick[]; failedLimit: FailedLimit } {
+    const graph = this.graph;
+    const picks: Pick[] = [];
+    let best: Pick | undefined;
+    let ck: Check | undefined;
+    let tries = 0;
+    for (const flavour of flavourOrder(request.theme, graph.hasScenery)) {
+      const startedAt = Date.now();
+      const costs = new Costs(graph, request, flavour);
+      for (const p of picks) {
+        for (const s of p.steps) {
+          costs.penalty[s.edge] =
+            (costs.penalty[s.edge] ?? 1) * VARIETY_PENALTY;
+        }
+      }
+      const list = candidates(costs);
+      ck ??= this.checker(list, request, totalKm);
+      let mine = 0;
+      for (const c of list) {
+        if (tries === MAX_TRIES) break;
+        if (
+          picks.length &&
+          (mine === FLAVOUR_TRIES || Date.now() - startedAt > FLAVOUR_TIME_MS)
+        ) {
+          break;
+        }
+        mine++;
+        if (++tries % 10 === 0) progress(tries);
+        const p = this.fit(c, costs, ck);
+        if (!p) continue;
+        if (flavour === "best") best ??= p;
+        const shared = Math.max(0, ...picks.map((q) => sharedKm(graph, p, q)));
+        if (shared > MAX_SHARED * p.km) continue;
+        if (!addsFlavour(graph, flavour, p, best)) continue;
+        picks.push({ ...p, shared: shared / p.km, flavour });
+        break;
+      }
+    }
+    progress(tries);
+    return {
+      picks,
+      failedLimit: ck ? failedLimit(ck, request) : emptyLimit(request),
+    };
+  }
+}
+
+/** Flavours to search, in the order they are shown. */
+export function flavourOrder(theme: Theme | undefined, scenery: boolean) {
+  const first = theme && scenery ? THEME_FLAVOUR[theme] : undefined;
+  const all: Flavour[] = ["best", "nature", "flat", "hilly", "sights"];
+  return [
+    ...(first ? [first] : []),
+    ...all.filter(
+      (f) => f !== first && (scenery || (f !== "nature" && f !== "sights")),
+    ),
+  ];
+}
+
+/** Does a path add its flavour over the best one? */
+function addsFlavour(
+  graph: Graph,
+  flavour: Flavour,
+  p: Pick,
+  best: Pick | undefined,
+): boolean {
+  switch (flavour) {
+    case "best":
+      return true;
+    case "flat":
+      return !!best && p.climb <= CLIMB_GAIN * best.climb;
+    case "hilly":
+      return !!best && p.climb * CLIMB_GAIN >= best.climb;
+    case "nature":
+    case "sights": {
+      const { gain, min } = MIN_SCENERY[flavour];
+      const share = flavourValue(graph, p.steps, flavour);
+      const base = best ? flavourValue(graph, best.steps, flavour) : 0;
+      return share >= min && share >= base + gain;
+    }
+  }
+}
+
+/** The limit to blame when no candidate fits. */
+function failedLimit(ck: Check, request: GenerateRequest): FailedLimit {
+  const { fails } = ck;
+  if (fails.ascent > 0 && fails.ascent >= fails.hotels)
+    return "maxAscentPerDay";
+  if (fails.hotels > 0) return "hotels";
+  return emptyLimit(request);
+}
+
+function emptyLimit(request: GenerateRequest): FailedLimit {
+  return request.region ? "area" : "days";
+}
+
+/** Meters climbed per km along a path. */
+function climbPerKm(graph: Graph, start: number, steps: PathStep[]): number {
+  const km = pathKm(graph, steps);
+  return km ? (pathPoints(graph, start, steps).at(-1)?.ascent ?? 0) / km : 0;
+}
+
+/** Share of km on signed cycle routes. */
+export function signedShare(graph: Graph, steps: PathStep[]): number {
+  let km = 0;
+  let signed = 0;
+  for (const s of steps) {
+    const e = graph.edge(s.edge);
+    km += e.lengthKm;
+    if (e.routes.length > 0) signed += e.lengthKm;
+  }
+  return km ? Math.round((signed / km) * 1000) / 1000 : 0;
 }
 
 /** Edges near the start, for the middle leg of a loop to avoid. */

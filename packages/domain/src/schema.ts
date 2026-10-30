@@ -222,6 +222,10 @@ export type GenerateRequest = z.infer<typeof GenerateRequest>;
 export const ProposalCharacter = z.enum(["direct", "scenic", "longer"]);
 export type ProposalCharacter = z.infer<typeof ProposalCharacter>;
 
+/** What sets a multi-day or loop proposal apart. */
+export const Flavour = z.enum(["best", "nature", "flat", "hilly", "sights"]);
+export type Flavour = z.infer<typeof Flavour>;
+
 export const Proposal = z.object({
   id: z.string(),
   /** Draft trip. Not saved until the user opens it. */
@@ -235,6 +239,9 @@ export const Proposal = z.object({
   /** Share of km with each theme. Missing without scenery data. */
   themes: z.partialRecord(Theme, z.number()).optional(),
   character: ProposalCharacter.optional(),
+  flavour: Flavour.optional(),
+  /** 0 to 1: share of km on signed cycle routes. */
+  signedShare: z.number().optional(),
 });
 export type Proposal = z.infer<typeof Proposal>;
 

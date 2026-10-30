@@ -81,7 +81,7 @@ describe("Planner on the Oberfranken network", () => {
     });
     console.log(`one-way: ${Math.round(performance.now() - t)} ms`);
     if (!result.ok) throw new Error(result.failedLimit);
-    expect(result.proposals.length).toBeGreaterThanOrEqual(3);
+    expect(result.proposals.length).toBeGreaterThanOrEqual(2);
     expect(seen).toHaveLength(result.proposals.length);
     for (const p of result.proposals) {
       console.log(describeProposal(p));
@@ -109,7 +109,7 @@ describe("Planner on the Oberfranken network", () => {
     };
     const result = await planner.generate(request);
     if (!result.ok) throw new Error(result.failedLimit);
-    expect(result.proposals.length).toBeGreaterThanOrEqual(3);
+    expect(result.proposals.length).toBeGreaterThanOrEqual(2);
     for (const p of result.proposals) {
       console.log(describeProposal(p));
       checkTrip(p, request);
@@ -122,7 +122,7 @@ describe("Planner on the Oberfranken network", () => {
     const result = await planner.generate(loop);
     console.log(`loop: ${Math.round(performance.now() - t)} ms`);
     if (!result.ok) throw new Error(result.failedLimit);
-    expect(result.proposals.length).toBeGreaterThanOrEqual(3);
+    expect(result.proposals.length).toBeGreaterThanOrEqual(2);
     for (const p of result.proposals) {
       console.log(describeProposal(p));
       checkTrip(p, loop);
