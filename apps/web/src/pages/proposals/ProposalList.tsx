@@ -16,6 +16,7 @@ import { networkArea } from "../../components/NetworkLayer";
 import { useNetwork, useTripWeather } from "../../data/queries";
 import { tripStops } from "../tripEditor/tripArea";
 import { profilePoints } from "../tripEditor/surfaceProfile";
+import { flavourOf, routeColorKey } from "./routeColor";
 import {
   type ComparisonTag,
   comparisonTags,
@@ -217,13 +218,17 @@ function ProposalItem({
         distance: trip.stages[i]?.stats.distance ?? 0,
       })),
     );
-  const name = proposal.character
-    ? t(`card.character.${proposal.character}`)
-    : t("card.option", { number });
+  const flavour = flavourOf(proposal);
+  const name = flavour
+    ? t(`flavour.${flavour}`)
+    : proposal.character
+      ? t(`card.character.${proposal.character}`)
+      : t("card.option", { number });
 
   return (
     <ProposalCard
       number={number}
+      color={routeColorKey(proposal, number - 1)}
       title={name}
       subtitle={via.length ? t("card.via", { stops: format.list(via) }) : ""}
       tags={[

@@ -849,6 +849,7 @@ function ProposalDemos() {
           <ProposalCard
             key={n}
             number={n}
+            color={n === 1 ? "best" : "nature"}
             title={t("demo.proposalTitle")}
             subtitle={t("demo.proposalSubtitle")}
             tags={n === 2 ? [t("demo.flattest")] : []}

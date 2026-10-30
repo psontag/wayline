@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
 import { focusRing } from "./Button";
 import { Badge } from "./Chip";
+import { type RouteColor, routeColorClasses } from "./RouteLabel";
 
 export type ProposalStat = { value: string; label: string };
 
@@ -22,8 +23,8 @@ export type ProposalCardProps = {
   title: string;
   /** Small line under the title, e.g. "Via Haßfurt and Schweinfurt". */
   subtitle?: string;
-  /** Background class of the number, e.g. the route color. */
-  numberClassName?: string;
+  /** Route color of the number, as on the map. */
+  color?: RouteColor;
   /** Short badges, e.g. "Flattest". */
   tags?: string[];
   /** Three stats. A compact card shows their values in one line. */
@@ -47,7 +48,7 @@ export function ProposalCard({
   number,
   title,
   subtitle,
-  numberClassName,
+  color,
   tags = [],
   stats,
   chart,
@@ -78,7 +79,7 @@ export function ProposalCard({
           focusRing,
         )}
       >
-        <NumberBadge number={number} className={numberClassName} />
+        <NumberBadge number={number} color={color} />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex items-center gap-2">
             <span className="min-w-0 flex-1 truncate text-md font-bold">
@@ -138,16 +139,18 @@ export function ProposalCard({
 
 function NumberBadge({
   number,
-  className,
+  color,
 }: {
   number: number;
-  className?: string;
+  color?: RouteColor;
 }) {
   return (
     <span
       className={cn(
-        "flex size-7 shrink-0 items-center justify-center rounded-full bg-hover font-extrabold text-text tabular-nums",
-        className,
+        "flex size-7 shrink-0 items-center justify-center rounded-full font-extrabold tabular-nums",
+        color
+          ? [routeColorClasses[color], "text-on-route"]
+          : "bg-hover text-text",
       )}
     >
       {number}
