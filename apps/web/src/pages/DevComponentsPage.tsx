@@ -10,6 +10,10 @@ import {
   Select,
   StageCard,
   StatBlock,
+  Stat,
+  statIcons,
+  type StatIcon,
+  DayList,
   SurfaceBar,
   SurfaceLegend,
   ThemeScope,
@@ -302,6 +306,8 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
         </Card>
       </Section>
 
+      <IconDemos />
+
       <Section title={t("section.stages")}>
         <div className="flex max-w-panel flex-col gap-2 rounded-md bg-surface p-3">
           {stages.map((stage) => (
@@ -372,6 +378,105 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
 
       <PhoneParts />
     </ThemeScope>
+  );
+}
+
+function IconDemos() {
+  const { t } = useTranslation("devComponents");
+  const format = useFormat();
+  const [selected, setSelected] = useState(2);
+  const [hovered, setHovered] = useState<number>();
+  const days = [
+    {
+      label: "1",
+      place: "Coburg",
+      distance: format.distance(78_000),
+      ascent: format.elevation(650),
+    },
+    {
+      label: "2",
+      place: "Kronach",
+      distance: format.distance(64_000),
+      ascent: format.elevation(720),
+    },
+    {
+      label: "3",
+      place: "Kulmbach",
+      distance: format.distance(31_000),
+      ascent: format.elevation(240),
+      tag: t("demo.halfDay"),
+    },
+  ];
+  return (
+    <Section title={t("section.icons")}>
+      <Card className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+          {(Object.entries(statIcons) as [StatIcon, typeof Mountain][]).map(
+            ([key, Icon]) => (
+              <span key={key} className="flex items-center gap-2 text-sm">
+                <Icon aria-hidden className="size-4 text-text-muted" />
+                {t(`icon.${key}`)}
+              </span>
+            ),
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-4 border-t border-border pt-3">
+          <Stat
+            icon="distance"
+            value={format.distance(199_000)}
+            label={t("demo.distance")}
+          />
+          <Stat
+            icon="ascent"
+            value={format.elevation(444)}
+            label={t("demo.ascent")}
+          />
+          <Stat
+            icon="ridingTime"
+            value={format.duration(11.25)}
+            label={t("icon.ridingTime")}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Stat
+            size="sm"
+            icon="distance"
+            value={format.distance(199_000)}
+            label={t("demo.distance")}
+          />
+          <Stat
+            size="sm"
+            icon="ascent"
+            value={format.elevation(444)}
+            label={t("demo.ascent")}
+          />
+          <Stat
+            size="sm"
+            icon="ridingTime"
+            value={format.duration(11.25)}
+            label={t("icon.ridingTime")}
+          />
+        </div>
+        <SurfaceBar caption shares={{ paved: 97, gravel: 2, unpaved: 1 }} />
+      </Card>
+      <Card className="flex max-w-panel flex-col gap-4">
+        <DayList
+          days={days}
+          selectedDay={selected}
+          onSelectDay={setSelected}
+          onHoverDay={setHovered}
+        />
+        <DayList
+          days={days.map((day, i) => ({
+            ...day,
+            color: i % 2 ? "stage-b" : "stage-a",
+          }))}
+        />
+        <span className="text-xs text-text-muted">
+          {t("demo.hoveredDay", { day: hovered ?? "–" })}
+        </span>
+      </Card>
+    </Section>
   );
 }
 
