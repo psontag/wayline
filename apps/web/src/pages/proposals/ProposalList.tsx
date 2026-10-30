@@ -24,6 +24,7 @@ import {
   progressValue,
   proposalStats,
   relaxOptions,
+  tripRidingHours,
   type Relaxed,
   windTag,
 } from "./proposalView";
@@ -244,10 +245,23 @@ function ProposalItem({
           : []),
       ]}
       stats={[
-        { value: format.distance(stats.distance), label: t("card.distance") },
-        { value: format.elevation(stats.ascent), label: t("card.ascent") },
-        { value: format.percent(stats.paved), label: t("card.paved") },
+        {
+          icon: "distance",
+          value: format.distance(stats.distance),
+          label: t("card.distance"),
+        },
+        {
+          icon: "ascent",
+          value: format.elevation(stats.ascent),
+          label: t("card.ascent"),
+        },
+        {
+          icon: "ridingTime",
+          value: format.duration(tripRidingHours(trip)),
+          label: t("card.ridingTime"),
+        },
       ]}
+      surface={stats.surface}
       chart={selected && <Profile proposal={proposal} />}
       days={trip.stages.map((stage, i) => {
         const share = trip.settings.dayShares?.[i] ?? 1;

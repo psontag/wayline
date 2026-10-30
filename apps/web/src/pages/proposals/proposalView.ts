@@ -6,6 +6,7 @@ import {
   type LonLat,
   pointAtKm,
   type Proposal,
+  ridingHours,
   type RoutePoint,
   routePoints,
   type Trip,
@@ -25,7 +26,16 @@ export function proposalStats(trip: Trip) {
     distance: stats.distance,
     ascent: stats.ascent,
     paved: stats.surface.paved,
+    surface: stats.surface,
   };
+}
+
+/** Riding time of the whole trip in hours, without breaks. */
+export function tripRidingHours(trip: Trip): number {
+  return trip.stages.reduce(
+    (sum, stage) => sum + ridingHours(stage.stats, trip.settings.avgSpeed),
+    0,
+  );
 }
 
 /** km from the trip start where each day after the first starts. */

@@ -6,6 +6,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Stat,
   TripCard,
   useFormat,
 } from "@wayline/ui";
@@ -30,13 +31,30 @@ export function TripListItem({ trip }: { trip: TripSummary }) {
           end: date(addDays(trip.startDate, trip.stageCount - 1)),
         })
       : date(trip.startDate);
-  const values = {
-    distance: format.distance(trip.stats.distance),
-    ascent: format.elevation(trip.stats.ascent),
-    count: trip.stageCount,
-  };
-  const stats =
-    trip.stageCount > 1 ? t("statsWithStages", values) : t("stats", values);
+  const stats = (
+    <>
+      <Stat
+        size="sm"
+        icon="distance"
+        value={format.distance(trip.stats.distance)}
+        label={t("stat.distance")}
+      />
+      <Stat
+        size="sm"
+        icon="ascent"
+        value={format.elevation(trip.stats.ascent)}
+        label={t("stat.ascent")}
+      />
+      {trip.stageCount > 1 && (
+        <Stat
+          size="sm"
+          icon="dates"
+          value={t("stat.stageCount", { count: trip.stageCount })}
+          label={t("stat.stages")}
+        />
+      )}
+    </>
+  );
 
   return (
     <>

@@ -1,11 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import type { GenerateRequest } from "@wayline/domain";
+import {
+  addDays,
+  type GenerateRequest,
+  localTimeToDate,
+} from "@wayline/domain";
 import {
   Badge,
   Button,
   cn,
   focusRing,
   Logo,
+  type StatIcon,
+  statIcons,
   TextLink,
   TopBar,
   TopBarSpacer,
@@ -25,22 +31,46 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
       ? from && t("request.loopFrom", { from })
       : from && to && t("request.places", { from, to });
 
-  const chips = request
+  const date = (iso: string) => localTimeToDate(`${iso}T00:00`);
+  const start = request?.startDate;
+  const chips: { text: string; icon?: StatIcon }[] = request
     ? [
-        t(`request.kind.${request.kind}`),
-        ...(places ? [places] : []),
-        t("request.days", { count: request.days }),
+        { text: t(`request.kind.${request.kind}`) },
+        ...(places ? [{ text: places }] : []),
+        {
+          icon: "dates" as const,
+          text: start
+            ? request.days > 1
+              ? t("request.dates", {
+                  dates: format.dateRange(
+                    date(start),
+                    date(addDays(start, request.days - 1)),
+                  ),
+                  count: request.days,
+                })
+              : t("request.date", { date: format.date(date(start)) })
+            : t("request.days", { count: request.days }),
+        },
         ...(request.dayShares?.some((share) => share < 1)
-          ? [t("request.shortDays")]
+          ? [{ text: t("request.shortDays") }]
           : []),
-        t(request.days === 1 ? "request.distance" : "request.kmPerDay", {
-          distance: format.distance(request.kmPerDay * 1000),
-        }),
-        t("request.maxAscent", {
-          ascent: format.elevation(request.maxAscentPerDay),
-        }),
-        t(`request.profile.${request.profile}`),
-        ...(request.theme ? [t(`request.theme.${request.theme}`)] : []),
+        {
+          icon: "distance" as const,
+          text: t(
+            request.days === 1 ? "request.distance" : "request.kmPerDay",
+            { distance: format.distance(request.kmPerDay * 1000) },
+          ),
+        },
+        {
+          icon: "ascent" as const,
+          text: t("request.maxAscent", {
+            ascent: format.elevation(request.maxAscentPerDay),
+          }),
+        },
+        { text: t(`request.profile.${request.profile}`) },
+        ...(request.theme
+          ? [{ text: t(`request.theme.${request.theme}`) }]
+          : []),
       ]
     : [];
 
@@ -67,11 +97,19 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
           aria-label={t("request.label")}
           className="hidden flex-wrap justify-end gap-1.5 lg:flex"
         >
-          {chips.map((chip) => (
-            <li key={chip}>
-              <Badge size="md">{chip}</Badge>
-            </li>
-          ))}
+          {chips.map(({ text, icon }) => {
+            const Icon = icon && statIcons[icon];
+            return (
+              <li key={text}>
+                <Badge size="md" className="gap-1">
+                  {Icon && (
+                    <Icon aria-hidden className="size-3.5 text-text-muted" />
+                  )}
+                  {text}
+                </Badge>
+              </li>
+            );
+          })}
         </ul>
       )}
       <Button asChild size="sm">

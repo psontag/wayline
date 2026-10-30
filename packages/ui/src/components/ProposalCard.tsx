@@ -1,23 +1,16 @@
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
 import { focusRing } from "./Button";
+import type { StatIcon } from "../icons";
 import { Badge } from "./Chip";
+import { DayList, type DayListItem } from "./DayList";
 import { type RouteColor, routeColorClasses } from "./RouteLabel";
+import { Stat } from "./Stat";
+import { SurfaceBar, type SurfaceShares } from "./SurfaceBar";
 
-export type ProposalStat = { value: string; label: string };
+export type ProposalStat = { icon: StatIcon; value: string; label: string };
 
-export type ProposalDay = {
-  /** "1" */
-  label: string;
-  /** Where the day ends, e.g. "Bergrheinfeld". */
-  place: string;
-  /** "65 km" */
-  distance: string;
-  /** "380 m" */
-  ascent?: string;
-  /** Short note, e.g. "Half day". */
-  tag?: string;
-};
+export type ProposalDay = DayListItem;
 
 export type ProposalCardProps = {
   /** Same number as on the map. */
@@ -29,8 +22,10 @@ export type ProposalCardProps = {
   color?: RouteColor;
   /** Short badges, e.g. "Flattest". */
   tags?: string[];
-  /** Three stats. A compact card shows their values in one line. */
+  /** Three stats. A compact card shows them in one line. */
   stats: ProposalStat[];
+  /** Shown as a surface bar under the stats when selected. */
+  surface?: SurfaceShares;
   /** Shown when selected, below the stats. */
   chart?: ReactNode;
   /** Shown when selected. One row per day. */
@@ -55,6 +50,7 @@ export function ProposalCard({
   color,
   tags = [],
   stats,
+  surface,
   chart,
   days = [],
   footer,
@@ -96,54 +92,29 @@ export function ProposalCard({
               </Badge>
             ))}
           </span>
-          <span className="truncate text-xs text-text-muted tabular-nums">
-            {selected ? subtitle : stats.map((s) => s.value).join(" · ")}
-          </span>
+          {selected ? (
+            <span className="truncate text-xs text-text-muted">{subtitle}</span>
+          ) : (
+            <span className="flex min-w-0 items-center gap-3 overflow-hidden">
+              {stats.map((stat) => (
+                <Stat key={stat.icon} size="sm" {...stat} />
+              ))}
+            </span>
+          )}
         </span>
       </button>
       {selected && (
         <div className="flex flex-col gap-3 px-3 pb-3">
-          <span className="grid grid-cols-3 gap-1.5 tabular-nums">
-            {stats.map((stat) => (
-              <span key={stat.label} className="flex min-w-0 flex-col">
-                <span className="font-bold whitespace-nowrap">
-                  {stat.value}
-                </span>
-                <span className="truncate text-2xs text-text-muted">
-                  {stat.label}
-                </span>
-              </span>
-            ))}
-          </span>
-          {chart}
-          {days.length > 0 && (
-            <ol className="flex flex-col gap-1 text-sm">
-              {days.map((day, i) => (
-                <li
-                  key={day.label}
-                  onMouseEnter={() => onHoverDay?.(i + 1)}
-                  onMouseLeave={() => onHoverDay?.(undefined)}
-                  className="-mx-1 flex items-center gap-2 rounded-sm px-1 hover:bg-hover"
-                >
-                  <span className="w-4 shrink-0 text-xs text-text-muted tabular-nums">
-                    {day.label}
-                  </span>
-                  <span className="min-w-0 truncate font-semibold">
-                    {day.place}
-                  </span>
-                  {day.tag && <Badge className="shrink-0">{day.tag}</Badge>}
-                  <span className="ml-auto shrink-0 text-text-muted tabular-nums">
-                    {day.distance}
-                  </span>
-                  {day.ascent && (
-                    <span className="w-12 shrink-0 text-right text-text-muted tabular-nums">
-                      {day.ascent}
-                    </span>
-                  )}
-                </li>
+          <div className="flex flex-col gap-2">
+            <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              {stats.map((stat) => (
+                <Stat key={stat.icon} {...stat} />
               ))}
-            </ol>
-          )}
+            </span>
+            {surface && <SurfaceBar caption shares={surface} />}
+          </div>
+          {chart}
+          {days.length > 0 && <DayList days={days} onHoverDay={onHoverDay} />}
           {footer && <span className="text-xs text-text-muted">{footer}</span>}
           {children}
         </div>
