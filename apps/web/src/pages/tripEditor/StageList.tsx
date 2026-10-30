@@ -1,10 +1,18 @@
 import {
-  localTimeToDate,
   addDays,
+  findClimbs,
+  localTimeToDate,
   ridingHours,
+  routePoints,
   type Trip,
 } from "@wayline/domain";
-import { ChangeNotice, DayList, StageDetails, useFormat } from "@wayline/ui";
+import {
+  ChangeNotice,
+  ClimbList,
+  DayList,
+  StageDetails,
+  useFormat,
+} from "@wayline/ui";
 import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
@@ -78,6 +86,7 @@ function SelectedStage({
   return (
     <StageDetails
       surface={stage.stats.surface}
+      climbs={<ClimbList climbs={findClimbs(routePoints(stage.legs))} />}
       weather={
         weather
           ? {
