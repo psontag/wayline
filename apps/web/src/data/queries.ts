@@ -12,6 +12,7 @@ import {
   sampleAt,
   stageStartTime,
   type HotelBudget,
+  type StageWeather,
   type Stop,
   type Trip,
   weatherAlongStage,
@@ -128,8 +129,7 @@ const FORECAST_STALE_MS = 2 * 60 * 60 * 1000;
  * forecast range. Old data stays visible while new data loads.
  */
 export function useWeather(trip: Trip | undefined, stageIndex: number) {
-  const { weather } = useServices();
-  const client = useQueryClient();
+  const forecast = useForecast();
   const stage = trip?.stages[stageIndex];
   const date = trip?.startDate && addDays(trip.startDate, stageIndex);
   const startTime = trip && stageStartTime(trip.settings, stageIndex);
@@ -146,35 +146,77 @@ export function useWeather(trip: Trip | undefined, stageIndex: number) {
     ],
     enabled: !!stage,
     placeholderData: keepPreviousData,
+    queryFn: () =>
+      trip && stage ? stageWeather(trip, stageIndex, forecast) : null,
+  });
+}
+
+/**
+ * Weather of every day of a trip. Data is null when any day has no
+ * forecast.
+ */
+export function useTripWeather(trip: Trip | undefined, enabled = true) {
+  const forecast = useForecast();
+  return useQuery({
+    queryKey: [
+      "tripWeather",
+      trip?.id,
+      trip?.startDate,
+      trip?.stages.map((s) => s.id).join(","),
+    ],
+    enabled: enabled && !!trip?.startDate,
     queryFn: async () => {
-      if (!stage || !date || !startTime || !avgSpeed) return null;
-      const points = routePoints(stage.legs);
-      const cells = new Map<string, LonLat>();
-      for (const p of points) {
-        const cell = cellOf(p.coord);
-        cells.set(cell.join(), cell);
-      }
-      const forecasts = new Map<string, Forecast>();
-      await Promise.all(
-        [...cells.values()].map(async (cell) => {
-          const forecast = await client.fetchQuery({
-            queryKey: queryKeys.forecast(cell),
-            queryFn: () => weather.forecast(cell),
-            staleTime: FORECAST_STALE_MS,
-          });
-          forecasts.set(cell.join(), forecast);
-        }),
+      if (!trip) return null;
+      const days = await Promise.all(
+        trip.stages.map((_, i) => stageWeather(trip, i, forecast)),
       );
-      return weatherAlongStage(
-        points,
-        { date, startTime, avgSpeed },
-        (coord, time) => {
-          const forecast = forecasts.get(cellOf(coord).join());
-          return forecast && sampleAt(forecast.samples, time);
-        },
-      );
+      return days.some((d) => !d) ? null : (days as StageWeather[]);
     },
   });
+}
+
+/** Fetches the forecast of a cell, cached. */
+function useForecast() {
+  const { weather } = useServices();
+  const client = useQueryClient();
+  return (cell: LonLat) =>
+    client.fetchQuery({
+      queryKey: queryKeys.forecast(cell),
+      queryFn: () => weather.forecast(cell),
+      staleTime: FORECAST_STALE_MS,
+    });
+}
+
+async function stageWeather(
+  trip: Trip,
+  stageIndex: number,
+  forecast: (cell: LonLat) => Promise<Forecast>,
+): Promise<StageWeather | null> {
+  const stage = trip.stages[stageIndex];
+  const date = trip.startDate && addDays(trip.startDate, stageIndex);
+  const startTime = stageStartTime(trip.settings, stageIndex);
+  const avgSpeed = trip.settings.avgSpeed;
+  if (!stage || !date || !startTime || !avgSpeed) return null;
+  const points = routePoints(stage.legs);
+  const cells = new Map<string, LonLat>();
+  for (const p of points) {
+    const cell = cellOf(p.coord);
+    cells.set(cell.join(), cell);
+  }
+  const forecasts = new Map<string, Forecast>();
+  await Promise.all(
+    [...cells.values()].map(async (cell) => {
+      forecasts.set(cell.join(), await forecast(cell));
+    }),
+  );
+  return weatherAlongStage(
+    points,
+    { date, startTime, avgSpeed },
+    (coord, time) => {
+      const f = forecasts.get(cellOf(coord).join());
+      return f && sampleAt(f.samples, time);
+    },
+  );
 }
 
 /** Hotels near a stop. Those that fit the budget first, each nearest first. */

@@ -1,11 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import {
-  type GenerateRequest,
-  type Proposal,
-  type Theme,
-} from "@wayline/domain";
+import { type GenerateRequest, type Proposal } from "@wayline/domain";
 import {
   Button,
+  ElevationProfile,
   MessagePanel,
   ProgressBar,
   ProposalCard,
@@ -15,13 +12,19 @@ import {
 import { ArrowRight, Mountain, RotateCcw, SearchX } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { networkArea } from "../../components/NetworkLayer";
+import { useNetwork, useTripWeather } from "../../data/queries";
+import { tripStops } from "../tripEditor/tripArea";
+import { profilePoints } from "../tripEditor/surfaceProfile";
 import {
-  elevationSamples,
+  type ComparisonTag,
+  comparisonTags,
+  dayBreaks,
   progressValue,
   proposalStats,
   relaxOptions,
   type Relaxed,
-  tripPoints,
+  windTag,
 } from "./proposalView";
 import type { Generation } from "./useGeneration";
 
@@ -51,6 +54,7 @@ export function ProposalList({
   onRelax,
 }: ProposalListProps) {
   const { status, proposals } = generation;
+  const tags = useMemo(() => comparisonTags(proposals), [proposals]);
 
   if (status === "failed" && generation.failedLimit) {
     return (
@@ -82,8 +86,8 @@ export function ProposalList({
           <ProposalItem
             key={p.id}
             proposal={p}
-            theme={request.theme}
             number={i + 1}
+            tags={tags.get(p.id) ?? []}
             selected={p.id === selected}
             onSelect={() => onSelect(p.id)}
             onHover={(hover) => onHover(hover ? p.id : undefined)}
@@ -178,8 +182,8 @@ function ResultLine({
 
 function ProposalItem({
   proposal,
-  theme,
   number,
+  tags,
   selected,
   onSelect,
   onHover,
@@ -188,8 +192,8 @@ function ProposalItem({
   openFailed,
 }: {
   proposal: Proposal;
-  theme?: Theme;
   number: number;
+  tags: ComparisonTag[];
   selected: boolean;
   onSelect: () => void;
   onHover: (hover: boolean) => void;
@@ -200,56 +204,47 @@ function ProposalItem({
   const { t } = useTranslation("proposals");
   const format = useFormat();
   const { trip, routeNames } = proposal;
-  const themeValue = theme && proposal.themes?.[theme];
   const stats = proposalStats(trip);
-  const profile = useMemo(() => elevationSamples(tripPoints(trip)), [trip]);
-  const from = trip.stages[0]?.start.name ?? "";
-  const to = trip.stages.at(-1)?.end.name ?? "";
   const via = proposal.via.length
     ? proposal.via
     : trip.stages.slice(0, -1).map((s) => s.end.name);
+  const weather = useTripWeather(trip, selected && trip.kind === "one-way");
+  const wind =
+    weather.data &&
+    windTag(
+      weather.data.map((d, i) => ({
+        wind: d.wind,
+        distance: trip.stages[i]?.stats.distance ?? 0,
+      })),
+    );
+  const name = proposal.character
+    ? t(`card.character.${proposal.character}`)
+    : t("card.option", { number });
 
   return (
     <ProposalCard
       number={number}
-      title={
-        via.length ? t("card.via", { stops: format.list(via) }) : trip.name
-      }
-      subtitle={[
-        ...(proposal.character
-          ? [t(`card.character.${proposal.character}`)]
+      title={name}
+      subtitle={via.length ? t("card.via", { stops: format.list(via) }) : ""}
+      tags={[
+        ...tags.map((tag) => t(`card.tag.${tag}`)),
+        ...(wind?.kind === "tail" ? [t("card.tag.tailwind")] : []),
+        ...(wind?.kind === "head"
+          ? [t("card.tag.headwind", { day: wind.day })]
           : []),
-        t(`card.subtitle.${trip.kind === "one-way" ? "one-way" : "loop"}`, {
-          from,
-          to,
-        }),
-        ...(theme && themeValue !== undefined
-          ? [t(`card.theme.${theme}`, { share: format.percent(themeValue) })]
-          : []),
-      ].join(" · ")}
+      ]}
       stats={[
         { value: format.distance(stats.distance), label: t("card.distance") },
         { value: format.elevation(stats.ascent), label: t("card.ascent") },
         { value: format.percent(stats.paved), label: t("card.paved") },
-        {
-          value: format.distance(stats.longestDay),
-          label: t("card.longestDay"),
-        },
       ]}
-      profile={profile}
+      chart={selected && <Profile proposal={proposal} />}
       days={trip.stages.map((stage, i) => {
         const share = trip.settings.dayShares?.[i] ?? 1;
         return {
-          label: t("card.day", { day: i + 1 }),
-          route: t("card.stage", {
-            from: stage.start.name,
-            to: stage.end.name,
-          }),
-          stats: t("card.stageStats", {
-            distance: format.distance(stage.stats.distance),
-            ascent: format.elevation(stage.stats.ascent),
-          }),
-          distance: stage.stats.distance,
+          label: String(i + 1),
+          place: stage.end.name,
+          distance: format.distance(stage.stats.distance),
           ...(share < 1
             ? { tag: t(share <= 0.5 ? "card.halfDay" : "card.shortDay") }
             : {}),
@@ -257,16 +252,13 @@ function ProposalItem({
       })}
       footer={
         routeNames.length
-          ? t("card.routes", { routes: routeNames.join(" · ") })
+          ? t("card.routes", { routes: routeNames.slice(0, 2).join(" · ") })
           : t("card.noRoutes")
       }
       selected={selected}
       onSelect={onSelect}
       onHover={onHover}
     >
-      <span className="text-xs text-text-muted tabular-nums">
-        {t("card.score", { score: format.percent(proposal.score) })}
-      </span>
       {openFailed && (
         <span role="alert" className="text-sm text-danger">
           {t("card.openFailed")}
@@ -277,6 +269,28 @@ function ProposalItem({
         <ArrowRight aria-hidden />
       </Button>
     </ProposalCard>
+  );
+}
+
+/** Elevation of the whole trip, with a line where each day starts. */
+function Profile({ proposal }: { proposal: Proposal }) {
+  const { t } = useTranslation("proposals");
+  const format = useFormat();
+  const { trip } = proposal;
+  const network = useNetwork(networkArea(tripStops(trip)));
+  const legs = useMemo(() => trip.stages.flatMap((s) => s.legs), [trip]);
+  const points = useMemo(() => profilePoints(legs, network), [legs, network]);
+  const highest = Math.max(0, ...points.map((p) => p.ele));
+  return (
+    <ElevationProfile
+      axes
+      points={points}
+      dayBreaks={dayBreaks(trip)}
+      aria-label={t("card.chart", {
+        distance: format.distance((points.at(-1)?.km ?? 0) * 1000),
+        elevation: format.elevation(highest),
+      })}
+    />
   );
 }
 

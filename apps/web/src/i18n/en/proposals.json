@@ -80,10 +80,6 @@
     "retry": "Try again"
   },
   "card": {
-    "subtitle": {
-      "one-way": "{{from}} → {{to}}",
-      "loop": "Loop from {{from}}"
-    },
     "character": {
       "direct": "Direct",
       "scenic": "Scenic",
@@ -94,23 +90,22 @@
     "distance": "Distance",
     "ascent": "Ascent",
     "paved": "Paved",
-    "longestDay": "Longest day",
+    "option": "Option {{number}}",
     "via": "Via {{stops}}",
-    "day": "Day {{day}}",
-    "stage": "{{from}} → {{to}}",
-    "stageStats": "{{distance}} · {{ascent}}",
     "routes": "Routes: {{routes}}",
     "noRoutes": "No signed routes",
-    "score": "Score {{score}}",
     "open": "Open trip",
     "opening": "Opening",
     "openFailed": "Could not save the trip. Try again.",
-    "theme": {
-      "nature": "{{share}} forest and nature",
-      "water": "{{share}} along water",
-      "wine": "{{share}} through vineyards",
-      "culture": "{{share}} near sights"
-    }
+    "tag": {
+      "flattest": "Flattest",
+      "mostPaved": "Most paved",
+      "mostSigned": "Most on signed routes",
+      "shortest": "Shortest",
+      "tailwind": "Mostly tailwind",
+      "headwind": "Headwind on day {{day}}"
+    },
+    "chart": "Elevation over {{distance}}, highest point {{elevation}}"
   },
   "map": {
     "label": "Map with the proposals",

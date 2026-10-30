@@ -5,10 +5,12 @@ import {
   type GenerateRequest,
   type LonLat,
   pointAtKm,
+  type Proposal,
   type RoutePoint,
   routePoints,
   type Trip,
   tripStats,
+  type WindShares,
 } from "@wayline/domain";
 
 /** Points along the whole trip, with km from the start. */
@@ -23,18 +25,108 @@ export function proposalStats(trip: Trip) {
     distance: stats.distance,
     ascent: stats.ascent,
     paved: stats.surface.paved,
-    longestDay: Math.max(0, ...trip.stages.map((s) => s.stats.distance)),
   };
 }
 
-/** Elevation at evenly spaced points, for the sparkline. */
-export function elevationSamples(points: RoutePoint[], count = 60): number[] {
-  const total = points.at(-1)?.km ?? 0;
-  if (points.length < 2 || total === 0) return [];
-  return Array.from(
-    { length: count },
-    (_, i) => pointAtKm(points, (i / (count - 1)) * total).ele,
+/** km from the trip start where each day after the first starts. */
+export function dayBreaks(trip: Trip): number[] {
+  let km = 0;
+  return trip.stages.slice(0, -1).map((stage) => {
+    km += stage.stats.distance / 1000;
+    return km;
+  });
+}
+
+export type ComparisonTag =
+  "flattest" | "mostPaved" | "mostSigned" | "shortest";
+
+type Measure = {
+  tag: ComparisonTag;
+  value: (p: Proposal) => number | undefined;
+  /** Higher wins when true. */
+  most: boolean;
+  /** How far ahead of the runner-up the winner must be. */
+  clear: (best: number, next: number) => boolean;
+};
+
+const measures: Measure[] = [
+  {
+    tag: "flattest",
+    value: (p) => proposalStats(p.trip).ascent,
+    most: false,
+    clear: (best, next) => next - best >= Math.max(100, best * 0.15),
+  },
+  {
+    tag: "mostPaved",
+    value: (p) => proposalStats(p.trip).paved,
+    most: true,
+    clear: (best, next) => best - next >= 0.05,
+  },
+  {
+    tag: "mostSigned",
+    value: (p) => (p as Proposal & { signedShare?: number }).signedShare,
+    most: true,
+    clear: (best, next) => best - next >= 0.1,
+  },
+  {
+    tag: "shortest",
+    value: (p) => proposalStats(p.trip).distance,
+    most: false,
+    clear: (best, next) => next - best >= Math.max(5000, best * 0.05),
+  },
+];
+
+/**
+ * Tags that set a proposal apart from the others, by proposal id. A tag goes
+ * only to the one proposal that wins it by a clear margin.
+ */
+export function comparisonTags(
+  proposals: Proposal[],
+): Map<string, ComparisonTag[]> {
+  const tags = new Map<string, ComparisonTag[]>();
+  if (proposals.length < 2) return tags;
+  for (const m of measures) {
+    const ranked = proposals
+      .map((p) => ({ id: p.id, value: m.value(p) }))
+      .filter((r): r is { id: string; value: number } => r.value !== undefined)
+      .sort((a, b) => (m.most ? b.value - a.value : a.value - b.value));
+    const [best, next] = ranked;
+    if (!best || !next) continue;
+    if (m.clear(best.value, next.value))
+      tags.set(best.id, [...(tags.get(best.id) ?? []), m.tag]);
+  }
+  return tags;
+}
+
+export type WindTag = { kind: "tail" } | { kind: "head"; day: number };
+
+// Below this, wind hardly matters on a bike.
+const CALM_KMH = 10;
+
+/**
+ * "Mostly tailwind" or the day with the most headwind. Undefined when a day
+ * has no forecast or the wind does not stand out.
+ */
+export function windTag(
+  days: ({ wind: WindShares; distance: number } | null)[],
+): WindTag | undefined {
+  if (days.length === 0 || days.some((d) => !d)) return undefined;
+  const known = days as { wind: WindShares; distance: number }[];
+  let worst: { day: number; head: number } | undefined;
+  known.forEach((d, i) => {
+    if (d.wind.avgSpeed < CALM_KMH || d.wind.head < 0.5) return;
+    if (!worst || d.wind.head > worst.head) {
+      worst = { day: i + 1, head: d.wind.head };
+    }
+  });
+  if (worst) return { kind: "head", day: worst.day };
+  const total = known.reduce((sum, d) => sum + d.distance, 0);
+  const tail = known.reduce(
+    (sum, d) =>
+      sum + (d.wind.avgSpeed >= CALM_KMH ? d.wind.tail * d.distance : 0),
+    0,
   );
+  return total && tail / total >= 0.5 ? { kind: "tail" } : undefined;
 }
 
 /**
