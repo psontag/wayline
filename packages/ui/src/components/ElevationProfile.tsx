@@ -1,4 +1,4 @@
-import { type PointerEvent, useState } from "react";
+import { type PointerEvent, useId, useMemo, useState } from "react";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 
@@ -24,17 +24,23 @@ export type ElevationProfileProps = {
    * without `onHoverKm`.
    */
   axes?: boolean;
-  /** km where a new day starts. Drawn as dashed lines. */
+  /** km where a new day starts. Drawn as dashed lines with the stop number. */
   dayBreaks?: number[];
   /** Describes the chart for screen readers. */
   "aria-label": string;
   className?: string;
 };
 
+type Point = { km: number; ele: number };
+
+const NONE: Point[] = [];
+
 const W = 1000;
 const H = 100;
-// Keep the line off the top and bottom edges.
+// Keep the line off the top and bottom edges without axes.
 const PAD = 8;
+// More points than this add no detail at chart width.
+const MAX_POINTS = 400;
 
 const stroke: Record<SurfaceKind, string> = {
   paved: "stroke-terrain-paved",
@@ -43,17 +49,91 @@ const stroke: Record<SurfaceKind, string> = {
 };
 
 /** Round step that splits `range` into about `count` parts. */
-export function niceStep(range: number, count: number): number {
+export function niceStep(
+  range: number,
+  count: number,
+  steps = [1, 2, 2.5, 5, 10],
+): number {
   const raw = range / count;
   const power = 10 ** Math.floor(Math.log10(raw || 1));
-  const step = [1, 2, 2.5, 5, 10].find((s) => s * power >= raw) ?? 10;
+  const step = steps.find((s) => s * power >= raw) ?? 10;
   return step * power;
+}
+
+/**
+ * Moving average over `radius` km on each side, then thinned to about
+ * `MAX_POINTS`. Removes height noise but keeps real climbs. Surface changes
+ * are kept.
+ */
+export function smooth<T extends Point>(points: T[], radius: number): T[] {
+  if (points.length < 3 || radius <= 0) return points;
+  const kms = points.map((p) => p.km);
+  const eles = points.map((p) => p.ele);
+  const out: T[] = [];
+  let from = 0;
+  let to = 0;
+  let sum = 0;
+  for (const p of points) {
+    while (to < points.length && (kms[to] ?? Infinity) <= p.km + radius) {
+      sum += eles[to] ?? 0;
+      to++;
+    }
+    while ((kms[from] ?? Infinity) < p.km - radius) {
+      sum -= eles[from] ?? 0;
+      from++;
+    }
+    out.push({ ...p, ele: sum / (to - from) });
+  }
+  const every = Math.ceil(points.length / MAX_POINTS);
+  if (every === 1) return out;
+  const surface = (p?: Point) =>
+    (p as Partial<ProfilePoint> | undefined)?.surface;
+  return out.filter(
+    (p, i) =>
+      i % every === 0 ||
+      i === out.length - 1 ||
+      surface(p) !== surface(out[i - 1]),
+  );
+}
+
+/**
+ * Monotone cubic path through the points (Fritsch–Carlson). It never
+ * overshoots, so peaks and valleys stay where the data has them.
+ */
+export function curve(pts: [number, number][]): string[] {
+  const pairs = pts.slice(1).map((b, i) => [pts[i] ?? b, b] as const);
+  const d = pairs.map(([[x0, y0], [x1, y1]]) =>
+    x1 === x0 ? 0 : (y1 - y0) / (x1 - x0),
+  );
+  const m = pts.map((_, i) => {
+    const a = d[i - 1] ?? d[i] ?? 0;
+    const b = d[i] ?? a;
+    return a * b <= 0 ? 0 : (2 * a * b) / (a + b);
+  });
+  const f = (v: number) => v.toFixed(1);
+  return pairs.map(([[x0, y0], [x1, y1]], i) => {
+    const t = (x1 - x0) / 3;
+    const m0 = m[i] ?? 0;
+    const m1 = m[i + 1] ?? 0;
+    return `C${f(x0 + t)} ${f(y0 + m0 * t)} ${f(x1 - t)} ${f(y1 - m1 * t)} ${f(x1)} ${f(y1)}`;
+  });
+}
+
+/** Elevation at a km, between the nearest points. */
+export function eleAt(points: Point[], km: number): number | undefined {
+  const i = points.findIndex((p) => p.km >= km);
+  if (i < 0) return points.at(-1)?.ele;
+  const b = points[i];
+  const a = points[i - 1];
+  if (!b) return undefined;
+  if (!a || b.km === a.km) return b.ele;
+  return a.ele + ((km - a.km) / (b.km - a.km)) * (b.ele - a.ele);
 }
 
 /** Elevation over distance. The line is colored by surface. */
 export function ElevationProfile({
   points,
-  compare = [],
+  compare = NONE,
   hoverKm,
   onHoverKm,
   axes = false,
@@ -62,76 +142,40 @@ export function ElevationProfile({
   className,
 }: ElevationProfileProps) {
   const format = useFormat();
+  const fillId = `ele-fill-${useId().replace(/[^\w-]/g, "")}`;
   const [ownHover, setOwnHover] = useState<number>();
-  const first = points[0];
-  const last = points.at(-1);
-  if (!first || !last) {
-    return <div className={cn(axes ? "h-24" : "h-20", className)} />;
+  const chart = useMemo(
+    () => geometry(points, compare, axes),
+    [points, compare, axes],
+  );
+
+  if (!chart) {
+    return axes ? (
+      <div aria-hidden className={cn("flex flex-col gap-1", className)}>
+        <div className="flex h-24 flex-col justify-between pl-14">
+          <div className="border-t border-border" />
+          <div className="border-t border-border" />
+          <div className="border-t border-border" />
+        </div>
+        <div className="h-4" />
+      </div>
+    ) : (
+      <div className={cn("h-20", className)} />
+    );
   }
 
-  const length = Math.max(last.km, compare.at(-1)?.km ?? 0) - first.km || 1;
-  const eles = [...points, ...compare].map((p) => p.ele);
-  let min = Math.min(...eles);
-  let max = Math.max(...eles);
-  let pad = PAD;
-  const eleStep = niceStep(Math.max(max - min, 40), 3);
-  if (axes) {
-    min = Math.floor(min / eleStep) * eleStep;
-    max = Math.ceil(max / eleStep) * eleStep;
-    if (max === min) max = min + eleStep;
-    pad = 0;
-  }
-  const range = max - min || 1;
-  const x = (km: number) => ((km - first.km) / length) * W;
-  const y = (ele: number) => H - pad - ((ele - min) / range) * (H - 2 * pad);
-  const xy = (p: { km: number; ele: number }) =>
-    `${x(p.km).toFixed(1)} ${y(p.ele).toFixed(1)}`;
-
-  const area = `M${points.map(xy).join(" L")} L${W} ${H} L0 ${H} Z`;
-
-  // One path per run of the same surface. Runs share their end points.
-  const runs: { surface: SurfaceKind; d: string }[] = [];
-  let current: { surface: SurfaceKind; pts: ProfilePoint[] } | undefined;
-  for (const p of points) {
-    if (current && current.surface === p.surface) {
-      current.pts.push(p);
-      continue;
-    }
-    if (current) {
-      current.pts.push(p);
-      runs.push({
-        surface: current.surface,
-        d: `M${current.pts.map(xy).join(" L")}`,
-      });
-    }
-    current = { surface: p.surface, pts: [p] };
-  }
-  if (current && current.pts.length > 1) {
-    runs.push({
-      surface: current.surface,
-      d: `M${current.pts.map(xy).join(" L")}`,
-    });
-  }
+  const { first, length, x, y, line, compareLine, eleTicks, kmTicks } = chart;
+  const area = `${line.path} L${W} ${H} L0 ${H} Z`;
 
   const setHover = onHoverKm ?? (axes ? setOwnHover : undefined);
   const hover = hoverKm ?? (onHoverKm ? undefined : ownHover);
   const onMove = (event: PointerEvent<SVGSVGElement>) => {
     const box = event.currentTarget.getBoundingClientRect();
     const f = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width));
-    setHover?.(first.km + f * length);
+    setHover?.(first + f * length);
   };
 
-  const eleTicks: number[] = [];
-  const kmTicks: number[] = [];
-  if (axes) {
-    for (let e = min; e <= max; e += eleStep) eleTicks.push(e);
-    const kmStep = niceStep(length, 4);
-    for (let k = kmStep; k < first.km + length - kmStep / 3; k += kmStep) {
-      kmTicks.push(k);
-    }
-  }
-
-  const chart = (
+  const svg = (
     <svg
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
@@ -140,11 +184,24 @@ export function ElevationProfile({
       onPointerMove={setHover && onMove}
       onPointerLeave={setHover && (() => setHover(undefined))}
       className={cn(
-        "block w-full touch-none",
+        "block w-full touch-none overflow-visible",
         axes ? "h-full" : "h-20",
         !axes && className,
       )}
     >
+      <defs>
+        <linearGradient
+          id={fillId}
+          x1="0"
+          y1="0"
+          x2="0"
+          y2="1"
+          className="text-terrain-paved"
+        >
+          <stop offset="0" stopColor="currentColor" stopOpacity={0.32} />
+          <stop offset="1" stopColor="currentColor" stopOpacity={0.02} />
+        </linearGradient>
+      </defs>
       {eleTicks.map((e) => (
         <line
           key={e}
@@ -157,7 +214,7 @@ export function ElevationProfile({
           className="stroke-border"
         />
       ))}
-      <path d={area} className="fill-hover" />
+      <path d={area} fill={`url(#${fillId})`} />
       {dayBreaks.map((km) => (
         <line
           key={km}
@@ -166,14 +223,14 @@ export function ElevationProfile({
           y1={0}
           y2={H}
           strokeWidth={1}
-          strokeDasharray="4 3"
+          strokeDasharray="3 3"
           vectorEffect="non-scaling-stroke"
-          className="stroke-text-muted"
+          className="stroke-text-muted opacity-50"
         />
       ))}
-      {compare.length > 1 && (
+      {compareLine && (
         <path
-          d={`M${compare.map(xy).join(" L")}`}
+          d={compareLine}
           fill="none"
           strokeWidth={2}
           strokeDasharray="4 4"
@@ -181,12 +238,13 @@ export function ElevationProfile({
           className="stroke-text-muted"
         />
       )}
-      {runs.map((run, i) => (
+      {line.runs.map((run, i) => (
         <path
           key={i}
           d={run.d}
           fill="none"
-          strokeWidth={3}
+          strokeWidth={2.5}
+          strokeLinecap="round"
           strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
           className={stroke[run.surface]}
@@ -199,32 +257,51 @@ export function ElevationProfile({
           y1={0}
           y2={H}
           strokeWidth={1}
-          strokeDasharray="3 3"
           vectorEffect="non-scaling-stroke"
-          className="stroke-text"
+          className="stroke-text-muted"
         />
       )}
     </svg>
   );
-  if (!axes) return chart;
+  if (!axes) return svg;
 
   const pct = (v: number) => `${v.toFixed(2)}%`;
+  const left = (km: number) => pct((x(km) / W) * 100);
   const hoverEle = hover === undefined ? undefined : eleAt(points, hover);
-  const hoverLeft = hover === undefined ? 0 : (x(hover) / W) * 100;
+  const hoverRight = hover !== undefined && x(hover) > W / 2;
+  // Grade over a short stretch of the smoothed line, so single height
+  // samples don't make it jump.
+  const grade =
+    hover === undefined
+      ? undefined
+      : gradeAt(line.points, hover, Math.max(0.1, length / 400));
 
   return (
     <div
       className={cn(
-        "flex flex-col text-2xs text-text-muted tabular-nums",
+        "flex flex-col text-xs text-text-muted tabular-nums",
         className,
       )}
     >
-      <div className="flex h-20 gap-1">
-        <div aria-hidden className="relative w-11 shrink-0">
+      {dayBreaks.length > 0 && (
+        <div aria-hidden className="relative ml-14 h-5">
+          {dayBreaks.map((km, i) => (
+            <span
+              key={km}
+              className="absolute top-0 flex size-4 -translate-x-1/2 items-center justify-center rounded-full bg-marker text-2xs leading-none font-extrabold text-surface"
+              style={{ left: left(km) }}
+            >
+              {i + 1}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex h-24 gap-2">
+        <div aria-hidden className="relative w-12 shrink-0">
           {eleTicks.map((e) => (
             <span
               key={e}
-              className="absolute right-0 -translate-y-1/2 leading-tight"
+              className="absolute right-0 -translate-y-1/2 leading-tight whitespace-nowrap"
               style={{ top: pct((y(e) / H) * 100) }}
             >
               {format.elevation(e)}
@@ -232,27 +309,45 @@ export function ElevationProfile({
           ))}
         </div>
         <div className="relative min-w-0 flex-1">
-          {chart}
+          {svg}
           {hover !== undefined && hoverEle !== undefined && (
-            <span
-              aria-hidden
-              className={cn(
-                "pointer-events-none absolute top-0 rounded-sm bg-inverse px-1.5 py-0.5 font-semibold whitespace-nowrap text-on-inverse",
-                hoverLeft > 50 && "-translate-x-full",
-              )}
-              style={{ left: pct(hoverLeft) }}
-            >
-              {format.distance(hover * 1000)} · {format.elevation(hoverEle)}
-            </span>
+            <>
+              <span
+                aria-hidden
+                className="pointer-events-none absolute size-2.5 -translate-1/2 rounded-full border-2 border-surface bg-text shadow-sm"
+                style={{
+                  left: left(hover),
+                  top: pct(
+                    (y(eleAt(line.points, hover) ?? hoverEle) / H) * 100,
+                  ),
+                }}
+              />
+              <span
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute top-0 flex flex-col rounded-md border border-border bg-surface-raised px-2 py-1 whitespace-nowrap text-text shadow-md",
+                  hoverRight ? "-translate-x-full -ml-2" : "ml-2",
+                )}
+                style={{ left: left(hover) }}
+              >
+                <span className="font-bold">
+                  {format.distance(hover * 1000)}
+                </span>
+                <span className="text-text-muted">
+                  {format.elevation(hoverEle)}
+                  {grade !== undefined && ` · ${format.grade(grade)}`}
+                </span>
+              </span>
+            </>
           )}
         </div>
       </div>
-      <div aria-hidden className="relative ml-12 h-4">
+      <div aria-hidden className="relative ml-14 h-5">
         {kmTicks.map((k) => (
           <span
             key={k}
-            className="absolute top-0.5 -translate-x-1/2 leading-tight"
-            style={{ left: pct((x(k) / W) * 100) }}
+            className="absolute top-1 -translate-x-1/2 leading-tight whitespace-nowrap"
+            style={{ left: left(k) }}
           >
             {format.distance(k * 1000)}
           </span>
@@ -262,13 +357,104 @@ export function ElevationProfile({
   );
 }
 
-/** Elevation at a km, between the nearest points. */
-function eleAt(points: ProfilePoint[], km: number): number | undefined {
-  const i = points.findIndex((p) => p.km >= km);
-  if (i < 0) return points.at(-1)?.ele;
-  const b = points[i];
-  const a = points[i - 1];
-  if (!b) return undefined;
-  if (!a || b.km === a.km) return b.ele;
-  return a.ele + ((km - a.km) / (b.km - a.km)) * (b.ele - a.ele);
+/** Rise over run around `km`, as a share. */
+export function gradeAt(
+  points: Point[],
+  km: number,
+  half: number,
+): number | undefined {
+  const first = points[0]?.km ?? 0;
+  const last = points.at(-1)?.km ?? 0;
+  const a = Math.max(first, km - half);
+  const b = Math.min(last, km + half);
+  const ea = eleAt(points, a);
+  const eb = eleAt(points, b);
+  if (b <= a || ea === undefined || eb === undefined) return undefined;
+  return (eb - ea) / ((b - a) * 1000);
+}
+
+function geometry(points: ProfilePoint[], compare: Point[], axes: boolean) {
+  const firstPoint = points[0];
+  const lastPoint = points.at(-1);
+  if (!firstPoint || !lastPoint || points.length < 2) return undefined;
+
+  const first = firstPoint.km;
+  const length = Math.max(lastPoint.km, compare.at(-1)?.km ?? 0) - first || 1;
+  const radius = length / 200;
+  const shown = smooth(points, radius);
+  const shownCompare = smooth(compare, radius);
+  const head = shown[0];
+  if (!head) return undefined;
+
+  const eles = [...shown, ...shownCompare].map((p) => p.ele);
+  let min = Math.min(...eles);
+  let max = Math.max(...eles);
+  let pad = PAD;
+  let eleStep = niceStep(Math.max(max - min, 40), 4, [1, 2, 5, 10]);
+  // At most 4 bands, so the labels have room.
+  while (Math.ceil(max / eleStep) - Math.floor(min / eleStep) > 4) {
+    eleStep = niceStep(eleStep * 1.5, 1, [1, 2, 5, 10]);
+  }
+  if (axes) {
+    min = Math.floor(min / eleStep) * eleStep;
+    max = Math.ceil(max / eleStep) * eleStep;
+    if (max === min) max = min + eleStep;
+    pad = 0;
+  }
+  const range = max - min || 1;
+  const x = (km: number) => ((km - first) / length) * W;
+  const y = (ele: number) => H - pad - ((ele - min) / range) * (H - 2 * pad);
+  const xy = (p: Point): [number, number] => [x(p.km), y(p.ele)];
+
+  // The whole line is one curve. Each surface run draws its own segments,
+  // so colors change without a kink.
+  const segments = curve(shown.map(xy));
+  const moveTo = (p: Point) => {
+    const [px, py] = xy(p);
+    return `M${px.toFixed(1)} ${py.toFixed(1)}`;
+  };
+  const runs: { surface: SurfaceKind; d: string }[] = [];
+  let run = { start: 0, from: head };
+  shown.forEach((p, i) => {
+    const isLast = i === shown.length - 1;
+    if (!isLast && p.surface === run.from.surface) return;
+    if (i > run.start) {
+      runs.push({
+        surface: run.from.surface,
+        d: moveTo(run.from) + segments.slice(run.start, i).join(""),
+      });
+    }
+    run = { start: i, from: p };
+  });
+
+  const compareStart = shownCompare[0];
+  const compareLine =
+    compareStart && shownCompare.length > 1
+      ? moveTo(compareStart) + curve(shownCompare.map(xy)).join("")
+      : undefined;
+
+  const eleTicks: number[] = [];
+  const kmTicks: number[] = [];
+  if (axes) {
+    for (let e = min; e <= max; e += eleStep) eleTicks.push(e);
+    const kmStep = niceStep(length, 5, [1, 2, 5, 10]);
+    for (
+      let k = Math.ceil(first / kmStep) * kmStep || kmStep;
+      k < first + length - kmStep / 3;
+      k += kmStep
+    ) {
+      kmTicks.push(k);
+    }
+  }
+
+  return {
+    first,
+    length,
+    x,
+    y,
+    line: { points: shown, path: moveTo(head) + segments.join(""), runs },
+    compareLine,
+    eleTicks,
+    kmTicks,
+  };
 }
