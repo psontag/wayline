@@ -95,6 +95,10 @@
       "city": "City"
     }
   },
+  "marker": {
+    "beds_one": "{{count}} place to sleep",
+    "beds_other": "{{count}} places to sleep"
+  },
   "save": {
     "saved": "Saved",
     "saving": "Saving",

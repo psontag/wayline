@@ -42,6 +42,7 @@ function Proposals({ request }: { request: GenerateRequest }) {
   const generation = useGeneration(request);
   const open = useOpenProposal();
   const [hovered, setHovered] = useState<string>();
+  const [hoveredDay, setHoveredDay] = useState<number>();
   const { proposals } = generation;
 
   const select = (id: string) =>
@@ -82,6 +83,7 @@ function Proposals({ request }: { request: GenerateRequest }) {
             proposals={proposals}
             places={places}
             highlighted={hovered ?? selected}
+            highlightedDay={hoveredDay}
             onSelect={select}
           />
         </div>
@@ -92,6 +94,7 @@ function Proposals({ request }: { request: GenerateRequest }) {
             selected={selected}
             onSelect={select}
             onHover={setHovered}
+            onHoverDay={setHoveredDay}
             onOpen={onOpen}
             opening={open.isPending ? open.variables.id : undefined}
             openFailed={open.isError}

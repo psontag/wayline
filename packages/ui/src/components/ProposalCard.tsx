@@ -13,6 +13,8 @@ export type ProposalDay = {
   place: string;
   /** "65 km" */
   distance: string;
+  /** "380 m" */
+  ascent?: string;
   /** Short note, e.g. "Half day". */
   tag?: string;
 };
@@ -39,6 +41,8 @@ export type ProposalCardProps = {
   onSelect?: () => void;
   /** Called with true when the pointer enters, false when it leaves. */
   onHover?: (hover: boolean) => void;
+  /** Called with the day number (from 1) under the pointer, or undefined. */
+  onHoverDay?: (day: number | undefined) => void;
   /** Shown at the bottom when selected, e.g. actions. */
   children?: ReactNode;
 };
@@ -57,6 +61,7 @@ export function ProposalCard({
   selected = false,
   onSelect,
   onHover,
+  onHoverDay,
   children,
 }: ProposalCardProps) {
   return (
@@ -113,8 +118,13 @@ export function ProposalCard({
           {chart}
           {days.length > 0 && (
             <ol className="flex flex-col gap-1 text-sm">
-              {days.map((day) => (
-                <li key={day.label} className="flex items-center gap-2">
+              {days.map((day, i) => (
+                <li
+                  key={day.label}
+                  onMouseEnter={() => onHoverDay?.(i + 1)}
+                  onMouseLeave={() => onHoverDay?.(undefined)}
+                  className="-mx-1 flex items-center gap-2 rounded-sm px-1 hover:bg-hover"
+                >
                   <span className="w-4 shrink-0 text-xs text-text-muted tabular-nums">
                     {day.label}
                   </span>
@@ -125,6 +135,11 @@ export function ProposalCard({
                   <span className="ml-auto shrink-0 text-text-muted tabular-nums">
                     {day.distance}
                   </span>
+                  {day.ascent && (
+                    <span className="w-12 shrink-0 text-right text-text-muted tabular-nums">
+                      {day.ascent}
+                    </span>
+                  )}
                 </li>
               ))}
             </ol>

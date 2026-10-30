@@ -35,6 +35,7 @@ export type ProposalListProps = {
   selected?: string;
   onSelect: (id: string) => void;
   onHover: (id: string | undefined) => void;
+  onHoverDay: (day: number | undefined) => void;
   onOpen: (proposal: Proposal) => void;
   /** Id of the proposal being saved. */
   opening?: string;
@@ -49,6 +50,7 @@ export function ProposalList({
   selected,
   onSelect,
   onHover,
+  onHoverDay,
   onOpen,
   opening,
   openFailed,
@@ -92,6 +94,7 @@ export function ProposalList({
             selected={p.id === selected}
             onSelect={() => onSelect(p.id)}
             onHover={(hover) => onHover(hover ? p.id : undefined)}
+            onHoverDay={onHoverDay}
             onOpen={() => onOpen(p)}
             opening={opening === p.id}
             openFailed={openFailed && p.id === selected}
@@ -188,6 +191,7 @@ function ProposalItem({
   selected,
   onSelect,
   onHover,
+  onHoverDay,
   onOpen,
   opening,
   openFailed,
@@ -198,6 +202,7 @@ function ProposalItem({
   selected: boolean;
   onSelect: () => void;
   onHover: (hover: boolean) => void;
+  onHoverDay: (day: number | undefined) => void;
   onOpen: () => void;
   opening: boolean;
   openFailed: boolean;
@@ -250,6 +255,7 @@ function ProposalItem({
           label: String(i + 1),
           place: stage.end.name,
           distance: format.distance(stage.stats.distance),
+          ascent: format.elevation(stage.stats.ascent),
           ...(share < 1
             ? { tag: t(share <= 0.5 ? "card.halfDay" : "card.shortDay") }
             : {}),
@@ -263,6 +269,7 @@ function ProposalItem({
       selected={selected}
       onSelect={onSelect}
       onHover={onHover}
+      onHoverDay={onHoverDay}
     >
       {openFailed && (
         <span role="alert" className="text-sm text-danger">
