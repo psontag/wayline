@@ -76,6 +76,16 @@ export function bahnUrl(opts: {
   return `https://www.bahn.de/buchung/fahrplan/suche#${query(params)}`;
 }
 
+/** A train search: from, to and the time to arrive by or leave at. */
+export type TrainQuery = {
+  from: string;
+  to: string;
+  /** Local time "YYYY-MM-DDTHH:MM" */
+  time?: string;
+  /** The time is the latest arrival, not the departure. */
+  arrival?: boolean;
+};
+
 /**
  * Train from home to the start, arriving before the first day starts, and
  * back from the end, leaving after the last day's planned arrival. Without
@@ -85,6 +95,18 @@ export function trainLinks(
   trip: Pick<Trip, "stages" | "startDate" | "settings">,
   home = "",
 ): { there?: string; back?: string } {
+  const q = trainQueries(trip, home);
+  return {
+    ...(q.there && { there: bahnUrl(q.there) }),
+    ...(q.back && { back: bahnUrl(q.back) }),
+  };
+}
+
+/** The searches behind trainLinks. */
+export function trainQueries(
+  trip: Pick<Trip, "stages" | "startDate" | "settings">,
+  home = "",
+): { there?: TrainQuery; back?: TrainQuery } {
   const first = trip.stages[0];
   const last = trip.stages.at(-1);
   if (!first || !last) return {};
@@ -98,17 +120,19 @@ export function trainLinks(
     ridingHours(last.stats, trip.settings.avgSpeed),
   );
   return {
-    there: bahnUrl({
+    there: {
       from: home,
       to: first.start.name,
-      time: firstDate && `${firstDate}T${stageStartTime(trip.settings, 0)}`,
+      ...(firstDate && {
+        time: `${firstDate}T${stageStartTime(trip.settings, 0)}`,
+      }),
       arrival: true,
-    }),
-    back: bahnUrl({
+    },
+    back: {
       from: last.end.name,
       to: home,
-      time: lastDate && `${lastDate}T${roundUpToHalfHour(arrival)}`,
-    }),
+      ...(lastDate && { time: `${lastDate}T${roundUpToHalfHour(arrival)}` }),
+    },
   };
 }
 

@@ -52,7 +52,7 @@ Local development and tests never call external APIs by default. There are two k
 | Kind | Where | Use |
 |---|---|---|
 | Recorded fixtures | `packages/providers/fixtures/` | Adapter parsing tests only |
-| `FakeRouting`, `FakeWeather` | `packages/providers` | Deterministic data for any input. Planner, API and UI tests, local dev. |
+| `FakeRouting`, `FakeWeather`, `FakeTrains` | `packages/providers` | Deterministic data for any input. Planner, API and UI tests, local dev. |
 | `fakeBrouterLeg` | `packages/providers` | Straight-line legs in BRouter's format. Default router of the Worker. |
 
 `PROVIDERS=live` switches to the real APIs.
@@ -69,6 +69,7 @@ Weather:
 | Setting | Where | Effect |
 |---|---|---|
 | `VITE_WEATHER=open-meteo` | `apps/web/.env.local` | The web app asks Open-Meteo (`OpenMeteoWeather`). Default: `FakeWeather`. The deploy sets it. |
+| `VITE_TRAINS=db-rest` | `apps/web/.env.local` | The web app asks db.transport.rest for trains (`DbRestTrains`). Default: `FakeTrains`. The deploy sets it. |
 
 Trips and login:
 

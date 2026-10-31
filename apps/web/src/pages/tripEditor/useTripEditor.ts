@@ -1,11 +1,11 @@
-import type { Hotel, LonLat, Place, Trip } from "@wayline/domain";
+import type { Connection, Hotel, LonLat, Place, Trip } from "@wayline/domain";
 import type { HotelOption } from "@wayline/providers";
 import { type SaveState, useFormat } from "@wayline/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSaveTrip } from "../../data/queries";
 import { useServices } from "../../data/ServicesProvider";
-import { moveStop, setHotel, setLocked } from "./edits";
+import { moveStop, setHotel, setLocked, toggleTrain } from "./edits";
 import {
   insertVia,
   moveVia,
@@ -142,6 +142,9 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     },
     setHotel(index: number, hotel: Hotel) {
       if (canEdit) commit(setHotel(trip, index, hotel));
+    },
+    toggleTrain(train: Connection) {
+      if (canEdit) commit(toggleTrain(trip, train));
     },
     /** The route through a dragged point, for a live preview. */
     preview: (index: number, leg: number, at: LonLat) => {

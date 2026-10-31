@@ -45,6 +45,7 @@ import {
   HotelMarker,
   StationMarker,
   HotelRow,
+  TrainRow,
   HoverMarker,
   InlineEdit,
   MenuItem,
@@ -541,6 +542,7 @@ function TripEditorParts() {
   const [date, setDate] = useState("2027-06-12");
   const [name, setName] = useState("Franconia, four days");
   const [renaming, setRenaming] = useState(false);
+  const [trainSaved, setTrainSaved] = useState(true);
   return (
     <Section title={t("section.tripEditor")}>
       <Card className="flex flex-col gap-3">
@@ -584,6 +586,24 @@ function TripEditorParts() {
           <TrainFront aria-hidden />
           {t("demo.train")}
         </TextLink>
+        <div className="-mx-2 flex flex-col">
+          <TrainRow
+            departure={new Date(2026, 5, 12, 6, 12)}
+            arrival={new Date(2026, 5, 12, 9, 28)}
+            changes={1}
+            lines={["ICE 591", "RE 10"]}
+            href="https://www.bahn.de"
+            saved={trainSaved}
+            onToggleSave={() => setTrainSaved(!trainSaved)}
+          />
+          <TrainRow
+            departure={new Date(2026, 5, 12, 7, 12)}
+            arrival={new Date(2026, 5, 12, 10, 2)}
+            changes={0}
+            lines={["IC 2063"]}
+            href="https://www.bahn.de"
+          />
+        </div>
       </Card>
       <div className="flex flex-wrap items-center gap-3">
         <SaveStatus state="saved" />

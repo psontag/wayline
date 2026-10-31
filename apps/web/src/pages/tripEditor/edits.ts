@@ -1,4 +1,5 @@
 import {
+  type Connection,
   decodeLine,
   distanceKm,
   type Hotel,
@@ -35,6 +36,27 @@ export function setHotel(trip: Trip, index: number, hotel: Hotel): Trip {
   const stage = trip.stages[index];
   if (!stage) return trip;
   return setStage(trip, index, { ...stage, hotel });
+}
+
+export function sameTrain(a: Connection, b: Connection): boolean {
+  return (
+    a.direction === b.direction &&
+    a.departure === b.departure &&
+    a.lines.join() === b.lines.join()
+  );
+}
+
+/** Saves the train, or removes it if it is saved. */
+export function toggleTrain(trip: Trip, train: Connection): Trip {
+  const saved = trip.trains.some((t) => sameTrain(t, train));
+  return {
+    ...trip,
+    trains: saved
+      ? trip.trains.filter((t) => !sameTrain(t, train))
+      : [...trip.trains, train].sort((a, b) =>
+          a.departure.localeCompare(b.departure),
+        ),
+  };
 }
 
 function asPlace({ name, kind, coord, osmId }: Place): Place {

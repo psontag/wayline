@@ -1,6 +1,8 @@
 import { AreaCache, bboxAround, FakeRouting, Graph } from "@wayline/planner";
 import type { LonLat } from "@wayline/domain";
 import {
+  DbRestTrains,
+  FakeTrains,
   FakeWeather,
   type LodgingProvider,
   OpenMeteoWeather,
@@ -8,6 +10,7 @@ import {
   openSource,
   type RouteNetworkSource,
   type RoutingProvider,
+  type TrainProvider,
   type WeatherProvider,
 } from "@wayline/providers";
 import { ApiRouting } from "./ApiRouting";
@@ -26,6 +29,7 @@ export type Services = {
   generator: TripGenerator;
   routing: RoutingProvider;
   weather: WeatherProvider;
+  trains: TrainProvider;
   lodging: LodgingProvider;
   network: RouteNetworkSource;
   /** Nearest node of the route network, or the point itself if none is close. */
@@ -87,6 +91,11 @@ export function createServices(): Services {
     generator: createTripGenerator({ dataUrl: url }),
     routing,
     weather: createWeather(),
+    // VITE_TRAINS=db-rest asks db.transport.rest. Default: made-up trains.
+    trains:
+      import.meta.env.VITE_TRAINS === "db-rest"
+        ? new DbRestTrains({ fetch: (url) => fetch(url) })
+        : new FakeTrains(),
     lodging: new OsmLodging(network),
     network,
     async snap(coord) {

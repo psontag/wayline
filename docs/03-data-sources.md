@@ -11,7 +11,7 @@ All limits are for free plans. Check them again before relying on them. They cha
 | Weather | Open-Meteo | Free | Browser |
 | Hotels | OpenStreetMap | Free | Pipeline |
 | Ratings, prices, booking | Booking.com search link | Free | Browser (link only) |
-| Train connections | bahn.de link | Free | Browser (link only) |
+| Train connections | db.transport.rest, bahn.de link | Free | Browser |
 | Map tiles | OpenFreeMap | Free | Browser |
 | Hosting | Cloudflare | Free | — |
 
@@ -61,6 +61,14 @@ Later, as a fallback router only.
 - No API key. Sends CORS headers, so the browser calls it directly. The limit counts per user.
 - No shared cache. The browser caches forecasts in IndexedDB for 2 hours.
 - Hourly values: `temperature_2m`, `precipitation`, `precipitation_probability`, `wind_speed_10m`, `wind_direction_10m`. `timezone=auto` gives local times.
+
+## Trains: db.transport.rest
+
+- `v6.db.transport.rest`: a free community API in front of the Deutsche Bahn timetable. No key. Sends CORS headers, so the browser calls it directly.
+- Limit: 100 requests per minute per user. It can be down or go away. Then the editor shows the bahn.de link only.
+- Two calls per search: `/locations` finds the station id (kept in memory), `/journeys` finds 3 connections before the first day's start or after the last day's arrival.
+- The editor looks up trains only when the user opens the list. Saved connections are stored on the trip.
+- Booking stays on bahn.de. Each connection links to a bahn.de search at its time.
 
 ## Hotels
 

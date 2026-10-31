@@ -1,6 +1,5 @@
 import {
   addDays,
-  trainLinks,
   localTimeToDate,
   ridingHours,
   type RouteNetwork,
@@ -14,17 +13,16 @@ import {
   Stat,
   statIcons,
   SurfaceBar,
-  TextLink,
   useFormat,
 } from "@wayline/ui";
 import { Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useHomeStation } from "../../data/homeStation";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
 import { downloadTripGpx } from "../../data/gpx";
 import { StageChange } from "./StageList";
 import { StageProfile } from "./StageProfile";
+import { TrainOptions } from "./TrainOptions";
 import type { TripEditorState } from "./useTripEditor";
 import { forecastFrom, stageWind } from "./stageWeather";
 
@@ -54,10 +52,8 @@ export function PhoneStageSheet({
   const { t: tUi } = useTranslation("ui");
   const format = useFormat();
   const weather = useWeather(trip, selected);
-  const [home] = useHomeStation();
   const stage = trip.stages[selected];
   if (!stage) return null;
-  const trains = trainLinks(trip, home);
 
   const isFirst = selected === 0;
   const isLast = selected === trip.stages.length - 1;
@@ -173,17 +169,11 @@ export function PhoneStageSheet({
           <BookingLink trip={trip} index={selected} variant="button" />
         )}
 
-        {isFirst && stage.start.kind === "station" && (
-          <TextLink href={trains.there} target="_blank" rel="noreferrer">
-            <statIcons.train aria-hidden />
-            {t("summary.trainTo", { station: stage.start.name })}
-          </TextLink>
+        {isFirst && (
+          <TrainOptions trip={trip} direction="there" editor={editor} />
         )}
-        {isLast && stage.end.kind === "station" && (
-          <TextLink href={trains.back} target="_blank" rel="noreferrer">
-            <statIcons.train aria-hidden />
-            {t("summary.trainFrom", { station: stage.end.name })}
-          </TextLink>
+        {isLast && (
+          <TrainOptions trip={trip} direction="back" editor={editor} />
         )}
 
         <StageProfile

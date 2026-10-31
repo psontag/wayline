@@ -1,5 +1,6 @@
 import type {
   BBox,
+  Connection,
   Daylight,
   Hotel,
   HotelBudget,
@@ -9,6 +10,7 @@ import type {
   Places,
   Profile,
   RouteNetwork,
+  TrainQuery,
   WeatherSample,
 } from "@wayline/domain";
 
@@ -81,3 +83,14 @@ export interface RouteNetworkSource {
 
 /** Loads JSON from a URL. The app passes a fetch wrapper. */
 export type FetchJson = (url: string) => Promise<unknown>;
+
+/** A connection from a search, not saved yet. */
+export type TrainOption = Omit<Connection, "direction">;
+
+export interface TrainProvider {
+  /** A few connections around the query time, earliest first. */
+  connections(
+    query: TrainQuery & { time: string },
+    options?: { signal?: AbortSignalLike },
+  ): Promise<TrainOption[]>;
+}

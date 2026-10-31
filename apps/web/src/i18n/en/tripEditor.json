@@ -28,6 +28,12 @@
     "route": "Route A to B",
     "day-loop": "Day loop"
   },
+  "trains": {
+    "show": "Show trains",
+    "hide": "Hide trains",
+    "loading": "Looking up trains…",
+    "unavailable": "Timetable not available. Search on bahn.de."
+  },
   "summary": {
     "days": "Days",
     "stageCount_one": "{{count}} day",
