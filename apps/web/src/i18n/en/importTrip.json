@@ -17,7 +17,8 @@
     "move": "Move day {{day}}",
     "remove": "Remove day {{day}}",
     "gap": "Starts {{distance}} from where day {{day}} ends. Wayline routes the gap.",
-    "noElevation": "No elevation in this file."
+    "noElevation": "No elevation in this file.",
+    "offNetwork": "No elevation in this file. {{distance}} are off the cycle network, so the climbing there is a guess."
   },
   "name": "Name",
   "nameFromTo": "{{from}} to {{to}}",
@@ -47,5 +48,6 @@
   "createFailed": "Could not create the trip.",
   "map": {
     "label": "Map of the imported days"
-  }
+  },
+  "reading": "Reading files"
 }

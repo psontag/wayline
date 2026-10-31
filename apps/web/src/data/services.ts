@@ -1,5 +1,5 @@
 import { AreaCache, bboxAround, FakeRouting, Graph } from "@wayline/planner";
-import type { LonLat } from "@wayline/domain";
+import type { BBox, LonLat } from "@wayline/domain";
 import {
   DbRestTrains,
   FakeTrains,
@@ -34,6 +34,8 @@ export type Services = {
   network: RouteNetworkSource;
   /** Nearest node of the route network, or the point itself if none is close. */
   snap: (coord: LonLat) => Promise<LonLat>;
+  /** The route network around a bbox. */
+  graph: (bbox: BBox) => Promise<Graph>;
 };
 
 /** A dragged via point moves to a network node this close. */
@@ -103,6 +105,7 @@ export function createServices(): Services {
       const node = graph.nearestNode(coord, { maxKm: SNAP_KM });
       return node === undefined ? coord : graph.coord(node);
     },
+    graph: (bbox) => graphs.get(bbox),
   };
 }
 

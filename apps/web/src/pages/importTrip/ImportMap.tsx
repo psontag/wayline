@@ -30,7 +30,7 @@ export function ImportMap({
       },
       geometry: {
         type: "LineString",
-        coordinates: file.points.map((p) => p.coord),
+        coordinates: file.preview,
       },
     })),
   };
@@ -49,7 +49,7 @@ export function ImportMap({
   return (
     <AppMap
       label={t("map.label")}
-      fit={files.flatMap((f) => f.points.map((p) => p.coord))}
+      fit={files.flatMap((f) => f.preview)}
       fitKey={files.map((f) => f.id).join()}
       hiddenLabels={names.filter(Boolean)}
     >

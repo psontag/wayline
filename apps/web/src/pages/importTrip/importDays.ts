@@ -1,4 +1,5 @@
 import {
+  type BBox,
   distanceKm,
   type GeoTown,
   type Hotel,
@@ -10,26 +11,34 @@ import {
   type Trip,
 } from "@wayline/domain";
 import {
+  bboxAround,
+  type Graph,
   hasElevation,
   type ImportedDay,
   importedTrip,
+  matchTrack,
+  offNetworkKm,
   parseGpx,
   simplifyTrack,
   type TrackPoint,
   trackLegs,
 } from "@wayline/planner";
 
-/** One GPX file, read and simplified. */
+/** One GPX file, read and matched to the route network. */
 export type ImportFile = {
   id: string;
   fileName: string;
   /** Name inside the file, if any. */
   name?: string;
   points: TrackPoint[];
+  /** Simplified line for the map. */
+  preview: LonLat[];
   /** Meters, for the list. */
   distance: number;
   ascent: number;
   hasElevation: boolean;
+  /** Meters away from the route network. */
+  offNetwork: number;
 };
 
 export type ReadResult =
@@ -40,10 +49,19 @@ export const GAP_KM = 0.2;
 /** Stops are named after a town this close. */
 const TOWN_KM = 3;
 
-export async function readImportFile(file: File): Promise<ReadResult> {
+export async function readImportFile(
+  file: File,
+  graph: (bbox: BBox) => Promise<Graph>,
+): Promise<ReadResult> {
   const gpx = parseGpx(await file.text());
   if (!gpx) return { ok: false, fileName: file.name };
-  const points = simplifyTrack(gpx.points);
+  const network = await graph(
+    bboxAround(
+      gpx.points.map((p) => p.coord),
+      0.5,
+    ),
+  );
+  const points = matchTrack(network, gpx.points);
   const legs = trackLegs(points, "touring");
   return {
     ok: true,
@@ -52,9 +70,11 @@ export async function readImportFile(file: File): Promise<ReadResult> {
       fileName: file.name,
       ...(gpx.name ? { name: gpx.name } : {}),
       points,
+      preview: simplifyTrack(points, 0.02).map((p) => p.coord),
       distance: legs.reduce((sum, leg) => sum + leg.distance, 0),
       ascent: legs.reduce((sum, leg) => sum + leg.ascent, 0),
       hasElevation: hasElevation(gpx.points),
+      offNetwork: Math.round(offNetworkKm(points) * 1000),
     },
   };
 }
@@ -133,11 +153,7 @@ export async function buildImportTrip(
     const isLast = i === files.length - 1;
     const hotel = isLast
       ? undefined
-      : await tools.hotelNear(
-          last,
-          options.hotelBudget,
-          file.points.map((p) => p.coord),
-        );
+      : await tools.hotelNear(last, options.hotelBudget, file.preview);
     days.push({
       start: before ?? place(first, 0),
       end,
