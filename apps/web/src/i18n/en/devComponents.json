@@ -103,6 +103,7 @@
     "rideHeadwind": "Dry · headwind after 14:00",
     "bestReason": "dry, mostly tailwind",
     "halfDay": "Half day",
+    "fewBeds": "1 place to sleep",
     "hoveredDay": "Hovered day: {{day}}",
     "locked": "Locked"
   },

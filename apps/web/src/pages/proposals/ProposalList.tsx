@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
 import { useNetwork, useTripWeather } from "../../data/queries";
 import { tripStops } from "../tripEditor/tripArea";
+import { bedsNear, usePlaceIndex } from "../tripEditor/stopChoices";
 import { profilePoints } from "../tripEditor/surfaceProfile";
 import { flavourOf, routeColorKey } from "./routeColor";
 import {
@@ -185,6 +186,9 @@ function ResultLine({
   );
 }
 
+/** A stop with this many places to sleep or fewer is flagged. */
+const WEAK_STOP_BEDS = 2;
+
 function ProposalItem({
   proposal,
   number,
@@ -224,6 +228,18 @@ function ProposalItem({
         distance: trip.stages[i]?.stats.distance ?? 0,
       })),
     );
+  const places = usePlaceIndex();
+  // All beds, not only in budget: budgets guess from OSM stars.
+  const beds = useMemo(
+    () =>
+      places
+        ? trip.stages
+            .slice(0, -1)
+            .map((stage) => bedsNear(places.hotels, stage.end.coord).total)
+        : [],
+    [places, trip],
+  );
+  const firstWeak = beds.findIndex((count) => count <= WEAK_STOP_BEDS);
   const flavour = flavourOf(proposal);
   const name = flavour
     ? t(`flavour.${flavour}`)
@@ -237,7 +253,11 @@ function ProposalItem({
       color={routeColorKey(proposal, number - 1)}
       title={name}
       subtitle={via.length ? t("card.via", { stops: format.list(via) }) : ""}
+      // Warnings first: the row cuts off what doesn't fit.
       tags={[
+        ...(firstWeak >= 0
+          ? [t("card.tag.fewBeds", { day: firstWeak + 1 })]
+          : []),
         ...tags.map((tag) => t(`card.tag.${tag}`)),
         ...(wind?.kind === "tail" ? [t("card.tag.tailwind")] : []),
         ...(wind?.kind === "head"
@@ -265,6 +285,7 @@ function ProposalItem({
       chart={selected && <Profile proposal={proposal} />}
       days={trip.stages.map((stage, i) => {
         const share = trip.settings.dayShares?.[i] ?? 1;
+        const count = beds[i];
         return {
           label: String(i + 1),
           place: stage.end.name,
@@ -272,6 +293,9 @@ function ProposalItem({
           ascent: format.elevation(stage.stats.ascent),
           ...(share < 1
             ? { tag: t(share <= 0.5 ? "card.halfDay" : "card.shortDay") }
+            : {}),
+          ...(count !== undefined && count <= WEAK_STOP_BEDS
+            ? { warning: t("card.beds", { count }) }
             : {}),
         };
       })}
