@@ -648,6 +648,12 @@ function TripEditorParts() {
           detour={400}
           selected
         />
+        <HotelMarker
+          name="Gasthof Post"
+          kind="guest_house"
+          detour={800}
+          compact
+        />
         <HoverMarker />
         <ViaMarker aria-label={t("demo.removeVia")} />
         <GhostViaMarker />

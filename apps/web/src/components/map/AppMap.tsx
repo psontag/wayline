@@ -96,6 +96,7 @@ export type AppMapProps = {
   onMouseMove?: (event: MapLayerMouseEvent) => void;
   onMouseDown?: (event: MapLayerMouseEvent) => void;
   onMouseLeave?: (event: MapLayerMouseEvent) => void;
+  onZoomEnd?: (zoom: number) => void;
   /** Sources, layers and markers of the screen. */
   children?: ReactNode;
 };
@@ -147,6 +148,7 @@ export function AppMap({
   onMouseMove,
   onMouseDown,
   onMouseLeave,
+  onZoomEnd,
   children,
 }: AppMapProps) {
   const { t } = useTranslation("map");
@@ -212,6 +214,7 @@ export function AppMap({
         onClick={onClick}
         onMouseMove={onMouseMove}
         onMouseDown={onMouseDown}
+        onZoomEnd={(event) => onZoomEnd?.(event.viewState.zoom)}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={(event) => {
           setHovering(false);
