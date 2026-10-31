@@ -51,7 +51,7 @@ export function StopMarker({
       >
         {day}
       </span>
-      {name && <MarkerLabel strong={selected}>{name}</MarkerLabel>}
+      {name && <MarkerLabel strong={selected}>{shortName(name)}</MarkerLabel>}
     </button>
   );
 }
@@ -73,9 +73,14 @@ export function EndpointMarker({
           <span className="size-2 rounded-full bg-surface" />
         )}
       </span>
-      {name && <MarkerLabel>{name}</MarkerLabel>}
+      {name && <MarkerLabel>{shortName(name)}</MarkerLabel>}
     </span>
   );
+}
+
+/** "Regensburg Hauptbahnhof" → "Regensburg Hbf", as on German signs. */
+function shortName(name: string): string {
+  return name.replace(/\s+Hauptbahnhof\b/, " Hbf");
 }
 
 export type AlternativeMarkerProps = Omit<
@@ -86,12 +91,15 @@ export type AlternativeMarkerProps = Omit<
   label: string;
   /** Places to sleep there. Hidden when unknown. */
   beds?: number;
+  /** Only the circle; the label shows on hover or focus. For crowded maps. */
+  compact?: boolean;
 };
 
 /** Another town that works as the stop. Dashed, so it reads as an option. */
 export function AlternativeMarker({
   label,
   beds,
+  compact = false,
   className,
   ...props
 }: AlternativeMarkerProps) {
@@ -107,7 +115,12 @@ export function AlternativeMarker({
       {...props}
     >
       <span className="size-4 rounded-full border-2 border-dashed border-text-muted bg-surface/60 transition-colors group-hover:border-text" />
-      <MarkerLabel muted>
+      <MarkerLabel
+        muted
+        className={cn(
+          compact && "hidden group-hover:inline group-focus-visible:inline",
+        )}
+      >
         {label}
         {beds !== undefined && (
           <span className="ml-1.5 inline-flex items-center gap-0.5 tabular-nums">
@@ -346,16 +359,19 @@ export function StationMarker({ name, href }: StationMarkerProps) {
 function MarkerLabel({
   muted = false,
   strong = false,
+  className,
   children,
 }: {
   muted?: boolean;
   strong?: boolean;
+  className?: string;
   children: ReactNode;
 }) {
   return (
     <span
       className={cn(
         "rounded-sm bg-surface/85 px-1 whitespace-nowrap",
+        className,
         muted
           ? "text-xs text-text-muted"
           : strong

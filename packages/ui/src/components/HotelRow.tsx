@@ -88,7 +88,7 @@ export function HotelRow({
         >
           {name}
         </span>
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-muted tabular-nums">
+        <span className="flex flex-wrap items-center gap-x-3 text-xs text-text-muted tabular-nums">
           {kind && <span>{t(`hotel.kind.${kind}`)}</span>}
           {!!stars && (
             <Stat
@@ -126,7 +126,7 @@ export function HotelRow({
               target="_blank"
               rel="noreferrer"
               className={cn(
-                "inline-flex items-center gap-1 rounded-sm text-text-muted underline hover:text-text",
+                "inline-flex items-center gap-1 rounded-sm py-1 text-text-muted underline hover:text-text",
                 focusRing,
               )}
             >

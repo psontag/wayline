@@ -65,6 +65,11 @@ describe("labelPoints", () => {
     expect(a?.[0]).toBe(11);
     expect(b?.[0]).toBe(11.2);
   });
+
+  it("keeps away from stops", () => {
+    const [a] = labelPoints([line(11)], [[11, 50.1]]);
+    expect(Math.abs((a?.[1] ?? 0) - 50.1)).toBeGreaterThan(0.05);
+  });
 });
 
 describe("progressValue", () => {

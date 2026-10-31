@@ -37,7 +37,7 @@ export function AppShell() {
             <Logo />
           </Link>
           <nav aria-label={t("nav.label")} className="flex items-center gap-1">
-            <Button asChild variant="ghost" size="sm" className="max-sm:hidden">
+            <Button asChild variant="ghost" size="sm">
               <Link to="/" activeOptions={{ exact: true }}>
                 {t("nav.trips")}
               </Link>
@@ -59,7 +59,10 @@ export function AppShell() {
               }
               onClick={() => void navigate({ to: "/settings" })}
             />
-            <ThemeToggle />
+            {/* Phones switch the theme in Settings, to make room for Trips. */}
+            <div className="max-sm:hidden">
+              <ThemeToggle />
+            </div>
           </div>
         </TopBar>
       )}
