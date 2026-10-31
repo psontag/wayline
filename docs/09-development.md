@@ -69,7 +69,7 @@ Weather:
 | Setting | Where | Effect |
 |---|---|---|
 | `VITE_WEATHER=open-meteo` | `apps/web/.env.local` | The web app asks Open-Meteo (`OpenMeteoWeather`). Default: `FakeWeather`. The deploy sets it. |
-| `VITE_TRAINS=db-rest` | `apps/web/.env.local` | The web app asks db.transport.rest for trains (`DbRestTrains`). Default: `FakeTrains`. The deploy sets it. |
+| `VITE_TRAINS=transitous` | `apps/web/.env.local` | The web app asks Transitous for trains (`TransitousTrains`). `db-rest` asks db.transport.rest. Default: `FakeTrains`. The deploy sets `transitous`. |
 
 Trips and login:
 

@@ -102,7 +102,7 @@ jobs:
           VITE_ROUTING: api
           VITE_TRIPS: api
           VITE_WEATHER: open-meteo
-          VITE_TRAINS: db-rest
+          VITE_TRAINS: transitous
 
       - name: Deploy
         working-directory: apps/api
