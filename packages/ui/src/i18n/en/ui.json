@@ -133,16 +133,33 @@
     "collapse": "Collapse sheet",
     "close": "Close"
   },
+  "mapLayers": {
+    "label": "Map layers",
+    "kmh": "km/h"
+  },
   "timeline": {
     "label": "Rain and feels-like temperature by hour",
     "windLabel": "Wind by hour",
+    "windSpeedLabel": "Wind speed and gusts by hour",
+    "time": "Time on the map",
     "window": "Ride window",
     "ride": "Ride {{start}}–{{end}}",
-    "best": "Best start {{time}} · {{reason}}",
-    "atBest": "Best start · {{reason}}",
-    "gust": "G {{speed}}",
+    "best": "Best start {{time}}",
+    "atBest": "Best start",
     "afterSunset": "Ends after sunset at {{time}}",
-    "beforeSunrise": "Starts before sunrise at {{time}}"
+    "beforeSunrise": "Starts before sunrise at {{time}}",
+    "kind": {
+      "head": "headwind",
+      "tail": "tailwind",
+      "cross": "crosswind"
+    },
+    "feelsLike": "Feels like",
+    "rain": "Rain",
+    "wind": "Wind",
+    "rainAt": "{{rain}}/h · {{chance}} chance",
+    "windAt": "{{speed}} {{kind}} · gusts {{gusts}}",
+    "hour": "Hour",
+    "rainTick": "{{rain}}/h"
   },
   "climbs": {
     "none": "No real climbs",

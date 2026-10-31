@@ -2,6 +2,8 @@ import type { LonLat } from "@wayline/domain";
 import {
   IconButton,
   MapControlGroup,
+  MapLayerMenu,
+  type MapLayerMenuProps,
   MapLegend,
   type MapLegendItem,
   useTheme,
@@ -81,6 +83,8 @@ export type AppMapProps = {
   hiddenLabels?: string[];
   /** Legend items after the network. */
   legend?: MapLegendItem[];
+  /** Layers to turn on and off. The legend then moves into their menu. */
+  layers?: Omit<MapLayerMenuProps, "legend">;
   /** Zoom buttons and legend. Phones zoom with two fingers. */
   controls?: boolean;
   /** Short hint at the top left, e.g. how to edit the route. */
@@ -138,6 +142,7 @@ export function AppMap({
   networkAround,
   hiddenLabels = [],
   legend = [],
+  layers,
   controls = true,
   hint,
   overlay,
@@ -186,8 +191,9 @@ export function AppMap({
     });
   }, [key, mapRef]);
 
+  // With layers, the network has its own toggle in the menu.
   const legendItems: MapLegendItem[] = [
-    ...(network === "off"
+    ...(network === "off" || layers
       ? []
       : [{ label: t("network"), line: "network" as const }]),
     ...legend,
@@ -264,8 +270,15 @@ export function AppMap({
                 onClick={() => mapRef.current?.zoomOut()}
               />
             </MapControlGroup>
+            {layers && (
+              <div className="mt-2">
+                <MapControlGroup>
+                  <MapLayerMenu {...layers} legend={legendItems} />
+                </MapControlGroup>
+              </div>
+            )}
           </div>
-          {legendItems.length > 0 && (
+          {!layers && legendItems.length > 0 && (
             <div className="absolute bottom-3 left-3 z-panel max-sm:hidden">
               <MapLegend items={legendItems} />
             </div>

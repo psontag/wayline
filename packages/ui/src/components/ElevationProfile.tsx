@@ -32,6 +32,8 @@ export type ElevationProfileProps = {
   highlightedClimb?: number;
   /** Describes the chart for screen readers. */
   "aria-label": string;
+  /** Card with the values at the pointer. Off when a ChartInfo shows them. */
+  tooltip?: boolean;
   className?: string;
 };
 
@@ -146,6 +148,7 @@ export function ElevationProfile({
   climbs = [],
   highlightedClimb,
   "aria-label": ariaLabel,
+  tooltip = true,
   className,
 }: ElevationProfileProps) {
   const format = useFormat();
@@ -159,7 +162,7 @@ export function ElevationProfile({
   if (!chart) {
     return axes ? (
       <div aria-hidden className={cn("flex flex-col gap-1", className)}>
-        <div className="flex h-24 flex-col justify-between pl-14">
+        <div className="flex min-h-24 flex-1 flex-col justify-between pl-14">
           <div className="border-t border-border" />
           <div className="border-t border-border" />
           <div className="border-t border-border" />
@@ -316,7 +319,7 @@ export function ElevationProfile({
           ))}
         </div>
       )}
-      <div className="flex h-24 gap-2">
+      <div className="flex min-h-24 flex-1 gap-2">
         <div aria-hidden className="relative w-12 shrink-0">
           {eleTicks.map((e) => (
             <span
@@ -342,22 +345,24 @@ export function ElevationProfile({
                   ),
                 }}
               />
-              <span
-                aria-hidden
-                className={cn(
-                  "pointer-events-none absolute top-0 flex flex-col rounded-md border border-border bg-surface-raised px-2 py-1 whitespace-nowrap text-text shadow-md",
-                  hoverRight ? "-translate-x-full -ml-2" : "ml-2",
-                )}
-                style={{ left: left(hover) }}
-              >
-                <span className="font-bold">
-                  {format.distance(hover * 1000)}
+              {tooltip && (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "pointer-events-none absolute top-0 flex flex-col rounded-md border border-border bg-surface-raised px-2 py-1 whitespace-nowrap text-text shadow-md",
+                    hoverRight ? "-translate-x-full -ml-2" : "ml-2",
+                  )}
+                  style={{ left: left(hover) }}
+                >
+                  <span className="font-bold">
+                    {format.distance(hover * 1000)}
+                  </span>
+                  <span className="text-text-muted">
+                    {format.elevation(hoverEle)}
+                    {grade !== undefined && ` · ${format.grade(grade)}`}
+                  </span>
                 </span>
-                <span className="text-text-muted">
-                  {format.elevation(hoverEle)}
-                  {grade !== undefined && ` · ${format.grade(grade)}`}
-                </span>
-              </span>
+              )}
             </>
           )}
         </div>

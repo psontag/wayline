@@ -28,6 +28,11 @@ const colorTokens = {
   terrainPaved: "terrain-paved",
   terrainGravel: "terrain-gravel",
   terrainUnpaved: "terrain-unpaved",
+  rain: "rain",
+  windSpeed1: "wind-speed-1",
+  windSpeed2: "wind-speed-2",
+  windSpeed3: "wind-speed-3",
+  windSpeed4: "wind-speed-4",
 } as const;
 
 export type ThemeTokens = Record<keyof typeof colorTokens, string>;

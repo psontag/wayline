@@ -12,15 +12,21 @@ const lines = {
   dashed: "h-0 border-t-2 border-dashed border-text-muted",
 } as const;
 
+export function MapLegendLine({ item }: { item: MapLegendItem }) {
+  return (
+    <span className="flex items-center gap-2">
+      <span className={cn("w-3.5 rounded-full", lines[item.line])} />
+      {item.label}
+    </span>
+  );
+}
+
 /** Key for the lines on a map. */
 export function MapLegend({ items }: { items: MapLegendItem[] }) {
   return (
     <div className="flex flex-col gap-1 rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs text-text-muted shadow-sm">
       {items.map((item) => (
-        <span key={item.label} className="flex items-center gap-2">
-          <span className={cn("w-3.5 rounded-full", lines[item.line])} />
-          {item.label}
-        </span>
+        <MapLegendLine key={item.label} item={item} />
       ))}
     </div>
   );

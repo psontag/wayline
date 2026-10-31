@@ -29,6 +29,7 @@ Color tokens are semantic. They name the purpose, not the color.
 | `terrain-paved`, `terrain-gravel`, `terrain-unpaved`, `terrain-unknown` | Surface colors in the elevation profile. Unknown is for route parts without surface data. |
 | `rain` | Rain bars in the weather timeline |
 | `wind-head`, `wind-cross`, `wind-tail` | Wind relative to the route |
+| `wind-speed-1` to `wind-speed-4` | Wind speed, pale cyan to deep indigo, on the map and in the weather timeline: below 10, 10–20, 20–30, 30+ km/h |
 | `night` | Dark hours in the weather timeline |
 
 Map tokens:
@@ -78,6 +79,10 @@ Color values:
 | `wind-head` | `#C2412D` | `#FF8F7D` |
 | `wind-cross` | `#B7791F` | `#F2CF7E` |
 | `wind-tail` | `#2F9E6B` | `#5CCB97` |
+| `wind-speed-1` | `#8FD0D8` | `#4E98A3` |
+| `wind-speed-2` | `#2A9AA8` | `#4CC4B9` |
+| `wind-speed-3` | `#3C5BB8` | `#8B9CF5` |
+| `wind-speed-4` | `#3A2580` | `#C0A8FF` |
 | `night` | `#E4E7EC` | `#0B0D11` |
 | `route`, `route-selected` | `#FF9A73` | `#FFA67F` |
 | `route-casing` | `#B4532A` | `#101216` |
@@ -102,6 +107,7 @@ Other tokens:
 | Group | Values |
 |---|---|
 | Spacing | 4 px steps, also for sizes: `0.5`–`3.5` in half steps, `4`–`12`, `14`, `16`, `20`, `24`, `px` |
+| Height | `chart` 168 px: the chart in the panel under the trip map, the same in every view |
 | Width | `sm` 384 px, `panel` 440 px, `page` 1120 px |
 | Radius | `sm` 4 px, `md` 6 px, `lg` 8 px, `xl` 16 px (sheets), `full` |
 | Font size | `2xs` 11, `xs` 12, `sm` 13, `base` 14, `md` 15, `lg` 18, `xl` 22, `2xl` 28 px |
@@ -164,7 +170,7 @@ Every screen uses `AppMap` (`apps/web/src/components/map/AppMap.tsx`). It owns:
 - base style and theme switch
 - hillshade
 - signed cycling routes: `full`, `quiet` or `off`
-- zoom buttons, legend, hint and attribution
+- zoom buttons, legend or map layers, hint and attribution
 - fitting to points, with padding for panels and sheets
 
 Screens add only their own sources, layers and markers as children. Line and fill layers use `MapLayer`, so they sit below the base map labels. Screens don't set a base style, controls or their own fitting.
@@ -173,6 +179,23 @@ Screens add only their own sources, layers and markers as children. Line and fil
 - Map and chart colors come from a `useThemeTokens()` hook. It reads the resolved CSS variables and re-applies them on theme change.
 - When the base style swaps, our own layers are added again.
 - OSM attribution is shown in both themes.
+- Screens with layers to turn on and off pass `layers`. The legend then moves into the map layers menu under the zoom buttons.
+
+## Chart panel
+
+The panel under the trip map shows one view at a time: Elevation or Weather. More views can follow. Every view uses the same frame from `packages/ui`, so switching moves nothing.
+
+| Row | Component | Height | Holds |
+|---|---|---|---|
+| Title | `ChartPanel` | 32 px | Day title, view switcher on the right |
+| Toolbar | `ChartToolbar` | 32 px | Legend, or ride time and best start |
+| Chart | `ChartBody` | `chart` 168 px | The chart, scales in a 56 px left margin |
+| Info | `ChartInfo` | 20 px | Values at the pointer or marker, with units |
+
+- A view always renders all rows, also while loading or without data.
+- No floating tooltips in the panel. Values go into the info line.
+- Scales sit in the left margin. A second scale goes inside the chart at the right edge.
+- Text that changes, like warnings, replaces text in a row. It never adds a row.
 
 ## Enforcement
 
@@ -226,3 +249,7 @@ The same thing always has the same name in the UI. Translations use one fixed te
 | Ride window | The hours of a stage on the bike, shown on the weather timeline |
 | Best start | The start time with the least rain, then the least headwind |
 | Feels like | Temperature with wind chill |
+| Elevation, Weather | The two views of the panel under the trip map |
+| Time marker | The hour the weather map shows, on the weather timeline |
+| Gusts | Strongest wind in an hour |
+| Map layers | The legend on the map, where layers are turned on and off |
