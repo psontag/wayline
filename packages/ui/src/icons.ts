@@ -11,6 +11,7 @@ import {
   Thermometer,
   TrainFront,
   TrendingUp,
+  UmbrellaOff,
   Wind,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ export const statIcons = {
   beds: BedDouble,
   stars: Star,
   rain: CloudRain,
+  dry: UmbrellaOff,
   wind: Wind,
   temperature: Thermometer,
   daylight: Sunset,
