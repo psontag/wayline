@@ -135,7 +135,11 @@ export function StageProfile({
             {readout}
           </span>
         </div>
-        {variant === "panel" && <SurfaceLegend />}
+        {variant === "panel" && (
+          <SurfaceLegend
+            unknown={points.some((p) => p.surface === "unknown")}
+          />
+        )}
       </div>
       <div
         className={

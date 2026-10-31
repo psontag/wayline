@@ -12,14 +12,16 @@
     "placeholder": "Choose"
   },
   "surface": {
-    "summary": "Surface: {{paved}} paved, {{gravel}} gravel, {{unpaved}} unpaved",
+    "summary": "Surface: {{parts}}",
     "paved": "Paved",
     "gravel": "Gravel",
     "unpaved": "Unpaved",
+    "unknown": "Unknown",
     "share": {
       "paved": "{{share}} paved",
       "gravel": "{{share}} gravel",
-      "unpaved": "{{share}} unpaved"
+      "unpaved": "{{share}} unpaved",
+      "unknown": "{{share}} unknown"
     }
   },
   "dayList": {

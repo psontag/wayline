@@ -2,7 +2,7 @@ import { type PointerEvent, useId, useMemo, useState } from "react";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 
-export type SurfaceKind = "paved" | "gravel" | "unpaved";
+export type SurfaceKind = "paved" | "gravel" | "unpaved" | "unknown";
 
 export type ProfilePoint = {
   km: number;
@@ -50,6 +50,7 @@ const stroke: Record<SurfaceKind, string> = {
   paved: "stroke-terrain-paved",
   gravel: "stroke-terrain-gravel",
   unpaved: "stroke-terrain-unpaved",
+  unknown: "stroke-terrain-unknown",
 };
 
 /** Round step that splits `range` into about `count` parts. */
