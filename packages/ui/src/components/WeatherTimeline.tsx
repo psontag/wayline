@@ -50,7 +50,7 @@ export type WeatherTimelineProps = {
   onStartChange?: (start: number) => void;
   /** Short text about the ride from a start, e.g. "Rain until 09:00". */
   describe?: (start: number) => string | undefined;
-  /** Suggested start. `reason` says why, e.g. "dry, mostly tailwind". */
+  /** Suggested start. `reason` says why, e.g. "dry, mostly tailwind". Shown on hover. */
   best?: { start: number; reason: string };
   /** Hour the map shows, as a decimal. Without it, there is no marker. */
   time?: number;
@@ -98,6 +98,7 @@ export function WeatherTimeline({
   const chartRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; start: number } | undefined>(undefined);
   const [dragStart, setDragStart] = useState<number>();
+  const [hovered, setHovered] = useState<number>();
 
   const span = to - from;
   const latest = Math.max(from, to - duration);
@@ -126,19 +127,6 @@ export function WeatherTimeline({
   const tMax = Math.max(...temps) + 1;
   // Temperature in the upper part, rain bars grow from the bottom.
   const ty = (c: number) => 12 + (1 - (c - tMin) / (tMax - tMin || 1)) * 40;
-  // Only the coldest and warmest hour get a label.
-  const extremes = [
-    ...new Set([
-      shown.reduce<TimelineHour | undefined>(
-        (a, h) => (!a || h.feelsLike < a.feelsLike ? h : a),
-        undefined,
-      ),
-      shown.reduce<TimelineHour | undefined>(
-        (a, h) => (!a || h.feelsLike > a.feelsLike ? h : a),
-        undefined,
-      ),
-    ]),
-  ].filter((h): h is TimelineHour => h !== undefined);
   const line = edgeToEdge(shown, (h) => ty(h.feelsLike))
     .map(([px, py]) => `${px.toFixed(1)} ${py.toFixed(1)}`)
     .join(" L");
@@ -175,6 +163,9 @@ export function WeatherTimeline({
   };
   const onAreaPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     if (timeDrag.current) onTimeChange?.(timeAt(e));
+    if (e.pointerType === "mouse") {
+      setHovered(Math.min(to - 1, Math.floor(timeAt(e))));
+    }
   };
   const onAreaPointerUp = () => {
     timeDrag.current = false;
@@ -235,47 +226,76 @@ export function WeatherTimeline({
     move(next, true);
   };
 
-  const marked =
-    time === undefined
-      ? undefined
-      : hours.find((h) => h.hour === Math.min(to - 1, Math.floor(time)));
+  // The info line shows the hovered hour, else the marker hour.
+  const infoHour =
+    hovered ??
+    (time === undefined ? undefined : Math.min(to - 1, Math.floor(time)));
+  const info = hours.find((h) => h.hour === infoHour);
   const summary = describe?.(current);
   const afterSunset = sunset !== undefined && end > sunset;
   const beforeSunrise = sunrise !== undefined && current < sunrise;
   const atBest = best !== undefined && best.start === current;
+  const night = [
+    ...(sunrise !== undefined && sunrise > from
+      ? [{ from, to: Math.min(sunrise, to) }]
+      : []),
+    ...(sunset !== undefined && sunset < to
+      ? [{ from: Math.max(sunset, from), to }]
+      : []),
+  ];
   const labelHours: number[] = [];
   for (let h = from; h <= to; h++) labelHours.push(h);
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
-        <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 tabular-nums">
-          <span className="font-semibold">
+      {/* One line of fixed height, so the widget never jumps. */}
+      <div className="flex h-8 items-center justify-between gap-3 text-sm">
+        <p className="flex min-w-0 items-baseline gap-x-2 tabular-nums">
+          <span className="shrink-0 font-semibold">
             {t("timeline.ride", {
               start: format.clock(current),
               end: format.clock(end),
             })}
           </span>
-          {summary && <span className="text-text-muted">{summary}</span>}
+          {afterSunset || beforeSunrise ? (
+            <span className="flex min-w-0 items-center gap-1.5 self-center text-warning">
+              <Sunset className="size-3.5 shrink-0" aria-hidden />
+              <span className="truncate">
+                {afterSunset
+                  ? t("timeline.afterSunset", {
+                      time: format.clock(sunset ?? 0),
+                    })
+                  : t("timeline.beforeSunrise", {
+                      time: format.clock(sunrise ?? 0),
+                    })}
+              </span>
+            </span>
+          ) : (
+            summary && (
+              <span className="truncate text-text-muted">{summary}</span>
+            )
+          )}
         </p>
         {best &&
           (atBest ? (
-            <span className="flex items-center gap-1.5 text-xs text-text-muted">
+            <span
+              className="flex shrink-0 items-center gap-1.5 text-xs text-text-muted"
+              title={best.reason}
+            >
               <Check className="size-3.5" aria-hidden />
-              {t("timeline.atBest", { reason: best.reason })}
+              {t("timeline.atBest")}
             </span>
           ) : (
             <Button
               size="sm"
               variant="ghost"
+              className="shrink-0"
+              title={best.reason}
               disabled={!onStartChange}
               onClick={() => onStartChange?.(best.start)}
             >
               <Sparkles aria-hidden />
-              {t("timeline.best", {
-                time: format.clock(best.start),
-                reason: best.reason,
-              })}
+              {t("timeline.best", { time: format.clock(best.start) })}
             </Button>
           ))}
       </div>
@@ -290,7 +310,14 @@ export function WeatherTimeline({
         onPointerMove={onAreaPointerMove}
         onPointerUp={onAreaPointerUp}
         onPointerCancel={onAreaPointerUp}
+        onPointerLeave={() => setHovered(undefined)}
       >
+        {hovered !== undefined && (
+          <div
+            className="pointer-events-none absolute top-0 bottom-7 bg-hover"
+            style={{ left: pct(hovered), width: `${(1 / span) * 100}%` }}
+          />
+        )}
         <div ref={chartRef} className="relative h-16">
           <svg
             viewBox={`0 0 ${W} ${H}`}
@@ -352,15 +379,9 @@ export function WeatherTimeline({
               />
             )}
           </svg>
-          {extremes.map((h) => (
-            <span
-              key={h.hour}
-              className="pointer-events-none absolute -translate-x-1/2 -translate-y-full pb-0.5 text-2xs text-text-muted tabular-nums"
-              style={{ left: pct(h.hour + 0.5), top: `${ty(h.feelsLike)}%` }}
-            >
-              {format.temperature(h.feelsLike)}
-            </span>
-          ))}
+          <span className="pointer-events-none absolute top-0 left-1 text-2xs text-text-muted">
+            {t("timeline.unitsChart")}
+          </span>
         </div>
 
         <div className="relative h-8">
@@ -398,6 +419,9 @@ export function WeatherTimeline({
               className="stroke-border"
             />
           </svg>
+          <span className="pointer-events-none absolute top-0 left-1 text-2xs text-text-muted">
+            {t("timeline.unitsWind")}
+          </span>
         </div>
 
         <ul className="relative h-3.5" aria-label={t("timeline.windLabel")}>
@@ -421,6 +445,18 @@ export function WeatherTimeline({
         </ul>
 
         <div className="relative h-5 rounded-sm bg-hover">
+          <div className="absolute inset-0 overflow-hidden rounded-sm">
+            {night.map((n) => (
+              <div
+                key={n.from}
+                className="absolute inset-y-0 bg-night"
+                style={{
+                  left: pct(n.from),
+                  width: `${((n.to - n.from) / span) * 100}%`,
+                }}
+              />
+            ))}
+          </div>
           <div
             data-window
             role="slider"
@@ -497,54 +533,51 @@ export function WeatherTimeline({
         ))}
       </div>
 
-      {marked && time !== undefined && (
-        <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted tabular-nums [&_dd]:text-text [&_svg]:size-3.5 [&>div]:flex [&>div]:items-center [&>div]:gap-1.5">
-          <div>
-            <dt className="sr-only">{t("timeline.time")}</dt>
-            <dd className="font-semibold">{format.clock(time)}</dd>
-          </div>
-          <div>
-            <dt>
-              <Thermometer aria-label={t("timeline.feelsLike")} />
-            </dt>
-            <dd>{format.temperature(marked.feelsLike)}</dd>
-          </div>
-          <div>
-            <dt>
-              <CloudRain aria-label={t("timeline.rain")} />
-            </dt>
-            <dd>
-              {t("timeline.rainAt", {
-                rain: format.rain(marked.rain),
-                chance: format.percent(marked.rainChance),
-              })}
-            </dd>
-          </div>
-          <div>
-            <dt>
-              <Wind
-                className={windColor[marked.wind.kind]}
-                aria-label={t("timeline.wind")}
-              />
-            </dt>
-            <dd>
-              {t("timeline.windAt", {
-                speed: format.speed(marked.wind.speed),
-                kind: t(`timeline.kind.${marked.wind.kind}`),
-                gusts: format.speed(marked.wind.gusts),
-              })}
-            </dd>
-          </div>
-        </dl>
-      )}
-      {(afterSunset || beforeSunrise) && (
-        <p className="flex items-center gap-1.5 text-xs text-warning">
-          <Sunset className="size-3.5" aria-hidden />
-          {afterSunset
-            ? t("timeline.afterSunset", { time: format.clock(sunset ?? 0) })
-            : t("timeline.beforeSunrise", { time: format.clock(sunrise ?? 0) })}
-        </p>
-      )}
+      {/* Always there, so hovering doesn't move anything. */}
+      <dl className="flex h-5 items-center gap-x-4 overflow-hidden text-xs whitespace-nowrap text-text-muted tabular-nums [&_dd]:text-text [&_svg]:size-3.5 [&>div]:flex [&>div]:items-center [&>div]:gap-1.5">
+        {info && (
+          <>
+            {hovered !== undefined && (
+              <div>
+                <dt className="sr-only">{t("timeline.hour")}</dt>
+                <dd className="font-semibold">{format.clock(info.hour)}</dd>
+              </div>
+            )}
+            <div>
+              <dt>
+                <Thermometer aria-label={t("timeline.feelsLike")} />
+              </dt>
+              <dd>{format.temperature(info.feelsLike)}</dd>
+            </div>
+            <div>
+              <dt>
+                <CloudRain aria-label={t("timeline.rain")} />
+              </dt>
+              <dd>
+                {t("timeline.rainAt", {
+                  rain: format.rain(info.rain),
+                  chance: format.percent(info.rainChance),
+                })}
+              </dd>
+            </div>
+            <div>
+              <dt>
+                <Wind
+                  className={windColor[info.wind.kind]}
+                  aria-label={t("timeline.wind")}
+                />
+              </dt>
+              <dd>
+                {t("timeline.windAt", {
+                  speed: format.speed(info.wind.speed),
+                  kind: t(`timeline.kind.${info.wind.kind}`),
+                  gusts: format.speed(info.wind.gusts),
+                })}
+              </dd>
+            </div>
+          </>
+        )}
+      </dl>
     </div>
   );
 }

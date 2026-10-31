@@ -142,8 +142,8 @@
     "time": "Time on the map",
     "window": "Ride window",
     "ride": "Ride {{start}}–{{end}}",
-    "best": "Best start {{time}} · {{reason}}",
-    "atBest": "Best start · {{reason}}",
+    "best": "Best start {{time}}",
+    "atBest": "Best start",
     "afterSunset": "Ends after sunset at {{time}}",
     "beforeSunrise": "Starts before sunrise at {{time}}",
     "kind": {
@@ -154,8 +154,11 @@
     "feelsLike": "Feels like",
     "rain": "Rain",
     "wind": "Wind",
-    "rainAt": "{{rain}} · {{chance}} chance",
-    "windAt": "{{speed}} {{kind}} · gusts {{gusts}}"
+    "rainAt": "{{rain}}/h · {{chance}} chance",
+    "windAt": "{{speed}} {{kind}} · gusts {{gusts}}",
+    "hour": "Hour",
+    "unitsChart": "°C · mm/h",
+    "unitsWind": "km/h"
   },
   "climbs": {
     "none": "No real climbs",
