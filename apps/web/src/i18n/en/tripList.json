@@ -10,7 +10,6 @@
     "text": "Pick a start and a few numbers. Wayline suggests routes, stops and hotels.",
     "action": "Plan your first trip"
   },
-  "phoneHint": "Plan new trips on a larger screen.",
   "kind": {
     "one-way": "One-way",
     "multi-day-loop": "Multi-day loop",
