@@ -1,4 +1,8 @@
 {
   "title": "Settings",
-  "placeholder": "This screen is not built yet."
+  "homeStation": {
+    "label": "Home station",
+    "placeholder": "Karlsruhe Hbf",
+    "hint": "Train links start here and come back here. Saved in this browser."
+  }
 }

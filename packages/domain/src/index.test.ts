@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bahnUrl,
+  trainLinks,
   bookingHotelUrl,
   bookingUrl,
   dayShares,
@@ -254,6 +255,35 @@ describe("links", () => {
       bahnUrl({ from: "Bamberg", to: "Bad Rodach", time: "2027-06-12T08:00" }),
     ).toBe(
       "https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=Bamberg&zo=Bad%20Rodach&hd=2027-06-12T08%3A00%3A00&hza=D",
+    );
+  });
+});
+
+describe("trainLinks", () => {
+  const stage = (from: string, to: string) => ({
+    start: { name: from },
+    end: { name: to },
+    stats: { distance: 72_000, ascent: 300 },
+  });
+  const trip = {
+    startDate: "2027-06-12",
+    settings: { startTime: "09:00", avgSpeed: 18 },
+    stages: [stage("Bamberg", "Haßfurt"), stage("Haßfurt", "Würzburg Hbf")],
+  } as unknown as Parameters<typeof trainLinks>[0];
+
+  it("arrives before the start and leaves after the last day", () => {
+    const { there, back } = trainLinks(trip, "Karlsruhe Hbf");
+    expect(there).toContain("so=Karlsruhe%20Hbf&zo=Bamberg");
+    expect(there).toContain("hd=2027-06-12T09%3A00%3A00&hza=A");
+    expect(back).toContain("so=W%C3%BCrzburg%20Hbf&zo=Karlsruhe%20Hbf");
+    // 09:00 + 4 h riding + 18 min climbing → 13:30.
+    expect(back).toContain("hd=2027-06-13T13%3A30%3A00&hza=D");
+  });
+
+  it("leaves time and home out when unknown", () => {
+    const { there } = trainLinks({ ...trip, startDate: undefined });
+    expect(there).toBe(
+      "https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=&zo=Bamberg",
     );
   });
 });

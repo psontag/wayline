@@ -1,6 +1,6 @@
 import {
   addDays,
-  bahnUrl,
+  trainLinks,
   localTimeToDate,
   ridingHours,
   type RouteNetwork,
@@ -19,6 +19,7 @@ import {
 } from "@wayline/ui";
 import { Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useHomeStation } from "../../data/homeStation";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
 import { downloadTripGpx } from "../../data/gpx";
@@ -53,8 +54,10 @@ export function PhoneStageSheet({
   const { t: tUi } = useTranslation("ui");
   const format = useFormat();
   const weather = useWeather(trip, selected);
+  const [home] = useHomeStation();
   const stage = trip.stages[selected];
   if (!stage) return null;
+  const trains = trainLinks(trip, home);
 
   const isFirst = selected === 0;
   const isLast = selected === trip.stages.length - 1;
@@ -171,21 +174,13 @@ export function PhoneStageSheet({
         )}
 
         {isFirst && stage.start.kind === "station" && (
-          <TextLink
-            href={bahnUrl({ from: "", to: stage.start.name })}
-            target="_blank"
-            rel="noreferrer"
-          >
+          <TextLink href={trains.there} target="_blank" rel="noreferrer">
             <statIcons.train aria-hidden />
             {t("summary.trainTo", { station: stage.start.name })}
           </TextLink>
         )}
         {isLast && stage.end.kind === "station" && (
-          <TextLink
-            href={bahnUrl({ from: stage.end.name, to: "" })}
-            target="_blank"
-            rel="noreferrer"
-          >
+          <TextLink href={trains.back} target="_blank" rel="noreferrer">
             <statIcons.train aria-hidden />
             {t("summary.trainFrom", { station: stage.end.name })}
           </TextLink>
