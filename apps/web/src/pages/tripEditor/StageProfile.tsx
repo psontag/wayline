@@ -22,7 +22,6 @@ import {
 } from "@wayline/ui";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { StageWeather } from "./DayWeatherTimeline";
 import { isChanged } from "./routeEdits";
 import { profilePoints } from "./surfaceProfile";
 
@@ -33,10 +32,8 @@ export type StageProfileProps = {
   /** km of the crosshair. */
   hoverKm?: number;
   onHoverKm: (km: number | undefined) => void;
-  /** panel: bar under the map. sheet: block in the phone sheet. */
-  variant?: "panel" | "sheet";
-  /** Moves the ride window. Without it, the window is fixed. */
-  onRideStartChange?: (start: string) => void;
+  /** Without the panel frame and title, e.g. in the phone sheet. */
+  plain?: boolean;
   /** Climbs of the stage, and the one to show stronger. */
   climbs?: Climb[];
   highlightedClimb?: number;
@@ -44,15 +41,14 @@ export type StageProfileProps = {
   actions?: ReactNode;
 };
 
-/** Elevation of a stage by surface. The phone sheet adds the weather. */
+/** Elevation of a stage by surface, in a ChartPanel. */
 export function StageProfile({
   trip,
   index,
   network,
   hoverKm,
   onHoverKm,
-  variant = "panel",
-  onRideStartChange,
+  plain = false,
   climbs,
   highlightedClimb,
   actions,
@@ -124,49 +120,26 @@ export function StageProfile({
   });
   const unknown = points.some((p) => p.surface === "unknown");
 
-  if (variant === "panel") {
-    return (
-      <ChartPanel
-        title={t("profile.title", {
-          day: index + 1,
-          from: stage.start.name,
-          to: stage.end.name,
-        })}
-        tabs={actions}
-      >
-        <ChartToolbar start={<SurfaceLegend unknown={unknown} />} />
-        <ChartBody>
-          <ElevationProfile
-            axes
-            tooltip={false}
-            className="flex-1"
-            climbs={climbs}
-            highlightedClimb={highlightedClimb}
-            points={points}
-            compare={compare}
-            hoverKm={hoverKm}
-            onHoverKm={onHoverKm}
-            aria-label={label}
-          />
-        </ChartBody>
-        <ChartInfo>
-          <span className="text-text">{readout}</span>
-        </ChartInfo>
-      </ChartPanel>
-    );
-  }
-
   return (
-    <section className="flex flex-col gap-2">
-      <div className="flex min-w-0 items-baseline gap-3">
-        <h2 className="text-sm font-bold">{t("phone.elevation")}</h2>
-        <span className="text-xs whitespace-nowrap text-text-muted tabular-nums">
-          {readout}
-        </span>
-      </div>
-      <div className="flex flex-col gap-3">
+    <ChartPanel
+      title={
+        plain
+          ? undefined
+          : t("profile.title", {
+              day: index + 1,
+              from: stage.start.name,
+              to: stage.end.name,
+            })
+      }
+      tabs={actions}
+      plain={plain}
+    >
+      <ChartToolbar start={<SurfaceLegend unknown={unknown} />} />
+      <ChartBody>
         <ElevationProfile
           axes
+          tooltip={false}
+          className="flex-1"
           climbs={climbs}
           highlightedClimb={highlightedClimb}
           points={points}
@@ -175,12 +148,10 @@ export function StageProfile({
           onHoverKm={onHoverKm}
           aria-label={label}
         />
-        <StageWeather
-          trip={trip}
-          index={index}
-          onRideStartChange={onRideStartChange}
-        />
-      </div>
-    </section>
+      </ChartBody>
+      <ChartInfo>
+        <span className="text-text">{readout}</span>
+      </ChartInfo>
+    </ChartPanel>
   );
 }

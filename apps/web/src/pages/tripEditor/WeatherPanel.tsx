@@ -18,6 +18,7 @@ export function WeatherPanel({
   onTimeChange,
   ride,
   actions,
+  plain = false,
 }: {
   trip: Trip;
   index: number;
@@ -28,6 +29,8 @@ export function WeatherPanel({
   ride: { start: number; end: number };
   /** Controls at the end of the header, e.g. the panel switcher. */
   actions?: ReactNode;
+  /** Without the panel frame and title, e.g. in the phone sheet. */
+  plain?: boolean;
 }) {
   const { t } = useTranslation("tripEditor");
   const stage = trip.stages[index];
@@ -66,15 +69,19 @@ export function WeatherPanel({
   if (!stage) return null;
   return (
     <ChartPanel
-      title={t("profile.title", {
-        day: index + 1,
-        from: stage.start.name,
-        to: stage.end.name,
-      })}
+      title={
+        plain
+          ? undefined
+          : t("profile.title", {
+              day: index + 1,
+              from: stage.start.name,
+              to: stage.end.name,
+            })
+      }
       tabs={actions}
+      plain={plain}
     >
       <StageWeather
-        framed
         trip={trip}
         index={index}
         onRideStartChange={onRideStartChange}

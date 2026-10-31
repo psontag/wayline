@@ -28,7 +28,7 @@ import {
   timelineHours,
 } from "./stageWeather";
 
-/** Weather of a stage by hour, or why there is none yet. */
+/** Weather of a stage by hour in a ChartPanel, or why there is none yet. */
 export function StageWeather({
   trip,
   index,
@@ -36,7 +36,6 @@ export function StageWeather({
   time,
   onTimeChange,
   leading,
-  framed = false,
 }: {
   trip: Trip;
   index: number;
@@ -47,8 +46,6 @@ export function StageWeather({
   onTimeChange?: (time: number) => void;
   /** Before the ride time, e.g. a play button. */
   leading?: ReactNode;
-  /** Inside a ChartPanel. */
-  framed?: boolean;
 }) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -75,19 +72,16 @@ export function StageWeather({
       : t("profile.forecastFrom", {
           date: format.date(localTimeToDate(forecastFrom(date))),
         });
-  // In a ChartPanel, keep the rows so switching views moves nothing.
-  if (framed) {
-    return (
-      <>
-        <ChartToolbar />
-        <ChartBody className="items-center justify-center text-sm text-text-muted">
-          {message}
-        </ChartBody>
-        <ChartInfo />
-      </>
-    );
-  }
-  return <p className="text-sm text-text-muted">{message}</p>;
+  // Keep the ChartPanel rows, so switching views moves nothing.
+  return (
+    <>
+      <ChartToolbar />
+      <ChartBody className="items-center justify-center text-sm text-text-muted">
+        {message}
+      </ChartBody>
+      <ChartInfo />
+    </>
+  );
 }
 
 /** Weather by hour with the ride window and the best start. */

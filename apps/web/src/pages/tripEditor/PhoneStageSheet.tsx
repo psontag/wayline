@@ -2,7 +2,6 @@ import {
   addDays,
   localTimeToDate,
   ridingHours,
-  type RouteNetwork,
   type Trip,
 } from "@wayline/domain";
 import {
@@ -16,12 +15,12 @@ import {
   useFormat,
 } from "@wayline/ui";
 import { Download } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
 import { downloadTripGpx } from "../../data/gpx";
 import { StageChange } from "./StageList";
-import { StageProfile } from "./StageProfile";
 import { TrainOptions } from "./TrainOptions";
 import type { TripEditorState } from "./useTripEditor";
 import { forecastFrom, stageWind } from "./stageWeather";
@@ -30,9 +29,8 @@ export type PhoneStageSheetProps = {
   trip: Trip;
   selected: number;
   onSelect: (index: number) => void;
-  network?: RouteNetwork;
-  hoverKm?: number;
-  onHoverKm: (km: number | undefined) => void;
+  /** Elevation or weather of the stage. */
+  chart: ReactNode;
   onOpenStop: () => void;
   editor: TripEditorState;
 };
@@ -42,9 +40,7 @@ export function PhoneStageSheet({
   trip,
   selected,
   onSelect,
-  network,
-  hoverKm,
-  onHoverKm,
+  chart,
   onOpenStop,
   editor,
 }: PhoneStageSheetProps) {
@@ -176,20 +172,7 @@ export function PhoneStageSheet({
           <TrainOptions trip={trip} direction="back" editor={editor} />
         )}
 
-        <StageProfile
-          key={stage.id}
-          trip={trip}
-          index={selected}
-          network={network}
-          hoverKm={hoverKm}
-          onHoverKm={onHoverKm}
-          variant="sheet"
-          onRideStartChange={
-            editor.readOnly
-              ? undefined
-              : (start) => editor.setRideStart(selected, start)
-          }
-        />
+        {chart}
 
         <Button
           variant="ghost"

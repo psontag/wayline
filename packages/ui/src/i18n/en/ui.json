@@ -156,10 +156,10 @@
     "feelsLike": "Feels like",
     "rain": "Rain",
     "wind": "Wind",
-    "rainAt": "{{rain}}/h · {{chance}} chance",
-    "windAt": "{{speed}} {{kind}} · gusts {{gusts}}",
+    "rainAt": "{{rain}}/h · {{chance}}",
     "hour": "Hour",
-    "rainTick": "{{rain}}/h"
+    "rainTick": "{{rain}}/h",
+    "gustsAt": "gusts {{gusts}}"
   },
   "climbs": {
     "none": "No real climbs",
