@@ -21,3 +21,9 @@ The files need the canvas runtime to render. Read them as HTML and CSS: they hol
 Each file has a `light` and a `dark` token set in its script block. The tokens in `packages/ui/src/tokens.css` must match them.
 
 When the canvas changes, copy the changed files here.
+
+## Proposals
+
+| File | Content |
+|---|---|
+| `wind-proposals/index.html` | Options for wind-aware trips (#135). Plain HTML. Live page: https://claude.ai/artifact/2frmGoLdX5oPQYLJvcQsnM (private). |
