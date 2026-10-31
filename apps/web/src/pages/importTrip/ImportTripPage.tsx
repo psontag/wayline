@@ -37,6 +37,9 @@ import {
   townNear,
 } from "./importDays";
 
+/** Meters off the network, without elevation, before the day gets a note. */
+const OFF_NETWORK_NOTE = 2000;
+
 const profiles: Profile[] = ["touring", "fast", "scenic", "quiet"];
 const budgets: HotelBudget[] = ["low", "mid", "high"];
 
@@ -45,7 +48,7 @@ export function ImportTripPage() {
   const format = useFormat();
   const id = useId();
   const navigate = useNavigate();
-  const { routing, lodging } = useServices();
+  const { routing, lodging, graph } = useServices();
   const places = usePlaceIndex();
   const save = useSaveTrip();
 
@@ -58,11 +61,19 @@ export function ImportTripPage() {
   const [budget, setBudget] = useState<HotelBudget>("mid");
   const [profile, setProfile] = useState<Profile>("touring");
 
+  const [reading, setReading] = useState(false);
   const addFiles = async (picked: File[]) => {
-    const results = await Promise.all(picked.map(readImportFile));
-    const read = results.flatMap((r) => (r.ok ? [r.file] : []));
-    setFailed(results.flatMap((r) => (r.ok ? [] : [r.fileName])));
-    setFiles((current) => [...current, ...read].sort(byFileName));
+    setReading(true);
+    try {
+      const results = await Promise.all(
+        picked.map((file) => readImportFile(file, graph)),
+      );
+      const read = results.flatMap((r) => (r.ok ? [r.file] : []));
+      setFailed(results.flatMap((r) => (r.ok ? [] : [r.fileName])));
+      setFiles((current) => [...current, ...read].sort(byFileName));
+    } finally {
+      setReading(false);
+    }
   };
 
   const townName = (file: ImportFile | undefined, end: "start" | "end") => {
@@ -116,6 +127,17 @@ export function ImportTripPage() {
       if (item) next.splice(to, 0, item);
       return next;
     });
+
+  /** Without elevation in the file, the network gives it where it can. */
+  const hasClimb = (file: ImportFile) =>
+    file.hasElevation || file.offNetwork < file.distance;
+  const elevationNote = (file: ImportFile) => {
+    if (file.hasElevation || file.offNetwork < OFF_NETWORK_NOTE) return;
+    if (!hasClimb(file)) return t("days.noElevation");
+    return t("days.offNetwork", {
+      distance: format.distance(file.offNetwork),
+    });
+  };
 
   const total = files.reduce((sum, f) => sum + f.distance, 0);
   const dayDate = (index: number) =>
@@ -176,7 +198,7 @@ export function ImportTripPage() {
                         distance: format.distance(gap * 1000),
                         day: i,
                       }),
-                    !file.hasElevation && t("days.noElevation"),
+                    elevationNote(file),
                   ].filter((n): n is string => !!n);
                   const date = dayDate(i);
                   return (
@@ -198,7 +220,7 @@ export function ImportTripPage() {
                         </div>
                         <span className="text-sm whitespace-nowrap tabular-nums">
                           {format.distance(file.distance)}
-                          {file.hasElevation &&
+                          {hasClimb(file) &&
                             ` · ${format.elevation(file.ascent)}`}
                         </span>
                         <IconButton
@@ -233,6 +255,12 @@ export function ImportTripPage() {
                 onFiles={(picked) => void addFiles(picked)}
               />
             </section>
+          )}
+
+          {reading && (
+            <p role="status" className="text-sm text-text-muted">
+              {t("reading")}
+            </p>
           )}
 
           {failed.length > 0 && (

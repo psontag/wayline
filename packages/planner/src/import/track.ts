@@ -9,6 +9,7 @@ import {
   type Profile,
   type Stage,
   statsFromLegs,
+  type Surface,
   type Trip,
   TRIP_SCHEMA_VERSION,
 } from "@wayline/domain";
@@ -17,8 +18,20 @@ import { filteredClimb } from "../graph/Graph";
 /** Provider name on legs that come from an imported track. */
 export const IMPORT_PROVIDER = "import";
 
-/** Point of a GPX track. ele is missing when the file has none. */
-export type TrackPoint = { coord: LonLat; ele?: number };
+/**
+ * Point of a GPX track. ele is missing when the file has none. surface is
+ * there when the point lies on the route network.
+ */
+export type TrackPoint = {
+  coord: LonLat;
+  ele?: number;
+  surface?: Surface;
+  /**
+   * Ascent and descent since the point before, from the network edge both
+   * lie on. Only when the elevation comes from the network.
+   */
+  climb?: [number, number];
+};
 
 /** Points closer than this to the simplified line are left out. */
 const SIMPLIFY_KM = 0.005;
@@ -82,19 +95,21 @@ function offsetKm(
 
 /**
  * Legs of about PIECE_KM along the track. Neighbors share their end point.
- * Surface is unknown: all shares are 0.
+ * Stats come from all points, the geometry is simplified. Km without
+ * surface count as unknown: the shares add up to less than 1.
  */
 export function trackLegs(points: TrackPoint[], profile: Profile): Leg[] {
   const elevation = fillElevation(points);
+  const filled = points.map((p, i) => ({ ...p, ele: elevation[i] ?? 0 }));
   const legs: Leg[] = [];
   let from = 0;
   let km = 0;
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1];
-    const b = points[i];
+  for (let i = 1; i < filled.length; i++) {
+    const a = filled[i - 1];
+    const b = filled[i];
     if (a && b) km += distanceKm(a.coord, b.coord);
-    if (km >= PIECE_KM || i === points.length - 1) {
-      legs.push(leg(points, elevation, from, i, km, profile));
+    if (km >= PIECE_KM || i === filled.length - 1) {
+      legs.push(leg(filled.slice(from, i + 1), km, profile));
       from = i;
       km = 0;
     }
@@ -102,32 +117,105 @@ export function trackLegs(points: TrackPoint[], profile: Profile): Leg[] {
   return legs;
 }
 
-/** Elevation per point. Gaps take the last known value, 0 if none. */
+/** Km of the track away from the route network. */
+export function offNetworkKm(points: TrackPoint[]): number {
+  let km = 0;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1];
+    const b = points[i];
+    if (a && b && !a.surface) km += distanceKm(a.coord, b.coord);
+  }
+  return km;
+}
+
+/**
+ * Elevation per point. Gaps between known values are interpolated by
+ * distance. Before the first and after the last known value, it stays
+ * level. 0 without any.
+ */
 function fillElevation(points: TrackPoint[]): number[] {
-  let last = points.find((p) => p.ele !== undefined)?.ele ?? 0;
-  return points.map((p) => (last = p.ele ?? last));
+  const out = points.map((p) => p.ele);
+  let last: number | undefined;
+  for (let i = 0; i < out.length; i++) {
+    if (out[i] === undefined) continue;
+    if (last !== undefined && i - last > 1) {
+      const a = out[last] ?? 0;
+      const b = out[i] ?? 0;
+      const km = [0];
+      for (let k = last + 1; k <= i; k++) {
+        const p = points[k - 1];
+        const q = points[k];
+        km.push((km.at(-1) ?? 0) + (p && q ? distanceKm(p.coord, q.coord) : 0));
+      }
+      const total = km.at(-1) || 1;
+      for (let k = last + 1; k < i; k++) {
+        out[k] = a + ((b - a) * (km[k - last] ?? 0)) / total;
+      }
+    }
+    last = i;
+  }
+  const first = out.find((e) => e !== undefined) ?? 0;
+  let prev = first;
+  return out.map((e) => (prev = e ?? prev));
+}
+
+/**
+ * Ascent and descent. Parts on a network edge add up the edge's own
+ * climb, as generated trips do. The rest is filtered from the profile.
+ */
+function climb(points: (TrackPoint & { ele: number })[]) {
+  let ascent = 0;
+  let descent = 0;
+  let run: number[] = [];
+  const flush = () => {
+    const c = filteredClimb(run);
+    ascent += c.ascent;
+    descent += c.descent;
+  };
+  for (const [i, p] of points.entries()) {
+    if (i > 0 && p.climb) {
+      if (run.length > 1) flush();
+      ascent += p.climb[0];
+      descent += p.climb[1];
+      run = [p.ele];
+    } else {
+      run.push(p.ele);
+    }
+  }
+  if (run.length > 1) flush();
+  return { ascent: Math.round(ascent), descent: Math.round(descent) };
 }
 
 function leg(
-  points: TrackPoint[],
-  elevation: number[],
-  from: number,
-  to: number,
+  points: (TrackPoint & { ele: number })[],
   km: number,
   profile: Profile,
 ): Leg {
-  const part = points.slice(from, to + 1).map((p) => p.coord);
-  const ele = elevation.slice(from, to + 1).map((e) => Math.round(e));
-  const { ascent, descent } = filteredClimb(ele);
+  const surfaceKm: Surface = { paved: 0, gravel: 0, unpaved: 0 };
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1];
+    const b = points[i];
+    if (!a?.surface || !b) continue;
+    const d = distanceKm(a.coord, b.coord);
+    surfaceKm.paved += a.surface.paved * d;
+    surfaceKm.gravel += a.surface.gravel * d;
+    surfaceKm.unpaved += a.surface.unpaved * d;
+  }
+  const { ascent, descent } = climb(points);
+  const shape = simplifyTrack(points);
   return {
-    from: part[0] ?? [0, 0],
-    to: part.at(-1) ?? [0, 0],
-    geometry: encodeLine(part),
-    elevation: ele,
+    from: points[0]?.coord ?? [0, 0],
+    to: points.at(-1)?.coord ?? [0, 0],
+    geometry: encodeLine(shape.map((p) => p.coord)),
+    elevation: shape.map((p) => Math.round(p.ele ?? 0)),
     distance: Math.round(km * 1000),
     ascent,
     descent,
-    surface: { paved: 0, gravel: 0, unpaved: 0 },
+    surface: {
+      paved: km ? surfaceKm.paved / km : 0,
+      gravel: km ? surfaceKm.gravel / km : 0,
+      unpaved: km ? surfaceKm.unpaved / km : 0,
+    },
     provider: IMPORT_PROVIDER,
     profileHash: profile,
   };
