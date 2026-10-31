@@ -4,6 +4,7 @@ import { Button, MessagePanel } from "@wayline/ui";
 import { Route } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useIsPhone } from "../../components/useIsPhone";
 import { ProposalList } from "./ProposalList";
 import { ProposalsHeader } from "./ProposalsHeader";
 import { ProposalsMap } from "./ProposalsMap";
@@ -43,6 +44,7 @@ function Proposals({ request }: { request: GenerateRequest }) {
   const open = useOpenProposal();
   const [hovered, setHovered] = useState<string>();
   const [hoveredDay, setHoveredDay] = useState<number>();
+  const isPhone = useIsPhone();
   const { proposals } = generation;
 
   const select = (id: string) =>
@@ -77,17 +79,19 @@ function Proposals({ request }: { request: GenerateRequest }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ProposalsHeader request={request} />
-      <div className="flex min-h-0 flex-1 flex-col overflow-auto lg:flex-row lg:overflow-hidden">
-        <div className="relative aspect-square shrink-0 lg:aspect-auto lg:min-h-0 lg:min-w-0 lg:flex-1">
+      {/* Phones: the map stays on top while the list scrolls below it. */}
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <div className="relative h-2/5 shrink-0 lg:h-auto lg:min-h-0 lg:min-w-0 lg:flex-1">
           <ProposalsMap
             proposals={proposals}
             places={places}
             highlighted={hovered ?? selected}
             highlightedDay={hoveredDay}
             onSelect={select}
+            compact={isPhone}
           />
         </div>
-        <aside className="flex shrink-0 flex-col border-border bg-surface lg:w-panel lg:border-l">
+        <aside className="flex min-h-0 flex-1 flex-col border-t border-border bg-surface lg:w-panel lg:flex-none lg:border-t-0 lg:border-l">
           <ProposalList
             request={request}
             generation={generation}
