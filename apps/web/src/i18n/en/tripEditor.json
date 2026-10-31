@@ -51,8 +51,6 @@
     "shorter": "{{distance}} shorter than proposed",
     "revert": "Revert",
     "bookHotels": "Hotels in {{place}} on Booking.com",
-    "rating": "Rating",
-    "ratingAny": "Any",
     "noHotel": "No hotel picked",
     "noHotelsNear": "No hotels found near {{place}}",
     "moreHotels_one": "{{count}} more in {{place}}",

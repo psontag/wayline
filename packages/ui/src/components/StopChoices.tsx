@@ -14,8 +14,8 @@ export type StopChoice = {
   ascent: number;
   /** Meters, the next stage. Missing on the last stage. */
   nextDistance?: number;
-  /** Hotels near the stop. inBudget only when the trip has a budget. */
-  beds?: { total: number; inBudget?: number };
+  /** Hotels near the stop. Missing while unknown. */
+  hotels?: number;
   size?: "village" | "town" | "city";
 };
 
@@ -23,8 +23,8 @@ export type StopChoicesProps = {
   choices: StopChoice[];
   onSelect?: (id: string) => void;
   disabled?: boolean;
-  /** Radius for the beds count, in meters. */
-  bedsRadius: number;
+  /** Radius for the hotel count, in meters. */
+  hotelsRadius: number;
 };
 
 /** The stop and its alternatives, with what each changes. */
@@ -32,11 +32,10 @@ export function StopChoices({
   choices,
   onSelect,
   disabled = false,
-  bedsRadius,
+  hotelsRadius,
 }: StopChoicesProps) {
   const { t } = useTranslation("ui");
   const format = useFormat();
-  const withBudget = choices.some((c) => c.beds?.inBudget !== undefined);
   const cell = "px-1.5 py-1.5 text-right whitespace-nowrap";
 
   return (
@@ -57,7 +56,7 @@ export function StopChoices({
               {t("stopChoices.tomorrow")}
             </th>
             <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
-              {t("stopChoices.beds")}
+              {t("stopChoices.hotels")}
             </th>
           </tr>
         </thead>
@@ -122,24 +121,15 @@ export function StopChoices({
                     ? t("stopChoices.none")
                     : format.distance(c.nextDistance)}
                 </td>
-                <td className={cell}>
-                  {!c.beds
-                    ? t("stopChoices.none")
-                    : c.beds.inBudget === undefined
-                      ? c.beds.total
-                      : t("stopChoices.bedsInBudget", {
-                          inBudget: c.beds.inBudget,
-                          total: c.beds.total,
-                        })}
-                </td>
+                <td className={cell}>{c.hotels ?? t("stopChoices.none")}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
       <p className="px-1.5 text-2xs text-text-muted">
-        {t(withBudget ? "stopChoices.bedsNoteBudget" : "stopChoices.bedsNote", {
-          radius: format.distance(bedsRadius),
+        {t("stopChoices.hotelsNote", {
+          radius: format.distance(hotelsRadius),
         })}
       </p>
     </div>

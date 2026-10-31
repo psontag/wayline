@@ -228,13 +228,12 @@ describe("links", () => {
         town: "Kronach",
         date: "2027-06-13",
         budget: "mid",
-        minRating: 80,
       }),
     ).toBe(
       "https://www.booking.com/searchresults.html?ss=Kronach&checkin=2027-06-13&checkout=2027-06-14&group_adults=1&no_rooms=1&nflt=review_score%3D80%3Bprice%3DEUR-80-140-1",
     );
     expect(bookingUrl({ town: "Bad Rodach" })).toBe(
-      "https://www.booking.com/searchresults.html?ss=Bad%20Rodach&group_adults=1&no_rooms=1",
+      "https://www.booking.com/searchresults.html?ss=Bad%20Rodach&group_adults=1&no_rooms=1&nflt=review_score%3D80",
     );
   });
 
@@ -242,11 +241,11 @@ describe("links", () => {
     expect(
       bookingHotelUrl({
         hotel: "Gasthof Hirsch",
-        town: "Kronach",
+        coord: [11.3285, 50.2412],
         date: "2027-06-13",
       }),
     ).toBe(
-      "https://www.booking.com/searchresults.html?ss=Gasthof%20Hirsch%20Kronach&checkin=2027-06-13&checkout=2027-06-14&group_adults=1&no_rooms=1",
+      "https://www.booking.com/searchresults.html?ss=Gasthof%20Hirsch&latitude=50.24120&longitude=11.32850&dest_type=latlong&order=distance_from_search&checkin=2027-06-13&checkout=2027-06-14&group_adults=1&no_rooms=1",
     );
   });
 

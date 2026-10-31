@@ -134,7 +134,11 @@ export {
   type TimelineHour,
   type WeatherTimelineProps,
 } from "./components/WeatherTimeline";
-export { HotelRow, type HotelRowProps } from "./components/HotelRow";
+export {
+  HotelRow,
+  type HotelRowProps,
+  SaveHotelButton,
+} from "./components/HotelRow";
 export {
   StopChoices,
   type StopChoice,

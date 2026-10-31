@@ -1,10 +1,11 @@
-import type { Trip } from "@wayline/domain";
+import type { LonLat, Trip } from "@wayline/domain";
 import { detourKm } from "@wayline/providers";
-import { Button, HotelRow } from "@wayline/ui";
+import { Button } from "@wayline/ui";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { hotelBookingUrl } from "./BookingLink";
+import { SITE_CHECKS, SiteHotelRow } from "./SiteHotelRow";
 import { useStopHotels } from "./stopChoices";
 import { toHotel, type TripEditorState } from "./useTripEditor";
 
@@ -25,23 +26,59 @@ export function HotelPicker({
   if (!stage) return null;
   const { hotel, end } = stage;
   const chosen = hotel && hotels.find((h) => h.osmId === hotel.osmId);
-  const others = hotels.filter((h) => h.osmId !== hotel?.osmId);
-  const booking = (name: string) => hotelBookingUrl(trip, index, name);
+  const isSaved = (osmId: string) =>
+    trip.savedHotels.some((h) => h.osmId === osmId);
+  const saveProps = (h: Parameters<typeof toHotel>[0]) => ({
+    saved: isSaved(h.osmId),
+    ...(editor.canEdit && {
+      onToggleSave: () => editor.toggleSavedHotel(toHotel(h)),
+    }),
+  });
+  const rest = hotels.filter((h) => h.osmId !== hotel?.osmId);
+  // Saved hotels stay in view; the others fold away.
+  const saved = rest.filter((h) => isSaved(h.osmId));
+  const others = rest.filter((h) => !isSaved(h.osmId));
+  const choose = (option: (typeof rest)[number]) =>
+    !editor.readOnly && (
+      <Button
+        size="sm"
+        disabled={!editor.canEdit}
+        onClick={() => editor.setHotel(index, toHotel(option))}
+      >
+        {t("stage.choose")}
+      </Button>
+    );
+  const booking = (h: { name: string; coord: LonLat }) =>
+    hotelBookingUrl(trip, index, h);
 
   return (
     <div className="flex flex-col gap-2">
       {hotel ? (
-        <HotelRow
+        <SiteHotelRow
           name={hotel.name}
           kind={chosen?.kind}
           stars={hotel.stars}
           distance={(chosen?.detourKm ?? detourKm(hotel.coord, route)) * 1000}
           website={hotel.website}
-          booking={booking(hotel.name)}
+          booking={booking(hotel)}
+          {...saveProps(hotel)}
         />
       ) : (
         <p className="text-sm text-text-muted">{t("stage.noHotel")}</p>
       )}
+      {saved.map((option) => (
+        <SiteHotelRow
+          key={option.osmId}
+          name={option.name}
+          kind={option.kind}
+          stars={option.stars}
+          detour={option.detourKm * 1000}
+          website={option.website}
+          booking={booking(option)}
+          {...saveProps(option)}
+          action={choose(option)}
+        />
+      ))}
       {others.length > 0 ? (
         <div className="flex flex-col gap-2">
           <Button
@@ -56,28 +93,18 @@ export function HotelPicker({
           </Button>
           {open && (
             <ul className="flex flex-col gap-2 rounded-md border border-border p-2.5">
-              {others.map((option) => (
+              {others.map((option, i) => (
                 <li key={option.osmId}>
-                  <HotelRow
+                  <SiteHotelRow
+                    check={i < SITE_CHECKS}
                     name={option.name}
                     kind={option.kind}
                     stars={option.stars}
                     detour={option.detourKm * 1000}
                     website={option.website}
-                    booking={booking(option.name)}
-                    action={
-                      !editor.readOnly && (
-                        <Button
-                          size="sm"
-                          disabled={!editor.canEdit}
-                          onClick={() =>
-                            editor.setHotel(index, toHotel(option))
-                          }
-                        >
-                          {t("stage.choose")}
-                        </Button>
-                      )
-                    }
+                    booking={booking(option)}
+                    {...saveProps(option)}
+                    action={choose(option)}
                   />
                 </li>
               ))}

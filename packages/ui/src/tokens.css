@@ -96,6 +96,7 @@
   /* Layout widths */
   --container-sm: 384px;
   --container-panel: 440px;
+  --container-popover: 240px;
   --container-page: 1120px;
 
   /* Radius */

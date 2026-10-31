@@ -89,7 +89,10 @@ Google Places is not used. Its terms (section 3.2.3 (e)) forbid using Places dat
 
 No API. Booking.com's API is only for partners.
 
-One link per stop. Hotel-specific links don't work: Booking doesn't find hotels by name in the search URL. Per hotel, Wayline links to the hotel's website from OSM if there is one.
+Two links:
+
+- **Per stop**: a search for the town, with dates, budget and a review score of 8+.
+- **Per hotel**: a search around the hotel's location, nearest first. The hotel is on top if Booking lists it. Else the nearest places show. A search by hotel name sends Booking to its home page when the name doesn't match.
 
 ```
 https://www.booking.com/searchresults.html
@@ -97,16 +100,34 @@ https://www.booking.com/searchresults.html
   &checkin=2027-06-13&checkout=2027-06-14
   &group_adults=1&no_rooms=1
   &nflt=review_score%3D80%3Bprice%3DEUR-80-140-1
+
+https://www.booking.com/searchresults.html
+  ?ss=Gasthof%20Hirsch
+  &latitude=50.24120&longitude=11.32850
+  &dest_type=latlong&order=distance_from_search
+  &checkin=2027-06-13&checkout=2027-06-14
+  &group_adults=1&no_rooms=1
 ```
 
 | Parameter | Meaning |
 |---|---|
-| `ss` | Town name |
+| `ss` | Town or hotel name |
+| `latitude`, `longitude`, `dest_type=latlong` | Search around a point |
+| `order=distance_from_search` | Nearest first |
 | `checkin`, `checkout` | Stage date and next day |
 | `group_adults`, `no_rooms` | 1 and 1 |
-| `nflt` | Filters, joined with `;`: `review_score=70/80/90`, `price=EUR-<min>-<max>-1` |
+| `nflt` | Filters, joined with `;`: `review_score=80`, `price=EUR-<min>-<max>-1` |
 
-Booking applies the rating and price filters. Wayline does not show ratings or prices itself.
+Booking applies the rating and price filters. Wayline does not show ratings or prices itself. Booking has no public photos or details for a hotel.
+
+### Hotel websites
+
+`GET /api/site?url=` on the Worker checks a hotel's website:
+
+- No answer, 404, 410 or 5xx: the site is gone. The editor hides the link.
+- Bot blocks (401, 403, 429) count as working.
+- The preview image comes from `og:image`, `twitter:image` or `itemprop="image"`.
+- Answers are cached for a week. Lists check at most 8 hotels; map cards check on hover.
 
 ## Trains
 

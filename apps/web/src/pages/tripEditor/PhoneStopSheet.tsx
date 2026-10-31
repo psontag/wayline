@@ -1,16 +1,21 @@
-import { addDays, localTimeToDate, type Trip } from "@wayline/domain";
+import {
+  addDays,
+  localTimeToDate,
+  type LonLat,
+  type Trip,
+} from "@wayline/domain";
 import { detourKm } from "@wayline/providers";
 import {
   Button,
   ChoiceCard,
   ChoiceGroup,
-  HotelRow,
   SheetDialog,
   useFormat,
 } from "@wayline/ui";
 import { Lock, LockOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { BookingLink, hotelBookingUrl } from "./BookingLink";
+import { SITE_CHECKS, SiteHotelRow } from "./SiteHotelRow";
 import { useStopHotels, useStopOptions } from "./stopChoices";
 import { toHotel, type TripEditorState } from "./useTripEditor";
 
@@ -42,10 +47,22 @@ export function PhoneStopSheet({
 
   const { end, hotel } = stage;
   const chosen = hotel && hotels.find((h) => h.osmId === hotel.osmId);
+  const isSaved = (osmId: string) =>
+    trip.savedHotels.some((h) => h.osmId === osmId);
+  // Saved hotels first.
   const others = readOnly
     ? []
-    : hotels.filter((option) => option.osmId !== hotel?.osmId);
-  const booking = (name: string) => hotelBookingUrl(trip, index, name);
+    : hotels
+        .filter((option) => option.osmId !== hotel?.osmId)
+        .sort((a, b) => Number(isSaved(b.osmId)) - Number(isSaved(a.osmId)));
+  const saveProps = (h: Parameters<typeof toHotel>[0]) => ({
+    saved: isSaved(h.osmId),
+    ...(editor.canEdit && {
+      onToggleSave: () => editor.toggleSavedHotel(toHotel(h)),
+    }),
+  });
+  const booking = (h: { name: string; coord: LonLat }) =>
+    hotelBookingUrl(trip, index, h);
   const day = trip.startDate
     ? t("phone.dayDate", {
         day: index + 1,
@@ -119,7 +136,7 @@ export function PhoneStopSheet({
           {t("phone.hotelsIn", { place: end.name })}
         </h2>
         {hotel && (
-          <HotelRow
+          <SiteHotelRow
             variant="card"
             selected
             name={hotel.name}
@@ -127,7 +144,8 @@ export function PhoneStopSheet({
             stars={hotel.stars}
             distance={(chosen?.detourKm ?? detourKm(hotel.coord, route)) * 1000}
             website={hotel.website}
-            booking={booking(hotel.name)}
+            booking={booking(hotel)}
+            {...saveProps(hotel)}
             action={
               !readOnly && (
                 <Button size="sm" aria-disabled>
@@ -137,8 +155,9 @@ export function PhoneStopSheet({
             }
           />
         )}
-        {others.map((option) => (
-          <HotelRow
+        {others.map((option, i) => (
+          <SiteHotelRow
+            check={i < SITE_CHECKS}
             key={option.osmId}
             variant="card"
             name={option.name}
@@ -146,7 +165,8 @@ export function PhoneStopSheet({
             stars={option.stars}
             detour={option.detourKm * 1000}
             website={option.website}
-            booking={booking(option.name)}
+            booking={booking(option)}
+            {...saveProps(option)}
             action={
               <Button
                 size="sm"
