@@ -121,7 +121,7 @@ export function StageDetails({
 
   return (
     <div className="flex flex-col">
-      {change && <div className="pb-3">{change}</div>}
+      {change}
       <Section title={t("stage.route")}>
         <SurfaceBar shares={surface} caption />
         {climbs}
@@ -183,7 +183,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-2 border-t border-border py-3 first:border-t-0 first:pt-0">
+    <section className="flex flex-col gap-2 border-t border-border py-3">
       <div className="flex min-h-7 items-center justify-between gap-2">
         <h3 className="text-xs font-semibold text-text-muted">{title}</h3>
         {action}
