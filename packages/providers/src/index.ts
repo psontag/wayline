@@ -7,7 +7,15 @@ export {
 } from "./brouter/fetch";
 export { parseBrouterLeg, surfaceOf } from "./brouter/parse";
 export { brouterProfileHash } from "./brouter/profiles";
+export {
+  DbRestTrains,
+  journeysUrl,
+  locationsUrl,
+  parseJourneys,
+  parseStopId,
+} from "./dbRest/DbRestTrains";
 export { fakeBrouterLeg } from "./mock/fakeBrouterLeg";
+export { FakeTrains } from "./mock/FakeTrains";
 export { cellOf, FakeWeather } from "./mock/FakeWeather";
 export { MockNetworkSource } from "./mock/MockNetworkSource";
 export {

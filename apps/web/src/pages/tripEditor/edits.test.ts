@@ -8,6 +8,7 @@ import {
   routedStageIfEnding,
   setLocked,
   stageIfEndingAt,
+  toggleTrain,
 } from "./edits";
 
 const trip = parseTrip(sample);
@@ -178,5 +179,27 @@ describe("ascentAlong", () => {
 
   it("spreads the ascent over the km on a flat profile", () => {
     expect(ascentAlong([point(0, 100), point(2, 100)], 10)).toEqual([0, 10]);
+  });
+});
+
+describe("toggleTrain", () => {
+  const train = (departure: string) => ({
+    direction: "there" as const,
+    from: "Karlsruhe Hbf",
+    to: "Bamberg",
+    departure,
+    arrival: "2026-11-07T09:28",
+    changes: 1,
+    lines: ["ICE 591", "RE 10"],
+  });
+
+  it("saves trains in time order and removes them again", () => {
+    const one = toggleTrain(trip, train("2026-11-07T07:12"));
+    const two = toggleTrain(one, train("2026-11-07T06:12"));
+    expect(two.trains.map((t) => t.departure)).toEqual([
+      "2026-11-07T06:12",
+      "2026-11-07T07:12",
+    ]);
+    expect(toggleTrain(two, train("2026-11-07T07:12")).trains).toHaveLength(1);
   });
 });

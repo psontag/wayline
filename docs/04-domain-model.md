@@ -6,6 +6,7 @@
 Trip
  ├─ settings
  ├─ proposed: Stage[]?
+ ├─ trains: Connection[]
  └─ Stage[]
      ├─ start: Place
      ├─ end: Stop
@@ -27,6 +28,7 @@ Trip
 | `stages` | Ordered list. A single route is a trip with one stage. |
 | `proposed` | Optional. The stages as proposed, kept when a proposal is opened. A changed stage can go back to them. |
 | `sharedWith` | Emails of friends who can view |
+| `trains` | Saved train connections: `direction` (`there` or `back`), stations, local departure and arrival, changes, line names. Several per direction are fine. |
 
 ### Settings
 

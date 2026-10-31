@@ -78,6 +78,21 @@ export const Hotel = z.object({
 });
 export type Hotel = z.infer<typeof Hotel>;
 
+/** One train connection, e.g. from home to the start. */
+export const Connection = z.object({
+  /** "there": home to the start. "back": the end to home. */
+  direction: z.enum(["there", "back"]),
+  from: z.string(),
+  to: z.string(),
+  /** Local time "YYYY-MM-DDTHH:MM" */
+  departure: z.string(),
+  arrival: z.string(),
+  changes: z.number().int().nonnegative(),
+  /** Line names in order, e.g. ["ICE 591", "RE 4"]. */
+  lines: z.array(z.string()),
+});
+export type Connection = z.infer<typeof Connection>;
+
 export const Stats = z.object({
   distance: z.number().nonnegative(),
   ascent: z.number().nonnegative(),
@@ -172,6 +187,8 @@ export const Trip = z.object({
   /** Stages as proposed. A changed stage can go back to its proposal. */
   proposed: z.array(Stage).optional(),
   sharedWith: z.array(z.string()).default([]),
+  /** Saved train connections, a few options per direction. */
+  trains: z.array(Connection).default([]),
 });
 export type Trip = z.infer<typeof Trip>;
 

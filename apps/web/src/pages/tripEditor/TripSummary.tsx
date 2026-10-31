@@ -1,18 +1,20 @@
-import { trainLinks, tripStats, type Trip } from "@wayline/domain";
-import { Stat, statIcons, SurfaceBar, TextLink, useFormat } from "@wayline/ui";
+import { tripStats, type Trip } from "@wayline/domain";
+import { Stat, SurfaceBar, useFormat } from "@wayline/ui";
 import { useTranslation } from "react-i18next";
+import { TrainOptions } from "./TrainOptions";
+import type { TripEditorState } from "./useTripEditor";
 
-/** Totals of the trip and train links at both ends. */
-import { useHomeStation } from "../../data/homeStation";
-
-export function TripSummary({ trip }: { trip: Trip }) {
+/** Totals of the trip and trains at both ends. */
+export function TripSummary({
+  trip,
+  editor,
+}: {
+  trip: Trip;
+  editor: TripEditorState;
+}) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
   const stats = tripStats(trip.stages);
-  const [home] = useHomeStation();
-  const trains = trainLinks(trip, home);
-  const start = trip.stages[0]?.start;
-  const end = trip.stages.at(-1)?.end;
 
   return (
     <div className="flex flex-col gap-3 border-b border-border p-4">
@@ -34,22 +36,8 @@ export function TripSummary({ trip }: { trip: Trip }) {
         />
       </div>
       <SurfaceBar shares={stats.surface} caption />
-      {(start?.kind === "station" || end?.kind === "station") && (
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          {start?.kind === "station" && (
-            <TextLink href={trains.there} target="_blank" rel="noreferrer">
-              <statIcons.train aria-hidden />
-              {t("summary.trainTo", { station: start.name })}
-            </TextLink>
-          )}
-          {end?.kind === "station" && (
-            <TextLink href={trains.back} target="_blank" rel="noreferrer">
-              <statIcons.train aria-hidden />
-              {t("summary.trainFrom", { station: end.name })}
-            </TextLink>
-          )}
-        </div>
-      )}
+      <TrainOptions trip={trip} direction="there" editor={editor} />
+      <TrainOptions trip={trip} direction="back" editor={editor} />
     </div>
   );
 }

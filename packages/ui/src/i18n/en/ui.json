@@ -74,6 +74,14 @@
       "cross": "Cross"
     }
   },
+  "train": {
+    "times": "{{departure}} → {{arrival}}",
+    "changes_zero": "Direct",
+    "changes_one": "1 change",
+    "changes_other": "{{count}} changes",
+    "save": "Save train",
+    "unsave": "Remove saved train"
+  },
   "hotel": {
     "stars_one": "{{count}} star",
     "stars_other": "{{count}} stars",

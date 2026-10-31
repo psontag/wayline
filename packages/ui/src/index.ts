@@ -62,6 +62,7 @@ export {
   type ToastProps,
 } from "./components/Toast";
 export { Tooltip, TooltipProvider } from "./components/Tooltip";
+export { TrainRow, type TrainRowProps } from "./components/TrainRow";
 export { Logo, PageBar, TopBar, TopBarSpacer } from "./components/TopBar";
 export { createFormat, useFormat, type Format } from "./format";
 export { cn } from "./lib/cn";

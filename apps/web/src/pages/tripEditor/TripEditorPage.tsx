@@ -258,7 +258,7 @@ function TripEditor({
           />
         </div>
         <aside className="flex shrink-0 flex-col border-border bg-surface lg:w-panel lg:border-l">
-          <TripSummary trip={trip} />
+          <TripSummary trip={trip} editor={editor} />
           <div className="lg:min-h-0 lg:flex-1 lg:overflow-auto">
             <StageList
               trip={trip}

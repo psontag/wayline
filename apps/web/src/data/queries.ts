@@ -15,6 +15,7 @@ import {
   stageSpeed,
   stageStartTime,
   type StageWeather,
+  type TrainQuery,
   type Trip,
   type WeatherSample,
   weatherAlongStage,
@@ -243,4 +244,18 @@ async function stageWeather(
     forecastAt,
     daylight: first?.daylight.find((d) => d.date === date),
   };
+}
+
+/** A few trains for a search with a time. Off without a time. */
+export function useTrainOptions(query: TrainQuery | undefined) {
+  const { trains } = useServices();
+  const time = query?.time;
+  return useQuery({
+    queryKey: ["trains", query?.from, query?.to, time, query?.arrival],
+    enabled: !!query?.from && !!query.to && !!time,
+    staleTime: 30 * 60 * 1000,
+    retry: 1,
+    queryFn: ({ signal }) =>
+      query && time ? trains.connections({ ...query, time }, { signal }) : [],
+  });
 }
