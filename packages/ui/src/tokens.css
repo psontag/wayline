@@ -37,6 +37,7 @@
   --color-terrain-paved: #7e8ba3;
   --color-terrain-gravel: #e8b850;
   --color-terrain-unpaved: #b98e73;
+  --color-terrain-unknown: #c3c8d0;
 
   /* Map */
   --color-route: #ff9a73;
@@ -200,6 +201,7 @@
       --color-terrain-paved: #aeb9cc;
       --color-terrain-gravel: #f2cf7e;
       --color-terrain-unpaved: #d9b49c;
+      --color-terrain-unknown: #4b5260;
       --color-route: #ffa67f;
       --color-route-casing: #101216;
       --color-route-dimmed: #4b5260;
@@ -254,6 +256,7 @@
     --color-terrain-paved: #7e8ba3;
     --color-terrain-gravel: #e8b850;
     --color-terrain-unpaved: #b98e73;
+    --color-terrain-unknown: #c3c8d0;
     --color-route: #ff9a73;
     --color-route-casing: #b4532a;
     --color-route-dimmed: #c3c8d0;
@@ -308,6 +311,7 @@
     --color-terrain-paved: #aeb9cc;
     --color-terrain-gravel: #f2cf7e;
     --color-terrain-unpaved: #d9b49c;
+    --color-terrain-unknown: #4b5260;
     --color-route: #ffa67f;
     --color-route-casing: #101216;
     --color-route-dimmed: #4b5260;

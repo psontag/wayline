@@ -19,6 +19,9 @@ export function TripListPage() {
           {t("title")}
         </h1>
         <div className="flex gap-2 max-md:hidden">
+          <Button asChild variant="secondary">
+            <Link to="/import">{t("importGpx")}</Link>
+          </Button>
           <Button asChild variant="primary">
             <Link to="/new">
               <Plus aria-hidden />

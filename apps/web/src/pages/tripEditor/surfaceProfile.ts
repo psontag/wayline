@@ -15,6 +15,10 @@ const key = ([lon, lat]: [number, number]) =>
   `${lon.toFixed(5)},${lat.toFixed(5)}`;
 
 function dominant(surface: Surface): SurfaceKind {
+  const unknown = 1 - surface.paved - surface.gravel - surface.unpaved;
+  if (unknown > Math.max(surface.paved, surface.gravel, surface.unpaved)) {
+    return "unknown";
+  }
   if (surface.paved >= surface.gravel && surface.paved >= surface.unpaved) {
     return "paved";
   }
@@ -43,12 +47,16 @@ export function profilePoints(
   network: RouteNetwork | undefined,
 ): ProfilePoint[] {
   const index = network && surfaceIndex(network);
-  const fallback = dominant(
-    legs[0]?.surface ?? { paved: 1, gravel: 0, unpaved: 0 },
-  );
+  // Points off the network, e.g. of an imported route, take the main
+  // surface of their leg.
+  const own: SurfaceIndex = new Map();
+  for (const leg of legs) {
+    const kind = dominant(leg.surface);
+    for (const coord of decodeLine(leg.geometry)) own.set(key(coord), kind);
+  }
   return routePoints(legs).map((p) => ({
     km: p.km,
     ele: p.ele,
-    surface: index?.get(key(p.coord)) ?? fallback,
+    surface: index?.get(key(p.coord)) ?? own.get(key(p.coord)) ?? "paved",
   }));
 }

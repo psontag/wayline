@@ -1,0 +1,51 @@
+{
+  "title": "Import GPX",
+  "drop": {
+    "label": "Choose GPX files",
+    "hint": "One file per day. You can drop them here too.",
+    "add": "Add files"
+  },
+  "failed_one": "{{files}} has no route Wayline can read.",
+  "failed_other": "{{files}} have no route Wayline can read.",
+  "days": {
+    "title": "Days",
+    "total_one": "{{count}} day · {{distance}}",
+    "total_other": "{{count}} days · {{distance}}",
+    "hint": "One file per day. Drag to change the order.",
+    "day": "Day {{day}}",
+    "dayDate": "Day {{day}} · {{date}}",
+    "move": "Move day {{day}}",
+    "remove": "Remove day {{day}}",
+    "gap": "Starts {{distance}} from where day {{day}} ends. Wayline routes the gap.",
+    "noElevation": "No elevation in this file."
+  },
+  "name": "Name",
+  "nameFromTo": "{{from}} to {{to}}",
+  "defaultName": "Imported trip",
+  "startDate": "Start date",
+  "optional": "(optional)",
+  "startTime": "Start time",
+  "hotelBudget": "Hotel budget",
+  "hotelHint": "Picks a hotel at the end of each day.",
+  "budget": {
+    "low": "Up to €80",
+    "mid": "€80–140",
+    "high": "€140+"
+  },
+  "profile": {
+    "label": "Route changes",
+    "touring": "Touring",
+    "fast": "Fast",
+    "scenic": "Scenic",
+    "quiet": "Quiet",
+    "hint": "Used when you move a via point or a stop, and for gaps between days. Your imported route stays as it is."
+  },
+  "start": "Start",
+  "dayEnd": "End of day {{day}}",
+  "create": "Create trip",
+  "creating": "Creating trip",
+  "createFailed": "Could not create the trip.",
+  "map": {
+    "label": "Map of the imported days"
+  }
+}
