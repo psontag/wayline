@@ -156,12 +156,14 @@ export type HotelMarkerProps = {
   detour: number;
   website?: string;
   selected?: boolean;
+  /** A small dot, for zoomed out maps. Selected hotels stay full. */
+  compact?: boolean;
   onClick?: () => void;
   /** Hover or focus, e.g. to lift the marker above others. */
   onActiveChange?: (active: boolean) => void;
 };
 
-/** Hotel on the map: a bed icon with its stars. Shows a card on hover. */
+/** Hotel on the map: a bed icon with its stars, or a dot when compact. Shows a card on hover. */
 export function HotelMarker({
   name,
   kind,
@@ -169,6 +171,7 @@ export function HotelMarker({
   detour,
   website,
   selected = false,
+  compact = false,
   onClick,
   onActiveChange,
 }: HotelMarkerProps) {
@@ -190,27 +193,39 @@ export function HotelMarker({
       onFocus={() => onActiveChange?.(true)}
       onBlur={() => onActiveChange?.(false)}
     >
-      <button
-        type="button"
-        aria-pressed={selected}
-        aria-label={name}
-        className={cn(
-          "flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-2xs font-bold tabular-nums shadow-sm transition-colors",
-          selected
-            ? "border-route-outline bg-route-selected text-on-route"
-            : "border-border bg-surface text-text hover:border-marker",
-          focusRing,
-        )}
-        onClick={onClick}
-      >
-        <BedDouble className="size-3.5" aria-hidden />
-        {!!stars && (
-          <>
-            {stars}
-            <Star className="size-2.5 fill-current" aria-hidden />
-          </>
-        )}
-      </button>
+      {compact && !selected ? (
+        <button
+          type="button"
+          aria-pressed={false}
+          aria-label={name}
+          className={cn("block rounded-full p-1", focusRing)}
+          onClick={onClick}
+        >
+          <span className="block size-3 rounded-full border-2 border-marker bg-surface shadow-sm transition-colors group-hover:bg-marker" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          aria-pressed={selected}
+          aria-label={name}
+          className={cn(
+            "flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-2xs font-bold tabular-nums shadow-sm transition-colors",
+            selected
+              ? "border-route-outline bg-route-selected text-on-route"
+              : "border-border bg-surface text-text hover:border-marker",
+            focusRing,
+          )}
+          onClick={onClick}
+        >
+          <BedDouble className="size-3.5" aria-hidden />
+          {!!stars && (
+            <>
+              {stars}
+              <Star className="size-2.5 fill-current" aria-hidden />
+            </>
+          )}
+        </button>
+      )}
       {/* Padding, not margin, so the pointer can move onto the card. */}
       <div className="absolute bottom-full left-1/2 hidden -translate-x-1/2 pb-2 group-focus-within:block group-hover:block">
         <div className="flex w-max flex-col rounded-md border border-border bg-surface px-3 py-2 shadow-md">

@@ -114,6 +114,8 @@ export function TripMap({
   const tokens = useThemeTokens();
   const mapRef = useRef<MapRef>(null);
   const [activeHotel, setActiveHotel] = useState<string>();
+  // Full hotel markers crowd the stop labels until zoomed in.
+  const [zoom, setZoom] = useState(0);
 
   const lines = useMemo(
     () =>
@@ -290,6 +292,7 @@ export function TripMap({
       onMouseMove={routeDrag.onMouseMove}
       onMouseDown={routeDrag.onMouseDown}
       onMouseLeave={routeDrag.onMouseLeave}
+      onZoomEnd={setZoom}
     >
       <Source id="proposed" type="geojson" data={proposedData}>
         <MapLayer
@@ -416,6 +419,7 @@ export function TripMap({
           latitude={place.coord[1]}
           anchor="left"
           offset={[-8, 0]}
+          style={{ zIndex: 2 }}
         >
           <AlternativeMarker
             label={label}
@@ -432,7 +436,7 @@ export function TripMap({
           anchor="left"
           // Center the circle on the stop. It is larger when selected.
           offset={[index === selected ? -20 : -16, 0]}
-          style={{ zIndex: index === selected ? 2 : 1 }}
+          style={{ zIndex: index === selected ? 4 : 3 }}
         >
           <StopMarker
             day={index + 1}
@@ -454,9 +458,9 @@ export function TripMap({
           style={{
             zIndex:
               activeHotel === hotel.osmId
-                ? 4
+                ? 5
                 : hotel.osmId === selectedHotelId
-                  ? 2
+                  ? 3
                   : 1,
           }}
         >
@@ -467,6 +471,7 @@ export function TripMap({
             detour={hotel.detourKm * 1000}
             website={hotel.website}
             selected={hotel.osmId === selectedHotelId}
+            compact={zoom < 11}
             onClick={() => onSelectHotel?.(hotel.osmId)}
             onActiveChange={(active) =>
               setActiveHotel((id) =>
@@ -490,7 +495,7 @@ export function TripMap({
               // The click, if any, comes right after the drag ends.
               setTimeout(() => (draggedVia.current = false));
             }}
-            style={{ zIndex: 3 }}
+            style={{ zIndex: 6 }}
           >
             <ViaMarker
               aria-label={t("map.removeVia", { n: index + 1 })}
@@ -505,13 +510,13 @@ export function TripMap({
         <Marker
           longitude={ghostAt[0]}
           latitude={ghostAt[1]}
-          style={{ zIndex: 3, pointerEvents: "none" }}
+          style={{ zIndex: 6, pointerEvents: "none" }}
         >
           <GhostViaMarker />
         </Marker>
       )}
       {hover && (
-        <Marker longitude={hover[0]} latitude={hover[1]} style={{ zIndex: 3 }}>
+        <Marker longitude={hover[0]} latitude={hover[1]} style={{ zIndex: 6 }}>
           <HoverMarker />
         </Marker>
       )}
