@@ -244,7 +244,7 @@ export function WeatherTimeline({
   const beforeSunrise = sunrise !== undefined && current < sunrise;
   const atBest = best !== undefined && best.start === current;
   const labelHours: number[] = [];
-  for (let h = from; h <= to; h += 2) labelHours.push(h);
+  for (let h = from; h <= to; h++) labelHours.push(h);
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -467,8 +467,9 @@ export function WeatherTimeline({
               )}
               style={{ left: pct(time) }}
             >
-              <span className="h-full w-0.5 bg-text" />
-              <span className="absolute size-3 rounded-full bg-text ring-2 ring-surface group-focus-visible:ring-focus-ring" />
+              <span className="rounded-sm bg-text px-1.5 py-0.5 text-2xs leading-none font-semibold text-surface tabular-nums ring-2 ring-surface group-focus-visible:ring-focus-ring">
+                {format.clock(time)}
+              </span>
             </div>
           )}
         </div>
@@ -486,6 +487,8 @@ export function WeatherTimeline({
                 : h === to
                   ? "-translate-x-full"
                   : "-translate-x-1/2",
+              // Every second hour on narrow screens.
+              (h - from) % 2 === 1 && "max-sm:hidden",
             )}
             style={{ left: pct(h) }}
           >
