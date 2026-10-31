@@ -1,10 +1,11 @@
-import { ExternalLink } from "lucide-react";
+import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { statIcons } from "../icons";
 import { focusRing } from "./Button";
+import { IconButton } from "./IconButton";
 import { Stat } from "./Stat";
 
 export type HotelRowProps = {
@@ -18,6 +19,11 @@ export type HotelRowProps = {
   website?: string;
   /** Booking.com search for this hotel. */
   booking?: string;
+  /** Preview image from the website. */
+  image?: string;
+  saved?: boolean;
+  /** Without it, the row has no save button, e.g. on shared trips. */
+  onToggleSave?: () => void;
   /** E.g. a Change or Choose button. */
   action?: ReactNode;
   /** card: outlined box without the bed icon, for lists on phones. */
@@ -35,6 +41,9 @@ export function HotelRow({
   detour,
   website,
   booking,
+  image,
+  saved = false,
+  onToggleSave,
   action,
   variant = "plain",
   selected = false,
@@ -58,9 +67,18 @@ export function HotelRow({
             : "border-border bg-surface"),
       )}
     >
-      {variant === "plain" && (
-        <statIcons.beds className="size-4 shrink-0" aria-hidden />
-      )}
+      {image ? (
+        <img
+          src={image}
+          alt=""
+          loading="lazy"
+          className="size-12 shrink-0 rounded-sm bg-hover object-cover"
+        />
+      ) : variant === "plain" ? (
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-sm bg-hover text-text-muted">
+          <statIcons.beds className="size-5" aria-hidden />
+        </span>
+      ) : null}
       <div className="flex min-w-0 flex-1 flex-col">
         <span
           className={cn(
@@ -118,7 +136,34 @@ export function HotelRow({
           ))}
         </span>
       </div>
+      {onToggleSave && <SaveHotelButton saved={saved} onClick={onToggleSave} />}
       {action}
     </div>
+  );
+}
+
+/** Bookmark toggle for a hotel. */
+export function SaveHotelButton({
+  saved,
+  onClick,
+}: {
+  saved: boolean;
+  onClick: () => void;
+}) {
+  const { t } = useTranslation("ui");
+  return (
+    <IconButton
+      size="sm"
+      label={t(saved ? "hotel.unsave" : "hotel.save")}
+      icon={
+        saved ? (
+          <BookmarkCheck aria-hidden className="text-selected-border" />
+        ) : (
+          <Bookmark aria-hidden />
+        )
+      }
+      aria-pressed={saved}
+      onClick={onClick}
+    />
   );
 }

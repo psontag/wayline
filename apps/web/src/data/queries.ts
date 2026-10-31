@@ -271,3 +271,19 @@ export function useTrainOptions(query: TrainQuery | undefined) {
       query && time ? trains.connections({ ...query, time }, { signal }) : [],
   });
 }
+
+/**
+ * Whether a hotel website works, and its preview image. Undefined while
+ * loading, without a server or when the check fails.
+ */
+export function useSiteInfo(url: string | undefined) {
+  const { site } = useServices();
+  const query = useQuery({
+    queryKey: ["site", url],
+    enabled: !!url,
+    staleTime: Infinity,
+    retry: false,
+    queryFn: () => (url ? site(url) : null),
+  });
+  return query.data ?? undefined;
+}

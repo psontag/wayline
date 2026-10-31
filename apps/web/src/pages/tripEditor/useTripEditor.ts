@@ -5,7 +5,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSaveTrip } from "../../data/queries";
 import { useServices } from "../../data/ServicesProvider";
-import { moveStop, setHotel, setLocked, toggleTrain } from "./edits";
+import {
+  moveStop,
+  setHotel,
+  setLocked,
+  toggleSavedHotel,
+  toggleTrain,
+} from "./edits";
 import {
   insertVia,
   moveVia,
@@ -19,7 +25,13 @@ import { withRideStart } from "./stageWeather";
 /** Message after an edit. Undo is offered unless nothing changed. */
 export type EditorNote = { id: number; message: string; changed: boolean };
 
-export function toHotel({ osmId, name, coord, stars, website }: HotelOption) {
+export function toHotel({
+  osmId,
+  name,
+  coord,
+  stars,
+  website,
+}: Pick<HotelOption, "osmId" | "name" | "coord" | "stars" | "website">) {
   const hotel: Hotel = { osmId, name, coord };
   if (stars) hotel.stars = stars;
   if (website) hotel.website = website;
@@ -145,6 +157,9 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     },
     toggleTrain(train: Connection) {
       if (canEdit) commit(toggleTrain(trip, train));
+    },
+    toggleSavedHotel(hotel: Hotel) {
+      if (canEdit) commit(toggleSavedHotel(trip, hotel));
     },
     /** The route through a dragged point, for a live preview. */
     preview: (index: number, leg: number, at: LonLat) => {

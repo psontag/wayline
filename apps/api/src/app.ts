@@ -14,6 +14,7 @@ import type { ZodType } from "zod";
 import { auth, type AuthBindings, type AuthVariables } from "./auth";
 import type { Db } from "./db";
 import { cachedLeg, legRouter, roundCoord, type TunnelFetcher } from "./legs";
+import { cachedSiteInfo } from "./site";
 import {
   deleteTrip,
   getShares,
@@ -59,6 +60,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: AuthVariables }>()
   .use("/api/me", auth)
   .use("/api/trips", auth)
   .use("/api/trips/*", auth)
+  .use("/api/site", auth)
   .get("/api/health", (c) =>
     c.json({ status: "ok", schemaVersion: SCHEMA_VERSION }),
   )
@@ -92,6 +94,14 @@ const app = new Hono<{ Bindings: Bindings; Variables: AuthVariables }>()
       c.req.valid("json").emails,
     );
     return c.json({ emails } satisfies Shares);
+  })
+  .get("/api/site", async (c) => {
+    const url = c.req.query("url") ?? "";
+    if (!/^https?:\/\//.test(url)) {
+      throw new WaylineError("INVALID", "url: needs http or https");
+    }
+    c.header("Cache-Control", "private, max-age=86400");
+    return c.json(await cachedSiteInfo(url));
   })
   .post("/api/route", json(RouteRequest), async (c) => {
     const { from, to, profile } = c.req.valid("json");

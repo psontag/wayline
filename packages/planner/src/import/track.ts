@@ -283,5 +283,6 @@ export function importedTrip(p: ImportParts): Trip {
     proposed: stages,
     sharedWith: [],
     trains: [],
+    savedHotels: [],
   };
 }

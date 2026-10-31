@@ -1,9 +1,16 @@
-import { BedDouble, ExternalLink, Star, TrainFront } from "lucide-react";
+import {
+  BedDouble,
+  BookmarkCheck,
+  ExternalLink,
+  Star,
+  TrainFront,
+} from "lucide-react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { focusRing } from "./Button";
+import { SaveHotelButton } from "./HotelRow";
 
 export type StopMarkerProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -155,7 +162,15 @@ export type HotelMarkerProps = {
   /** Extra meters to ride compared to the stop. */
   detour: number;
   website?: string;
+  /** Booking.com search around this hotel. */
+  booking?: string;
+  /** Preview image from the website. */
+  image?: string;
   selected?: boolean;
+  /** Bookmarked. Shows a bookmark on the marker. */
+  saved?: boolean;
+  /** Without it, the card has no save button. */
+  onToggleSave?: () => void;
   /** A small dot, for zoomed out maps. Selected hotels stay full. */
   compact?: boolean;
   onClick?: () => void;
@@ -170,7 +185,11 @@ export function HotelMarker({
   stars,
   detour,
   website,
+  booking,
+  image,
   selected = false,
+  saved = false,
+  onToggleSave,
   compact = false,
   onClick,
   onActiveChange,
@@ -193,7 +212,7 @@ export function HotelMarker({
       onFocus={() => onActiveChange?.(true)}
       onBlur={() => onActiveChange?.(false)}
     >
-      {compact && !selected ? (
+      {compact && !selected && !saved ? (
         <button
           type="button"
           aria-pressed={false}
@@ -218,6 +237,12 @@ export function HotelMarker({
           onClick={onClick}
         >
           <BedDouble className="size-3.5" aria-hidden />
+          {saved && (
+            <>
+              <BookmarkCheck className="size-3" aria-hidden />
+              <span className="sr-only">{t("hotel.saved")}</span>
+            </>
+          )}
           {!!stars && (
             <>
               {stars}
@@ -228,23 +253,47 @@ export function HotelMarker({
       )}
       {/* Padding, not margin, so the pointer can move onto the card. */}
       <div className="absolute bottom-full left-1/2 hidden -translate-x-1/2 pb-2 group-focus-within:block group-hover:block">
-        <div className="flex w-max flex-col rounded-md border border-border bg-surface px-3 py-2 shadow-md">
-          <span className="text-sm font-bold text-text">{name}</span>
-          <span className="text-xs text-text-muted tabular-nums">{meta}</span>
-          {website && (
-            <a
-              href={website}
-              target="_blank"
-              rel="noreferrer"
-              className={cn(
-                "mt-1 inline-flex items-center gap-1 self-start rounded-sm text-xs text-text-muted underline hover:text-text",
-                focusRing,
-              )}
-            >
-              {t("hotel.website")}
-              <ExternalLink className="size-3" aria-hidden />
-            </a>
+        <div className="flex w-popover flex-col overflow-hidden rounded-md border border-border bg-surface shadow-md">
+          {image && (
+            <img
+              src={image}
+              alt=""
+              className="h-24 w-full bg-hover object-cover"
+            />
           )}
+          <div className="flex items-start gap-2 px-3 py-2">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="text-sm font-bold text-text">{name}</span>
+              <span className="text-xs text-text-muted tabular-nums">
+                {meta}
+              </span>
+              <span className="mt-1 flex flex-wrap gap-x-3">
+                {[
+                  booking && { href: booking, label: t("hotel.booking") },
+                  website && { href: website, label: t("hotel.website") },
+                ]
+                  .filter((l) => !!l)
+                  .map(({ href, label }) => (
+                    <a
+                      key={label}
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-sm text-xs text-text-muted underline hover:text-text",
+                        focusRing,
+                      )}
+                    >
+                      {label}
+                      <ExternalLink className="size-3" aria-hidden />
+                    </a>
+                  ))}
+              </span>
+            </div>
+            {onToggleSave && (
+              <SaveHotelButton saved={saved} onClick={onToggleSave} />
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -217,9 +217,8 @@ export function useStopHotels(trip: Trip, index: number) {
 }
 
 /**
- * Map data for the selected day: hotels at the stop, and beds per
- * alternative by name. Beds count in-budget hotels when the trip has a
- * budget. The hotels fit TripMap's `hotels` prop.
+ * Map data for the selected day: hotels at the stop, and the hotel count
+ * per alternative by name. The hotels fit TripMap's `hotels` prop.
  */
 export function useMapHotels(trip: Trip, index: number) {
   const { hotels } = useStopHotels(trip, index);
@@ -227,7 +226,7 @@ export function useMapHotels(trip: Trip, index: number) {
   return useMemo(() => {
     const beds = new Map<string, number>();
     for (const { place, beds: b } of options) {
-      if (b) beds.set(place.name, b.inBudget ?? b.total);
+      if (b) beds.set(place.name, b.total);
     }
     return {
       hotels: hotels.map(
