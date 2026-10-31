@@ -95,7 +95,11 @@ export type StageDetailsProps = {
   onLockedChange?: (locked: boolean) => void;
   /** Other stops to pick from. */
   alternatives?: ReactNode;
-  /** More content, e.g. hotel and booking link. */
+  /** Note at the top, e.g. that the route differs from the proposal. */
+  change?: ReactNode;
+  /** Hotel and booking link, in their own section. */
+  sleep?: ReactNode;
+  /** More content at the end. */
   children?: ReactNode;
 };
 
@@ -108,24 +112,31 @@ export function StageDetails({
   locked,
   onLockedChange,
   alternatives,
+  change,
+  sleep,
   children,
 }: StageDetailsProps) {
   const { t } = useTranslation("ui");
   const showStop = alternatives || onLockedChange || locked;
 
   return (
-    <div className="flex flex-col gap-3">
-      <SurfaceBar shares={surface} caption />
-      {climbs}
-      {weather && <DayWeather {...weather} />}
-      {forecast}
+    <div className="flex flex-col">
+      {change && <div className="pb-3">{change}</div>}
+      <Section title={t("stage.route")}>
+        <SurfaceBar shares={surface} caption />
+        {climbs}
+      </Section>
+      {(weather || forecast) && (
+        <Section title={t("stage.weather")}>
+          {weather && <DayWeather {...weather} />}
+          {forecast}
+        </Section>
+      )}
       {showStop && (
-        <div className="flex flex-col gap-2 rounded-md bg-bg p-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-text-muted">
-              {t("stage.whereToStop")}
-            </span>
-            {onLockedChange ? (
+        <Section
+          title={t("stage.whereToStop")}
+          action={
+            onLockedChange ? (
               <Toggle.Root
                 pressed={locked}
                 onPressedChange={onLockedChange}
@@ -149,12 +160,35 @@ export function StageDetails({
                   {t("stage.locked")}
                 </span>
               )
-            )}
-          </div>
+            )
+          }
+        >
           {alternatives}
-        </div>
+        </Section>
       )}
+      {sleep && <Section title={t("stage.whereToSleep")}>{sleep}</Section>}
       {children}
     </div>
+  );
+}
+
+/** One part of the day details, with a small title and a rule above. */
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-2 border-t border-border py-3 first:border-t-0 first:pt-0">
+      <div className="flex min-h-7 items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold text-text-muted">{title}</h3>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }
