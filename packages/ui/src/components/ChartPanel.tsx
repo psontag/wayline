@@ -9,19 +9,28 @@ import { cn } from "../lib/cn";
 export function ChartPanel({
   title,
   tabs,
+  plain = false,
   children,
 }: {
-  title: ReactNode;
+  /** Without a title, the tabs take the whole row. */
+  title?: ReactNode;
   /** The view switcher. It stays in place in every view. */
   tabs?: ReactNode;
+  /** No border and padding, e.g. inside a sheet. */
+  plain?: boolean;
   /** The view: ChartToolbar, ChartBody and ChartInfo. */
   children: ReactNode;
 }) {
   return (
-    <section className="flex shrink-0 flex-col gap-2 border-t border-border bg-surface px-4 py-3">
+    <section
+      className={cn(
+        "flex shrink-0 flex-col gap-2",
+        !plain && "border-t border-border bg-surface px-4 py-3",
+      )}
+    >
       <div className="flex h-8 items-center justify-between gap-3">
-        <h2 className="min-w-0 truncate font-bold">{title}</h2>
-        {tabs}
+        {title && <h2 className="min-w-0 truncate font-bold">{title}</h2>}
+        {tabs && <div className={cn(!title && "flex-1")}>{tabs}</div>}
       </div>
       {children}
     </section>

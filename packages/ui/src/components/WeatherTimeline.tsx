@@ -573,8 +573,8 @@ export function WeatherTimeline({
                   : h === to
                     ? "-translate-x-full"
                     : "-translate-x-1/2",
-                // Every second hour on narrow screens.
-                (h - from) % 2 === 1 && "max-sm:hidden",
+                // Every second hour on narrow screens, away from the edges.
+                (h - from) % 2 === 0 && "max-sm:hidden",
               )}
               style={{ left: pct(h) }}
             >
@@ -619,9 +619,14 @@ export function WeatherTimeline({
                   />
                 </dt>
                 <dd>
-                  {t("timeline.windAt", {
-                    speed: format.speed(info.wind.speed),
-                    kind: t(`timeline.kind.${info.wind.kind}`),
+                  {format.speed(info.wind.speed)}
+                  {/* The arrow color says the kind on narrow screens. */}
+                  <span className="max-sm:hidden">
+                    {" "}
+                    {t(`timeline.kind.${info.wind.kind}`)}
+                  </span>
+                  {" · "}
+                  {t("timeline.gustsAt", {
                     gusts: format.speed(info.wind.gusts),
                   })}
                 </dd>

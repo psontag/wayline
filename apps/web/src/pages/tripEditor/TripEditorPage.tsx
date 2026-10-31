@@ -20,6 +20,7 @@ import {
 import {
   Button,
   type MapLayerGroup,
+  type MapLayerKind,
   SegmentedControl,
   Toast,
   ToastProvider,
@@ -126,7 +127,7 @@ function TripEditor({
         .map((p) => p.coord)
     : undefined;
 
-  const weatherOn = view === "weather" && !isPhone;
+  const weatherOn = view === "weather";
   const rideStart = timeToHours(stageStartTime(trip.settings, selected));
   const ride = {
     start: rideStart,
@@ -226,30 +227,6 @@ function TripEditor({
     />
   );
 
-  if (isPhone) {
-    return (
-      <ToastProvider>
-        {toast}
-        {shareDialog}
-        <PhoneTripEditor
-          trip={trip}
-          editor={editor}
-          onShare={canShare ? () => setSharing(true) : undefined}
-          selected={selected}
-          onSelect={select}
-          network={network}
-          alternatives={alternatives}
-          onPickAlternative={(place) => void editor.moveStop(selected, place)}
-          hoverKm={hoverKm}
-          onHoverKm={setHoverKm}
-          hover={hover}
-          route={routeEditing(true)}
-          toast={<ToastViewport placement="inline" />}
-        />
-      </ToastProvider>
-    );
-  }
-
   const layerGroups: MapLayerGroup[] = [
     {
       title: t("layers.map"),
@@ -259,7 +236,16 @@ function TripEditor({
           label: t("layers.network"),
           checked: layers.network,
         },
-        { kind: "hotels", label: t("layers.hotels"), checked: layers.hotels },
+        // The phone map has no hotels.
+        ...(isPhone
+          ? []
+          : [
+              {
+                kind: "hotels" as const,
+                label: t("layers.hotels"),
+                checked: layers.hotels,
+              },
+            ]),
         {
           kind: "stations",
           label: t("layers.stations"),
@@ -289,6 +275,7 @@ function TripEditor({
   ];
   const switcher = (
     <SegmentedControl
+      stretch={isPhone}
       aria-label={t("panel.label")}
       options={[
         { value: "elevation", label: t("panel.elevation") },
@@ -304,6 +291,71 @@ function TripEditor({
         setMapTime(undefined);
         editor.setRideStart(selected, start);
       };
+
+  // The view under the map, or in the phone sheet.
+  const chart = weatherOn ? (
+    <WeatherPanel
+      key={stage?.id}
+      trip={trip}
+      index={selected}
+      onRideStartChange={setRideStart}
+      time={time}
+      onTimeChange={setMapTime}
+      ride={ride}
+      actions={switcher}
+      plain={isPhone}
+    />
+  ) : (
+    <StageProfile
+      key={stage?.id}
+      trip={trip}
+      index={selected}
+      network={network}
+      hoverKm={hoverKm}
+      onHoverKm={setHoverKm}
+      climbs={climbs}
+      highlightedClimb={hoveredClimb}
+      actions={switcher}
+      plain={isPhone}
+    />
+  );
+  const mapLayers = {
+    stations: layers.stations ? stations : [],
+    network: layers.network ? ("quiet" as const) : ("off" as const),
+    weather: weatherField && {
+      field: weatherField,
+      rain: layers.rain,
+      wind: layers.wind,
+    },
+    layers: {
+      groups: layerGroups,
+      onCheckedChange: (kind: MapLayerKind, checked: boolean) =>
+        setLayers({ ...layers, [kind]: checked }),
+    },
+  };
+
+  if (isPhone) {
+    return (
+      <ToastProvider>
+        {toast}
+        {shareDialog}
+        <PhoneTripEditor
+          trip={trip}
+          editor={editor}
+          onShare={canShare ? () => setSharing(true) : undefined}
+          selected={selected}
+          onSelect={select}
+          alternatives={alternatives}
+          onPickAlternative={(place) => void editor.moveStop(selected, place)}
+          hover={hover}
+          chart={chart}
+          mapLayers={mapLayers}
+          route={routeEditing(true)}
+          toast={<ToastViewport placement="inline" />}
+        />
+      </ToastProvider>
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -328,20 +380,7 @@ function TripEditor({
                 void editor.moveStop(selected, place)
               }
               hotels={isLast || !layers.hotels ? [] : mapHotels.hotels}
-              stations={layers.stations ? stations : []}
-              network={layers.network ? "quiet" : "off"}
-              weather={
-                weatherField && {
-                  field: weatherField,
-                  rain: layers.rain,
-                  wind: layers.wind,
-                }
-              }
-              layers={{
-                groups: layerGroups,
-                onCheckedChange: (kind, checked) =>
-                  setLayers({ ...layers, [kind]: checked }),
-              }}
+              {...mapLayers}
               selectedHotelId={stage?.hotel?.osmId}
               onSelectHotel={(osmId) => {
                 const h = mapHotels.hotels.find((x) => x.osmId === osmId);
@@ -366,30 +405,7 @@ function TripEditor({
               </ToastProvider>
             </TripMap>
           </div>
-          {weatherOn ? (
-            <WeatherPanel
-              key={stage?.id}
-              trip={trip}
-              index={selected}
-              onRideStartChange={setRideStart}
-              time={time}
-              onTimeChange={setMapTime}
-              ride={ride}
-              actions={switcher}
-            />
-          ) : (
-            <StageProfile
-              key={stage?.id}
-              trip={trip}
-              index={selected}
-              network={network}
-              hoverKm={hoverKm}
-              onHoverKm={setHoverKm}
-              climbs={climbs}
-              highlightedClimb={hoveredClimb}
-              actions={switcher}
-            />
-          )}
+          {chart}
         </div>
         <aside className="flex shrink-0 flex-col border-border bg-surface lg:w-panel lg:border-l">
           <TripSummary trip={trip} editor={editor} />

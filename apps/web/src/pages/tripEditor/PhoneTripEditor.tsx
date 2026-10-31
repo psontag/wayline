@@ -5,7 +5,6 @@ import {
   tripStats,
   type LonLat,
   type Place,
-  type RouteNetwork,
   type Trip,
 } from "@wayline/domain";
 import {
@@ -22,12 +21,12 @@ import { useTranslation } from "react-i18next";
 import { downloadTripGpx } from "../../data/gpx";
 import { PhoneStageSheet } from "./PhoneStageSheet";
 import { PhoneStopSheet } from "./PhoneStopSheet";
-import { useRouteStations } from "./stations";
 import {
   type MapAlternative,
   type MapPadding,
   type RouteEditing,
   TripMap,
+  type TripMapProps,
 } from "./TripMap";
 import type { TripEditorState } from "./useTripEditor";
 
@@ -39,12 +38,13 @@ export type PhoneTripEditorProps = {
   editor: TripEditorState;
   selected: number;
   onSelect: (index: number) => void;
-  network?: RouteNetwork;
   alternatives: MapAlternative[];
   onPickAlternative: (place: Place) => void;
-  hoverKm?: number;
-  onHoverKm: (km: number | undefined) => void;
   hover?: LonLat;
+  /** Elevation or weather, in the sheet. */
+  chart: ReactNode;
+  /** Layers the user can turn on and off, and the weather. */
+  mapLayers: Pick<TripMapProps, "stations" | "network" | "weather" | "layers">;
   /** Route edits of the selected stage. */
   route?: RouteEditing;
   /** The note after an edit. */
@@ -59,12 +59,11 @@ export function PhoneTripEditor({
   editor,
   selected,
   onSelect,
-  network,
   alternatives,
   onPickAlternative,
-  hoverKm,
-  onHoverKm,
   hover,
+  chart,
+  mapLayers,
   route,
   toast,
   onShare,
@@ -72,7 +71,6 @@ export function PhoneTripEditor({
   const { t } = useTranslation("tripEditor");
   const [snap, setSnap] = useState<SheetSnap>("half");
   const [stopOpen, setStopOpen] = useState(false);
-  const stations = useRouteStations(trip);
 
   // Fit the trip into the part of the map above the half-open sheet.
   const padding = useMemo<MapPadding>(() => {
@@ -90,7 +88,7 @@ export function PhoneTripEditor({
           trip={trip}
           selected={selected}
           onSelect={onSelect}
-          stations={stations}
+          {...mapLayers}
           alternatives={alternatives}
           onPickAlternative={onPickAlternative}
           hover={hover}
@@ -110,9 +108,7 @@ export function PhoneTripEditor({
           editor={editor}
           selected={selected}
           onSelect={onSelect}
-          network={network}
-          hoverKm={hoverKm}
-          onHoverKm={onHoverKm}
+          chart={chart}
           onOpenStop={() => setStopOpen(true)}
         />
       </BottomSheet>

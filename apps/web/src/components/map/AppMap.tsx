@@ -253,6 +253,14 @@ export function AppMap({
           {hint}
         </div>
       )}
+      {!controls && layers && (
+        // Below a floating header, as on phones.
+        <div className="absolute top-16 right-3 z-panel">
+          <MapControlGroup>
+            <MapLayerMenu {...layers} legend={legendItems} />
+          </MapControlGroup>
+        </div>
+      )}
       {controls && (
         <>
           <div className="absolute top-3 right-3 z-panel">

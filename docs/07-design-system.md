@@ -196,6 +196,7 @@ The panel under the trip map shows one view at a time: Elevation or Weather. Mor
 - No floating tooltips in the panel. Values go into the info line.
 - Scales sit in the left margin. A second scale goes inside the chart at the right edge.
 - Text that changes, like warnings, replaces text in a row. It never adds a row.
+- On phones the panel sits in the stage sheet with `plain`: no frame and no title, and the view switcher fills the row.
 
 ## Enforcement
 
