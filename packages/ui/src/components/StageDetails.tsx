@@ -57,7 +57,7 @@ export function DayWeather({
       />
       <Stat
         size="sm"
-        icon="rain"
+        icon={rain >= 0.1 ? "rain" : "dry"}
         label={t("stage.rain")}
         value={
           rain >= 0.1

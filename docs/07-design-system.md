@@ -133,6 +133,7 @@ Stats use a fixed set of Lucide icons, exported as `statIcons` from `packages/ui
 | `beds` | `BedDouble` | Beds, places to sleep |
 | `stars` | `Star` | Hotel stars |
 | `rain` | `CloudRain` | Rain |
+| `dry` | `UmbrellaOff` | No rain expected |
 | `wind` | `Wind` | Wind |
 | `temperature` | `Thermometer` | Temperature |
 | `daylight` | `Sunset` | Sunrise and sunset |
