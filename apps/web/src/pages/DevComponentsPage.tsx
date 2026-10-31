@@ -30,6 +30,7 @@ import {
   EmptyState,
   FormField,
   MapHint,
+  ChartPanel,
   MapLayerMenu,
   MapLegend,
   Menu,
@@ -561,7 +562,19 @@ function TripEditorParts() {
           aria-label={t("demo.elevation")}
         />
         <ElevationProfile axes points={[]} aria-label={t("demo.elevation")} />
-        <div className="border-t border-border pt-2">
+        <ChartPanel
+          title={t("demo.chartPanel")}
+          tabs={
+            <SegmentedControl
+              options={[
+                { value: "weather", label: t("demo.weather") },
+                { value: "elevation", label: t("demo.elevationView") },
+              ]}
+              value="weather"
+              onValueChange={() => {}}
+            />
+          }
+        >
           <WeatherTimeline
             hours={hours}
             sunrise={7.1}
@@ -576,7 +589,7 @@ function TripEditorParts() {
             time={mapTime}
             onTimeChange={setMapTime}
           />
-        </div>
+        </ChartPanel>
       </Card>
       <Card className="flex flex-col gap-3">
         <HotelRow

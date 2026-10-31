@@ -107,6 +107,7 @@ Other tokens:
 | Group | Values |
 |---|---|
 | Spacing | 4 px steps, also for sizes: `0.5`–`3.5` in half steps, `4`–`12`, `14`, `16`, `20`, `24`, `px` |
+| Height | `chart` 168 px: the chart in the panel under the trip map, the same in every view |
 | Width | `sm` 384 px, `panel` 440 px, `page` 1120 px |
 | Radius | `sm` 4 px, `md` 6 px, `lg` 8 px, `xl` 16 px (sheets), `full` |
 | Font size | `2xs` 11, `xs` 12, `sm` 13, `base` 14, `md` 15, `lg` 18, `xl` 22, `2xl` 28 px |
@@ -179,6 +180,22 @@ Screens add only their own sources, layers and markers as children. Line and fil
 - When the base style swaps, our own layers are added again.
 - OSM attribution is shown in both themes.
 - Screens with layers to turn on and off pass `layers`. The legend then moves into the map layers menu under the zoom buttons.
+
+## Chart panel
+
+The panel under the trip map shows one view at a time: Elevation or Weather. More views can follow. Every view uses the same frame from `packages/ui`, so switching moves nothing.
+
+| Row | Component | Height | Holds |
+|---|---|---|---|
+| Title | `ChartPanel` | 32 px | Day title, view switcher on the right |
+| Toolbar | `ChartToolbar` | 32 px | Legend, or ride time and best start |
+| Chart | `ChartBody` | `chart` 168 px | The chart, scales in a 56 px left margin |
+| Info | `ChartInfo` | 20 px | Values at the pointer or marker, with units |
+
+- A view always renders all rows, also while loading or without data.
+- No floating tooltips in the panel. Values go into the info line.
+- Scales sit in the left margin. A second scale goes inside the chart at the right edge.
+- Text that changes, like warnings, replaces text in a row. It never adds a row.
 
 ## Enforcement
 

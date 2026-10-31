@@ -159,8 +159,7 @@
     "rainAt": "{{rain}}/h · {{chance}} chance",
     "windAt": "{{speed}} {{kind}} · gusts {{gusts}}",
     "hour": "Hour",
-    "unitsChart": "°C · mm/h",
-    "unitsWind": "km/h"
+    "rainTick": "{{rain}}/h"
   },
   "climbs": {
     "none": "No real climbs",

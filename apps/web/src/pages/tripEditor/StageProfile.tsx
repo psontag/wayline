@@ -11,6 +11,10 @@ import {
   type Trip,
 } from "@wayline/domain";
 import {
+  ChartBody,
+  ChartInfo,
+  ChartPanel,
+  ChartToolbar,
   ElevationProfile,
   type ProfilePoint,
   SurfaceLegend,
@@ -113,45 +117,54 @@ export function StageProfile({
     });
   }
 
-  return (
-    <section
-      className={
-        variant === "panel"
-          ? "flex shrink-0 flex-col gap-2 border-t border-border bg-surface px-4 py-3"
-          : "flex flex-col gap-2"
-      }
-    >
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <div className="flex min-w-0 items-baseline gap-3">
-          {variant === "panel" ? (
-            <h2 className="truncate font-bold">
-              {t("profile.title", {
-                day: index + 1,
-                from: stage.start.name,
-                to: stage.end.name,
-              })}
-            </h2>
-          ) : (
-            <h2 className="text-sm font-bold">{t("phone.elevation")}</h2>
-          )}
-          <span className="text-xs whitespace-nowrap text-text-muted tabular-nums">
-            {readout}
-          </span>
-        </div>
-        {variant === "panel" && (
-          <div className="flex items-center gap-4">
-            <SurfaceLegend
-              unknown={points.some((p) => p.surface === "unknown")}
-            />
-            {actions}
-          </div>
-        )}
-      </div>
-      <div
-        className={
-          variant === "panel" ? "flex flex-col" : "flex flex-col gap-3"
-        }
+  const label = t("profile.label", {
+    day: index + 1,
+    elevation: format.elevation(highest?.ele ?? 0),
+    distance: format.distance((highest?.km ?? 0) * 1000),
+  });
+  const unknown = points.some((p) => p.surface === "unknown");
+
+  if (variant === "panel") {
+    return (
+      <ChartPanel
+        title={t("profile.title", {
+          day: index + 1,
+          from: stage.start.name,
+          to: stage.end.name,
+        })}
+        tabs={actions}
       >
+        <ChartToolbar start={<SurfaceLegend unknown={unknown} />} />
+        <ChartBody>
+          <ElevationProfile
+            axes
+            tooltip={false}
+            className="flex-1"
+            climbs={climbs}
+            highlightedClimb={highlightedClimb}
+            points={points}
+            compare={compare}
+            hoverKm={hoverKm}
+            onHoverKm={onHoverKm}
+            aria-label={label}
+          />
+        </ChartBody>
+        <ChartInfo>
+          <span className="text-text">{readout}</span>
+        </ChartInfo>
+      </ChartPanel>
+    );
+  }
+
+  return (
+    <section className="flex flex-col gap-2">
+      <div className="flex min-w-0 items-baseline gap-3">
+        <h2 className="text-sm font-bold">{t("phone.elevation")}</h2>
+        <span className="text-xs whitespace-nowrap text-text-muted tabular-nums">
+          {readout}
+        </span>
+      </div>
+      <div className="flex flex-col gap-3">
         <ElevationProfile
           axes
           climbs={climbs}
@@ -160,19 +173,13 @@ export function StageProfile({
           compare={compare}
           hoverKm={hoverKm}
           onHoverKm={onHoverKm}
-          aria-label={t("profile.label", {
-            day: index + 1,
-            elevation: format.elevation(highest?.ele ?? 0),
-            distance: format.distance((highest?.km ?? 0) * 1000),
-          })}
+          aria-label={label}
         />
-        {variant === "sheet" && (
-          <StageWeather
-            trip={trip}
-            index={index}
-            onRideStartChange={onRideStartChange}
-          />
-        )}
+        <StageWeather
+          trip={trip}
+          index={index}
+          onRideStartChange={onRideStartChange}
+        />
       </div>
     </section>
   );

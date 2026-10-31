@@ -111,7 +111,10 @@
     "hotels": "Hotels",
     "stations": "Train stations",
     "rain": "Rain",
-    "wind": "Wind"
+    "wind": "Wind",
+    "chartPanel": "Day 2 · Bamberg → Coburg",
+    "weather": "Weather",
+    "elevationView": "Elevation"
   },
   "icon": {
     "distance": "Distance",

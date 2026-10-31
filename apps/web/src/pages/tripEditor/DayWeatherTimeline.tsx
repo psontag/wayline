@@ -7,8 +7,14 @@ import {
   timeToHours,
   type Trip,
 } from "@wayline/domain";
-import { useFormat, WeatherTimeline } from "@wayline/ui";
-import { useMemo } from "react";
+import {
+  ChartBody,
+  ChartInfo,
+  ChartToolbar,
+  useFormat,
+  WeatherTimeline,
+} from "@wayline/ui";
+import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { type StageForecast, useWeather } from "../../data/queries";
 import {
@@ -29,6 +35,8 @@ export function StageWeather({
   onRideStartChange,
   time,
   onTimeChange,
+  leading,
+  framed = false,
 }: {
   trip: Trip;
   index: number;
@@ -37,6 +45,10 @@ export function StageWeather({
   /** Hour the map shows. Without it, there is no time marker. */
   time?: number;
   onTimeChange?: (time: number) => void;
+  /** Before the ride time, e.g. a play button. */
+  leading?: ReactNode;
+  /** Inside a ChartPanel. */
+  framed?: boolean;
 }) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -52,20 +64,30 @@ export function StageWeather({
         onRideStartChange={onRideStartChange}
         time={time}
         onTimeChange={onTimeChange}
+        leading={leading}
       />
     );
   }
-  return (
-    <p className="text-sm text-text-muted">
-      {!date
-        ? t("profile.noStartDate")
-        : weather.isPending
-          ? t("profile.loadingWeather")
-          : t("profile.forecastFrom", {
-              date: format.date(localTimeToDate(forecastFrom(date))),
-            })}
-    </p>
-  );
+  const message = !date
+    ? t("profile.noStartDate")
+    : weather.isPending
+      ? t("profile.loadingWeather")
+      : t("profile.forecastFrom", {
+          date: format.date(localTimeToDate(forecastFrom(date))),
+        });
+  // In a ChartPanel, keep the rows so switching views moves nothing.
+  if (framed) {
+    return (
+      <>
+        <ChartToolbar />
+        <ChartBody className="items-center justify-center text-sm text-text-muted">
+          {message}
+        </ChartBody>
+        <ChartInfo />
+      </>
+    );
+  }
+  return <p className="text-sm text-text-muted">{message}</p>;
 }
 
 /** Weather by hour with the ride window and the best start. */
@@ -77,6 +99,7 @@ function DayTimeline({
   onRideStartChange,
   time,
   onTimeChange,
+  leading,
 }: {
   forecast: StageForecast;
   trip: Trip;
@@ -85,6 +108,7 @@ function DayTimeline({
   onRideStartChange?: (start: string) => void;
   time?: number;
   onTimeChange?: (time: number) => void;
+  leading?: ReactNode;
 }) {
   const { t } = useTranslation("tripEditor");
   const stats = trip.stages[index]?.stats;
@@ -110,6 +134,7 @@ function DayTimeline({
       onStartChange={onRideStartChange && ((h) => onRideStartChange(clock(h)))}
       time={time}
       onTimeChange={onTimeChange}
+      leading={leading}
       describe={(h) => {
         const ride = rideFrom(forecast, clock(h));
         return ride ? describeRide(t, ride) : undefined;

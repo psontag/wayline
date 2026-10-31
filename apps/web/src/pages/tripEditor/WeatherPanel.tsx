@@ -1,5 +1,5 @@
 import type { Trip } from "@wayline/domain";
-import { IconButton } from "@wayline/ui";
+import { ChartPanel, IconButton } from "@wayline/ui";
 import { Pause, Play } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -65,26 +65,16 @@ export function WeatherPanel({
 
   if (!stage) return null;
   return (
-    <section className="flex shrink-0 flex-col gap-2 border-t border-border bg-surface px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <IconButton
-            label={t(playing ? "weatherPanel.pause" : "weatherPanel.play")}
-            icon={playing ? <Pause aria-hidden /> : <Play aria-hidden />}
-            size="sm"
-            onClick={play}
-          />
-          <h2 className="truncate font-bold">
-            {t("profile.title", {
-              day: index + 1,
-              from: stage.start.name,
-              to: stage.end.name,
-            })}
-          </h2>
-        </div>
-        {actions}
-      </div>
+    <ChartPanel
+      title={t("profile.title", {
+        day: index + 1,
+        from: stage.start.name,
+        to: stage.end.name,
+      })}
+      tabs={actions}
+    >
       <StageWeather
+        framed
         trip={trip}
         index={index}
         onRideStartChange={onRideStartChange}
@@ -93,7 +83,15 @@ export function WeatherPanel({
           setPlaying(false);
           onTimeChange(next);
         }}
+        leading={
+          <IconButton
+            label={t(playing ? "weatherPanel.pause" : "weatherPanel.play")}
+            icon={playing ? <Pause aria-hidden /> : <Play aria-hidden />}
+            size="sm"
+            onClick={play}
+          />
+        }
       />
-    </section>
+    </ChartPanel>
   );
 }
