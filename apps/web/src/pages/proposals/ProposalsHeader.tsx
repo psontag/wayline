@@ -7,20 +7,17 @@ import {
 import {
   Badge,
   Button,
-  cn,
-  focusRing,
-  Logo,
   type StatIcon,
   statIcons,
   TextLink,
-  TopBar,
+  PageBar,
   TopBarSpacer,
   useFormat,
 } from "@wayline/ui";
 import { ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-/** Top bar with the search inputs and a way back to change them. */
+/** Bar with the search inputs and a way back to change them. */
 export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
   const { t } = useTranslation("proposals");
   const format = useFormat();
@@ -75,15 +72,7 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
     : [];
 
   return (
-    <TopBar>
-      <Link
-        to="/"
-        aria-label={t("backToList")}
-        className={cn("rounded-sm", focusRing)}
-      >
-        <Logo />
-      </Link>
-      <div className="hidden h-6 w-px bg-border sm:block" />
+    <PageBar>
       <TextLink asChild className="font-semibold">
         <Link to="/new" search={request ? { request } : {}}>
           <ChevronLeft aria-hidden />
@@ -117,6 +106,6 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
           {t("edit")}
         </Link>
       </Button>
-    </TopBar>
+    </PageBar>
   );
 }

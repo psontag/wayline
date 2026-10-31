@@ -9,7 +9,7 @@ function subscribe(onChange: () => void) {
   return () => list.removeEventListener("change", onChange);
 }
 
-/** True on phone-sized screens, where the editor shows a bottom sheet. */
+/** True on phone-sized screens. */
 export function useIsPhone() {
   return useSyncExternalStore(subscribe, () => matchMedia(query).matches);
 }

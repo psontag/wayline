@@ -62,7 +62,7 @@ export {
   type ToastProps,
 } from "./components/Toast";
 export { Tooltip, TooltipProvider } from "./components/Tooltip";
-export { Logo, TopBar, TopBarSpacer } from "./components/TopBar";
+export { Logo, PageBar, TopBar, TopBarSpacer } from "./components/TopBar";
 export { createFormat, useFormat, type Format } from "./format";
 export { cn } from "./lib/cn";
 export {

@@ -21,7 +21,7 @@ export function Logo() {
   );
 }
 
-/** App header. Put the logo or a back link first and actions last. */
+/** App header, the same on every screen. */
 export function TopBar({ children }: { children: ReactNode }) {
   return (
     <header className="z-panel flex h-14 shrink-0 items-center gap-4 border-b border-border bg-surface px-4">
@@ -33,4 +33,13 @@ export function TopBar({ children }: { children: ReactNode }) {
 /** Pushes the following items in a TopBar to the end. */
 export function TopBarSpacer() {
   return <div className="flex-1" />;
+}
+
+/** Slim bar under the TopBar with the title and actions of one screen. */
+export function PageBar({ children }: { children: ReactNode }) {
+  return (
+    <div className="z-panel flex h-12 shrink-0 items-center gap-3 border-b border-border bg-surface px-4">
+      {children}
+    </div>
+  );
 }

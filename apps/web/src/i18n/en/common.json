@@ -4,6 +4,9 @@
     "tagline": "Plan multi-day bike trips."
   },
   "nav": {
+    "label": "Main",
+    "trips": "Trips",
+    "newTrip": "New trip",
     "settings": "Settings"
   }
 }
