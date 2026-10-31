@@ -140,10 +140,14 @@ export function windTag(
 }
 
 /**
- * Where to put each proposal's number on the map: the point in the middle
- * part of its route that is farthest from all other routes.
+ * Where to put each proposal's label on the map: the point in the middle
+ * part of its route that is farthest from all other routes and from the
+ * points to avoid, e.g. stop markers.
  */
-export function labelPoints(routes: RoutePoint[][]): LonLat[] {
+export function labelPoints(
+  routes: RoutePoint[][],
+  avoid: LonLat[] = [],
+): LonLat[] {
   const samples = routes.map((points) => sample(points, 1));
   return routes.map((points, i) => {
     const total = points.at(-1)?.km ?? 0;
@@ -155,6 +159,7 @@ export function labelPoints(routes: RoutePoint[][]): LonLat[] {
       if (p.km < 0.2 * total || p.km > 0.8 * total) continue;
       let gap = Infinity;
       for (const q of others) gap = Math.min(gap, flatKm(p.coord, q.coord));
+      for (const q of avoid) gap = Math.min(gap, flatKm(p.coord, q));
       if (gap > bestGap) {
         bestGap = gap;
         best = p.coord;

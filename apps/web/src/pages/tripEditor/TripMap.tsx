@@ -27,6 +27,7 @@ import {
   type MapRef,
   Marker,
   Source,
+  useMap,
 } from "react-map-gl/maplibre";
 import {
   AppMap,
@@ -459,22 +460,23 @@ export function TripMap({
             <StationMarker name={station.name} href={station.href} />
           </Marker>
         ))}
-      {alternatives.map(({ place, label, beds }) => (
-        <Marker
-          key={place.name}
-          longitude={place.coord[0]}
-          latitude={place.coord[1]}
-          anchor="left"
-          offset={[-8, 0]}
-          style={{ zIndex: 2 }}
-        >
-          <AlternativeMarker
-            label={label}
-            beds={beds}
-            onClick={() => onPickAlternative?.(place)}
-          />
-        </Marker>
-      ))}
+      <AlternativeMarkers
+        alternatives={alternatives}
+        labels={[
+          ...trip.stages.slice(0, -1).map((stage, index) => ({
+            coord: stage.end.coord,
+            text: stage.end.name,
+            kind:
+              index === selected ? ("selected" as const) : ("stop" as const),
+          })),
+          ...[first?.start, last?.end].flatMap((place) =>
+            place
+              ? [{ coord: place.coord, text: place.name, kind: "end" as const }]
+              : [],
+          ),
+        ]}
+        onPick={(place) => onPickAlternative?.(place)}
+      />
       {trip.stages.slice(0, -1).map((stage, index) => (
         <Marker
           key={stage.id}
@@ -580,4 +582,117 @@ export function TripMap({
       )}
     </AppMap>
   );
+}
+
+/** A label on the map that options must not cover. */
+type MapLabel = {
+  coord: LonLat;
+  text: string;
+  kind: "selected" | "stop" | "end";
+};
+
+type Box = { left: number; right: number; top: number; bottom: number };
+
+/**
+ * Rough label boxes in screen pixels, from the marker size and the text
+ * length. Good enough to tell when labels run into each other.
+ */
+const boxOf = {
+  selected: (x: number, y: number, chars: number): Box => ({
+    left: x - 20,
+    right: x + 26 + chars * 9,
+    top: y - 20,
+    bottom: y + 20,
+  }),
+  stop: (x: number, y: number, chars: number): Box => ({
+    left: x - 16,
+    right: x + 22 + chars * 7.5,
+    top: y - 16,
+    bottom: y + 16,
+  }),
+  end: (x: number, y: number, chars: number): Box => ({
+    left: x - 12,
+    right: x + 18 + chars * 7.5,
+    top: y - 12,
+    bottom: y + 12,
+  }),
+  option: (x: number, y: number, chars: number, beds: boolean): Box => ({
+    left: x - 8,
+    right: x + 14 + chars * 6.5 + (beds ? 28 : 0),
+    top: y - 10,
+    bottom: y + 10,
+  }),
+};
+
+function overlaps(a: Box, b: Box) {
+  return (
+    a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
+  );
+}
+
+/**
+ * Other towns for the selected stop. An option whose label would cover a
+ * stop, an end or an earlier option shows only its circle until hovered.
+ */
+function AlternativeMarkers({
+  alternatives,
+  labels,
+  onPick,
+}: {
+  alternatives: MapAlternative[];
+  labels: MapLabel[];
+  onPick: (place: Place) => void;
+}) {
+  const { current: ref } = useMap();
+  // Bumped on every zoom, so the boxes are measured again.
+  const [zoomed, setZoomed] = useState(0);
+  useEffect(() => {
+    const map = ref?.getMap();
+    if (!map) return;
+    const update = () => setZoomed((n) => n + 1);
+    map.on("zoomend", update);
+    return () => void map.off("zoomend", update);
+  }, [ref]);
+
+  const crowded = useMemo(() => {
+    const out = new Set<string>();
+    if (!ref) return out;
+    const taken = labels.map(({ coord, text, kind }) => {
+      const { x, y } = ref.project(coord);
+      return boxOf[kind](x, y, text.length);
+    });
+    for (const { place, label, beds } of alternatives) {
+      const { x, y } = ref.project(place.coord);
+      const box = boxOf.option(x, y, label.length, beds !== undefined);
+      if (taken.some((t) => overlaps(t, box))) {
+        out.add(place.name);
+        // Its circle still takes room.
+        taken.push(boxOf.option(x, y, 0, false));
+      } else {
+        taken.push(box);
+      }
+    }
+    return out;
+    // zoomed only triggers a new measure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref, zoomed, labels, alternatives]);
+
+  return alternatives.map(({ place, label, beds }) => (
+    <Marker
+      key={place.name}
+      longitude={place.coord[0]}
+      latitude={place.coord[1]}
+      anchor="left"
+      offset={[-8, 0]}
+      style={{ zIndex: 2 }}
+    >
+      <AlternativeMarker
+        label={label}
+        beds={beds}
+        compact={crowded.has(place.name)}
+        aria-label={label}
+        onClick={() => onPick(place)}
+      />
+    </Marker>
+  ));
 }

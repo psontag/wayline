@@ -56,7 +56,7 @@ export function ProposalsMap({
     () => proposals.map((p) => tripPoints(p.trip)),
     [proposals],
   );
-  const labels = useMemo(() => labelPoints(routes), [routes]);
+
   const colors = useMemo(
     () => proposals.map((p, i) => tokens[routeColorToken[routeColorKey(p, i)]]),
     [proposals, tokens],
@@ -121,6 +121,11 @@ export function ProposalsMap({
       ...proposals.flatMap((p) => p.trip.stages.map((s) => s.end.coord)),
     ],
     [proposals, places],
+  );
+
+  const labels = useMemo(
+    () => labelPoints(routes, stopCoords),
+    [routes, stopCoords],
   );
 
   // Show everything whenever a proposal comes in.
