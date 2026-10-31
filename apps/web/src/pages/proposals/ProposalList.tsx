@@ -86,7 +86,7 @@ export function ProposalList({
           retry={generation.retry}
         />
       )}
-      <div className="flex flex-col gap-2 p-3 lg:min-h-0 lg:flex-1 lg:overflow-auto">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3">
         {proposals.map((p, i) => (
           <ProposalItem
             key={p.id}

@@ -18,7 +18,7 @@ import {
   Marker,
   Source,
 } from "react-map-gl/maplibre";
-import { AppMap, MapLayer } from "../../components/map/AppMap";
+import { AppMap, MapLayer, type MapPadding } from "../../components/map/AppMap";
 import { labelPoints, tripPoints } from "./proposalView";
 import { flavourOf, routeColorKey, routeColorToken } from "./routeColor";
 
@@ -33,7 +33,12 @@ export type ProposalsMapProps = {
   /** Day of the highlighted proposal to show at full strength. */
   highlightedDay?: number;
   onSelect: (id: string) => void;
+  /** Small map on phones: less padding, no zoom buttons. */
+  compact?: boolean;
 };
+
+/** Phones: room on both sides for route and place labels. */
+const compactPadding: MapPadding = { top: 40, right: 80, bottom: 40, left: 72 };
 
 /** All proposals on one map, each in its own color. */
 export function ProposalsMap({
@@ -42,6 +47,7 @@ export function ProposalsMap({
   highlighted,
   highlightedDay,
   onSelect,
+  compact = false,
 }: ProposalsMapProps) {
   const { t } = useTranslation("proposals");
   const tokens = useThemeTokens();
@@ -158,6 +164,7 @@ export function ProposalsMap({
       hiddenLabels={ends.map((p) => p.name)}
       interactiveLayerIds={["proposal-hit"]}
       onClick={onClick}
+      {...(compact && { padding: compactPadding, controls: false })}
     >
       <Source id="proposals" type="geojson" data={data}>
         <MapLayer

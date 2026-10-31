@@ -22,6 +22,7 @@ export function TripListPage() {
           <Button asChild variant="secondary">
             <Link to="/import">{t("importGpx")}</Link>
           </Button>
+          {/* Phones have New trip in the top bar. */}
           <Button asChild variant="primary" className="max-md:hidden">
             <Link to="/new">
               <Plus aria-hidden />
@@ -44,7 +45,7 @@ export function TripListPage() {
           title={t("empty.title")}
           text={t("empty.text")}
           action={
-            <Button asChild variant="primary" className="max-md:hidden">
+            <Button asChild variant="primary">
               <Link to="/new">{t("empty.action")}</Link>
             </Button>
           }
@@ -59,10 +60,6 @@ export function TripListPage() {
           <TripSection title={t("sharedWithYou")} trips={shared} showTitle />
         </>
       )}
-
-      <p className="pt-2 text-center text-xs text-text-muted md:hidden">
-        {t("phoneHint")}
-      </p>
     </div>
   );
 }
