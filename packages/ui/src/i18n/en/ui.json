@@ -102,6 +102,16 @@
     "unsave": "Remove saved hotel",
     "saved": "Saved"
   },
+  "networkRoute": {
+    "meta": "{{rank}} · {{distance}} nearby",
+    "also": "Also: {{names}}",
+    "rank": {
+      "international": "EuroVelo route",
+      "national": "National route",
+      "regional": "Regional route",
+      "local": "Local route"
+    }
+  },
   "stopChoices": {
     "stop": "Stop",
     "today": "Today",

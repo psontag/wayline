@@ -173,6 +173,16 @@ Every screen uses `AppMap` (`apps/web/src/components/map/AppMap.tsx`). It owns:
 - zoom buttons, legend or map layers, hint and attribution
 - fitting to points, with padding for panels and sheets
 
+Signed cycling routes show by size:
+
+| Routes | From zoom | Width |
+|---|---|---|
+| EuroVelo, national | always | 2–4 px |
+| Regional | 9 | 1.25–3 px |
+| Local | 11 | 1–2 px |
+
+Hovering or tapping a route highlights all of it in the loaded area and shows its name, kind, length nearby and other routes on the same way.
+
 Screens add only their own sources, layers and markers as children. Line and fill layers use `MapLayer`, so they sit below the base map labels. Screens don't set a base style, controls or their own fitting.
 
 - Base styles: OpenFreeMap Positron (light) and Dark.
