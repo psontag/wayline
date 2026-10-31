@@ -18,11 +18,11 @@ export function TripListPage() {
         <h1 className="text-xl font-extrabold tracking-tight md:text-2xl">
           {t("title")}
         </h1>
-        <div className="flex gap-2 max-md:hidden">
+        <div className="flex gap-2">
           <Button asChild variant="secondary">
             <Link to="/import">{t("importGpx")}</Link>
           </Button>
-          <Button asChild variant="primary">
+          <Button asChild variant="primary" className="max-md:hidden">
             <Link to="/new">
               <Plus aria-hidden />
               {t("newTrip")}
