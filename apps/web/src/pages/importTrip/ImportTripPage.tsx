@@ -8,6 +8,7 @@ import {
 } from "@wayline/domain";
 import {
   Button,
+  cn,
   DateField,
   FileDrop,
   FormField,
@@ -39,6 +40,11 @@ import {
 
 /** Meters off the network, without elevation, before the day gets a note. */
 const OFF_NETWORK_NOTE = 2000;
+
+// iOS knows no type for .gpx and greys the files out unless the list
+// also allows plain data.
+const GPX_TYPES =
+  ".gpx,application/gpx+xml,application/xml,text/xml,application/octet-stream";
 
 const profiles: Profile[] = ["touring", "fast", "scenic", "quiet"];
 const budgets: HotelBudget[] = ["low", "mid", "high"];
@@ -146,8 +152,14 @@ export function ImportTripPage() {
       : undefined;
 
   return (
-    <div className="flex min-h-0 flex-1">
-      <div className="relative hidden min-w-0 flex-1 md:block">
+    <div className="flex flex-col md:min-h-0 md:flex-1 md:flex-row">
+      <div
+        className={cn(
+          "relative aspect-square shrink-0 md:aspect-auto md:min-w-0 md:flex-1",
+          // On phones the map shows once there is something on it.
+          !files.length && "max-md:hidden",
+        )}
+      >
         <ImportMap files={files} hovered={hovered} towns={places?.towns} />
       </div>
 
@@ -157,7 +169,7 @@ export function ImportTripPage() {
           e.preventDefault();
           if (files.length) create.mutate();
         }}
-        className="flex min-h-0 w-full flex-col bg-surface md:max-w-panel md:border-l md:border-border"
+        className="flex w-full flex-col bg-surface md:min-h-0 md:max-w-panel md:border-l md:border-border"
       >
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-5">
           <h1 className="text-xl font-extrabold tracking-tight">
@@ -167,7 +179,7 @@ export function ImportTripPage() {
           {files.length === 0 ? (
             <FileDrop
               size="lg"
-              accept=".gpx"
+              accept={GPX_TYPES}
               multiple
               label={t("drop.label")}
               hint={t("drop.hint")}
@@ -249,7 +261,7 @@ export function ImportTripPage() {
                 }}
               />
               <FileDrop
-                accept=".gpx"
+                accept={GPX_TYPES}
                 multiple
                 label={t("drop.add")}
                 onFiles={(picked) => void addFiles(picked)}
@@ -345,7 +357,7 @@ export function ImportTripPage() {
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-t border-border bg-surface px-5 py-4 max-md:sticky max-md:bottom-0">
           {create.isError ? (
             <span role="alert" className="text-sm text-danger">
               {t("createFailed")}
