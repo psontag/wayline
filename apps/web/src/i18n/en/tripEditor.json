@@ -17,7 +17,6 @@
     "renameLabel": "Trip name",
     "duplicate": "Duplicate",
     "copyName": "{{name}} (copy)",
-    "settings": "Settings",
     "delete": "Delete",
     "deleteConfirm": "Delete “{{name}}”?",
     "viewOnly": "View only",

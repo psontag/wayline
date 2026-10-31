@@ -1,19 +1,16 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { localTimeToDate, type Trip } from "@wayline/domain";
 import {
   Badge,
   Button,
-  cn,
   DateButton,
-  focusRing,
   IconButton,
   InlineEdit,
-  Logo,
   Menu,
   MenuItem,
   MenuSeparator,
   SaveStatus,
-  TopBar,
+  PageBar,
   TopBarSpacer,
   useFormat,
 } from "@wayline/ui";
@@ -24,7 +21,6 @@ import {
   Eye,
   Pencil,
   Redo2,
-  Settings,
   Share2,
   Trash2,
   Undo2,
@@ -35,7 +31,7 @@ import { useDeleteTrip, useDuplicateTrip } from "../../data/queries";
 import { downloadTripGpx } from "../../data/gpx";
 import type { TripEditorState } from "./useTripEditor";
 
-/** Top bar of the trip editor: name, date, save state and trip actions. */
+/** Bar of the trip editor: name, date, save state and trip actions. */
 export function TripHeader({
   trip,
   editor,
@@ -58,15 +54,7 @@ export function TripHeader({
   const to = trip.stages.at(-1)?.end.name ?? "";
 
   return (
-    <TopBar>
-      <Link
-        to="/"
-        aria-label={t("backToList")}
-        className={cn("rounded-sm", focusRing)}
-      >
-        <Logo />
-      </Link>
-      <div className="hidden h-6 w-px bg-border sm:block" />
+    <PageBar>
       <div className="flex min-w-0 flex-col">
         {renaming ? (
           <InlineEdit
@@ -179,12 +167,6 @@ export function TripHeader({
         >
           {t("header.duplicate")}
         </MenuItem>
-        <MenuItem
-          icon={<Settings aria-hidden />}
-          onSelect={() => void navigate({ to: "/settings" })}
-        >
-          {t("header.settings")}
-        </MenuItem>
         {!editor.readOnly && (
           <>
             <MenuSeparator />
@@ -205,6 +187,6 @@ export function TripHeader({
           </>
         )}
       </Menu>
-    </TopBar>
+    </PageBar>
   );
 }

@@ -33,7 +33,7 @@ import { type RouteEditing, TripMap } from "./TripMap";
 import { tripStops } from "./tripArea";
 import { TripSummary } from "./TripSummary";
 import { PhoneTripEditor } from "./PhoneTripEditor";
-import { useIsPhone } from "./useIsPhone";
+import { useIsPhone } from "../../components/useIsPhone";
 import { useTripEditor } from "./useTripEditor";
 
 export function TripEditorPage() {
