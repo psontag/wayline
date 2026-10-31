@@ -64,12 +64,15 @@ export function bahnUrl(opts: {
   /** The time is the latest arrival, not the departure. */
   arrival?: boolean;
 }): string {
-  // bahn.de reads its search from the URL fragment.
+  // bahn.de reads its search from the URL fragment. It runs the search
+  // only with location ids. "A=1@O=<name>@" lets it match the name itself.
   const params: [string, string][] = [
     ["sts", "true"],
     ["so", opts.from],
     ["zo", opts.to],
   ];
+  if (opts.from) params.push(["soid", `A=1@O=${opts.from}@`]);
+  if (opts.to) params.push(["zoid", `A=1@O=${opts.to}@`]);
   if (opts.time) {
     params.push(["hd", `${opts.time}:00`], ["hza", opts.arrival ? "A" : "D"]);
   }

@@ -35,4 +35,10 @@ export {
 } from "./osm/hotels";
 export { OsmLodging, toOption } from "./osm/OsmLodging";
 export { openSource } from "./openSource";
+export {
+  TransitousTrains,
+  geocodeUrl,
+  parsePlan,
+  planUrl,
+} from "./transitous/TransitousTrains";
 export { mergeTiles, TiledNetworkSource, tileKeys } from "./TiledNetworkSource";

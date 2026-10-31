@@ -11,6 +11,7 @@ import {
   type RouteNetworkSource,
   type RoutingProvider,
   type TrainProvider,
+  TransitousTrains,
   type WeatherProvider,
 } from "@wayline/providers";
 import { ApiRouting } from "./ApiRouting";
@@ -93,11 +94,7 @@ export function createServices(): Services {
     generator: createTripGenerator({ dataUrl: url }),
     routing,
     weather: createWeather(),
-    // VITE_TRAINS=db-rest asks db.transport.rest. Default: made-up trains.
-    trains:
-      import.meta.env.VITE_TRAINS === "db-rest"
-        ? new DbRestTrains({ fetch: (url) => fetch(url) })
-        : new FakeTrains(),
+    trains: createTrains(),
     lodging: new OsmLodging(network),
     network,
     async snap(coord) {
@@ -107,6 +104,22 @@ export function createServices(): Services {
     },
     graph: (bbox) => graphs.get(bbox),
   };
+}
+
+/**
+ * VITE_TRAINS=transitous asks Transitous, VITE_TRAINS=db-rest asks
+ * db.transport.rest. Default: made-up trains.
+ */
+function createTrains(): TrainProvider {
+  const fetchText = (url: string) => fetch(url);
+  switch (import.meta.env.VITE_TRAINS) {
+    case "transitous":
+      return new TransitousTrains({ fetch: fetchText });
+    case "db-rest":
+      return new DbRestTrains({ fetch: fetchText });
+    default:
+      return new FakeTrains();
+  }
 }
 
 /** VITE_WEATHER=open-meteo asks Open-Meteo. Default: made-up weather. */

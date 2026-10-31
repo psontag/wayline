@@ -254,7 +254,7 @@ describe("links", () => {
     expect(
       bahnUrl({ from: "Bamberg", to: "Bad Rodach", time: "2027-06-12T08:00" }),
     ).toBe(
-      "https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=Bamberg&zo=Bad%20Rodach&hd=2027-06-12T08%3A00%3A00&hza=D",
+      "https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=Bamberg&zo=Bad%20Rodach&soid=A%3D1%40O%3DBamberg%40&zoid=A%3D1%40O%3DBad%20Rodach%40&hd=2027-06-12T08%3A00%3A00&hza=D",
     );
   });
 });
@@ -283,7 +283,7 @@ describe("trainLinks", () => {
   it("leaves time and home out when unknown", () => {
     const { there } = trainLinks({ ...trip, startDate: undefined });
     expect(there).toBe(
-      "https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=&zo=Bamberg",
+      "https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=&zo=Bamberg&zoid=A%3D1%40O%3DBamberg%40",
     );
   });
 });
