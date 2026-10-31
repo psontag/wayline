@@ -137,15 +137,16 @@ function SelectedStage({
           <StopPicker trip={trip} index={index} editor={editor} />
         ) : undefined
       }
-    >
-      <StageChange trip={trip} index={index} editor={editor} />
-      {!isLast && (
-        <>
-          <HotelPicker trip={trip} index={index} editor={editor} />
-          <BookingLink trip={trip} index={index} />
-        </>
-      )}
-    </StageDetails>
+      change={<StageChange trip={trip} index={index} editor={editor} />}
+      sleep={
+        !isLast && (
+          <>
+            <HotelPicker trip={trip} index={index} editor={editor} />
+            <BookingLink trip={trip} index={index} />
+          </>
+        )
+      }
+    />
   );
 }
 
