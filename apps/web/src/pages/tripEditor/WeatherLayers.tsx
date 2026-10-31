@@ -1,12 +1,13 @@
 import { useThemeTokens, WIND_SPEED_STEPS } from "@wayline/ui";
-import type { FeatureCollection, Point } from "geojson";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Source, useMap } from "react-map-gl/maplibre";
 import { MapLayer } from "../../components/map/AppMap";
-import type { WeatherPointProps } from "./weatherGrid";
+import { rainImage, type WeatherField, windArrows } from "./weatherGrid";
 
 const ARROW = "wind-arrow";
-const ARROW_PX = 48;
+const ARROW_PX = 40;
+/** Screen distance between wind arrows. */
+const ARROW_SPACING_PX = 34;
 
 /** Arrow pointing north, as a signed distance field so it can be tinted. */
 function arrowImage(): ImageData | undefined {
@@ -17,11 +18,11 @@ function arrowImage(): ImageData | undefined {
   if (!ctx) return undefined;
   const c = ARROW_PX / 2;
   ctx.fillStyle = "#fff";
-  ctx.fillRect(c - 3, 18, 6, 26);
+  ctx.fillRect(c - 1.25, 14, 2.5, 18);
   ctx.beginPath();
-  ctx.moveTo(c, 4);
-  ctx.lineTo(c + 11, 20);
-  ctx.lineTo(c - 11, 20);
+  ctx.moveTo(c, 7);
+  ctx.lineTo(c + 6, 16);
+  ctx.lineTo(c - 6, 16);
   ctx.closePath();
   ctx.fill();
   return ctx.getImageData(0, 0, ARROW_PX, ARROW_PX);
@@ -46,97 +47,114 @@ function useArrowImage() {
   }, [map]);
 }
 
-/** "rgb(1, 2, 3)" with an alpha. */
-function withAlpha(rgb: string, alpha: number): string {
-  return rgb.replace("rgb(", "rgba(").replace(")", `, ${alpha})`);
+/** Zoom of the map, rounded so arrows only change at whole steps. */
+function useZoomStep(): number {
+  const { current: map } = useMap();
+  const [zoom, setZoom] = useState(() => Math.round(map?.getZoom() ?? 9));
+  useEffect(() => {
+    if (!map) return;
+    const update = () => setZoom(Math.round(map.getZoom()));
+    update();
+    map.on("zoomend", update);
+    return () => {
+      map.off("zoomend", update);
+    };
+  }, [map]);
+  return zoom;
+}
+
+/** Rain as a data URL in the rain color. The map blends the pixels. */
+function rainUrl(field: WeatherField, rgb: string): string | undefined {
+  const image = rainImage(field);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const ctx = canvas.getContext("2d");
+  const [r, g, b] = rgb.match(/\d+/g)?.map(Number) ?? [];
+  if (!ctx || r === undefined || g === undefined || b === undefined) {
+    return undefined;
+  }
+  const data = ctx.createImageData(image.width, image.height);
+  image.alpha.forEach((a, i) => {
+    data.data.set([r, g, b, Math.round(a * 255)], i * 4);
+  });
+  ctx.putImageData(data, 0, 0);
+  return canvas.toDataURL();
 }
 
 /**
- * Rain as a soft field and wind as arrows of one length, colored by speed.
- * Arrows that would overlap are left out, so they stay calm at any zoom.
+ * Rain as a smooth field and wind as arrows of one length, colored by
+ * speed. Arrows keep the same screen distance at every zoom.
  */
 export function WeatherLayers({
-  points,
+  field,
   rain,
   wind,
 }: {
-  points: FeatureCollection<Point, WeatherPointProps>;
+  field: WeatherField;
   rain: boolean;
   wind: boolean;
 }) {
   const tokens = useThemeTokens();
   useArrowImage();
+  const zoom = useZoomStep();
+  // Degrees of longitude per pixel at this zoom.
+  const spacing = (ARROW_SPACING_PX * 360) / (512 * 2 ** zoom);
+  const arrows = useMemo(() => windArrows(field, spacing), [field, spacing]);
+  const url = useMemo(() => rainUrl(field, tokens.rain), [field, tokens.rain]);
+  const coordinates = useMemo(() => rainImage(field).coordinates, [field]);
+
   return (
-    <Source id="weather" type="geojson" data={points}>
-      <MapLayer
-        id="weather-rain"
-        type="heatmap"
-        layout={{ visibility: rain ? "visible" : "none" }}
-        paint={{
-          // 2 mm in an hour is steady rain.
-          "heatmap-weight": [
-            "interpolate",
-            ["linear"],
-            ["get", "rain"],
-            0,
-            0,
-            2,
-            1,
-          ],
-          // About two forecast cells wide, so neighbors blend.
-          "heatmap-radius": [
-            "interpolate",
-            ["exponential", 2],
-            ["zoom"],
-            5,
-            4,
-            9,
-            60,
-            13,
-            960,
-          ],
-          "heatmap-color": [
-            "interpolate",
-            ["linear"],
-            ["heatmap-density"],
-            0,
-            withAlpha(tokens.rain, 0),
-            0.05,
-            withAlpha(tokens.rain, 0.2),
-            0.4,
-            withAlpha(tokens.rain, 0.4),
-            1,
-            withAlpha(tokens.rain, 0.65),
-          ],
-        }}
-      />
-      <MapLayer
-        id="weather-wind"
-        type="symbol"
-        layout={{
-          visibility: wind ? "visible" : "none",
-          "icon-image": ARROW,
-          "icon-rotate": ["get", "windTo"],
-          "icon-rotation-alignment": "map",
-          "icon-padding": 10,
-          "icon-ignore-placement": true,
-        }}
-        paint={{
-          "icon-color": [
-            "step",
-            ["get", "windSpeed"],
-            tokens.windSpeed1,
-            WIND_SPEED_STEPS[0],
-            tokens.windSpeed2,
-            WIND_SPEED_STEPS[1],
-            tokens.windSpeed3,
-            WIND_SPEED_STEPS[2],
-            tokens.windSpeed4,
-          ],
-          "icon-halo-color": tokens.surface,
-          "icon-halo-width": 1,
-        }}
-      />
-    </Source>
+    <>
+      {url && (
+        <Source
+          id="weather-rain"
+          type="image"
+          url={url}
+          coordinates={coordinates}
+        >
+          <MapLayer
+            id="weather-rain"
+            type="raster"
+            layout={{ visibility: rain ? "visible" : "none" }}
+            paint={{
+              "raster-resampling": "linear",
+              "raster-fade-duration": 0,
+            }}
+          />
+        </Source>
+      )}
+      <Source id="weather-wind" type="geojson" data={arrows}>
+        <MapLayer
+          id="weather-wind"
+          type="symbol"
+          layout={{
+            visibility: wind ? "visible" : "none",
+            "icon-image": ARROW,
+            "icon-rotate": ["get", "windTo"],
+            "icon-rotation-alignment": "map",
+            "icon-size": 0.85,
+            // Spaced evenly already. Labels and the route don't hide them.
+            "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
+          }}
+          paint={{
+            "icon-color": [
+              "step",
+              ["get", "windSpeed"],
+              tokens.windSpeed1,
+              WIND_SPEED_STEPS[0],
+              tokens.windSpeed2,
+              WIND_SPEED_STEPS[1],
+              tokens.windSpeed3,
+              WIND_SPEED_STEPS[2],
+              tokens.windSpeed4,
+            ],
+            "icon-halo-color": tokens.surface,
+            "icon-halo-width": 1,
+          }}
+        />
+      </Source>
+    </>
   );
 }

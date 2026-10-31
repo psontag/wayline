@@ -16,7 +16,7 @@ import {
   useThemeTokens,
   ViaMarker,
 } from "@wayline/ui";
-import type { FeatureCollection, LineString, Point } from "geojson";
+import type { FeatureCollection, LineString } from "geojson";
 import { Route } from "lucide-react";
 import type { FilterSpecification } from "maplibre-gl";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
@@ -42,7 +42,7 @@ import {
 import type { MapHotel } from "./mapTypes";
 import type { MapStation } from "./stations";
 import { tripStops } from "./tripArea";
-import type { WeatherPointProps } from "./weatherGrid";
+import type { WeatherField } from "./weatherGrid";
 import { WeatherLayers } from "./WeatherLayers";
 
 export type { MapPadding };
@@ -84,11 +84,7 @@ export type TripMapProps = {
   /** Route edits of the selected stage. Without them, the route is fixed. */
   route?: RouteEditing;
   /** Rain and wind over the map, at one hour. */
-  weather?: {
-    points: FeatureCollection<Point, WeatherPointProps>;
-    rain: boolean;
-    wind: boolean;
-  };
+  weather?: { field: WeatherField; rain: boolean; wind: boolean };
   /** Layers to turn on and off, in a menu under the zoom buttons. */
   layers?: AppMapProps["layers"];
 };

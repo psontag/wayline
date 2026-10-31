@@ -139,21 +139,23 @@
     "label": "Rain and feels-like temperature by hour",
     "windLabel": "Wind by hour",
     "windSpeedLabel": "Wind speed and gusts by hour",
-    "windTop": "{{speed}} km/h",
     "time": "Time on the map",
-    "at": "{{time}} · feels like {{feelsLike}} · rain {{rain}}, {{chance}} chance · {{speed}} {{kind}}, gusts {{gusts}}",
     "window": "Ride window",
     "ride": "Ride {{start}}–{{end}}",
     "best": "Best start {{time}} · {{reason}}",
     "atBest": "Best start · {{reason}}",
-    "gust": "G {{speed}}",
     "afterSunset": "Ends after sunset at {{time}}",
     "beforeSunrise": "Starts before sunrise at {{time}}",
     "kind": {
       "head": "headwind",
       "tail": "tailwind",
       "cross": "crosswind"
-    }
+    },
+    "feelsLike": "Feels like",
+    "rain": "Rain",
+    "wind": "Wind",
+    "rainAt": "{{rain}} · {{chance}} chance",
+    "windAt": "{{speed}} {{kind}} · gusts {{gusts}}"
   },
   "climbs": {
     "none": "No real climbs",

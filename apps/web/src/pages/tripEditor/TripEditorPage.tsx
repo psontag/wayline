@@ -44,7 +44,7 @@ import { PhoneTripEditor } from "./PhoneTripEditor";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useTripEditor } from "./useTripEditor";
 import { type PanelView, useMapLayers, usePanelView } from "./mapView";
-import { gridCells, weatherPoints } from "./weatherGrid";
+import { fieldAt, gridOf } from "./weatherGrid";
 import { WeatherPanel } from "./WeatherPanel";
 
 export function TripEditorPage() {
@@ -135,18 +135,18 @@ function TripEditor({
       (stage ? ridingHours(stage.stats, trip.settings.avgSpeed) : 0),
   };
   const time = mapTime ?? rideStart;
-  const cells = useMemo(
-    () => (weatherOn ? gridCells(points.map((p) => p.coord)) : []),
+  const weatherGrid = useMemo(
+    () => (weatherOn ? gridOf(points.map((p) => p.coord)) : undefined),
     [weatherOn, points],
   );
-  const grid = useWeatherGrid(cells);
+  const grid = useWeatherGrid(weatherGrid?.cells ?? []);
   const date = trip.startDate && addDays(trip.startDate, selected);
-  const weatherData = useMemo(
+  const weatherField = useMemo(
     () =>
-      weatherOn && grid.data && date
-        ? weatherPoints(grid.data, `${date}T${addHours("00:00", time)}`)
+      weatherGrid && grid.data?.length === weatherGrid.cells.length && date
+        ? fieldAt(weatherGrid, grid.data, `${date}T${addHours("00:00", time)}`)
         : undefined,
-    [weatherOn, grid.data, date, time],
+    [weatherGrid, grid.data, date, time],
   );
   // Where the rider is at the marker time, inside the ride window.
   const riderKm =
@@ -325,8 +325,8 @@ function TripEditor({
               hotels={isLast || !layers.hotels ? [] : mapHotels.hotels}
               stations={layers.stations ? stations : []}
               weather={
-                weatherData && {
-                  points: weatherData,
+                weatherField && {
+                  field: weatherField,
                   rain: layers.rain,
                   wind: layers.wind,
                 }

@@ -1,4 +1,12 @@
-import { ArrowUp, Check, Sparkles, Sunset } from "lucide-react";
+import {
+  ArrowUp,
+  Check,
+  CloudRain,
+  Sparkles,
+  Sunset,
+  Thermometer,
+  Wind,
+} from "lucide-react";
 import { type KeyboardEvent, type PointerEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
@@ -50,8 +58,6 @@ export type WeatherTimelineProps = {
   className?: string;
 };
 
-/** Gusts from this speed are shown. */
-const HIGH_GUSTS_KMH = 40;
 const STEP = 0.5;
 const TIME_STEP = 0.25;
 /** Top of the wind axis, unless gusts are stronger. */
@@ -101,6 +107,17 @@ export function WeatherTimeline({
   const end = current + duration;
   const pct = (h: number) => `${((h - from) / span) * 100}%`;
   const x = (h: number) => ((h - from) / span) * W;
+  // Points at hour centers, held flat to both edges of the chart.
+  const edgeToEdge = (list: TimelineHour[], y: (h: TimelineHour) => number) => {
+    const first = list[0];
+    const last = list.at(-1);
+    if (!first || !last) return [];
+    return [
+      [0, y(first)],
+      ...list.map((h) => [x(h.hour + 0.5), y(h)]),
+      [W, y(last)],
+    ] as [number, number][];
+  };
 
   const shown = hours.filter((h) => h.hour >= from && h.hour < to);
   const maxRain = Math.max(2, ...shown.map((h) => h.rain));
@@ -109,14 +126,29 @@ export function WeatherTimeline({
   const tMax = Math.max(...temps) + 1;
   // Temperature in the upper part, rain bars grow from the bottom.
   const ty = (c: number) => 12 + (1 - (c - tMin) / (tMax - tMin || 1)) * 40;
-  const line = shown
-    .map((h) => `${x(h.hour + 0.5).toFixed(1)} ${ty(h.feelsLike).toFixed(1)}`)
+  // Only the coldest and warmest hour get a label.
+  const extremes = [
+    ...new Set([
+      shown.reduce<TimelineHour | undefined>(
+        (a, h) => (!a || h.feelsLike < a.feelsLike ? h : a),
+        undefined,
+      ),
+      shown.reduce<TimelineHour | undefined>(
+        (a, h) => (!a || h.feelsLike > a.feelsLike ? h : a),
+        undefined,
+      ),
+    ]),
+  ].filter((h): h is TimelineHour => h !== undefined);
+  const line = edgeToEdge(shown, (h) => ty(h.feelsLike))
+    .map(([px, py]) => `${px.toFixed(1)} ${py.toFixed(1)}`)
     .join(" L");
 
   const windTop = Math.max(MIN_WIND_TOP, ...shown.map((h) => h.wind.gusts));
   const wy = (v: number) => WIND_H - (v / windTop) * (WIND_H - 2);
   const windPath = (pick: (h: TimelineHour) => number) =>
-    shown.map((h) => `${x(h.hour + 0.5).toFixed(1)} ${wy(pick(h)).toFixed(1)}`);
+    edgeToEdge(shown, (h) => wy(pick(h))).map(
+      ([px, py]) => `${px.toFixed(1)} ${py.toFixed(1)}`,
+    );
   const speedLine = windPath((h) => h.wind.speed);
   const gustBand = [
     ...windPath((h) => h.wind.gusts),
@@ -248,16 +280,132 @@ export function WeatherTimeline({
           ))}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <ul
-          className="relative h-9 text-2xs tabular-nums"
-          aria-label={t("timeline.windLabel")}
-        >
+      <div
+        ref={areaRef}
+        className={cn(
+          "relative flex touch-none flex-col gap-1.5",
+          onTimeChange && "cursor-pointer",
+        )}
+        onPointerDown={onAreaPointerDown}
+        onPointerMove={onAreaPointerMove}
+        onPointerUp={onAreaPointerUp}
+        onPointerCancel={onAreaPointerUp}
+      >
+        <div ref={chartRef} className="relative h-16">
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            preserveAspectRatio="none"
+            className="absolute inset-0 block size-full overflow-visible"
+            role="img"
+            aria-label={t("timeline.label")}
+          >
+            {sunrise !== undefined && sunrise > from && (
+              <rect
+                x={0}
+                y={0}
+                width={x(Math.min(sunrise, to))}
+                height={H}
+                className="fill-night"
+              />
+            )}
+            {sunset !== undefined && sunset < to && (
+              <rect
+                x={x(Math.max(sunset, from))}
+                y={0}
+                width={W - x(Math.max(sunset, from))}
+                height={H}
+                className="fill-night"
+              />
+            )}
+            {shown.map((h) =>
+              h.rain > 0 ? (
+                <rect
+                  key={h.hour}
+                  x={x(h.hour) + 10}
+                  width={W / span - 20}
+                  y={H - (h.rain / maxRain) * 70}
+                  height={(h.rain / maxRain) * 70}
+                  rx={2}
+                  className="fill-rain"
+                  // Likely rain is drawn stronger.
+                  fillOpacity={0.3 + 0.6 * h.rainChance}
+                />
+              ) : null,
+            )}
+            <line
+              x1={0}
+              x2={W}
+              y1={H}
+              y2={H}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+              className="stroke-border"
+            />
+            {shown.length > 1 && (
+              <path
+                d={`M${line}`}
+                fill="none"
+                strokeWidth={1.5}
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+                className="stroke-text-muted"
+              />
+            )}
+          </svg>
+          {extremes.map((h) => (
+            <span
+              key={h.hour}
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-full pb-0.5 text-2xs text-text-muted tabular-nums"
+              style={{ left: pct(h.hour + 0.5), top: `${ty(h.feelsLike)}%` }}
+            >
+              {format.temperature(h.feelsLike)}
+            </span>
+          ))}
+        </div>
+
+        <div className="relative h-8">
+          <svg
+            viewBox={`0 0 ${W} ${WIND_H}`}
+            preserveAspectRatio="none"
+            className="absolute inset-0 block size-full overflow-visible"
+            role="img"
+            aria-label={t("timeline.windSpeedLabel")}
+          >
+            {shown.length > 1 && (
+              <>
+                <path
+                  d={`M${gustBand.join(" L")} Z`}
+                  className="fill-wind-speed-1"
+                  fillOpacity={0.45}
+                />
+                <path
+                  d={`M${speedLine.join(" L")}`}
+                  fill="none"
+                  strokeWidth={1.5}
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                  className="stroke-wind-speed-3"
+                />
+              </>
+            )}
+            <line
+              x1={0}
+              x2={W}
+              y1={WIND_H}
+              y2={WIND_H}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+              className="stroke-border"
+            />
+          </svg>
+        </div>
+
+        <ul className="relative h-3.5" aria-label={t("timeline.windLabel")}>
           {shown.map((h) => (
             <li
               key={h.hour}
               className={cn(
-                "absolute flex -translate-x-1/2 flex-col items-center leading-tight",
+                "absolute -translate-x-1/2",
                 windColor[h.wind.kind],
               )}
               style={{ left: pct(h.hour + 0.5) }}
@@ -268,188 +416,40 @@ export function WeatherTimeline({
                 role="img"
                 aria-label={t(`weather.wind.${h.wind.kind}`)}
               />
-              <span>{Math.round(h.wind.speed)}</span>
-              {h.wind.gusts >= HIGH_GUSTS_KMH && (
-                <span className="font-bold">
-                  {t("timeline.gust", { speed: Math.round(h.wind.gusts) })}
-                </span>
-              )}
             </li>
           ))}
         </ul>
 
-        <div
-          ref={areaRef}
-          className={cn(
-            "relative mt-2 flex touch-none flex-col gap-1",
-            onTimeChange && "cursor-pointer",
-          )}
-          onPointerDown={onAreaPointerDown}
-          onPointerMove={onAreaPointerMove}
-          onPointerUp={onAreaPointerUp}
-          onPointerCancel={onAreaPointerUp}
-        >
-          <div ref={chartRef} className="relative h-20">
-            <svg
-              viewBox={`0 0 ${W} ${H}`}
-              preserveAspectRatio="none"
-              className="absolute inset-0 block size-full overflow-visible"
-              role="img"
-              aria-label={t("timeline.label")}
-            >
-              {sunrise !== undefined && sunrise > from && (
-                <rect
-                  x={0}
-                  y={0}
-                  width={x(Math.min(sunrise, to))}
-                  height={H}
-                  className="fill-night"
-                />
-              )}
-              {sunset !== undefined && sunset < to && (
-                <rect
-                  x={x(Math.max(sunset, from))}
-                  y={0}
-                  width={W - x(Math.max(sunset, from))}
-                  height={H}
-                  className="fill-night"
-                />
-              )}
-              {shown.map((h) =>
-                h.rain > 0 ? (
-                  <rect
-                    key={h.hour}
-                    x={x(h.hour) + 8}
-                    width={W / span - 16}
-                    y={H - (h.rain / maxRain) * 70}
-                    height={(h.rain / maxRain) * 70}
-                    rx={2}
-                    className="fill-rain"
-                    // Likely rain is drawn stronger.
-                    fillOpacity={0.35 + 0.65 * h.rainChance}
-                  />
-                ) : null,
-              )}
-              <line
-                x1={0}
-                x2={W}
-                y1={H}
-                y2={H}
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-                className="stroke-border"
-              />
-              {shown.length > 1 && (
-                <path
-                  d={`M${line}`}
-                  fill="none"
-                  strokeWidth={1.5}
-                  strokeLinejoin="round"
-                  vectorEffect="non-scaling-stroke"
-                  className="stroke-text-muted"
-                />
-              )}
-            </svg>
-
-            <div
-              data-window
-              role="slider"
-              tabIndex={onStartChange ? 0 : -1}
-              aria-label={t("timeline.window")}
-              aria-valuemin={from}
-              aria-valuemax={latest}
-              aria-valuenow={current}
-              aria-valuetext={t("timeline.ride", {
-                start: format.clock(current),
-                end: format.clock(end),
-              })}
-              aria-readonly={!onStartChange}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              onKeyDown={onKeyDown}
-              className={cn(
-                "absolute inset-y-0 touch-none rounded-sm border-2 border-selected-border bg-selected/40",
-                "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
-                onStartChange &&
-                  (dragStart === undefined ? "cursor-grab" : "cursor-grabbing"),
-              )}
-              style={{
-                left: pct(current),
-                width: `${(Math.min(duration, span) / span) * 100}%`,
-              }}
-            />
-            {shown
-              .filter((h) => h.rain >= 0.3)
-              .map((h) => (
-                <span
-                  key={h.hour}
-                  className="pointer-events-none absolute -translate-x-1/2 -translate-y-full text-2xs font-semibold text-rain tabular-nums"
-                  style={{
-                    left: pct(h.hour + 0.5),
-                    top: `${100 - (h.rain / maxRain) * 70}%`,
-                  }}
-                >
-                  {format.rain(h.rain)}
-                </span>
-              ))}
-            {shown
-              .filter((h) => (h.hour - from) % 3 === 1)
-              .map((h) => (
-                <span
-                  key={h.hour}
-                  className="pointer-events-none absolute -translate-x-1/2 -translate-y-full pb-0.5 text-2xs text-text-muted tabular-nums"
-                  style={{
-                    left: pct(h.hour + 0.5),
-                    top: `${ty(h.feelsLike)}%`,
-                  }}
-                >
-                  {format.temperature(h.feelsLike)}
-                </span>
-              ))}
-          </div>
-
-          <div className="relative h-10">
-            <svg
-              viewBox={`0 0 ${W} ${WIND_H}`}
-              preserveAspectRatio="none"
-              className="absolute inset-0 block size-full overflow-visible"
-              role="img"
-              aria-label={t("timeline.windSpeedLabel")}
-            >
-              {shown.length > 1 && (
-                <>
-                  <path
-                    d={`M${gustBand.join(" L")} Z`}
-                    className="fill-wind-speed-1"
-                    fillOpacity={0.6}
-                  />
-                  <path
-                    d={`M${speedLine.join(" L")}`}
-                    fill="none"
-                    strokeWidth={1.75}
-                    strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
-                    className="stroke-wind-speed-3"
-                  />
-                </>
-              )}
-              <line
-                x1={0}
-                x2={W}
-                y1={WIND_H}
-                y2={WIND_H}
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-                className="stroke-border"
-              />
-            </svg>
-            <span className="pointer-events-none absolute top-0 right-0 text-2xs text-text-muted tabular-nums">
-              {t("timeline.windTop", { speed: Math.round(windTop) })}
-            </span>
-          </div>
-
+        <div className="relative h-5 rounded-sm bg-hover">
+          <div
+            data-window
+            role="slider"
+            tabIndex={onStartChange ? 0 : -1}
+            aria-label={t("timeline.window")}
+            aria-valuemin={from}
+            aria-valuemax={latest}
+            aria-valuenow={current}
+            aria-valuetext={t("timeline.ride", {
+              start: format.clock(current),
+              end: format.clock(end),
+            })}
+            aria-readonly={!onStartChange}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            onKeyDown={onKeyDown}
+            className={cn(
+              "absolute inset-y-0 touch-none rounded-sm border-2 border-selected-border bg-selected",
+              "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
+              onStartChange &&
+                (dragStart === undefined ? "cursor-grab" : "cursor-grabbing"),
+            )}
+            style={{
+              left: pct(current),
+              width: `${(Math.min(duration, span) / span) * 100}%`,
+            }}
+          />
           {time !== undefined && (
             <div
               role="slider"
@@ -462,52 +462,78 @@ export function WeatherTimeline({
               aria-readonly={!onTimeChange}
               onKeyDown={onTimeKeyDown}
               className={cn(
-                "group absolute inset-y-0 z-10 flex w-6 -translate-x-1/2 justify-center outline-none",
+                "group absolute inset-y-0 z-10 flex w-6 -translate-x-1/2 items-center justify-center outline-none",
                 onTimeChange && "cursor-ew-resize",
               )}
               style={{ left: pct(time) }}
             >
-              <span className="w-0.5 bg-text" />
-              <span className="absolute -top-1.5 size-3 rounded-full bg-text ring-2 ring-surface group-focus-visible:ring-focus-ring" />
+              <span className="h-full w-0.5 bg-text" />
+              <span className="absolute size-3 rounded-full bg-text ring-2 ring-surface group-focus-visible:ring-focus-ring" />
             </div>
           )}
         </div>
+      </div>
 
-        <div className="relative h-4 text-2xs text-text-muted tabular-nums">
-          {labelHours.map((h) => (
-            <span
-              key={h}
-              // Keep the outer labels inside the chart.
-              className={cn(
-                "absolute",
-                h === from
-                  ? ""
-                  : h === to
-                    ? "-translate-x-full"
-                    : "-translate-x-1/2",
-              )}
-              style={{ left: pct(h) }}
-            >
-              {format.clock(h)}
-            </span>
-          ))}
-        </div>
+      <div className="relative h-4 text-2xs text-text-muted tabular-nums">
+        {labelHours.map((h) => (
+          <span
+            key={h}
+            // Keep the outer labels inside the chart.
+            className={cn(
+              "absolute",
+              h === from
+                ? ""
+                : h === to
+                  ? "-translate-x-full"
+                  : "-translate-x-1/2",
+            )}
+            style={{ left: pct(h) }}
+          >
+            {format.clock(h)}
+          </span>
+        ))}
       </div>
 
       {marked && time !== undefined && (
-        <p className="text-xs tabular-nums">
-          {t("timeline.at", {
-            time: format.clock(time),
-            feelsLike: format.temperature(marked.feelsLike),
-            rain: format.rain(marked.rain),
-            chance: format.percent(marked.rainChance),
-            speed: format.speed(marked.wind.speed),
-            kind: t(`timeline.kind.${marked.wind.kind}`),
-            gusts: Math.round(marked.wind.gusts),
-          })}
-        </p>
+        <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted tabular-nums [&_dd]:text-text [&_svg]:size-3.5 [&>div]:flex [&>div]:items-center [&>div]:gap-1.5">
+          <div>
+            <dt className="sr-only">{t("timeline.time")}</dt>
+            <dd className="font-semibold">{format.clock(time)}</dd>
+          </div>
+          <div>
+            <dt>
+              <Thermometer aria-label={t("timeline.feelsLike")} />
+            </dt>
+            <dd>{format.temperature(marked.feelsLike)}</dd>
+          </div>
+          <div>
+            <dt>
+              <CloudRain aria-label={t("timeline.rain")} />
+            </dt>
+            <dd>
+              {t("timeline.rainAt", {
+                rain: format.rain(marked.rain),
+                chance: format.percent(marked.rainChance),
+              })}
+            </dd>
+          </div>
+          <div>
+            <dt>
+              <Wind
+                className={windColor[marked.wind.kind]}
+                aria-label={t("timeline.wind")}
+              />
+            </dt>
+            <dd>
+              {t("timeline.windAt", {
+                speed: format.speed(marked.wind.speed),
+                kind: t(`timeline.kind.${marked.wind.kind}`),
+                gusts: format.speed(marked.wind.gusts),
+              })}
+            </dd>
+          </div>
+        </dl>
       )}
-
       {(afterSunset || beforeSunrise) && (
         <p className="flex items-center gap-1.5 text-xs text-warning">
           <Sunset className="size-3.5" aria-hidden />
