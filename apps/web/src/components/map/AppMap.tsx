@@ -191,8 +191,9 @@ export function AppMap({
     });
   }, [key, mapRef]);
 
+  // With layers, the network has its own toggle in the menu.
   const legendItems: MapLegendItem[] = [
-    ...(network === "off"
+    ...(network === "off" || layers
       ? []
       : [{ label: t("network"), line: "network" as const }]),
     ...legend,

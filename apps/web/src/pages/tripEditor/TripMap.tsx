@@ -87,6 +87,8 @@ export type TripMapProps = {
   weather?: { field: WeatherField; rain: boolean; wind: boolean };
   /** Layers to turn on and off, in a menu under the zoom buttons. */
   layers?: AppMapProps["layers"];
+  /** Signed cycling routes. */
+  network?: AppMapProps["network"];
 };
 
 export type RouteEditing = {
@@ -130,6 +132,7 @@ export function TripMap({
   route,
   weather,
   layers,
+  network,
 }: TripMapProps) {
   const { t } = useTranslation("tripEditor");
   const tokens = useThemeTokens();
@@ -299,6 +302,7 @@ export function TripMap({
       }
       controls={controls}
       layers={layers}
+      network={network}
       hint={
         route && (
           <MapHint icon={<Route aria-hidden />}>

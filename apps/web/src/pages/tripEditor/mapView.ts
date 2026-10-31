@@ -7,6 +7,7 @@ export type PanelView = "elevation" | "weather";
 export type MapLayers = Record<MapLayerKind, boolean>;
 
 const allOn: MapLayers = {
+  network: true,
   hotels: true,
   stations: true,
   rain: true,

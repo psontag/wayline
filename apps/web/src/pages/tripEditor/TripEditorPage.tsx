@@ -254,6 +254,11 @@ function TripEditor({
     {
       title: t("layers.map"),
       items: [
+        {
+          kind: "network",
+          label: t("layers.network"),
+          checked: layers.network,
+        },
         { kind: "hotels", label: t("layers.hotels"), checked: layers.hotels },
         {
           kind: "stations",
@@ -324,6 +329,7 @@ function TripEditor({
               }
               hotels={isLast || !layers.hotels ? [] : mapHotels.hotels}
               stations={layers.stations ? stations : []}
+              network={layers.network ? "quiet" : "off"}
               weather={
                 weatherField && {
                   field: weatherField,

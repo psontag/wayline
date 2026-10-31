@@ -823,6 +823,7 @@ function ratingOptions(any: string) {
 function MapLayerDemo() {
   const { t } = useTranslation("devComponents");
   const [on, setOn] = useState({
+    network: true,
     hotels: true,
     stations: false,
     rain: true,
@@ -834,6 +835,7 @@ function MapLayerDemo() {
         {
           title: t("demo.layersMap"),
           items: [
+            { kind: "network", label: t("demo.network"), checked: on.network },
             { kind: "hotels", label: t("demo.hotels"), checked: on.hotels },
             {
               kind: "stations",
@@ -851,7 +853,6 @@ function MapLayerDemo() {
         },
       ]}
       onCheckedChange={(kind, checked) => setOn({ ...on, [kind]: checked })}
-      legend={[{ label: t("demo.network"), line: "network" }]}
     />
   );
 }

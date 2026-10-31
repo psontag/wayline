@@ -6,7 +6,7 @@ import { usePortalContainer } from "../theme/ThemeScope";
 import { IconButton } from "./IconButton";
 import { MapLegendLine, type MapLegendItem } from "./MapLegend";
 
-export type MapLayerKind = "hotels" | "stations" | "rain" | "wind";
+export type MapLayerKind = "network" | "hotels" | "stations" | "rain" | "wind";
 
 export type MapLayerToggle = {
   kind: MapLayerKind;
@@ -35,6 +35,8 @@ const windSpeedColors = [
 
 function Swatch({ kind }: { kind: MapLayerKind }) {
   switch (kind) {
+    case "network":
+      return <span className="h-1 w-3.5 rounded-full bg-network" />;
     case "hotels":
       return (
         <span className="size-3 rounded-full border-2 border-marker bg-surface" />

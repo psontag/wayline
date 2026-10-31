@@ -180,6 +180,7 @@
     "stations": "Train stations",
     "weather": "Weather",
     "rain": "Rain",
-    "wind": "Wind"
+    "wind": "Wind",
+    "network": "Cycling routes"
   }
 }
