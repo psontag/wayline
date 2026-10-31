@@ -83,6 +83,7 @@
     "routeChanged": "Day {{day}} is now {{distance}}. Arrival, weather and alternatives are updated.",
     "reverted": "Day {{day}} is back as proposed.",
     "sameRoute": "The best way through that point is the same route.",
+    "routingFailed": "Couldn't reach the router, so nothing changed. Try again in a moment.",
     "undo": "Undo"
   },
   "phone": {
