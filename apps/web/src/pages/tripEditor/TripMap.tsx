@@ -11,6 +11,7 @@ import {
   HotelMarker,
   HoverMarker,
   MapHint,
+  StationMarker,
   StopMarker,
   useThemeTokens,
   ViaMarker,
@@ -34,6 +35,7 @@ import {
   useRouteDrag,
 } from "../../components/useRouteDrag";
 import type { MapHotel } from "./mapTypes";
+import type { MapStation } from "./stations";
 import { tripStops } from "./tripArea";
 
 export type { MapPadding };
@@ -60,6 +62,8 @@ export type TripMapProps = {
   hotels?: MapHotel[];
   selectedHotelId?: string;
   onSelectHotel?: (osmId: string) => void;
+  /** Train stations along the trip. */
+  stations?: MapStation[];
   /** Point that follows the elevation crosshair. */
   hover?: LonLat;
   /** Part of the route to show stronger, e.g. a hovered climb. */
@@ -89,6 +93,9 @@ export type RouteEditing = {
   proposed: LonLat[][];
 };
 
+/** Stations show from this zoom on, so the whole trip stays calm. */
+const STATION_ZOOM = 10;
+
 /** Waits this long after the last move before a preview is routed. */
 const PREVIEW_MS = 120;
 
@@ -103,6 +110,7 @@ export function TripMap({
   hotels = [],
   selectedHotelId,
   onSelectHotel,
+  stations = [],
   hover,
   highlight,
   padding,
@@ -412,6 +420,17 @@ export function TripMap({
           />
         </Marker>
       )}
+      {zoom >= STATION_ZOOM &&
+        stations.map((station) => (
+          <Marker
+            key={station.id}
+            longitude={station.coord[0]}
+            latitude={station.coord[1]}
+            style={{ zIndex: 1 }}
+          >
+            <StationMarker name={station.name} href={station.href} />
+          </Marker>
+        ))}
       {alternatives.map(({ place, label, beds }) => (
         <Marker
           key={place.name}

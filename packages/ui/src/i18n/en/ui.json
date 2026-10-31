@@ -106,6 +106,9 @@
       "city": "City"
     }
   },
+  "station": {
+    "trainHome": "Trains home on bahn.de"
+  },
   "marker": {
     "beds_one": "{{count}} place to sleep",
     "beds_other": "{{count}} places to sleep"
