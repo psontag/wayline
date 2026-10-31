@@ -1,6 +1,7 @@
 {
   "title": "Trips",
   "newTrip": "New trip",
+  "importGpx": "Import GPX",
   "yourTrips": "Your trips",
   "loading": "Loading trips",
   "loadFailed": "Could not load your trips.",

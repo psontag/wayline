@@ -140,7 +140,9 @@ export function StageProfile({
         </div>
         {variant === "panel" && (
           <div className="flex items-center gap-4">
-            <SurfaceLegend />
+            <SurfaceLegend
+              unknown={points.some((p) => p.surface === "unknown")}
+            />
             {actions}
           </div>
         )}

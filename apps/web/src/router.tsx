@@ -35,6 +35,15 @@ const newTripRoute = createRoute({
   ),
 });
 
+const importTripRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/import",
+  component: lazyRouteComponent(
+    () => import("./pages/importTrip/ImportTripPage"),
+    "ImportTripPage",
+  ),
+});
+
 const proposalsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/proposals",
@@ -76,6 +85,7 @@ const devComponentsRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   tripListRoute,
   newTripRoute,
+  importTripRoute,
   proposalsRoute,
   tripEditorRoute,
   settingsRoute,

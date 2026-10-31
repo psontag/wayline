@@ -3,6 +3,7 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import common from "./en/common.json";
 import devComponents from "./en/devComponents.json";
+import importTrip from "./en/importTrip.json";
 import map from "./en/map.json";
 import newTrip from "./en/newTrip.json";
 import proposals from "./en/proposals.json";
@@ -18,6 +19,7 @@ export const resources = {
     ...uiResources.en,
     common,
     devComponents,
+    importTrip,
     map,
     newTrip,
     proposals,

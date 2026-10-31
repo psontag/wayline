@@ -306,7 +306,11 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
             />
           </div>
           <SurfaceBar shares={{ paved: 70, gravel: 18, unpaved: 12 }} />
-          <SurfaceLegend />
+          <SurfaceBar
+            caption
+            shares={{ paved: 0.3, gravel: 0.1, unpaved: 0 }}
+          />
+          <SurfaceLegend unknown />
         </Card>
       </Section>
 

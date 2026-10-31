@@ -12,9 +12,13 @@ const segments = [
   { key: "paved", color: "bg-terrain-paved" },
   { key: "gravel", color: "bg-terrain-gravel" },
   { key: "unpaved", color: "bg-terrain-unpaved" },
+  { key: "unknown", color: "bg-terrain-unknown" },
 ] as const;
 
-/** Thin bar with the paved, gravel and unpaved shares of a route. */
+/**
+ * Thin bar with the paved, gravel and unpaved shares of a route. Shares that
+ * add up to less than 1 leave the rest as unknown, e.g. on imported routes.
+ */
 export function SurfaceBar({
   shares,
   caption = false,
@@ -27,37 +31,33 @@ export function SurfaceBar({
 }) {
   const { t } = useTranslation("ui");
   const format = useFormat();
-  const total = shares.paved + shares.gravel + shares.unpaved || 1;
+  const known = shares.paved + shares.gravel + shares.unpaved;
+  const total = Math.max(known, 1);
+  const all = { ...shares, unknown: total - known };
   const percent = (value: number) => format.percent(value / total);
+  const parts = segments
+    // Shares below half a percent would read as "0%".
+    .filter(({ key }) => all[key] / total >= 0.005)
+    .map(({ key }) => t(`surface.share.${key}`, { share: percent(all[key]) }));
 
   const bar = (
     <div
       role="img"
-      aria-label={t("surface.summary", {
-        paved: percent(shares.paved),
-        gravel: percent(shares.gravel),
-        unpaved: percent(shares.unpaved),
-      })}
+      aria-label={t("surface.summary", { parts: parts.join(", ") })}
       className={cn(
         "flex h-1.5 gap-0.5 overflow-hidden rounded-full",
         !caption && className,
       )}
     >
       {segments.map(({ key, color }) =>
-        shares[key] > 0 ? (
-          <div key={key} className={color} style={{ flexGrow: shares[key] }} />
+        all[key] > 0 ? (
+          <div key={key} className={color} style={{ flexGrow: all[key] }} />
         ) : null,
       )}
     </div>
   );
   if (!caption) return bar;
 
-  // Shares below half a percent would read as "0%".
-  const parts = segments
-    .filter(({ key }) => shares[key] / total >= 0.005)
-    .map(({ key }) =>
-      t(`surface.share.${key}`, { share: percent(shares[key]) }),
-    );
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       {bar}
@@ -68,17 +68,19 @@ export function SurfaceBar({
   );
 }
 
-/** Color key for the surface colors. */
-export function SurfaceLegend() {
+/** Color key for the surface colors. Unknown only when the route has some. */
+export function SurfaceLegend({ unknown = false }: { unknown?: boolean }) {
   const { t } = useTranslation("ui");
   return (
     <div className="flex items-center gap-3.5 text-xs text-text-muted">
-      {segments.map(({ key, color }) => (
-        <span key={key} className="flex items-center gap-1.5">
-          <span className={cn("h-1 w-3 rounded-full", color)} />
-          {t(`surface.${key}`)}
-        </span>
-      ))}
+      {segments
+        .filter(({ key }) => unknown || key !== "unknown")
+        .map(({ key, color }) => (
+          <span key={key} className="flex items-center gap-1.5">
+            <span className={cn("h-1 w-3 rounded-full", color)} />
+            {t(`surface.${key}`)}
+          </span>
+        ))}
     </div>
   );
 }
