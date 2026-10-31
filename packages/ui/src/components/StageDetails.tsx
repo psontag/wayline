@@ -88,6 +88,8 @@ export type StageDetailsProps = {
   weather?: DayWeatherProps;
   /** Climbs of the day, e.g. a ClimbList. */
   climbs?: ReactNode;
+  /** Weather by hour, below the weather summary. */
+  forecast?: ReactNode;
   locked: boolean;
   /** Without it, the lock is only shown, not a button. */
   onLockedChange?: (locked: boolean) => void;
@@ -102,6 +104,7 @@ export function StageDetails({
   surface,
   weather,
   climbs,
+  forecast,
   locked,
   onLockedChange,
   alternatives,
@@ -115,6 +118,7 @@ export function StageDetails({
       <SurfaceBar shares={surface} caption />
       {climbs}
       {weather && <DayWeather {...weather} />}
+      {forecast}
       {showStop && (
         <div className="flex flex-col gap-2 rounded-md bg-bg p-2.5">
           <div className="flex items-center justify-between gap-2">

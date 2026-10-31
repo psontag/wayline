@@ -1,6 +1,5 @@
 import {
   addDays,
-  addHours,
   type Climb,
   expectedTimeAtKm,
   localTimeToDate,
@@ -9,7 +8,6 @@ import {
   routePoints,
   stageSpeed,
   stageStartTime,
-  timeToHours,
   type Trip,
 } from "@wayline/domain";
 import {
@@ -17,21 +15,10 @@ import {
   type ProfilePoint,
   SurfaceLegend,
   useFormat,
-  WeatherTimeline,
 } from "@wayline/ui";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { type StageForecast, useWeather } from "../../data/queries";
-import {
-  bestStartOf,
-  describeRide,
-  forecastFrom,
-  hoursOf,
-  rideFrom,
-  TIMELINE_FROM,
-  TIMELINE_TO,
-  timelineHours,
-} from "./stageWeather";
+import { StageWeather } from "./DayWeatherTimeline";
 import { isChanged } from "./routeEdits";
 import { profilePoints } from "./surfaceProfile";
 
@@ -51,7 +38,7 @@ export type StageProfileProps = {
   highlightedClimb?: number;
 };
 
-/** Elevation of a stage by surface, and the weather on one km axis. */
+/** Elevation of a stage by surface. The phone sheet adds the weather. */
 export function StageProfile({
   trip,
   index,
@@ -76,7 +63,6 @@ export function StageProfile({
     () => (proposed ? routePoints(proposed.legs) : []),
     [proposed],
   );
-  const weather = useWeather(trip, index);
   if (!stage) return null;
 
   const date = trip.startDate && addDays(trip.startDate, index);
@@ -153,9 +139,7 @@ export function StageProfile({
       </div>
       <div
         className={
-          variant === "panel"
-            ? "grid gap-x-8 gap-y-3 lg:grid-cols-2"
-            : "flex flex-col gap-3"
+          variant === "panel" ? "flex flex-col" : "flex flex-col gap-3"
         }
       >
         <ElevationProfile
@@ -172,81 +156,14 @@ export function StageProfile({
             distance: format.distance((highest?.km ?? 0) * 1000),
           })}
         />
-        <div className="min-w-0 max-lg:border-t max-lg:border-border max-lg:pt-2">
-          {weather.data ? (
-            <DayTimeline
-              forecast={weather.data}
-              trip={trip}
-              index={index}
-              startTime={startTime}
-              onRideStartChange={onRideStartChange}
-            />
-          ) : (
-            <p className="text-sm text-text-muted">
-              {!date
-                ? t("profile.noStartDate")
-                : weather.isPending
-                  ? t("profile.loadingWeather")
-                  : t("profile.forecastFrom", {
-                      date: format.date(localTimeToDate(forecastFrom(date))),
-                    })}
-            </p>
-          )}
-        </div>
+        {variant === "sheet" && (
+          <StageWeather
+            trip={trip}
+            index={index}
+            onRideStartChange={onRideStartChange}
+          />
+        )}
       </div>
     </section>
-  );
-}
-
-/** Weather by hour with the ride window and the best start. */
-function DayTimeline({
-  forecast,
-  trip,
-  index,
-  startTime,
-  onRideStartChange,
-}: {
-  forecast: StageForecast;
-  trip: Trip;
-  index: number;
-  startTime: string;
-  onRideStartChange?: (start: string) => void;
-}) {
-  const { t } = useTranslation("tripEditor");
-  const stats = trip.stages[index]?.stats;
-  const { avgSpeed } = trip.settings;
-  const hours = useMemo(() => timelineHours(forecast), [forecast]);
-  const best = useMemo(
-    () => stats && bestStartOf(forecast, stats, avgSpeed, startTime),
-    [forecast, stats, avgSpeed, startTime],
-  );
-  if (!stats) return null;
-  const clock = (h: number) => addHours("00:00", h);
-  const { daylight } = forecast;
-
-  return (
-    <WeatherTimeline
-      hours={hours}
-      from={TIMELINE_FROM}
-      to={TIMELINE_TO}
-      sunrise={daylight && hoursOf(daylight.sunrise)}
-      sunset={daylight && hoursOf(daylight.sunset)}
-      start={timeToHours(startTime)}
-      duration={ridingHours(stats, avgSpeed)}
-      onStartChange={onRideStartChange && ((h) => onRideStartChange(clock(h)))}
-      describe={(h) => {
-        const ride = rideFrom(forecast, clock(h));
-        return ride ? describeRide(t, ride) : undefined;
-      }}
-      best={
-        best && {
-          start: timeToHours(best.start),
-          reason: t("timeline.reason", {
-            rain: t(`timeline.rainKind.${best.rain}`),
-            wind: t(`timeline.mostly.${best.wind}`),
-          }),
-        }
-      }
-    />
   );
 }

@@ -16,6 +16,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
+import { StageWeather } from "./DayWeatherTimeline";
 import { HotelPicker } from "./HotelPicker";
 import { stageWind } from "./stageWeather";
 import { isChanged } from "./routeEdits";
@@ -102,6 +103,17 @@ function SelectedStage({
         <ClimbList
           climbs={findClimbs(routePoints(stage.legs))}
           onHoverClimb={onHoverClimb}
+        />
+      }
+      forecast={
+        <StageWeather
+          trip={trip}
+          index={index}
+          onRideStartChange={
+            editor.readOnly
+              ? undefined
+              : (start) => editor.setRideStart(index, start)
+          }
         />
       }
       weather={

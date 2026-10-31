@@ -252,11 +252,6 @@ function TripEditor({
             onHoverKm={setHoverKm}
             climbs={climbs}
             highlightedClimb={hoveredClimb}
-            onRideStartChange={
-              editor.readOnly
-                ? undefined
-                : (start) => editor.setRideStart(selected, start)
-            }
           />
         </div>
         <aside className="flex shrink-0 flex-col border-border bg-surface lg:w-panel lg:border-l">
