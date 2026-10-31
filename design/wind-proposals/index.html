@@ -1,0 +1,1279 @@
+<title>Tailwind Trips</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+/>
+<style>
+  /* Layout: one reading column; each option is a row of text beside its sketch, stacking on phones. Wayline's own tokens. */
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #15181d;
+    --muted: #5a616c;
+    --border: #e1e4ea;
+    --route: #ff9a73;
+    --route-casing: #b4532a;
+    --selected: #ffede3;
+    --flat: #4f9ff0;
+    --hilly: #a685ec;
+    --network: #6f9b79;
+    --head: #c2412d;
+    --cross: #b7791f;
+    --tail: #2f9e6b;
+    --map: #eef0ee;
+    --map-line: #d7dcd8;
+    --font: "Manrope", ui-sans-serif, system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101216;
+      --surface: #171a20;
+      --text: #edeff3;
+      --muted: #a0a7b3;
+      --border: #2a2f38;
+      --route: #ff9a73;
+      --route-casing: #ffb088;
+      --selected: #3a2418;
+      --flat: #6db4ff;
+      --hilly: #bb9eff;
+      --network: #4e6b57;
+      --head: #ff8f7d;
+      --cross: #f2cf7e;
+      --tail: #5ccb97;
+      --map: #1c2026;
+      --map-line: #2b3038;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101216;
+    --surface: #171a20;
+    --text: #edeff3;
+    --muted: #a0a7b3;
+    --border: #2a2f38;
+    --route: #ff9a73;
+    --route-casing: #ffb088;
+    --selected: #3a2418;
+    --flat: #6db4ff;
+    --hilly: #bb9eff;
+    --network: #4e6b57;
+    --head: #ff8f7d;
+    --cross: #f2cf7e;
+    --tail: #5ccb97;
+    --map: #1c2026;
+    --map-line: #2b3038;
+    color-scheme: dark;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 32px 64px;
+  }
+  main {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    margin: 0;
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  h2 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  p {
+    margin: 0;
+    max-width: 65ch;
+  }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .lede {
+    color: var(--muted);
+    font-size: 16px;
+  }
+  header {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .pick {
+    background: var(--selected);
+    border: 1px solid var(--route-casing);
+    border-radius: 10px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pick ol {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  section.block {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .fact {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .fact strong {
+    font-size: 14px;
+  }
+  .fact span {
+    color: var(--muted);
+    font-size: 13.5px;
+  }
+  .option {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 24px;
+    align-items: start;
+    border-top: 1px solid var(--border);
+    padding-top: 28px;
+  }
+  .option .text {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .letter {
+    display: inline-flex;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    background: var(--text);
+    color: var(--bg);
+    font-weight: 800;
+    font-size: 13px;
+  }
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 2px 10px;
+  }
+  .chip.good {
+    color: var(--tail);
+    border-color: color-mix(in srgb, var(--tail) 40%, var(--border));
+  }
+  .chip.warn {
+    color: var(--cross);
+    border-color: color-mix(in srgb, var(--cross) 40%, var(--border));
+  }
+  .chip.bad {
+    color: var(--head);
+    border-color: color-mix(in srgb, var(--head) 40%, var(--border));
+  }
+  ul.plain {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 65ch;
+  }
+  .sketch {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    min-width: 0;
+  }
+  .sketch svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .sketch figcaption {
+    font-size: 12.5px;
+    color: var(--muted);
+    padding: 8px 4px 0;
+  }
+  figure {
+    margin: 0;
+  }
+  code,
+  .mono {
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .formula {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 13px;
+    overflow-x: auto;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 640px;
+    font-size: 14px;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  tr:last-child td {
+    border-bottom: 0;
+  }
+  .dots {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    color: var(--route-casing);
+  }
+  .questions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .q {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .q span {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  /* SVG text uses the theme. */
+  svg text {
+    font-family: var(--font);
+    fill: var(--text);
+  }
+  svg .muted {
+    fill: var(--muted);
+  }
+  @media (max-width: 760px) {
+    .option {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    h1 {
+      font-size: 28px;
+    }
+  }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">Wayline · Issue #135 · Proposals for a decision</div>
+    <h1>Tailwind trips</h1>
+    <p class="lede">
+      Five ways Wayline could plan around the wind. Each one shows what you
+      would see, how it works and what it costs to build. They combine well, so
+      the question is which to do first.
+    </p>
+  </header>
+
+  <div class="pick">
+    <div class="eyebrow" style="color: var(--route-casing)">Recommendation</div>
+    <ol>
+      <li>
+        <strong>Now:</strong> A (wind score on proposals) and B (ride it the
+        other way, or start a day later). Small, uses the forecast we already
+        load, no change to the route search.
+      </li>
+      <li>
+        <strong>Next:</strong> D (less headwind for one day in the editor). It
+        reuses the router with a wind cost.
+      </li>
+      <li>
+        <strong>Later:</strong> C (a Tailwind proposal) once D's wind cost has
+        proven itself, and E (typical wind) for trips more than 16 days out.
+      </li>
+    </ol>
+  </div>
+
+  <section class="block">
+    <h2>What we know about the wind</h2>
+    <div class="facts">
+      <div class="fact">
+        <strong>Forecast, up to 16 days</strong
+        ><span
+          >Open-Meteo, hourly, per 0.1° cell. Already loaded for the weather
+          view and the day timeline.</span
+        >
+      </div>
+      <div class="fact">
+        <strong>Head, cross, tail per day</strong
+        ><span
+          >Already computed along each stage for the ride window. Proposals
+          already show “Mostly tailwind” or “Headwind on day 2”.</span
+        >
+      </div>
+      <div class="fact">
+        <strong>Typical wind, any date</strong
+        ><span
+          >Open-Meteo's historical archive gives wind per hour back to 1940.
+          Averaging a month gives the usual direction and strength. Not loaded
+          yet.</span
+        >
+      </div>
+      <div class="fact">
+        <strong>Forecasts shift</strong
+        ><span
+          >A 10-day forecast often turns 90°. Anything built on it must say how
+          sure it is and update when the forecast changes.</span
+        >
+      </div>
+    </div>
+  </section>
+
+  <!-- A -->
+  <section class="option" id="a">
+    <div class="text">
+      <div class="title-row">
+        <span class="letter">A</span>
+        <h3>Wind score on proposals</h3>
+      </div>
+      <div class="meta">
+        <span class="chip good">Small</span
+        ><span class="chip">Forecast only</span
+        ><span class="chip">Routes unchanged</span>
+      </div>
+      <p>
+        The generator works as today. Each proposal gets a headwind number for
+        its dates: km ridden into the wind, weighted by its speed. The list can
+        sort by it, and the best one gets a “Least headwind” tag. Each card
+        shows a small bar per day.
+      </p>
+      <ul class="plain">
+        <li>Good when the proposals go in different directions.</li>
+        <li>Does nothing when all proposals share the same corridor.</li>
+        <li>Without a forecast the bar shows “no forecast yet”.</li>
+      </ul>
+    </div>
+    <figure class="sketch">
+      <svg
+        viewBox="0 0 440 236"
+        role="img"
+        aria-label="Proposal card with a Least headwind tag and a wind bar per day"
+      >
+        <rect
+          x="1"
+          y="1"
+          width="438"
+          height="234"
+          rx="10"
+          fill="var(--selected)"
+          stroke="var(--route-casing)"
+        />
+        <circle cx="30" cy="34" r="12" fill="var(--route)" />
+        <text
+          x="30"
+          y="39"
+          text-anchor="middle"
+          font-size="13"
+          font-weight="800"
+        >
+          1
+        </text>
+        <text x="52" y="31" font-size="15" font-weight="800">Best overall</text>
+        <text x="52" y="48" font-size="11.5" class="muted">
+          Via Haßfurt, Schweinfurt and Volkach
+        </text>
+        <rect
+          x="300"
+          y="20"
+          width="124"
+          height="22"
+          rx="11"
+          fill="var(--surface)"
+          stroke="var(--tail)"
+        />
+        <text
+          x="362"
+          y="35"
+          text-anchor="middle"
+          font-size="11.5"
+          font-weight="700"
+          style="fill: var(--tail)"
+        >
+          Least headwind
+        </text>
+        <text x="20" y="80" font-size="14" font-weight="700">
+          223 km ↗ 560 m 13 h
+        </text>
+        <text
+          x="20"
+          y="112"
+          font-size="11"
+          class="muted"
+          font-weight="700"
+          letter-spacing="1"
+        >
+          WIND BY DAY
+        </text>
+        <!-- day bars: share of km head / cross / tail -->
+        <g font-size="11">
+          <text x="20" y="140" class="muted">Day 1</text>
+          <rect
+            x="70"
+            y="130"
+            width="64"
+            height="12"
+            rx="3"
+            fill="var(--tail)"
+          />
+          <rect x="134" y="130" width="40" height="12" fill="var(--cross)" />
+          <rect
+            x="174"
+            y="130"
+            width="16"
+            height="12"
+            rx="3"
+            fill="var(--head)"
+          />
+          <text x="200" y="140" class="muted">tail 16 km/h</text>
+          <text x="20" y="166" class="muted">Day 2</text>
+          <rect
+            x="70"
+            y="156"
+            width="96"
+            height="12"
+            rx="3"
+            fill="var(--tail)"
+          />
+          <rect
+            x="166"
+            y="156"
+            width="24"
+            height="12"
+            rx="3"
+            fill="var(--cross)"
+          />
+          <text x="200" y="166" class="muted">tail 21 km/h</text>
+          <text x="20" y="192" class="muted">Day 3</text>
+          <rect
+            x="70"
+            y="182"
+            width="30"
+            height="12"
+            rx="3"
+            fill="var(--tail)"
+          />
+          <rect x="100" y="182" width="40" height="12" fill="var(--cross)" />
+          <rect
+            x="140"
+            y="182"
+            width="50"
+            height="12"
+            rx="3"
+            fill="var(--head)"
+          />
+          <text x="200" y="192" class="muted">head 12 km/h</text>
+        </g>
+        <text x="20" y="220" font-size="11" class="muted">
+          Forecast from today · updates when it changes
+        </text>
+      </svg>
+      <figcaption>
+        The selected proposal card with the new tag and day bars. Green tail,
+        amber cross, red head, as in the editor.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- B -->
+  <section class="option" id="b">
+    <div class="text">
+      <div class="title-row">
+        <span class="letter">B</span>
+        <h3>Ride it the other way, or start a day later</h3>
+      </div>
+      <div class="meta">
+        <span class="chip good">Small</span
+        ><span class="chip">Forecast or typical wind</span
+        ><span class="chip">Same route</span>
+      </div>
+      <p>
+        Often the cheapest fix is not a new route. A loop ridden the other way
+        round, an A to B trip swapped to B to A, or a start one or two days
+        later can turn most headwind into tailwind. Wayline checks these and
+        shows a hint only when it helps a lot.
+      </p>
+      <ul class="plain">
+        <li>
+          Loop direction and date shift work for any trip, also imported GPX.
+        </li>
+        <li>
+          Swapping start and end changes the train home. The hint says so.
+        </li>
+        <li>One click applies it; undo is there as for every edit.</li>
+      </ul>
+    </div>
+    <figure class="sketch">
+      <svg
+        viewBox="0 0 440 300"
+        role="img"
+        aria-label="A loop shown clockwise and anticlockwise with wind from the west, and a strip of start dates"
+      >
+        <rect x="0" y="0" width="440" height="168" rx="8" fill="var(--map)" />
+        <!-- wind arrows from west -->
+        <g stroke="var(--muted)" stroke-width="1.6" fill="none" opacity="0.7">
+          <path d="M18 30h26m-6-5 6 5-6 5" />
+          <path d="M18 84h26m-6-5 6 5-6 5" />
+          <path d="M18 138h26m-6-5 6 5-6 5" />
+        </g>
+        <text x="16" y="160" font-size="10.5" class="muted">
+          wind from W, 20 km/h
+        </text>
+        <!-- loop now: clockwise -->
+        <path
+          d="M120 120 C 110 60, 160 34, 200 44 C 236 52, 236 104, 210 126 C 186 146, 134 146, 120 120 Z"
+          fill="none"
+          stroke="var(--route-casing)"
+          stroke-width="7"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M120 120 C 110 60, 160 34, 200 44 C 236 52, 236 104, 210 126 C 186 146, 134 146, 120 120 Z"
+          fill="none"
+          stroke="var(--route)"
+          stroke-width="4"
+        />
+        <path
+          d="M168 40l8 3-7 5"
+          fill="none"
+          stroke="var(--route-casing)"
+          stroke-width="2"
+        />
+        <text
+          x="170"
+          y="96"
+          text-anchor="middle"
+          font-size="11"
+          font-weight="700"
+        >
+          Now
+        </text>
+        <text
+          x="170"
+          y="110"
+          text-anchor="middle"
+          font-size="10.5"
+          class="muted"
+        >
+          clockwise
+        </text>
+        <!-- loop alt: anticlockwise -->
+        <path
+          d="M290 120 C 280 60, 330 34, 370 44 C 406 52, 406 104, 380 126 C 356 146, 304 146, 290 120 Z"
+          fill="none"
+          stroke="var(--tail)"
+          stroke-width="4"
+          stroke-dasharray="7 5"
+        />
+        <path
+          d="M346 40l-8 3 7 5"
+          fill="none"
+          stroke="var(--tail)"
+          stroke-width="2"
+        />
+        <text
+          x="340"
+          y="96"
+          text-anchor="middle"
+          font-size="11"
+          font-weight="700"
+        >
+          Other way
+        </text>
+        <text
+          x="340"
+          y="110"
+          text-anchor="middle"
+          font-size="10.5"
+          class="muted"
+        >
+          anticlockwise
+        </text>
+        <!-- hint -->
+        <rect
+          x="12"
+          y="182"
+          width="416"
+          height="40"
+          rx="8"
+          fill="var(--surface)"
+          stroke="var(--tail)"
+        />
+        <text x="26" y="206" font-size="12.5" font-weight="700">
+          Ride it anticlockwise: 64 % less headwind
+        </text>
+        <rect
+          x="346"
+          y="191"
+          width="70"
+          height="22"
+          rx="6"
+          fill="var(--tail)"
+        />
+        <text
+          x="381"
+          y="206"
+          text-anchor="middle"
+          font-size="11.5"
+          font-weight="700"
+          style="fill: var(--surface)"
+        >
+          Switch
+        </text>
+        <!-- date strip -->
+        <g font-size="10.5">
+          <text x="12" y="248" class="muted" font-weight="700">START</text>
+          <g>
+            <rect
+              x="60"
+              y="234"
+              width="58"
+              height="52"
+              rx="6"
+              fill="var(--surface)"
+              stroke="var(--border)"
+            />
+            <text x="89" y="252" text-anchor="middle" font-weight="700">
+              Fri 6
+            </text>
+            <rect
+              x="70"
+              y="262"
+              width="38"
+              height="8"
+              rx="2"
+              fill="var(--head)"
+            />
+            <text x="89" y="282" text-anchor="middle" class="muted">head</text>
+          </g>
+          <g>
+            <rect
+              x="124"
+              y="234"
+              width="58"
+              height="52"
+              rx="6"
+              fill="var(--selected)"
+              stroke="var(--route-casing)"
+            />
+            <text x="153" y="252" text-anchor="middle" font-weight="700">
+              Sat 7
+            </text>
+            <rect
+              x="134"
+              y="262"
+              width="20"
+              height="8"
+              rx="2"
+              fill="var(--head)"
+            />
+            <rect
+              x="154"
+              y="262"
+              width="18"
+              height="8"
+              rx="2"
+              fill="var(--cross)"
+            />
+            <text x="153" y="282" text-anchor="middle" class="muted">
+              planned
+            </text>
+          </g>
+          <g>
+            <rect
+              x="188"
+              y="234"
+              width="58"
+              height="52"
+              rx="6"
+              fill="var(--surface)"
+              stroke="var(--tail)"
+            />
+            <text x="217" y="252" text-anchor="middle" font-weight="700">
+              Sun 8
+            </text>
+            <rect
+              x="198"
+              y="262"
+              width="38"
+              height="8"
+              rx="2"
+              fill="var(--tail)"
+            />
+            <text
+              x="217"
+              y="282"
+              text-anchor="middle"
+              style="fill: var(--tail)"
+            >
+              tail
+            </text>
+          </g>
+          <g>
+            <rect
+              x="252"
+              y="234"
+              width="58"
+              height="52"
+              rx="6"
+              fill="var(--surface)"
+              stroke="var(--border)"
+            />
+            <text x="281" y="252" text-anchor="middle" font-weight="700">
+              Mon 9
+            </text>
+            <rect
+              x="262"
+              y="262"
+              width="26"
+              height="8"
+              rx="2"
+              fill="var(--tail)"
+            />
+            <rect
+              x="288"
+              y="262"
+              width="12"
+              height="8"
+              rx="2"
+              fill="var(--cross)"
+            />
+            <text x="281" y="282" text-anchor="middle" class="muted">
+              mostly tail
+            </text>
+          </g>
+          <text x="320" y="258" class="muted">±2 days, same</text>
+          <text x="320" y="272" class="muted">route and stops</text>
+        </g>
+      </svg>
+      <figcaption>
+        Top: the loop as planned and the other way round. Bottom: the same trip
+        on other start dates.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- C -->
+  <section class="option" id="c">
+    <div class="text">
+      <div class="title-row">
+        <span class="letter">C</span>
+        <h3>A Tailwind proposal</h3>
+      </div>
+      <div class="meta">
+        <span class="chip bad">Large</span
+        ><span class="chip">Forecast or typical wind</span
+        ><span class="chip">New routes</span>
+      </div>
+      <p>
+        The generator gets one more flavour next to Best, Flat and Hilly. Its
+        route search makes ways into the wind more expensive, so it picks
+        valleys and directions that run with the wind. It shows on the map in
+        its own color, with its extra km against the best proposal.
+      </p>
+      <div class="formula">
+        cost = km × (1 + 0.6 × max(0, head km/h) / 25)<br />head = wind speed ×
+        cos(wind from − riding direction)
+      </div>
+      <ul class="plain">
+        <li>
+          Each way's direction counts, so the search needs the riding direction
+          and the hour of the day it is ridden.
+        </li>
+        <li>
+          Makes generation slower: wind per cell and hour must be ready before
+          the search starts.
+        </li>
+        <li>
+          A one-way trip can't escape a strong headwind; the gain is mostly on
+          loops.
+        </li>
+      </ul>
+    </div>
+    <figure class="sketch">
+      <svg
+        viewBox="0 0 440 250"
+        role="img"
+        aria-label="Map with the best route and a tailwind route that bends north to follow the wind"
+      >
+        <rect x="0" y="0" width="440" height="250" rx="8" fill="var(--map)" />
+        <g stroke="var(--map-line)" stroke-width="1.2" fill="none">
+          <path d="M0 70 C 90 60, 160 90, 240 70 S 380 50, 440 64" />
+          <path d="M0 190 C 100 200, 170 170, 260 190 S 400 210, 440 196" />
+          <path d="M120 0 C 130 80, 110 170, 128 250" />
+          <path d="M320 0 C 300 90, 330 170, 314 250" />
+        </g>
+        <g stroke="var(--muted)" stroke-width="1.6" fill="none" opacity="0.7">
+          <path d="M20 40l22 8m-7-8 7 8-8 4" />
+          <path d="M20 120l22 8m-7-8 7 8-8 4" />
+          <path d="M20 200l22 8m-7-8 7 8-8 4" />
+        </g>
+        <text x="16" y="236" font-size="10.5" class="muted">wind from WNW</text>
+        <!-- best -->
+        <path
+          d="M70 170 C 140 150, 200 170, 260 150 S 350 120, 390 110"
+          fill="none"
+          stroke="var(--route-casing)"
+          stroke-width="7"
+        />
+        <path
+          d="M70 170 C 140 150, 200 170, 260 150 S 350 120, 390 110"
+          fill="none"
+          stroke="var(--route)"
+          stroke-width="4"
+        />
+        <!-- tailwind -->
+        <path
+          d="M70 170 C 110 110, 170 90, 230 100 S 330 140, 390 110"
+          fill="none"
+          stroke="var(--tail)"
+          stroke-width="4"
+        />
+        <rect x="64" y="162" width="14" height="14" rx="3" fill="var(--text)" />
+        <rect
+          x="383"
+          y="103"
+          width="14"
+          height="14"
+          rx="3"
+          fill="var(--text)"
+        />
+        <text x="70" y="196" font-size="11.5" font-weight="700">Bamberg</text>
+        <text x="352" y="96" font-size="11.5" font-weight="700">Bayreuth</text>
+        <rect
+          x="168"
+          y="70"
+          width="128"
+          height="22"
+          rx="11"
+          fill="var(--tail)"
+        />
+        <text
+          x="232"
+          y="85"
+          text-anchor="middle"
+          font-size="11.5"
+          font-weight="700"
+          style="fill: var(--surface)"
+        >
+          Tailwind · +6 km
+        </text>
+        <rect
+          x="214"
+          y="168"
+          width="90"
+          height="22"
+          rx="11"
+          fill="var(--route)"
+        />
+        <text
+          x="259"
+          y="183"
+          text-anchor="middle"
+          font-size="11.5"
+          font-weight="700"
+          style="fill: #3b1503"
+        >
+          Best overall
+        </text>
+      </svg>
+      <figcaption>
+        The Tailwind proposal bends where the wind helps, and says what it costs
+        in extra km.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- D -->
+  <section class="option" id="d">
+    <div class="text">
+      <div class="title-row">
+        <span class="letter">D</span>
+        <h3>Less headwind for one day</h3>
+      </div>
+      <div class="meta">
+        <span class="chip warn">Medium</span><span class="chip">Forecast</span
+        ><span class="chip">Changes one day</span>
+      </div>
+      <p>
+        For a planned trip. When a day has a lot of headwind, its details show
+        “Less headwind?”. Wayline routes that day again between the same stops
+        with the wind cost from C, and shows the result dashed on the map with
+        what changes. Apply or ignore.
+      </p>
+      <ul class="plain">
+        <li>Stops and hotels stay. Only the way between them changes.</li>
+        <li>
+          Fits the forecast's 16 days: the trip is close, the forecast is good.
+        </li>
+        <li>
+          Can also suggest a later start time on that day, which the timeline
+          already knows.
+        </li>
+      </ul>
+    </div>
+    <figure class="sketch">
+      <svg
+        viewBox="0 0 440 262"
+        role="img"
+        aria-label="Day details with a less headwind suggestion and its comparison"
+      >
+        <rect
+          x="1"
+          y="1"
+          width="438"
+          height="260"
+          rx="10"
+          fill="var(--surface)"
+          stroke="var(--border)"
+        />
+        <text
+          x="18"
+          y="28"
+          font-size="11"
+          class="muted"
+          font-weight="700"
+          letter-spacing="1"
+        >
+          DAY 2 · SUN 8 NOV
+        </text>
+        <text x="18" y="50" font-size="16" font-weight="800">
+          Haßfurt → Coburg
+        </text>
+        <text x="18" y="74" font-size="12.5" class="muted">
+          72 km · ↗ 410 m · 4 h 20
+        </text>
+        <rect x="18" y="86" width="250" height="10" rx="3" fill="var(--head)" />
+        <rect
+          x="268"
+          y="86"
+          width="80"
+          height="10"
+          rx="3"
+          fill="var(--cross)"
+        />
+        <rect x="348" y="86" width="74" height="10" rx="3" fill="var(--tail)" />
+        <text
+          x="18"
+          y="114"
+          font-size="12"
+          style="fill: var(--head)"
+          font-weight="700"
+        >
+          62 % headwind · 18 km/h, gusts 32
+        </text>
+        <rect
+          x="18"
+          y="128"
+          width="404"
+          height="116"
+          rx="8"
+          fill="var(--selected)"
+          stroke="var(--route-casing)"
+        />
+        <text x="32" y="152" font-size="13.5" font-weight="800">
+          Less headwind via the Itz valley
+        </text>
+        <g font-size="12">
+          <text x="32" y="178" class="muted">Distance</text>
+          <text x="160" y="178" font-weight="700">78 km</text>
+          <text x="230" y="178" class="muted">+6 km</text>
+          <text x="32" y="198" class="muted">Ascent</text>
+          <text x="160" y="198" font-weight="700">↗ 380 m</text>
+          <text x="230" y="198" style="fill: var(--tail)">−30 m</text>
+          <text x="32" y="218" class="muted">Headwind</text>
+          <text x="160" y="218" font-weight="700">21 %</text>
+          <text x="230" y="218" style="fill: var(--tail)">−41 points</text>
+        </g>
+        <rect
+          x="318"
+          y="190"
+          width="90"
+          height="28"
+          rx="6"
+          fill="var(--route)"
+        />
+        <text
+          x="363"
+          y="209"
+          text-anchor="middle"
+          font-size="12"
+          font-weight="700"
+          style="fill: #3b1503"
+        >
+          Use this
+        </text>
+        <text x="338" y="236" font-size="11" class="muted">Keep mine</text>
+      </svg>
+      <figcaption>
+        The day details in the editor, with the suggestion below the wind line.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- E -->
+  <section class="option" id="e">
+    <div class="text">
+      <div class="title-row">
+        <span class="letter">E</span>
+        <h3>Plan with the typical wind</h3>
+      </div>
+      <div class="meta">
+        <span class="chip warn">Medium</span
+        ><span class="chip">Historical data</span
+        ><span class="chip">Feeds A, B, C</span>
+      </div>
+      <p>
+        Most trips are planned weeks ahead, where there is no forecast. For
+        those, Wayline uses the usual wind for that month and region from past
+        years. In Franconia that is mostly west to south-west in summer, so
+        west-to-east trips and anticlockwise loops tend to win.
+      </p>
+      <ul class="plain">
+        <li>Shown as “usually” with a wind rose, never as a forecast.</li>
+        <li>
+          Built once per region and month in the data pipeline, so the app makes
+          no extra calls.
+        </li>
+        <li>
+          Switches to the forecast by itself when the trip is 16 days away.
+        </li>
+      </ul>
+    </div>
+    <figure class="sketch">
+      <svg
+        viewBox="0 0 440 230"
+        role="img"
+        aria-label="Wind rose for July in Franconia with most wind from the west and south-west"
+      >
+        <g transform="translate(120 116)">
+          <circle r="90" fill="none" stroke="var(--border)" />
+          <circle r="60" fill="none" stroke="var(--border)" />
+          <circle r="30" fill="none" stroke="var(--border)" />
+          <!-- petals: share of hours the wind comes FROM each direction (N, NE, E, SE, S, SW, W, NW) -->
+          <g fill="var(--flat)" fill-opacity="0.75" stroke="var(--flat)">
+            <path d="M0 0 L-9.3 -28.5 A30 30 0 0 1 9.3 -28.5 Z" />
+            <path d="M0 0 L9.1 -17.8 A20 20 0 0 1 17.8 -9.1 Z" />
+            <path d="M0 0 L17.1 -5.6 A18 18 0 0 1 17.1 5.6 Z" />
+            <path d="M0 0 L14.3 7.3 A16 16 0 0 1 7.3 14.3 Z" />
+            <path d="M0 0 L9.9 30.4 A32 32 0 0 1 -9.9 30.4 Z" />
+            <path d="M0 0 L-30.0 58.8 A66 66 0 0 1 -58.8 30.0 Z" />
+            <path d="M0 0 L-79.9 26.0 A84 84 0 0 1 -79.9 -26.0 Z" />
+            <path d="M0 0 L-39.2 -20.0 A44 44 0 0 1 -20.0 -39.2 Z" />
+          </g>
+          <text y="-96" text-anchor="middle" font-size="11" class="muted">
+            N
+          </text>
+          <text x="98" y="4" font-size="11" class="muted">E</text>
+          <text y="106" text-anchor="middle" font-size="11" class="muted">
+            S
+          </text>
+          <text x="-110" y="4" font-size="11" class="muted">W</text>
+        </g>
+        <g font-size="12">
+          <text x="250" y="60" font-weight="800" font-size="14">
+            July, Franconia
+          </text>
+          <text x="250" y="82" class="muted">Hours by direction the wind</text>
+          <text x="250" y="98" class="muted">comes from, 2005–2025</text>
+          <text x="250" y="128">
+            W and SW:
+            <tspan font-weight="700">48 %</tspan>
+          </text>
+          <text x="250" y="148">
+            Median speed:
+            <tspan font-weight="700">11 km/h</tspan>
+          </text>
+          <text x="250" y="178" style="fill: var(--tail)" font-weight="700">
+            Ride west → east
+          </text>
+          <text x="250" y="196" class="muted">Loops: anticlockwise</text>
+        </g>
+      </svg>
+      <figcaption>
+        A wind rose per region and month. Example values; the real ones come
+        from the archive.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="block">
+    <h2>Side by side</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>You get</th>
+            <th>Effort</th>
+            <th>Needs</th>
+            <th>Risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>A</strong> Wind score</td>
+            <td>Pick the proposal with the least headwind</td>
+            <td><span class="dots">●○○</span></td>
+            <td>Forecast (have it)</td>
+            <td>No help if all proposals look alike</td>
+          </tr>
+          <tr>
+            <td><strong>B</strong> Other way, other day</td>
+            <td>Big gains without a new route</td>
+            <td><span class="dots">●○○</span></td>
+            <td>Forecast; E for later dates</td>
+            <td>Swapping A and B changes the trains</td>
+          </tr>
+          <tr>
+            <td><strong>C</strong> Tailwind proposal</td>
+            <td>A route built for the wind</td>
+            <td><span class="dots">●●●</span></td>
+            <td>Wind per cell and hour before the search</td>
+            <td>Slower generation; forecast may turn</td>
+          </tr>
+          <tr>
+            <td><strong>D</strong> One day again</td>
+            <td>Fix the worst day of a planned trip</td>
+            <td><span class="dots">●●○</span></td>
+            <td>Forecast; routing with a wind cost</td>
+            <td>Small gains on one-way days</td>
+          </tr>
+          <tr>
+            <td><strong>E</strong> Typical wind</td>
+            <td>Wind-aware plans months ahead</td>
+            <td><span class="dots">●●○</span></td>
+            <td>Pipeline step with archive data</td>
+            <td>Typical isn't actual; must say so</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Questions for you</h2>
+    <div class="questions">
+      <div class="q">
+        <strong>1. How much extra riding is a tailwind worth?</strong
+        ><span
+          >My default: up to 10 % more km, or 5 km per day, whichever is less.
+          It sets the 0.6 in C and D.</span
+        >
+      </div>
+      <div class="q">
+        <strong>2. May Wayline suggest swapping start and end?</strong
+        ><span
+          >It changes the train home and often the stations. My default: yes for
+          loops (direction only), ask for A to B trips.</span
+        >
+      </div>
+      <div class="q">
+        <strong>3. Far-out trips: typical wind or nothing?</strong
+        ><span
+          >My default: show typical wind, clearly marked “usually”, and switch
+          to the forecast 16 days before.</span
+        >
+      </div>
+      <div class="q">
+        <strong>4. Which first?</strong
+        ><span
+          >My pick: A and B together in one PR, then D. Tell me if C (a Tailwind
+          proposal) matters more to you.</span
+        >
+      </div>
+    </div>
+  </section>
+</main>
