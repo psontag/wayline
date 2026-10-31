@@ -21,9 +21,9 @@
   "stat": {
     "distance": "Distance",
     "ascent": "Ascent",
-    "stages": "Stages",
-    "stageCount_one": "{{count}} stage",
-    "stageCount_other": "{{count}} stages"
+    "stages": "Days",
+    "stageCount_one": "{{count}} day",
+    "stageCount_other": "{{count}} days"
   },
   "actions": "Trip actions",
   "duplicate": "Duplicate",
