@@ -27,6 +27,8 @@ export type StageListProps = {
   selected: number;
   onSelect: (index: number) => void;
   onHover: (index: number | undefined) => void;
+  /** Climb of the selected day under the pointer. */
+  onHoverClimb?: (index: number | undefined) => void;
   editor: TripEditorState;
 };
 
@@ -36,6 +38,7 @@ export function StageList({
   selected,
   onSelect,
   onHover,
+  onHoverClimb,
   editor,
 }: StageListProps) {
   const { t } = useTranslation("tripEditor");
@@ -64,7 +67,14 @@ export function StageList({
       selectedDay={selected + 1}
       onSelectDay={(day) => onSelect(day - 1)}
       onHoverDay={(day) => onHover(day === undefined ? undefined : day - 1)}
-      details={<SelectedStage trip={trip} index={selected} editor={editor} />}
+      details={
+        <SelectedStage
+          trip={trip}
+          index={selected}
+          editor={editor}
+          onHoverClimb={onHoverClimb}
+        />
+      }
     />
   );
 }
@@ -73,10 +83,12 @@ function SelectedStage({
   trip,
   index,
   editor,
+  onHoverClimb,
 }: {
   trip: Trip;
   index: number;
   editor: TripEditorState;
+  onHoverClimb?: (index: number | undefined) => void;
 }) {
   const stage = trip.stages[index];
   const weather = useWeather(trip, index).data;
@@ -86,7 +98,12 @@ function SelectedStage({
   return (
     <StageDetails
       surface={stage.stats.surface}
-      climbs={<ClimbList climbs={findClimbs(routePoints(stage.legs))} />}
+      climbs={
+        <ClimbList
+          climbs={findClimbs(routePoints(stage.legs))}
+          onHoverClimb={onHoverClimb}
+        />
+      }
       weather={
         weather
           ? {
