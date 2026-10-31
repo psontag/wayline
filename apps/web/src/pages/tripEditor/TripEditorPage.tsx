@@ -24,6 +24,7 @@ import { networkArea } from "../../components/NetworkLayer";
 import { useMe, useNetwork, useTrip } from "../../data/queries";
 import { StageList } from "./StageList";
 import { StageProfile } from "./StageProfile";
+import { useRouteStations } from "./stations";
 import { useMapHotels, useStopOptions } from "./stopChoices";
 import { ShareDialog } from "./ShareDialog";
 import { TripHeader } from "./TripHeader";
@@ -116,6 +117,7 @@ function TripEditor({
   const isLast = selected === trip.stages.length - 1;
   const options = useStopOptions(trip, selected);
   const mapHotels = useMapHotels(trip, selected);
+  const stations = useRouteStations(trip);
   const alternatives =
     isLast || readOnly
       ? []
@@ -219,6 +221,7 @@ function TripEditor({
                 void editor.moveStop(selected, place)
               }
               hotels={isLast ? [] : mapHotels.hotels}
+              stations={stations}
               selectedHotelId={stage?.hotel?.osmId}
               onSelectHotel={(osmId) => {
                 const h = mapHotels.hotels.find((x) => x.osmId === osmId);

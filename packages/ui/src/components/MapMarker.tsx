@@ -251,6 +251,49 @@ export function HotelMarker({
   );
 }
 
+export type StationMarkerProps = {
+  name: string;
+  /** bahn.de search for trains home from here. */
+  href: string;
+};
+
+/** Train station near the route, to end a trip early. Shows a card on hover. */
+export function StationMarker({ name, href }: StationMarkerProps) {
+  const { t } = useTranslation("ui");
+  return (
+    <div className="group relative">
+      <button
+        type="button"
+        aria-label={name}
+        className={cn(
+          "flex size-4 items-center justify-center rounded-sm bg-text-muted text-surface shadow-sm transition-colors hover:bg-text",
+          focusRing,
+        )}
+      >
+        <TrainFront className="size-2.5" aria-hidden />
+      </button>
+      {/* Padding, not margin, so the pointer can move onto the card. */}
+      <div className="absolute bottom-full left-1/2 hidden -translate-x-1/2 pb-2 group-focus-within:block group-hover:block">
+        <div className="flex w-max flex-col rounded-md border border-border bg-surface px-3 py-2 shadow-md">
+          <span className="text-sm font-bold text-text">{name}</span>
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              "mt-1 inline-flex items-center gap-1 self-start rounded-sm text-xs text-text-muted underline hover:text-text",
+              focusRing,
+            )}
+          >
+            {t("station.trainHome")}
+            <ExternalLink className="size-3" aria-hidden />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MarkerLabel({
   muted = false,
   strong = false,

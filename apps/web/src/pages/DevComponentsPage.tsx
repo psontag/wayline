@@ -43,6 +43,7 @@ import {
   EndpointMarker,
   GhostViaMarker,
   HotelMarker,
+  StationMarker,
   HotelRow,
   HoverMarker,
   InlineEdit,
@@ -654,6 +655,7 @@ function TripEditorParts() {
           detour={800}
           compact
         />
+        <StationMarker name="Lichtenfels" href="https://www.bahn.de" />
         <HoverMarker />
         <ViaMarker aria-label={t("demo.removeVia")} />
         <GhostViaMarker />

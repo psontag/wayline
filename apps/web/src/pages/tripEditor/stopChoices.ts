@@ -1,6 +1,7 @@
 import {
   decodeLine,
   distanceKm,
+  type GeoStation,
   type GeoTown,
   type HotelBudget,
   type LonLat,
@@ -39,8 +40,12 @@ export type StopChoice = StageIfEnding & {
   size?: TownSize;
 };
 
-/** Hotels and towns of the region, for lookups without the network. */
-export type PlaceIndex = { hotels: HotelIndex; towns: GeoTown[] };
+/** Places of the region, for lookups without the network. */
+export type PlaceIndex = {
+  hotels: HotelIndex;
+  towns: GeoTown[];
+  stations: GeoStation[];
+};
 
 /** Region places, loaded once. */
 export function usePlaceIndex(): PlaceIndex | undefined {
@@ -57,7 +62,11 @@ export function usePlaceIndex(): PlaceIndex | undefined {
 }
 
 export function placeIndex(places: Places): PlaceIndex {
-  return { hotels: new HotelIndex(places.hotels), towns: places.towns };
+  return {
+    hotels: new HotelIndex(places.hotels),
+    towns: places.towns,
+    stations: places.stations,
+  };
 }
 
 export function bedsNear(

@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 import { downloadTripGpx } from "../../data/gpx";
 import { PhoneStageSheet } from "./PhoneStageSheet";
 import { PhoneStopSheet } from "./PhoneStopSheet";
+import { useRouteStations } from "./stations";
 import {
   type MapAlternative,
   type MapPadding,
@@ -71,6 +72,7 @@ export function PhoneTripEditor({
   const { t } = useTranslation("tripEditor");
   const [snap, setSnap] = useState<SheetSnap>("half");
   const [stopOpen, setStopOpen] = useState(false);
+  const stations = useRouteStations(trip);
 
   // Fit the trip into the part of the map above the half-open sheet.
   const padding = useMemo<MapPadding>(() => {
@@ -88,6 +90,7 @@ export function PhoneTripEditor({
           trip={trip}
           selected={selected}
           onSelect={onSelect}
+          stations={stations}
           alternatives={alternatives}
           onPickAlternative={onPickAlternative}
           hover={hover}
