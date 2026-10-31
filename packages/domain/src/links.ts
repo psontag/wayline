@@ -1,5 +1,11 @@
-import type { HotelBudget } from "./schema";
-import { addDays } from "./time";
+import type { HotelBudget, Trip } from "./schema";
+import {
+  addDays,
+  addHours,
+  ridingHours,
+  stageStartTime,
+  timeToHours,
+} from "./time";
 
 /** Booking.com price filter per budget, in EUR per night. */
 export const budgetPrice: Record<HotelBudget, string> = {
@@ -55,6 +61,8 @@ export function bahnUrl(opts: {
   to: string;
   /** Local time "YYYY-MM-DDTHH:MM". Departure at this time. */
   time?: string;
+  /** The time is the latest arrival, not the departure. */
+  arrival?: boolean;
 }): string {
   // bahn.de reads its search from the URL fragment.
   const params: [string, string][] = [
@@ -62,8 +70,52 @@ export function bahnUrl(opts: {
     ["so", opts.from],
     ["zo", opts.to],
   ];
-  if (opts.time) params.push(["hd", `${opts.time}:00`], ["hza", "D"]);
+  if (opts.time) {
+    params.push(["hd", `${opts.time}:00`], ["hza", opts.arrival ? "A" : "D"]);
+  }
   return `https://www.bahn.de/buchung/fahrplan/suche#${query(params)}`;
+}
+
+/**
+ * Train from home to the start, arriving before the first day starts, and
+ * back from the end, leaving after the last day's planned arrival. Without
+ * a start date the links have no time. Without home, that field is empty.
+ */
+export function trainLinks(
+  trip: Pick<Trip, "stages" | "startDate" | "settings">,
+  home = "",
+): { there?: string; back?: string } {
+  const first = trip.stages[0];
+  const last = trip.stages.at(-1);
+  if (!first || !last) return {};
+  const lastIndex = trip.stages.length - 1;
+  const date = (i: number) =>
+    trip.startDate ? addDays(trip.startDate, i) : undefined;
+  const firstDate = date(0);
+  const lastDate = date(lastIndex);
+  const arrival = addHours(
+    stageStartTime(trip.settings, lastIndex),
+    ridingHours(last.stats, trip.settings.avgSpeed),
+  );
+  return {
+    there: bahnUrl({
+      from: home,
+      to: first.start.name,
+      time: firstDate && `${firstDate}T${stageStartTime(trip.settings, 0)}`,
+      arrival: true,
+    }),
+    back: bahnUrl({
+      from: last.end.name,
+      to: home,
+      time: lastDate && `${lastDate}T${roundUpToHalfHour(arrival)}`,
+    }),
+  };
+}
+
+/** "14:10" → "14:30" */
+function roundUpToHalfHour(time: string): string {
+  const h = timeToHours(time);
+  return addHours("00:00", Math.ceil(h * 2) / 2);
 }
 
 function query(params: [string, string][]): string {
