@@ -5,7 +5,6 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import {
-  Button,
   cn,
   focusRing,
   IconButton,
@@ -36,17 +35,6 @@ export function AppShell() {
           >
             <Logo />
           </Link>
-          <nav className="flex items-center gap-1">
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/map">{t("nav.map")}</Link>
-            </Button>
-            {/* Dev link. Phones need the room for the settings. */}
-            <div className="hidden sm:flex">
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/dev/components">{t("nav.components")}</Link>
-              </Button>
-            </div>
-          </nav>
           <TopBarSpacer />
           <div className="flex items-center gap-1">
             <IconButton
