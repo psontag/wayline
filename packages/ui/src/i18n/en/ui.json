@@ -127,5 +127,13 @@
     "gust": "G {{speed}}",
     "afterSunset": "Ends after sunset at {{time}}",
     "beforeSunrise": "Starts before sunrise at {{time}}"
+  },
+  "climbs": {
+    "none": "No real climbs",
+    "summary_one": "1 climb · {{length}} at {{grade}}",
+    "summary_other": "{{count}} climbs · longest {{length}} at {{grade}}",
+    "at": "at {{km}}",
+    "grade": "{{grade}} · max {{max}}",
+    "gain": "+{{gain}}"
   }
 }

@@ -1,6 +1,7 @@
 import {
   addDays,
   addHours,
+  type Climb,
   expectedTimeAtKm,
   localTimeToDate,
   ridingHours,
@@ -45,6 +46,9 @@ export type StageProfileProps = {
   variant?: "panel" | "sheet";
   /** Moves the ride window. Without it, the window is fixed. */
   onRideStartChange?: (start: string) => void;
+  /** Climbs of the stage, and the one to show stronger. */
+  climbs?: Climb[];
+  highlightedClimb?: number;
 };
 
 /** Elevation of a stage by surface, and the weather on one km axis. */
@@ -56,6 +60,8 @@ export function StageProfile({
   onHoverKm,
   variant = "panel",
   onRideStartChange,
+  climbs,
+  highlightedClimb,
 }: StageProfileProps) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -154,6 +160,8 @@ export function StageProfile({
       >
         <ElevationProfile
           axes
+          climbs={climbs}
+          highlightedClimb={highlightedClimb}
           points={points}
           compare={compare}
           hoverKm={hoverKm}

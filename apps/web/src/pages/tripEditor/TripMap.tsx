@@ -62,6 +62,8 @@ export type TripMapProps = {
   onSelectHotel?: (osmId: string) => void;
   /** Point that follows the elevation crosshair. */
   hover?: LonLat;
+  /** Part of the route to show stronger, e.g. a hovered climb. */
+  highlight?: LonLat[];
   /** Space around the trip when the map fits it, e.g. for a sheet. */
   padding?: MapPadding;
   /** Zoom buttons. Phones zoom with two fingers. */
@@ -102,6 +104,7 @@ export function TripMap({
   selectedHotelId,
   onSelectHotel,
   hover,
+  highlight,
   padding,
   controls = true,
   children,
@@ -337,6 +340,24 @@ export function TripMap({
           }}
         />
       </Source>
+      {highlight && highlight.length > 1 && (
+        <Source
+          id="highlight"
+          type="geojson"
+          data={{
+            type: "Feature",
+            properties: {},
+            geometry: { type: "LineString", coordinates: highlight },
+          }}
+        >
+          <MapLayer
+            id="highlight-line"
+            type="line"
+            layout={lineLayout}
+            paint={{ "line-color": tokens.viaPoint, "line-width": 9 }}
+          />
+        </Source>
+      )}
       <Source id="legs" type="geojson" data={legData}>
         <Layer
           id="leg-hit"

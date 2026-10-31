@@ -1,11 +1,5 @@
 import { bahnUrl, tripStats, type Trip } from "@wayline/domain";
-import {
-  Stat,
-  statIcons,
-  SurfaceBar,
-  TextLink,
-  useFormat,
-} from "@wayline/ui";
+import { Stat, statIcons, SurfaceBar, TextLink, useFormat } from "@wayline/ui";
 import { useTranslation } from "react-i18next";
 
 /** Totals of the trip and train links at both ends. */

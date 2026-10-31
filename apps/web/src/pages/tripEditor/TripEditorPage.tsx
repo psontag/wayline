@@ -4,7 +4,13 @@ import {
   useParams,
   useSearch,
 } from "@tanstack/react-router";
-import { decodeLine, pointAtKm, routePoints, type Trip } from "@wayline/domain";
+import {
+  decodeLine,
+  findClimbs,
+  pointAtKm,
+  routePoints,
+  type Trip,
+} from "@wayline/domain";
 import {
   Button,
   Toast,
@@ -80,6 +86,7 @@ function TripEditor({
   const isPhone = useIsPhone();
   const [hoverKm, setHoverKm] = useState<number>();
   const [hoveredDay, setHoveredDay] = useState<number>();
+  const [hoveredClimb, setHoveredClimb] = useState<number>();
   const [sharing, setSharing] = useState(false);
   const shareDialog = canShare && (
     <ShareDialog trip={trip} open={sharing} onOpenChange={setSharing} />
@@ -88,11 +95,19 @@ function TripEditor({
   const selected = Math.min(search.stage ?? 0, trip.stages.length - 1);
   const select = (stage: number) => {
     setHoverKm(undefined);
+    setHoveredClimb(undefined);
     void navigate({ search: { stage }, replace: true });
   };
 
   const stage = trip.stages[selected];
   const points = useMemo(() => routePoints(stage?.legs ?? []), [stage]);
+  const climbs = useMemo(() => findClimbs(points), [points]);
+  const climb = hoveredClimb === undefined ? undefined : climbs[hoveredClimb];
+  const highlight = climb
+    ? points
+        .filter((p) => p.km >= climb.startKm && p.km <= climb.endKm)
+        .map((p) => p.coord)
+    : undefined;
   const hover =
     hoverKm !== undefined && points.length
       ? pointAtKm(points, hoverKm).coord
@@ -198,6 +213,7 @@ function TripEditor({
               selected={selected}
               onSelect={select}
               hovered={hoveredDay}
+              highlight={highlight}
               alternatives={alternatives}
               onPickAlternative={(place) =>
                 void editor.moveStop(selected, place)
@@ -234,6 +250,8 @@ function TripEditor({
             network={network}
             hoverKm={hoverKm}
             onHoverKm={setHoverKm}
+            climbs={climbs}
+            highlightedClimb={hoveredClimb}
             onRideStartChange={
               editor.readOnly
                 ? undefined
@@ -249,6 +267,7 @@ function TripEditor({
               selected={selected}
               onSelect={select}
               onHover={setHoveredDay}
+              onHoverClimb={setHoveredClimb}
               editor={editor}
             />
           </div>

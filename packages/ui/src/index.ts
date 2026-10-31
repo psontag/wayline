@@ -7,6 +7,11 @@ export {
 } from "./components/Button";
 export { Card, type CardProps } from "./components/Card";
 export {
+  ClimbList,
+  type ClimbItem,
+  type ClimbListProps,
+} from "./components/ClimbList";
+export {
   ChangeNotice,
   type ChangeNoticeProps,
 } from "./components/ChangeNotice";

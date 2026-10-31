@@ -26,6 +26,10 @@ export type ElevationProfileProps = {
   axes?: boolean;
   /** km where a new day starts. Drawn as dashed lines with the stop number. */
   dayBreaks?: number[];
+  /** Climbs, drawn as soft bands behind the line. */
+  climbs?: { startKm: number; endKm: number }[];
+  /** Index of the climb to show stronger. */
+  highlightedClimb?: number;
   /** Describes the chart for screen readers. */
   "aria-label": string;
   className?: string;
@@ -138,6 +142,8 @@ export function ElevationProfile({
   onHoverKm,
   axes = false,
   dayBreaks = [],
+  climbs = [],
+  highlightedClimb,
   "aria-label": ariaLabel,
   className,
 }: ElevationProfileProps) {
@@ -212,6 +218,19 @@ export function ElevationProfile({
           strokeWidth={1}
           vectorEffect="non-scaling-stroke"
           className="stroke-border"
+        />
+      ))}
+      {climbs.map((c, i) => (
+        <rect
+          key={c.startKm}
+          x={x(c.startKm)}
+          y={0}
+          width={Math.max(0, x(c.endKm) - x(c.startKm))}
+          height={H}
+          className={cn(
+            "fill-selected",
+            i === highlightedClimb ? "opacity-100" : "opacity-60",
+          )}
         />
       ))}
       <path d={area} fill={`url(#${fillId})`} />

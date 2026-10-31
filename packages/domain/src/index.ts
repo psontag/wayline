@@ -10,3 +10,4 @@ export * from "./stats";
 export * from "./time";
 export * from "./trip";
 export * from "./weather";
+export * from "./climbs";
