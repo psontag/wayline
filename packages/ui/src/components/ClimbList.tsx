@@ -45,7 +45,7 @@ export function ClimbList({ climbs, onHoverClimb }: ClimbListProps) {
         <span className="min-w-0 flex-1">
           {t("climbs.summary", {
             count: climbs.length,
-            length: format.distance(length(longest) * 1000),
+            length: format.shortDistance(length(longest) * 1000),
             grade: grade(longest.grade),
           })}
         </span>
@@ -65,7 +65,7 @@ export function ClimbList({ climbs, onHoverClimb }: ClimbListProps) {
             <span className="text-text-muted">
               {t("climbs.at", { km: format.distance(c.startKm * 1000) })}
             </span>
-            <span>{format.distance(length(c) * 1000)}</span>
+            <span>{format.shortDistance(length(c) * 1000)}</span>
             <span>
               {t("climbs.grade", {
                 grade: grade(c.grade),

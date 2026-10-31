@@ -13,6 +13,11 @@ export function createFormat(language: string) {
     unit: "kilometer",
     maximumFractionDigits: 0,
   });
+  const kmShort = new Intl.NumberFormat(locale, {
+    style: "unit",
+    unit: "kilometer",
+    maximumFractionDigits: 1,
+  });
   const meters = new Intl.NumberFormat(locale, {
     style: "unit",
     unit: "meter",
@@ -54,6 +59,9 @@ export function createFormat(language: string) {
     /** 78 km, or 850 m below 1 km. Zero is 0 km. Input in meters. */
     distance: (m: number) =>
       m > 0 && m < 1000 ? meters.format(m) : km.format(m / 1000),
+    /** 2.6 km, for short stretches like climbs. 850 m below 1 km. */
+    shortDistance: (m: number) =>
+      m > 0 && m < 1000 ? meters.format(m) : kmShort.format(m / 1000),
     /** 650 m */
     elevation: (m: number) => meters.format(m),
     /** 22 °C */

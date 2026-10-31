@@ -26,3 +26,11 @@ describe("duration", () => {
     expect(grade(0)).toBe("0%");
   });
 });
+
+describe("shortDistance", () => {
+  it("keeps one decimal for short stretches", () => {
+    const { shortDistance } = createFormat("en");
+    expect(shortDistance(2600)).toBe("2.6 km");
+    expect(shortDistance(850)).toBe("850 m");
+  });
+});
