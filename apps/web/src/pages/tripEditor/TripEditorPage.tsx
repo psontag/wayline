@@ -5,14 +5,22 @@ import {
   useSearch,
 } from "@tanstack/react-router";
 import {
+  addDays,
+  addHours,
   decodeLine,
   findClimbs,
   pointAtKm,
+  ridingHours,
   routePoints,
+  stageSpeed,
+  stageStartTime,
+  timeToHours,
   type Trip,
 } from "@wayline/domain";
 import {
   Button,
+  type MapLayerGroup,
+  SegmentedControl,
   Toast,
   ToastProvider,
   ToastViewport,
@@ -21,7 +29,7 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
-import { useMe, useNetwork, useTrip } from "../../data/queries";
+import { useMe, useNetwork, useTrip, useWeatherGrid } from "../../data/queries";
 import { StageList } from "./StageList";
 import { StageProfile } from "./StageProfile";
 import { useRouteStations } from "./stations";
@@ -35,6 +43,9 @@ import { TripSummary } from "./TripSummary";
 import { PhoneTripEditor } from "./PhoneTripEditor";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useTripEditor } from "./useTripEditor";
+import { type PanelView, useMapLayers, usePanelView } from "./mapView";
+import { gridCells, weatherPoints } from "./weatherGrid";
+import { WeatherPanel } from "./WeatherPanel";
 
 export function TripEditorPage() {
   const { t } = useTranslation("tripEditor");
@@ -89,6 +100,10 @@ function TripEditor({
   const [hoveredDay, setHoveredDay] = useState<number>();
   const [hoveredClimb, setHoveredClimb] = useState<number>();
   const [sharing, setSharing] = useState(false);
+  const [view, setView] = usePanelView();
+  const [layers, setLayers] = useMapLayers();
+  // Hour the weather map shows. Follows the ride start until moved.
+  const [mapTime, setMapTime] = useState<number>();
   const shareDialog = canShare && (
     <ShareDialog trip={trip} open={sharing} onOpenChange={setSharing} />
   );
@@ -97,6 +112,7 @@ function TripEditor({
   const select = (stage: number) => {
     setHoverKm(undefined);
     setHoveredClimb(undefined);
+    setMapTime(undefined);
     void navigate({ search: { stage }, replace: true });
   };
 
@@ -109,9 +125,45 @@ function TripEditor({
         .filter((p) => p.km >= climb.startKm && p.km <= climb.endKm)
         .map((p) => p.coord)
     : undefined;
+
+  const weatherOn = view === "weather" && !isPhone;
+  const rideStart = timeToHours(stageStartTime(trip.settings, selected));
+  const ride = {
+    start: rideStart,
+    end:
+      rideStart +
+      (stage ? ridingHours(stage.stats, trip.settings.avgSpeed) : 0),
+  };
+  const time = mapTime ?? rideStart;
+  const cells = useMemo(
+    () => (weatherOn ? gridCells(points.map((p) => p.coord)) : []),
+    [weatherOn, points],
+  );
+  const grid = useWeatherGrid(cells);
+  const date = trip.startDate && addDays(trip.startDate, selected);
+  const weatherData = useMemo(
+    () =>
+      weatherOn && grid.data && date
+        ? weatherPoints(grid.data, `${date}T${addHours("00:00", time)}`)
+        : undefined,
+    [weatherOn, grid.data, date, time],
+  );
+  // Where the rider is at the marker time, inside the ride window.
+  const riderKm =
+    weatherOn && stage
+      ? (time - rideStart) * stageSpeed(stage.stats, trip.settings.avgSpeed)
+      : undefined;
+  const markKm = weatherOn
+    ? riderKm !== undefined &&
+      riderKm >= 0 &&
+      stage &&
+      riderKm <= stage.stats.distance / 1000
+      ? riderKm
+      : undefined
+    : hoverKm;
   const hover =
-    hoverKm !== undefined && points.length
-      ? pointAtKm(points, hoverKm).coord
+    markKm !== undefined && points.length
+      ? pointAtKm(points, markKm).coord
       : undefined;
 
   const isLast = selected === trip.stages.length - 1;
@@ -198,6 +250,56 @@ function TripEditor({
     );
   }
 
+  const layerGroups: MapLayerGroup[] = [
+    {
+      title: t("layers.map"),
+      items: [
+        { kind: "hotels", label: t("layers.hotels"), checked: layers.hotels },
+        {
+          kind: "stations",
+          label: t("layers.stations"),
+          checked: layers.stations,
+        },
+      ],
+    },
+    ...(weatherOn
+      ? [
+          {
+            title: t("layers.weather"),
+            items: [
+              {
+                kind: "rain" as const,
+                label: t("layers.rain"),
+                checked: layers.rain,
+              },
+              {
+                kind: "wind" as const,
+                label: t("layers.wind"),
+                checked: layers.wind,
+              },
+            ],
+          },
+        ]
+      : []),
+  ];
+  const switcher = (
+    <SegmentedControl
+      aria-label={t("panel.label")}
+      options={[
+        { value: "elevation", label: t("panel.elevation") },
+        { value: "weather", label: t("panel.weather") },
+      ]}
+      value={view}
+      onValueChange={(next) => setView(next as PanelView)}
+    />
+  );
+  const setRideStart = editor.readOnly
+    ? undefined
+    : (start: string) => {
+        setMapTime(undefined);
+        editor.setRideStart(selected, start);
+      };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {shareDialog}
@@ -220,8 +322,20 @@ function TripEditor({
               onPickAlternative={(place) =>
                 void editor.moveStop(selected, place)
               }
-              hotels={isLast ? [] : mapHotels.hotels}
-              stations={stations}
+              hotels={isLast || !layers.hotels ? [] : mapHotels.hotels}
+              stations={layers.stations ? stations : []}
+              weather={
+                weatherData && {
+                  points: weatherData,
+                  rain: layers.rain,
+                  wind: layers.wind,
+                }
+              }
+              layers={{
+                groups: layerGroups,
+                onCheckedChange: (kind, checked) =>
+                  setLayers({ ...layers, [kind]: checked }),
+              }}
               selectedHotelId={stage?.hotel?.osmId}
               onSelectHotel={(osmId) => {
                 const h = mapHotels.hotels.find((x) => x.osmId === osmId);
@@ -246,16 +360,30 @@ function TripEditor({
               </ToastProvider>
             </TripMap>
           </div>
-          <StageProfile
-            key={stage?.id}
-            trip={trip}
-            index={selected}
-            network={network}
-            hoverKm={hoverKm}
-            onHoverKm={setHoverKm}
-            climbs={climbs}
-            highlightedClimb={hoveredClimb}
-          />
+          {weatherOn ? (
+            <WeatherPanel
+              key={stage?.id}
+              trip={trip}
+              index={selected}
+              onRideStartChange={setRideStart}
+              time={time}
+              onTimeChange={setMapTime}
+              ride={ride}
+              actions={switcher}
+            />
+          ) : (
+            <StageProfile
+              key={stage?.id}
+              trip={trip}
+              index={selected}
+              network={network}
+              hoverKm={hoverKm}
+              onHoverKm={setHoverKm}
+              climbs={climbs}
+              highlightedClimb={hoveredClimb}
+              actions={switcher}
+            />
+          )}
         </div>
         <aside className="flex shrink-0 flex-col border-border bg-surface lg:w-panel lg:border-l">
           <TripSummary trip={trip} editor={editor} />

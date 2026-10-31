@@ -190,6 +190,18 @@ export function useTripWeather(trip: Trip | undefined, enabled = true) {
   });
 }
 
+/** Forecasts of many cells, e.g. for the weather map. Off when empty. */
+export function useWeatherGrid(cells: LonLat[]) {
+  const forecast = useForecast();
+  return useQuery({
+    queryKey: ["weatherGrid", cells.map((c) => c.join()).join(";")],
+    enabled: cells.length > 0,
+    placeholderData: keepPreviousData,
+    staleTime: FORECAST_STALE_MS,
+    queryFn: () => Promise.all(cells.map(forecast)),
+  });
+}
+
 /** Fetches the forecast of a cell, cached. */
 function useForecast() {
   const { weather } = useServices();

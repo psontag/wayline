@@ -164,5 +164,22 @@
       "light": "light rain",
       "wet": "rain"
     }
+  },
+  "panel": {
+    "label": "Panel under the map",
+    "elevation": "Elevation",
+    "weather": "Weather"
+  },
+  "weatherPanel": {
+    "play": "Play the ride",
+    "pause": "Pause"
+  },
+  "layers": {
+    "map": "Map",
+    "hotels": "Hotels",
+    "stations": "Train stations",
+    "weather": "Weather",
+    "rain": "Rain",
+    "wind": "Wind"
   }
 }

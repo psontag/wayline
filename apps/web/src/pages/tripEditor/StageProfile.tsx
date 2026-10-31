@@ -16,7 +16,7 @@ import {
   SurfaceLegend,
   useFormat,
 } from "@wayline/ui";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { StageWeather } from "./DayWeatherTimeline";
 import { isChanged } from "./routeEdits";
@@ -36,6 +36,8 @@ export type StageProfileProps = {
   /** Climbs of the stage, and the one to show stronger. */
   climbs?: Climb[];
   highlightedClimb?: number;
+  /** Controls at the end of the header, e.g. the panel switcher. */
+  actions?: ReactNode;
 };
 
 /** Elevation of a stage by surface. The phone sheet adds the weather. */
@@ -49,6 +51,7 @@ export function StageProfile({
   onRideStartChange,
   climbs,
   highlightedClimb,
+  actions,
 }: StageProfileProps) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -135,7 +138,12 @@ export function StageProfile({
             {readout}
           </span>
         </div>
-        {variant === "panel" && <SurfaceLegend />}
+        {variant === "panel" && (
+          <div className="flex items-center gap-4">
+            <SurfaceLegend />
+            {actions}
+          </div>
+        )}
       </div>
       <div
         className={

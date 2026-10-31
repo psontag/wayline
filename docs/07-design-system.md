@@ -29,6 +29,7 @@ Color tokens are semantic. They name the purpose, not the color.
 | `terrain-paved`, `terrain-gravel`, `terrain-unpaved` | Surface colors in the elevation profile |
 | `rain` | Rain bars in the weather timeline |
 | `wind-head`, `wind-cross`, `wind-tail` | Wind relative to the route |
+| `wind-speed-1` to `wind-speed-4` | Wind speed on the map and the wind line in the weather timeline: below 10, 10–20, 20–30, 30+ km/h |
 | `night` | Dark hours in the weather timeline |
 
 Map tokens:
@@ -77,6 +78,10 @@ Color values:
 | `wind-head` | `#C2412D` | `#FF8F7D` |
 | `wind-cross` | `#B7791F` | `#F2CF7E` |
 | `wind-tail` | `#2F9E6B` | `#5CCB97` |
+| `wind-speed-1` | `#9AA3B1` | `#6B7484` |
+| `wind-speed-2` | `#6F7B8F` | `#96A1B4` |
+| `wind-speed-3` | `#465163` | `#C4CCD9` |
+| `wind-speed-4` | `#15181D` | `#EDEFF3` |
 | `night` | `#E4E7EC` | `#0B0D11` |
 | `route`, `route-selected` | `#FF9A73` | `#FFA67F` |
 | `route-casing` | `#B4532A` | `#101216` |
@@ -163,7 +168,7 @@ Every screen uses `AppMap` (`apps/web/src/components/map/AppMap.tsx`). It owns:
 - base style and theme switch
 - hillshade
 - signed cycling routes: `full`, `quiet` or `off`
-- zoom buttons, legend, hint and attribution
+- zoom buttons, legend or map layers, hint and attribution
 - fitting to points, with padding for panels and sheets
 
 Screens add only their own sources, layers and markers as children. Line and fill layers use `MapLayer`, so they sit below the base map labels. Screens don't set a base style, controls or their own fitting.
@@ -172,6 +177,7 @@ Screens add only their own sources, layers and markers as children. Line and fil
 - Map and chart colors come from a `useThemeTokens()` hook. It reads the resolved CSS variables and re-applies them on theme change.
 - When the base style swaps, our own layers are added again.
 - OSM attribution is shown in both themes.
+- Screens with layers to turn on and off pass `layers`. The legend then moves into the map layers menu under the zoom buttons.
 
 ## Enforcement
 
@@ -225,3 +231,7 @@ The same thing always has the same name in the UI. Translations use one fixed te
 | Ride window | The hours of a stage on the bike, shown on the weather timeline |
 | Best start | The start time with the least rain, then the least headwind |
 | Feels like | Temperature with wind chill |
+| Elevation, Weather | The two views of the panel under the trip map |
+| Time marker | The hour the weather map shows, on the weather timeline |
+| Gusts | Strongest wind in an hour |
+| Map layers | The legend on the map, where layers are turned on and off |

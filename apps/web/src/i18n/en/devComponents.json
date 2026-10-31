@@ -105,7 +105,13 @@
     "halfDay": "Half day",
     "fewBeds": "1 place to sleep",
     "hoveredDay": "Hovered day: {{day}}",
-    "locked": "Locked"
+    "locked": "Locked",
+    "layersMap": "Map",
+    "layersWeather": "Weather",
+    "hotels": "Hotels",
+    "stations": "Train stations",
+    "rain": "Rain",
+    "wind": "Wind"
   },
   "icon": {
     "distance": "Distance",

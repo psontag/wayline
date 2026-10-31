@@ -16,7 +16,7 @@ import {
   useThemeTokens,
   ViaMarker,
 } from "@wayline/ui";
-import type { FeatureCollection, LineString } from "geojson";
+import type { FeatureCollection, LineString, Point } from "geojson";
 import { Route } from "lucide-react";
 import type { FilterSpecification } from "maplibre-gl";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
@@ -28,7 +28,12 @@ import {
   Marker,
   Source,
 } from "react-map-gl/maplibre";
-import { AppMap, MapLayer, type MapPadding } from "../../components/map/AppMap";
+import {
+  AppMap,
+  type AppMapProps,
+  MapLayer,
+  type MapPadding,
+} from "../../components/map/AppMap";
 import {
   nearestOnLine,
   type RouteDrag,
@@ -37,6 +42,8 @@ import {
 import type { MapHotel } from "./mapTypes";
 import type { MapStation } from "./stations";
 import { tripStops } from "./tripArea";
+import type { WeatherPointProps } from "./weatherGrid";
+import { WeatherLayers } from "./WeatherLayers";
 
 export type { MapPadding };
 
@@ -76,6 +83,14 @@ export type TripMapProps = {
   children?: ReactNode;
   /** Route edits of the selected stage. Without them, the route is fixed. */
   route?: RouteEditing;
+  /** Rain and wind over the map, at one hour. */
+  weather?: {
+    points: FeatureCollection<Point, WeatherPointProps>;
+    rain: boolean;
+    wind: boolean;
+  };
+  /** Layers to turn on and off, in a menu under the zoom buttons. */
+  layers?: AppMapProps["layers"];
 };
 
 export type RouteEditing = {
@@ -117,6 +132,8 @@ export function TripMap({
   controls = true,
   children,
   route,
+  weather,
+  layers,
 }: TripMapProps) {
   const { t } = useTranslation("tripEditor");
   const tokens = useThemeTokens();
@@ -285,6 +302,7 @@ export function TripMap({
           : []
       }
       controls={controls}
+      layers={layers}
       hint={
         route && (
           <MapHint icon={<Route aria-hidden />}>
@@ -302,6 +320,8 @@ export function TripMap({
       onMouseLeave={routeDrag.onMouseLeave}
       onZoomEnd={setZoom}
     >
+      {/* First, so it sits below the routes. */}
+      {weather && <WeatherLayers {...weather} />}
       <Source id="proposed" type="geojson" data={proposedData}>
         <MapLayer
           id="proposed-line"

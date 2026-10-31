@@ -30,6 +30,7 @@ import {
   EmptyState,
   FormField,
   MapHint,
+  MapLayerMenu,
   MapLegend,
   Menu,
   NumberInput,
@@ -539,6 +540,7 @@ function TripEditorParts() {
   const { t } = useTranslation("devComponents");
   const [hoverKm, setHoverKm] = useState<number>();
   const [rideStart, setRideStart] = useState(9);
+  const [mapTime, setMapTime] = useState(10);
   const [date, setDate] = useState("2027-06-12");
   const [name, setName] = useState("Franconia, four days");
   const [renaming, setRenaming] = useState(false);
@@ -567,6 +569,8 @@ function TripEditorParts() {
               h < 9 ? t("demo.rideRain") : t("demo.rideHeadwind")
             }
             best={{ start: 9.5, reason: t("demo.bestReason") }}
+            time={mapTime}
+            onTimeChange={setMapTime}
           />
         </div>
       </Card>
@@ -799,6 +803,42 @@ function ratingOptions(any: string) {
   ];
 }
 
+function MapLayerDemo() {
+  const { t } = useTranslation("devComponents");
+  const [on, setOn] = useState({
+    hotels: true,
+    stations: false,
+    rain: true,
+    wind: true,
+  });
+  return (
+    <MapLayerMenu
+      groups={[
+        {
+          title: t("demo.layersMap"),
+          items: [
+            { kind: "hotels", label: t("demo.hotels"), checked: on.hotels },
+            {
+              kind: "stations",
+              label: t("demo.stations"),
+              checked: on.stations,
+            },
+          ],
+        },
+        {
+          title: t("demo.layersWeather"),
+          items: [
+            { kind: "rain", label: t("demo.rain"), checked: on.rain },
+            { kind: "wind", label: t("demo.wind"), checked: on.wind },
+          ],
+        },
+      ]}
+      onCheckedChange={(kind, checked) => setOn({ ...on, [kind]: checked })}
+      legend={[{ label: t("demo.network"), line: "network" }]}
+    />
+  );
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
@@ -994,6 +1034,7 @@ function TripDemos() {
               { label: t("demo.area"), line: "dashed" },
             ]}
           />
+          <MapLayerDemo />
           <MapHint icon={<MousePointerClick aria-hidden />}>
             {t("demo.mapHint")}
           </MapHint>

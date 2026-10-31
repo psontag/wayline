@@ -104,6 +104,15 @@ export { MapHint } from "./components/MapHint";
 export { ViaRow, type ViaRowProps } from "./components/ViaRow";
 export { MapLegend, type MapLegendItem } from "./components/MapLegend";
 export {
+  MapLayerMenu,
+  type MapLayerGroup,
+  type MapLayerKind,
+  type MapLayerMenuProps,
+  type MapLayerToggle,
+  WIND_SPEED_STEPS,
+  WindSpeedScale,
+} from "./components/MapLayerMenu";
+export {
   ElevationProfile,
   type ElevationProfileProps,
   type ProfilePoint,

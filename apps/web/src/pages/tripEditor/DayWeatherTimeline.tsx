@@ -27,11 +27,16 @@ export function StageWeather({
   trip,
   index,
   onRideStartChange,
+  time,
+  onTimeChange,
 }: {
   trip: Trip;
   index: number;
   /** Moves the ride window. Without it, the window is fixed. */
   onRideStartChange?: (start: string) => void;
+  /** Hour the map shows. Without it, there is no time marker. */
+  time?: number;
+  onTimeChange?: (time: number) => void;
 }) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -45,6 +50,8 @@ export function StageWeather({
         index={index}
         startTime={stageStartTime(trip.settings, index)}
         onRideStartChange={onRideStartChange}
+        time={time}
+        onTimeChange={onTimeChange}
       />
     );
   }
@@ -68,12 +75,16 @@ function DayTimeline({
   index,
   startTime,
   onRideStartChange,
+  time,
+  onTimeChange,
 }: {
   forecast: StageForecast;
   trip: Trip;
   index: number;
   startTime: string;
   onRideStartChange?: (start: string) => void;
+  time?: number;
+  onTimeChange?: (time: number) => void;
 }) {
   const { t } = useTranslation("tripEditor");
   const stats = trip.stages[index]?.stats;
@@ -97,6 +108,8 @@ function DayTimeline({
       start={timeToHours(startTime)}
       duration={ridingHours(stats, avgSpeed)}
       onStartChange={onRideStartChange && ((h) => onRideStartChange(clock(h)))}
+      time={time}
+      onTimeChange={onTimeChange}
       describe={(h) => {
         const ride = rideFrom(forecast, clock(h));
         return ride ? describeRide(t, ride) : undefined;

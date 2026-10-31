@@ -61,6 +61,10 @@
   --color-wind-head: #c2412d;
   --color-wind-cross: #b7791f;
   --color-wind-tail: #2f9e6b;
+  --color-wind-speed-1: #9aa3b1;
+  --color-wind-speed-2: #6f7b8f;
+  --color-wind-speed-3: #465163;
+  --color-wind-speed-4: #15181d;
   --color-night: #e4e7ec;
 
   /* Spacing: 4 px steps. Also used for widths and heights. */
@@ -222,6 +226,10 @@
       --color-wind-head: #ff8f7d;
       --color-wind-cross: #f2cf7e;
       --color-wind-tail: #5ccb97;
+      --color-wind-speed-1: #6b7484;
+      --color-wind-speed-2: #96a1b4;
+      --color-wind-speed-3: #c4ccd9;
+      --color-wind-speed-4: #edeff3;
       --color-night: #0b0d11;
       --color-scrim: rgb(0 0 0 / 0.55);
       --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
@@ -276,6 +284,10 @@
     --color-wind-head: #c2412d;
     --color-wind-cross: #b7791f;
     --color-wind-tail: #2f9e6b;
+    --color-wind-speed-1: #9aa3b1;
+    --color-wind-speed-2: #6f7b8f;
+    --color-wind-speed-3: #465163;
+    --color-wind-speed-4: #15181d;
     --color-night: #e4e7ec;
     --color-scrim: rgb(16 18 22 / 0.35);
     --shadow-sm: 0 1px 2px rgb(16 18 22 / 0.12);
@@ -330,6 +342,10 @@
     --color-wind-head: #ff8f7d;
     --color-wind-cross: #f2cf7e;
     --color-wind-tail: #5ccb97;
+    --color-wind-speed-1: #6b7484;
+    --color-wind-speed-2: #96a1b4;
+    --color-wind-speed-3: #c4ccd9;
+    --color-wind-speed-4: #edeff3;
     --color-night: #0b0d11;
     --color-scrim: rgb(0 0 0 / 0.55);
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
