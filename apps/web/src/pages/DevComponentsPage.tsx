@@ -428,6 +428,7 @@ function IconDemos() {
       place: "Kronach",
       distance: format.distance(64_000),
       ascent: format.elevation(720),
+      warning: t("demo.fewBeds"),
     },
     {
       label: "3",

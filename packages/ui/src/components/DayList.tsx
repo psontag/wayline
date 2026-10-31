@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { type StatIcon, statIcons } from "../icons";
@@ -24,6 +25,8 @@ export type DayListItem = {
   ridingTime?: string;
   /** Short note, e.g. "Half day". */
   tag?: string;
+  /** Problem with the day, e.g. "1 place to sleep". */
+  warning?: string;
   /** Fill of the day badge. Defaults to the stop marker color. */
   color?: DayColor;
 };
@@ -120,6 +123,12 @@ export function DayList({
                 </span>
                 {day.date && (
                   <span className="text-xs text-text-muted">{day.date}</span>
+                )}
+                {day.warning && (
+                  <span className="flex items-center gap-1 text-xs text-warning">
+                    <TriangleAlert className="size-3 shrink-0" aria-hidden />
+                    {day.warning}
+                  </span>
                 )}
               </span>
               <span className="w-14 shrink-0 self-center text-right font-semibold tabular-nums">

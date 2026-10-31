@@ -106,8 +106,12 @@
       "mostSigned": "Most on signed routes",
       "shortest": "Shortest",
       "tailwind": "Mostly tailwind",
-      "headwind": "Headwind on day {{day}}"
+      "headwind": "Headwind on day {{day}}",
+      "fewBeds": "Few beds on day {{day}}"
     },
+    "beds_zero": "No place to sleep",
+    "beds_one": "{{count}} place to sleep",
+    "beds_other": "{{count}} places to sleep",
     "chart": "Elevation over {{distance}}, highest point {{elevation}}",
     "ridingTime": "Riding time"
   },
