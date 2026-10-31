@@ -1,5 +1,5 @@
 import { AreaCache, bboxAround, FakeRouting, Graph } from "@wayline/planner";
-import type { BBox, LonLat } from "@wayline/domain";
+import { type BBox, type LonLat, SiteInfo } from "@wayline/domain";
 import {
   DbRestTrains,
   FakeTrains,
@@ -37,6 +37,8 @@ export type Services = {
   snap: (coord: LonLat) => Promise<LonLat>;
   /** The route network around a bbox. */
   graph: (bbox: BBox) => Promise<Graph>;
+  /** Whether a hotel website works, and its image. Null without a server. */
+  site: (url: string) => Promise<SiteInfo | null>;
 };
 
 /** A dragged via point moves to a network node this close. */
@@ -103,6 +105,12 @@ export function createServices(): Services {
       return node === undefined ? coord : graph.coord(node);
     },
     graph: (bbox) => graphs.get(bbox),
+    site: async (siteUrl) =>
+      onServer
+        ? SiteInfo.parse(
+            await fetchJson(`/api/site?url=${encodeURIComponent(siteUrl)}`),
+          )
+        : null,
   };
 }
 

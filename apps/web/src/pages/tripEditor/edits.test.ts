@@ -8,6 +8,7 @@ import {
   routedStageIfEnding,
   setLocked,
   stageIfEndingAt,
+  toggleSavedHotel,
   toggleTrain,
 } from "./edits";
 
@@ -201,5 +202,13 @@ describe("toggleTrain", () => {
       "2026-11-07T07:12",
     ]);
     expect(toggleTrain(two, train("2026-11-07T07:12")).trains).toHaveLength(1);
+  });
+});
+
+describe("toggleSavedHotel", () => {
+  it("saves a hotel and removes it again", () => {
+    const one = toggleSavedHotel(trip, hotel);
+    expect(one.savedHotels).toEqual([hotel]);
+    expect(toggleSavedHotel(one, hotel).savedHotels).toEqual([]);
   });
 });

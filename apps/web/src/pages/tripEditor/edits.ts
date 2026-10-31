@@ -59,6 +59,17 @@ export function toggleTrain(trip: Trip, train: Connection): Trip {
   };
 }
 
+/** Saves the hotel, or removes it if it is saved. */
+export function toggleSavedHotel(trip: Trip, hotel: Hotel): Trip {
+  const saved = trip.savedHotels.some((h) => h.osmId === hotel.osmId);
+  return {
+    ...trip,
+    savedHotels: saved
+      ? trip.savedHotels.filter((h) => h.osmId !== hotel.osmId)
+      : [...trip.savedHotels, hotel],
+  };
+}
+
 function asPlace({ name, kind, coord, osmId }: Place): Place {
   return osmId ? { name, kind, coord, osmId } : { name, kind, coord };
 }

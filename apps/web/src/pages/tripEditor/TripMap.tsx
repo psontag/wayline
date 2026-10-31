@@ -39,6 +39,8 @@ import {
   type RouteDrag,
   useRouteDrag,
 } from "../../components/useRouteDrag";
+import { useSiteInfo } from "../../data/queries";
+import { hotelBookingUrl } from "./BookingLink";
 import type { MapHotel } from "./mapTypes";
 import type { MapStation } from "./stations";
 import { tripStops } from "./tripArea";
@@ -69,6 +71,8 @@ export type TripMapProps = {
   hotels?: MapHotel[];
   selectedHotelId?: string;
   onSelectHotel?: (osmId: string) => void;
+  /** Saves or unsaves a hotel. Without it, hotel cards have no save button. */
+  onToggleSaveHotel?: (osmId: string) => void;
   /** Train stations along the trip. */
   stations?: MapStation[];
   /** Point that follows the elevation crosshair. */
@@ -123,6 +127,7 @@ export function TripMap({
   hotels = [],
   selectedHotelId,
   onSelectHotel,
+  onToggleSaveHotel,
   stations = [],
   hover,
   highlight,
@@ -138,6 +143,9 @@ export function TripMap({
   const tokens = useThemeTokens();
   const mapRef = useRef<MapRef>(null);
   const [activeHotel, setActiveHotel] = useState<string>();
+  const activeSite = useSiteInfo(
+    hotels.find((h) => h.osmId === activeHotel)?.website,
+  );
   // Full hotel markers crowd the stop labels until zoomed in.
   const [zoom, setZoom] = useState(0);
 
@@ -508,8 +516,19 @@ export function TripMap({
             kind={hotel.kind}
             stars={hotel.stars}
             detour={hotel.detourKm * 1000}
-            website={hotel.website}
+            website={
+              hotel.osmId === activeHotel && activeSite?.ok === false
+                ? undefined
+                : hotel.website
+            }
+            booking={hotelBookingUrl(trip, selected, hotel)}
+            {...(hotel.osmId === activeHotel &&
+              activeSite?.image && { image: activeSite.image })}
             selected={hotel.osmId === selectedHotelId}
+            saved={trip.savedHotels.some((h) => h.osmId === hotel.osmId)}
+            {...(onToggleSaveHotel && {
+              onToggleSave: () => onToggleSaveHotel(hotel.osmId),
+            })}
             compact={zoom < 11}
             onClick={() => onSelectHotel?.(hotel.osmId)}
             onActiveChange={(active) =>

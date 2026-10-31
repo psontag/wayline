@@ -96,6 +96,7 @@ export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
     stages,
     sharedWith: [],
     trains: [],
+    savedHotels: [],
   };
 }
 

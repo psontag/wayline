@@ -78,6 +78,15 @@ export const Hotel = z.object({
 });
 export type Hotel = z.infer<typeof Hotel>;
 
+/** GET /api/site: whether a hotel website works, and its preview image. */
+export const SiteInfo = z.object({
+  /** False when the site is gone: no answer, 404, 410 or a server error. */
+  ok: z.boolean(),
+  /** https URL of the og:image, if the page has one. */
+  image: z.string().optional(),
+});
+export type SiteInfo = z.infer<typeof SiteInfo>;
+
 /** One train connection, e.g. from home to the start. */
 export const Connection = z.object({
   /** "there": home to the start. "back": the end to home. */
@@ -189,6 +198,8 @@ export const Trip = z.object({
   sharedWith: z.array(z.string()).default([]),
   /** Saved train connections, a few options per direction. */
   trains: z.array(Connection).default([]),
+  /** Saved hotels, to compare before booking. */
+  savedHotels: z.array(Hotel).default([]),
 });
 export type Trip = z.infer<typeof Trip>;
 

@@ -97,7 +97,10 @@
     "booking": "Booking.com",
     "fromRouteLabel": "Distance from the route",
     "detourValue": "+{{distance}}",
-    "detourLabel": "Detour from the route"
+    "detourLabel": "Detour from the route",
+    "save": "Save hotel",
+    "unsave": "Remove saved hotel",
+    "saved": "Saved"
   },
   "networkRoute": {
     "meta": "{{rank}} · {{distance}} nearby",
@@ -114,10 +117,8 @@
     "today": "Today",
     "ascent": "Ascent",
     "tomorrow": "Tomorrow",
-    "beds": "Beds",
-    "bedsInBudget": "{{inBudget}} of {{total}}",
-    "bedsNote": "Beds: hotels within {{radius}}.",
-    "bedsNoteBudget": "Beds: hotels within {{radius}} that fit your budget, of all.",
+    "hotels": "Hotels",
+    "hotelsNote": "Hotels: places to sleep within {{radius}}.",
     "none": "–",
     "choose": "Stop in {{name}}",
     "size": {

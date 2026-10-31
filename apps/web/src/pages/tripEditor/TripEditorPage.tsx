@@ -43,7 +43,7 @@ import { tripStops } from "./tripArea";
 import { TripSummary } from "./TripSummary";
 import { PhoneTripEditor } from "./PhoneTripEditor";
 import { useIsPhone } from "../../components/useIsPhone";
-import { useTripEditor } from "./useTripEditor";
+import { toHotel, useTripEditor } from "./useTripEditor";
 import { type PanelView, useMapLayers, usePanelView } from "./mapView";
 import { fieldAt, gridOf } from "./weatherGrid";
 import { WeatherPanel } from "./WeatherPanel";
@@ -384,16 +384,14 @@ function TripEditor({
               selectedHotelId={stage?.hotel?.osmId}
               onSelectHotel={(osmId) => {
                 const h = mapHotels.hotels.find((x) => x.osmId === osmId);
-                if (!h) return;
-                const { name, coord, stars, website } = h;
-                editor.setHotel(selected, {
-                  osmId,
-                  name,
-                  coord,
-                  ...(stars === undefined ? {} : { stars }),
-                  ...(website === undefined ? {} : { website }),
-                });
+                if (h) editor.setHotel(selected, toHotel(h));
               }}
+              {...(editor.canEdit && {
+                onToggleSaveHotel: (osmId: string) => {
+                  const h = mapHotels.hotels.find((x) => x.osmId === osmId);
+                  if (h) editor.toggleSavedHotel(toHotel(h));
+                },
+              })}
               hover={hover}
               route={routeEditing(false)}
             >

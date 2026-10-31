@@ -1,4 +1,4 @@
-import type { HotelBudget, Trip } from "./schema";
+import type { HotelBudget, LonLat, Trip } from "./schema";
 import {
   addDays,
   addHours,
@@ -14,8 +14,8 @@ export const budgetPrice: Record<HotelBudget, string> = {
   high: "EUR-140-max-1",
 };
 
-/** Hotel rating filter. A user preference, not a trip setting. */
-export type MinRating = 70 | 80 | 90;
+/** Booking.com review score filter: 8+. */
+const MIN_RATING = 80;
 
 /** Booking.com search for one night in a town. See docs/03-data-sources.md. */
 export function bookingUrl(opts: {
@@ -23,28 +23,37 @@ export function bookingUrl(opts: {
   /** Check-in date "YYYY-MM-DD". Without it, Booking asks for dates. */
   date?: string;
   budget?: HotelBudget;
-  minRating?: MinRating;
 }): string {
   const params = searchParams(opts.town, opts.date);
   const filters = [
-    opts.minRating && `review_score=${opts.minRating}`,
+    `review_score=${MIN_RATING}`,
     opts.budget && `price=${budgetPrice[opts.budget]}`,
   ].filter(Boolean);
-  if (filters.length) params.push(["nflt", filters.join(";")]);
+  params.push(["nflt", filters.join(";")]);
   return `https://www.booking.com/searchresults.html?${query(params)}`;
 }
 
 /**
- * Booking.com search for one hotel by name and town, for one night. It
- * shows the live price and rating of that place, if Booking lists it.
+ * Booking.com search around one hotel, nearest first, for one night. The
+ * hotel comes first if Booking lists it, else the places next to it.
+ * A search by name sends Booking to its home page when it has no match.
  */
 export function bookingHotelUrl(opts: {
   hotel: string;
-  town: string;
+  coord: LonLat;
   /** Check-in date "YYYY-MM-DD". Without it, Booking asks for dates. */
   date?: string;
 }): string {
-  const params = searchParams(`${opts.hotel} ${opts.town}`, opts.date);
+  const [lon, lat] = opts.coord;
+  const params = searchParams(opts.hotel, opts.date);
+  params.splice(
+    1,
+    0,
+    ["latitude", lat.toFixed(5)],
+    ["longitude", lon.toFixed(5)],
+    ["dest_type", "latlong"],
+    ["order", "distance_from_search"],
+  );
   return `https://www.booking.com/searchresults.html?${query(params)}`;
 }
 
