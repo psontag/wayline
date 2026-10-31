@@ -35,8 +35,8 @@ export function TripCard({
     >
       <RouteThumbnail points={preview} />
       <div className="flex flex-col gap-1 p-3.5 md:gap-1.5">
-        <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-md font-extrabold [&_a]:outline-none [&_a]:after:absolute [&_a]:after:inset-0">
+        <div className="flex items-start justify-between gap-2">
+          <span className="line-clamp-2 text-md font-extrabold [&_a]:outline-none [&_a]:after:absolute [&_a]:after:inset-0">
             {title}
           </span>
           {badge}

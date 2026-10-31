@@ -51,13 +51,9 @@ export function TripListPage() {
           <TripSection
             title={t("yourTrips")}
             trips={own}
-            showTitleOnPhone={shared.length > 0}
+            showTitle={shared.length > 0}
           />
-          <TripSection
-            title={t("sharedWithYou")}
-            trips={shared}
-            showTitleOnPhone
-          />
+          <TripSection title={t("sharedWithYou")} trips={shared} showTitle />
         </>
       )}
 
@@ -71,11 +67,12 @@ export function TripListPage() {
 function TripSection({
   title,
   trips,
-  showTitleOnPhone,
+  showTitle,
 }: {
   title: string;
   trips: TripSummary[];
-  showTitleOnPhone: boolean;
+  /** Only needed when there is more than one section. */
+  showTitle: boolean;
 }) {
   if (trips.length === 0) return null;
   return (
@@ -83,7 +80,7 @@ function TripSection({
       <h2
         className={cn(
           "text-md font-bold text-text-muted",
-          !showTitleOnPhone && "max-md:sr-only",
+          !showTitle && "sr-only",
         )}
       >
         {title}

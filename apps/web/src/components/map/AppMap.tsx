@@ -42,11 +42,11 @@ const mapStyles = {
 /** Area with route data. Shown when there is nothing to fit yet. */
 const regionBounds: LngLatBoundsLike = [10.45, 49.59, 12.26, 50.52];
 
-// Marker labels sit right of the point, so keep more room on that side.
+// Marker labels sit right of the point, and the legend sits bottom left.
 const defaultPadding: MapPadding = {
   top: 56,
   right: 120,
-  bottom: 40,
+  bottom: 72,
   left: 56,
 };
 
