@@ -114,7 +114,10 @@
     "wind": "Wind",
     "chartPanel": "Day 2 · Bamberg → Coburg",
     "weather": "Weather",
-    "elevationView": "Elevation"
+    "elevationView": "Elevation",
+    "withWind": "With the wind",
+    "withWindHint": "Picks directions with a tailwind from the forecast.",
+    "windMarker": "Wind at the start"
   },
   "icon": {
     "distance": "Distance",

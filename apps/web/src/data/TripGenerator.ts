@@ -2,6 +2,7 @@ import type {
   GenerateProgress,
   GenerateRequest,
   GenerateResult,
+  HourlyWind,
   Proposal,
 } from "@wayline/domain";
 
@@ -11,6 +12,8 @@ export type GenerateOptions = {
   onProposal?: (proposal: Proposal) => void;
   /** Aborting rejects the promise with an AbortError. */
   signal?: AbortSignal;
+  /** Hourly wind of the start date, for day trips with the wind. */
+  wind?: HourlyWind[];
 };
 
 /** Turns a request into trip proposals. See docs/05-trip-generation.md. */

@@ -1,6 +1,17 @@
 import { decodeLine, encodeLine } from "./line";
-import type { Leg, Place, Stage, Stop, Trip } from "./schema";
+import type {
+  GenerateRequest,
+  Leg,
+  Place,
+  Stage,
+  Stop,
+  Trip,
+  WeatherSample,
+} from "./schema";
 import type { WindShares } from "./weather";
+
+/** km/h. Trips ride at this speed until the rider sets their own. */
+export const AVG_SPEED_KMH = 18;
 
 /** Below this, wind hardly matters on a bike. km/h. */
 export const CALM_KMH = 10;
@@ -113,4 +124,46 @@ function reverseLeg(leg: Leg): Leg {
 
 function asPlace({ name, kind, coord, osmId }: Place): Place {
   return osmId ? { name, kind, coord, osmId } : { name, kind, coord };
+}
+
+/** Wind at one hour of the ride day. hour is local, 0 to 23. */
+export type HourlyWind = { hour: number; from: number; speed: number };
+
+/** Hourly wind of one day from forecast samples. Empty without that day. */
+export function dayWind(samples: WeatherSample[], date: string): HourlyWind[] {
+  return samples
+    .filter((s) => s.time.startsWith(`${date}T`))
+    .map((s) => ({
+      hour: Number(s.time.slice(11, 13)),
+      from: s.windDirection,
+      speed: s.windSpeed,
+    }));
+}
+
+/** Wind at the hour nearest to a time of day, e.g. 10.5. */
+export function windAt(
+  wind: HourlyWind[],
+  hour: number,
+): HourlyWind | undefined {
+  let best: HourlyWind | undefined;
+  for (const w of wind) {
+    if (!best || Math.abs(w.hour - hour) < Math.abs(best.hour - hour)) best = w;
+  }
+  return best;
+}
+
+/** A day ride in any direction, back by train. */
+export function isOpenRide(request: GenerateRequest): boolean {
+  return (
+    request.kind === "one-way" && request.days === 1 && !request.endStation
+  );
+}
+
+/** Day loops and open day rides plan with the wind when asked to. */
+export function plansWithWind(request: GenerateRequest): boolean {
+  return (
+    !!request.withWind &&
+    !!request.startDate &&
+    (request.kind === "day-loop" || isOpenRide(request))
+  );
 }
