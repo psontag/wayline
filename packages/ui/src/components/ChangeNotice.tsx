@@ -1,4 +1,5 @@
 import { Pencil } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "./Button";
 
 export type ChangeNoticeProps = {
@@ -9,6 +10,8 @@ export type ChangeNoticeProps = {
   actionLabel: string;
   onAction: () => void;
   disabled?: boolean;
+  /** Defaults to a pencil, for edits. */
+  icon?: ReactNode;
 };
 
 /** Says that something differs from the proposal, with a way back. */
@@ -18,10 +21,11 @@ export function ChangeNotice({
   actionLabel,
   onAction,
   disabled,
+  icon = <Pencil className="size-4 shrink-0" aria-hidden />,
 }: ChangeNoticeProps) {
   return (
     <div className="flex items-center gap-2.5 rounded-md bg-selected px-2.5 py-2">
-      <Pencil className="size-4 shrink-0" aria-hidden />
+      {icon}
       <span className="flex min-w-0 flex-1 flex-wrap gap-x-1.5 text-sm">
         <strong>{title}</strong>
         {detail && <span className="text-text-muted">{detail}</span>}

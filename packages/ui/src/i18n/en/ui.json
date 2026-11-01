@@ -102,6 +102,10 @@
     "unsave": "Remove saved hotel",
     "saved": "Saved"
   },
+  "windDates": {
+    "headwind": "{{share}} head",
+    "noForecast": "No forecast"
+  },
   "networkRoute": {
     "meta": "{{rank}} · {{distance}} nearby",
     "also": "Also: {{names}}",

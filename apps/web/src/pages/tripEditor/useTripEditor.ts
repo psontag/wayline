@@ -1,4 +1,11 @@
-import type { Connection, Hotel, LonLat, Place, Trip } from "@wayline/domain";
+import {
+  type Connection,
+  type Hotel,
+  type LonLat,
+  type Place,
+  reverseTrip,
+  type Trip,
+} from "@wayline/domain";
 import type { HotelOption } from "@wayline/providers";
 import { type SaveState, useFormat } from "@wayline/ui";
 import { useState } from "react";
@@ -135,8 +142,12 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     rename(name: string) {
       if (canEdit) commit({ ...trip, name });
     },
-    setStartDate(startDate: string) {
-      if (canEdit) commit({ ...trip, startDate });
+    setStartDate(startDate: string, message?: string) {
+      if (canEdit) commit({ ...trip, startDate }, message);
+    },
+    /** Rides the whole trip the other way round. */
+    reverse() {
+      if (canEdit) commit(reverseTrip(trip), t("note.reversed"));
     },
     setLocked(index: number, locked: boolean) {
       if (canEdit) commit(setLocked(trip, index, locked));

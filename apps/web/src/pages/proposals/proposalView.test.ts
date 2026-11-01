@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import {
   comparisonTags,
   labelPoints,
+  leastHeadwind,
   progressValue,
   relaxOptions,
   windTag,
@@ -168,5 +169,23 @@ describe("windTag", () => {
     expect(
       windTag([{ wind: wind(0.1, 0.9), distance: 60 }, null]),
     ).toBeUndefined();
+  });
+});
+
+describe("leastHeadwind", () => {
+  const day = (head: number) => [
+    {
+      wind: { head, tail: 1 - head, cross: 0, dominant: "head", avgSpeed: 20 },
+      distance: 50_000,
+    } as const,
+  ];
+
+  it("picks the proposal with clearly less headwind", () => {
+    expect(leastHeadwind([day(0.6), day(0.2), day(0.5)])).toBe(1);
+  });
+
+  it("picks none when they are close or a forecast is missing", () => {
+    expect(leastHeadwind([day(0.3), day(0.25)])).toBeUndefined();
+    expect(leastHeadwind([day(0.6), undefined])).toBeUndefined();
   });
 });

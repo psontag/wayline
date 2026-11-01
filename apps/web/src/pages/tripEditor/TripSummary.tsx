@@ -2,6 +2,7 @@ import { tripStats, type Trip } from "@wayline/domain";
 import { Stat, SurfaceBar, useFormat } from "@wayline/ui";
 import { useTranslation } from "react-i18next";
 import { TrainOptions } from "./TrainOptions";
+import { WindAdvice } from "./WindAdvice";
 import type { TripEditorState } from "./useTripEditor";
 
 /** Totals of the trip and trains at both ends. */
@@ -36,6 +37,7 @@ export function TripSummary({
         />
       </div>
       <SurfaceBar shares={stats.surface} caption />
+      <WindAdvice trip={trip} editor={editor} />
       <TrainOptions trip={trip} direction="there" editor={editor} />
       <TrainOptions trip={trip} direction="back" editor={editor} />
     </div>

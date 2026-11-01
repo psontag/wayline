@@ -1,8 +1,10 @@
 import {
+  CALM_KMH,
   dayShares,
   type FailedLimit,
   type GenerateProgress,
   type GenerateRequest,
+  headwindShare,
   type LonLat,
   pointAtKm,
   type Proposal,
@@ -11,6 +13,7 @@ import {
   routePoints,
   type Trip,
   tripStats,
+  type WindDay,
   type WindShares,
 } from "@wayline/domain";
 
@@ -108,10 +111,22 @@ export function comparisonTags(
   return tags;
 }
 
-export type WindTag = { kind: "tail" } | { kind: "head"; day: number };
+/**
+ * Index of the proposal with clearly the least headwind: at least 10
+ * points less than the next one. Undefined while any forecast is missing.
+ */
+export function leastHeadwind(
+  days: (WindDay[] | undefined)[],
+): number | undefined {
+  if (days.length < 2 || days.some((d) => !d)) return undefined;
+  const ranked = days
+    .map((d, i) => ({ i, share: headwindShare(d ?? []) }))
+    .sort((a, b) => a.share - b.share);
+  const [best, next] = ranked;
+  return best && next && next.share - best.share >= 0.1 ? best.i : undefined;
+}
 
-// Below this, wind hardly matters on a bike.
-const CALM_KMH = 10;
+export type WindTag = { kind: "tail" } | { kind: "head"; day: number };
 
 /**
  * "Mostly tailwind" or the day with the most headwind. Undefined when a day

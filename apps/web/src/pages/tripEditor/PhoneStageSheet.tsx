@@ -22,6 +22,7 @@ import { BookingLink } from "./BookingLink";
 import { downloadTripGpx } from "../../data/gpx";
 import { StageChange } from "./StageList";
 import { TrainOptions } from "./TrainOptions";
+import { WindAdvice } from "./WindAdvice";
 import type { TripEditorState } from "./useTripEditor";
 import { forecastFrom, stageWind } from "./stageWeather";
 
@@ -165,6 +166,7 @@ export function PhoneStageSheet({
           <BookingLink trip={trip} index={selected} variant="button" />
         )}
 
+        {isFirst && <WindAdvice trip={trip} editor={editor} />}
         {isFirst && (
           <TrainOptions trip={trip} direction="there" editor={editor} />
         )}

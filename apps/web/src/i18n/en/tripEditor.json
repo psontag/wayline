@@ -85,9 +85,21 @@
     "lastStage": "Day {{day}} now ends in {{place}}.",
     "routeChanged": "Day {{day}} is now {{distance}}. Arrival, weather and alternatives are updated.",
     "reverted": "Day {{day}} is back as proposed.",
+    "reversed": "The trip now runs the other way round.",
+    "dateMoved": "The trip now starts on {{date}}.",
     "sameRoute": "The best way through that point is the same route.",
     "routingFailed": "Couldn't reach the router, so nothing changed. Try again in a moment.",
     "undo": "Undo"
+  },
+  "wind": {
+    "title": "Wind",
+    "reverseLoop": "Ride it the other way round",
+    "reverseTrip": "Ride from {{from}} to {{to}}",
+    "reverseDetail": "{{after}} headwind instead of {{before}}",
+    "reverseTrains": "Trains change.",
+    "switch": "Switch",
+    "dates": "Headwind on other start dates",
+    "betterDate": "Starting on {{date}} has {{after}} headwind instead of {{before}}."
   },
   "phone": {
     "sheet": "Stages of the trip",
