@@ -7,6 +7,8 @@ import {
   Input,
   Label,
   SegmentedControl,
+  Switch,
+  WindMarker,
   Select,
   ChangeNotice,
   ChoiceList,
@@ -714,6 +716,8 @@ function TripEditorParts() {
       </div>
       <div className="flex flex-wrap items-center gap-4 rounded-md bg-bg p-4">
         <EndpointMarker name="Bamberg" station />
+        <WindMarker from={250} speed={8} label={t("demo.windMarker")} />
+        <WindMarker from={250} speed={22} label={t("demo.windMarker")} />
         <StopMarker day={1} name="Coburg" />
         <StopMarker day={2} name="Kronach" selected />
         <AlternativeMarker
@@ -925,6 +929,7 @@ function FormDemos() {
   const [place, setPlace] = useState("Bamberg");
   const [search, setSearch] = useState("");
   const [profile, setProfile] = useState("touring");
+  const [withWind, setWithWind] = useState(true);
   const placeOption = (name: string) => ({
     value: name,
     label: name,
@@ -1016,6 +1021,12 @@ function FormDemos() {
             ]}
           />
         </FormField>
+        <Switch
+          checked={withWind}
+          onCheckedChange={setWithWind}
+          label={t("demo.withWind")}
+          hint={t("demo.withWindHint")}
+        />
       </div>
     </Section>
   );

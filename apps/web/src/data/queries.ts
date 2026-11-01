@@ -9,6 +9,7 @@ import {
   addDays,
   type BBox,
   type Daylight,
+  dayWind,
   type LonLat,
   type RoutePoint,
   reverseTrip,
@@ -225,6 +226,26 @@ export function useWeatherGrid(cells: LonLat[]) {
     placeholderData: keepPreviousData,
     staleTime: FORECAST_STALE_MS,
     queryFn: () => Promise.all(cells.map(forecast)),
+  });
+}
+
+/**
+ * Hourly wind at a place on a date. Empty beyond the forecast. Off
+ * without a place or date.
+ */
+export function useDayWind(
+  coord: LonLat | undefined,
+  date: string | undefined,
+) {
+  const forecast = useForecast();
+  return useQuery({
+    queryKey: ["dayWind", coord?.join(), date],
+    enabled: !!coord && !!date,
+    staleTime: FORECAST_STALE_MS,
+    queryFn: async () =>
+      coord && date
+        ? dayWind((await forecast(cellOf(coord))).samples, date)
+        : [],
   });
 }
 

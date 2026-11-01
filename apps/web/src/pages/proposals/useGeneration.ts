@@ -2,6 +2,7 @@ import type {
   FailedLimit,
   GenerateProgress,
   GenerateRequest,
+  HourlyWind,
   Proposal,
 } from "@wayline/domain";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -30,10 +31,19 @@ const start: Generation = {
 const finished = new Map<string, Generation>();
 const MAX_FINISHED = 10;
 
-/** Runs the trip generator for a request. Proposals come in one by one. */
-export function useGeneration(request: GenerateRequest | undefined) {
+/**
+ * Runs the trip generator for a request. Proposals come in one by one.
+ * wind: hourly wind to plan with. Null waits for it.
+ */
+export function useGeneration(
+  request: GenerateRequest | undefined,
+  wind?: HourlyWind[] | null,
+) {
   const { generator } = useServices();
-  const key = request ? JSON.stringify(request) : undefined;
+  const key =
+    request && wind !== null
+      ? JSON.stringify({ request, wind: wind?.length ? wind : undefined })
+      : undefined;
   const [run, setRun] = useState(0);
   // State of the run with this id. Another id means a new run.
   const id = `${run}:${key}`;
@@ -55,9 +65,14 @@ export function useGeneration(request: GenerateRequest | undefined) {
     // Start on the next task: React's strict mode mounts twice, and a
     // second run would restart the worker.
     const timer = setTimeout(() => {
+      const run = JSON.parse(key) as {
+        request: GenerateRequest;
+        wind?: HourlyWind[];
+      };
       generator
-        .generate(JSON.parse(key) as GenerateRequest, {
+        .generate(run.request, {
           signal: ac.signal,
+          ...(run.wind ? { wind: run.wind } : {}),
           onProgress: (progress) =>
             update((s) => ({
               ...s,

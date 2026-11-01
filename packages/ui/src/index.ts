@@ -29,6 +29,7 @@ export {
   SegmentedControl,
   type SegmentedControlProps,
 } from "./components/SegmentedControl";
+export { Switch, type SwitchProps } from "./components/Switch";
 export {
   Select,
   type SelectOption,
@@ -164,6 +165,7 @@ export {
   AlternativeMarker,
   ClusterMarker,
   EndpointMarker,
+  WindMarker,
   GhostViaMarker,
   HotelMarker,
   StationMarker,

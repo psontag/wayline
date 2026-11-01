@@ -132,7 +132,10 @@
     "sectionTrains": "Trains",
     "trainsSummary": "Arrive by 09:00",
     "gettingThere": "Getting there",
-    "trainTo": "To Bamberg"
+    "trainTo": "To Bamberg",
+    "withWind": "With the wind",
+    "withWindHint": "Picks directions with a tailwind from the forecast.",
+    "windMarker": "Wind at the start"
   },
   "icon": {
     "distance": "Distance",

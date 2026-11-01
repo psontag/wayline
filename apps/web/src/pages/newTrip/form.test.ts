@@ -142,4 +142,22 @@ describe("new trip form", () => {
     expect(detour({ ...ab, kmPerDay: 30 }, 3)).toBeUndefined();
     expect(detour({ ...ab, shape: "loop" }, 3)).toBeUndefined();
   });
+  it("round-trips an open day ride with the wind", () => {
+    const values = {
+      ...defaults,
+      length: "one" as const,
+      shape: "open" as const,
+    };
+    expect(values.withWind).toBe(true);
+    const request = toRequest(values);
+    expect(request).toMatchObject({ kind: "one-way", days: 1, withWind: true });
+    expect(request.endStation).toBeUndefined();
+    const back = fromRequest(request, defaults);
+    expect(back.shape).toBe("open");
+    expect(back.length).toBe("one");
+    expect(back.withWind).toBe(true);
+    expect(
+      fromRequest({ ...request, withWind: false }, defaults).withWind,
+    ).toBe(false);
+  });
 });

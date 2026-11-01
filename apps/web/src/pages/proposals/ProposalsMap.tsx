@@ -1,8 +1,15 @@
-import { decodeLine, type Place, type Proposal } from "@wayline/domain";
+import {
+  decodeLine,
+  type LonLat,
+  type Place,
+  type Proposal,
+} from "@wayline/domain";
 import {
   EndpointMarker,
+  WindMarker,
   RouteLabel,
   StopMarker,
+  useFormat,
   useThemeTokens,
 } from "@wayline/ui";
 import type { FeatureCollection, LineString } from "geojson";
@@ -35,6 +42,8 @@ export type ProposalsMapProps = {
   onSelect: (id: string) => void;
   /** Small map on phones: less padding, no zoom buttons. */
   compact?: boolean;
+  /** Wind of the ride, shown at the start. km/h and degrees it comes from. */
+  wind?: { from: number; speed: number; at: LonLat };
 };
 
 /** Phones: room on both sides for route and place labels. */
@@ -48,8 +57,10 @@ export function ProposalsMap({
   highlightedDay,
   onSelect,
   compact = false,
+  wind,
 }: ProposalsMapProps) {
   const { t } = useTranslation("proposals");
+  const format = useFormat();
   const tokens = useThemeTokens();
 
   const routes = useMemo(
@@ -100,19 +111,19 @@ export function ProposalsMap({
     [shown],
   );
 
+  // Starts and ends of all proposals. A homeward ride starts far away.
   const ends = useMemo(() => {
-    const first = proposals[0]?.trip;
-    if (!first) return places;
-    const start = first.stages[0]?.start;
-    const endNames = new Set<string>();
-    const out: Place[] = start ? [start] : [];
+    if (!proposals.length) return places;
+    const out = new Map<string, Place>();
     for (const p of proposals) {
-      const end = p.trip.stages.at(-1)?.end;
-      if (!end || end.name === start?.name || endNames.has(end.name)) continue;
-      endNames.add(end.name);
-      out.push(end);
+      for (const place of [
+        p.trip.stages[0]?.start,
+        p.trip.stages.at(-1)?.end,
+      ]) {
+        if (place && !out.has(place.name)) out.set(place.name, place);
+      }
     }
-    return out;
+    return [...out.values()];
   }, [proposals, places]);
 
   const stopCoords = useMemo(
@@ -226,6 +237,20 @@ export function ProposalsMap({
           />
         </Marker>
       ))}
+      {wind && (
+        <Marker
+          longitude={wind.at[0]}
+          latitude={wind.at[1]}
+          anchor="right"
+          offset={[-18, 0]}
+        >
+          <WindMarker
+            from={wind.from}
+            speed={wind.speed}
+            label={t("map.wind", { speed: format.speed(wind.speed) })}
+          />
+        </Marker>
+      )}
       {shown?.trip.stages.slice(0, -1).map((stage, i) => (
         <Marker
           key={`${shown.id}-${stage.id}`}

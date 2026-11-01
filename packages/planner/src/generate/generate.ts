@@ -1,16 +1,19 @@
 import {
   type BBox,
+  bearing,
   distanceKm,
   type FailedLimit,
   type Flavour,
   type GenerateProgress,
   type GenerateRequest,
   type GenerateResult,
+  type HourlyWind,
   type LonLat,
   type Place,
   type Places,
   type Proposal,
   Theme,
+  timeToHours,
 } from "@wayline/domain";
 import type {
   AbortSignalLike,
@@ -41,6 +44,7 @@ import {
 import { Stops } from "./stops";
 import { flavourValue, themeFit, themeValue } from "./theme";
 import { buildTrip, meanScore, routeNames, splitSteps, viaNames } from "./trip";
+import { type Ride, windFactor, windRanked } from "./wind";
 
 /** Proposals to look for on a one-day A to B trip. */
 const PROPOSALS = 5;
@@ -75,6 +79,8 @@ const THEME_FLAVOUR: Record<Theme, Flavour> = {
   wine: "sights",
   culture: "sights",
 };
+/** Open day ride: ends of two proposals this far apart, seen from the start. */
+const MIN_TURN_DEG = 45;
 /** Via nodes of two proposals must be at least this far apart. */
 const MIN_VIA_GAP_KM = 10;
 /** A start or end within this distance of a station uses the station. */
@@ -108,6 +114,8 @@ export type PlannerOptions = {
   routing?: RoutingProvider;
   /** Clock, for tests. */
   now?: () => Date;
+  /** Hourly wind of the start date. Day trips then plan with it. */
+  wind?: HourlyWind[];
 };
 
 type Pick = {
@@ -119,6 +127,7 @@ type Pick = {
   ascent: number;
   shared: number;
   flavour?: Flavour;
+  homeward?: boolean;
 };
 
 /** What the checks on a candidate path need. */
@@ -192,20 +201,32 @@ export class Planner {
 
     onProgress?.({ phase: "searching", done: 0, total: MAX_TRIES });
     const vias = this.stops.townNodes();
-    const candidates = (c: Costs) =>
-      request.kind === "one-way"
-        ? oneWayCandidates(
-            graph,
-            c,
-            start,
-            endStation === undefined
-              ? this.stops.stationNodes().filter((n) => n !== start)
-              : [endStation],
-            vias,
-            totalKm,
-            endStation === undefined ? undefined : 0,
-          )
-        : loopCandidates(graph, c, start, vias, totalKm);
+    // Open day ride: any direction, back by train.
+    const open =
+      request.kind === "one-way" &&
+      request.days === 1 &&
+      endStation === undefined;
+    const ride: Ride | undefined =
+      options.wind?.length && (open || request.kind === "day-loop")
+        ? { wind: options.wind, startHour: timeToHours(request.startTime) }
+        : undefined;
+    const candidates = (c: Costs) => {
+      const list =
+        request.kind === "one-way"
+          ? oneWayCandidates(
+              graph,
+              c,
+              start,
+              endStation === undefined
+                ? this.stops.stationNodes().filter((n) => n !== start)
+                : [endStation],
+              vias,
+              totalKm,
+              endStation === undefined ? undefined : 0,
+            )
+          : loopCandidates(graph, c, start, vias, totalKm);
+      return ride ? windRanked(graph, list, totalKm, ride, open) : list;
+    };
     const progress = (done: number) => {
       check();
       onProgress?.({ phase: "searching", done, total: MAX_TRIES });
@@ -222,6 +243,27 @@ export class Planner {
           (p) => sharedKm(graph, p, direct) < MAX_SHARED_DIRECT * p.km,
         ),
       ].slice(0, PROPOSALS);
+    } else if (open) {
+      found = this.pickDestinations(
+        candidates(costs),
+        costs,
+        request,
+        totalKm,
+        progress,
+      );
+      picks = found.picks;
+      // Rides with the wind first. Close factors keep the search order.
+      if (ride) {
+        const wind = (p: Pick) =>
+          Math.round(
+            windFactor(
+              p.nodes.map((n) => graph.coord(n)),
+              totalKm,
+              ride,
+            ) * 10,
+          );
+        picks.sort((a, b) => wind(a) - wind(b));
+      }
     } else {
       found = this.pickFlavours(candidates, request, totalKm, progress);
       picks = found.picks;
@@ -234,21 +276,24 @@ export class Planner {
     for (const [i, p] of picks.entries()) {
       check();
       onProgress?.({ phase: "routing", done: i, total: picks.length });
-      const end = p.nodes.at(-1) ?? start;
+      const placeAt = (node: number) =>
+        this.endpoint(
+          node,
+          node === start ? request.startStation : request.endStation,
+        );
+      const from = p.nodes[0] ?? start;
       let trip = buildTrip(graph, this.stops, {
         id: `draft-${runId}-${i + 1}`,
         now,
         request,
-        start: this.endpoint(start, request.startStation),
-        end: this.endpoint(
-          end,
-          request.kind === "one-way"
-            ? request.endStation
-            : request.startStation,
-        ),
+        start: placeAt(from),
+        end: placeAt(p.nodes.at(-1) ?? start),
         steps: p.steps,
         stops: p.stops,
       });
+      if (p.homeward) {
+        trip.name = `${trip.stages[0]?.start.name ?? ""} – ${request.startStation?.name ?? trip.stages.at(-1)?.end.name ?? ""}`;
+      }
       if (options.routing) {
         const waypoints = stageWaypoints(
           graph,
@@ -273,7 +318,7 @@ export class Planner {
         score: score(graph, p, totalKm, request),
         signedShare: signedShare(graph, p.steps),
         routeNames: routeNames(graph, p.steps),
-        via: viaNames(graph, this.stops, start, p.steps, [
+        via: viaNames(graph, this.stops, from, p.steps, [
           trip.stages[0]?.start.name ?? "",
           trip.stages.at(-1)?.end.name ?? "",
         ]),
@@ -287,6 +332,7 @@ export class Planner {
               : "scenic";
       }
       if (p.flavour) proposal.flavour = p.flavour;
+      if (p.homeward) proposal.homeward = true;
       if (request.kind === "day-loop" && proposal.via[0]) {
         const home = trip.stages[0]?.start.name ?? "";
         trip.name = `${home} – ${proposal.via[0]} – ${home}`;
@@ -473,6 +519,66 @@ export class Planner {
   }
 
   /**
+   * Open day ride: proposals to ends in different directions, best first.
+   * Far ends are at least MIN_TURN_DEG apart as seen from the start, and
+   * at most one proposal is homeward. A second pass drops the angle when
+   * too few fit.
+   */
+  private pickDestinations(
+    candidates: Candidate[],
+    costs: Costs,
+    request: GenerateRequest,
+    totalKm: number,
+    progress: (tries: number) => void,
+  ): { picks: Pick[]; failedLimit: FailedLimit } {
+    const graph = this.graph;
+    const startedAt = Date.now();
+    const picks: Pick[] = [];
+    const tried = new Set<Candidate>();
+    const ck = this.checker(candidates, request, totalKm);
+    const far = (c: { nodes: number[]; homeward?: boolean }) =>
+      graph.coord((c.homeward ? c.nodes[0] : c.nodes.at(-1)) ?? 0);
+    const first = candidates[0];
+    const home = first
+      ? graph.coord((first.homeward ? first.nodes.at(-1) : first.nodes[0]) ?? 0)
+      : undefined;
+    const heading = (c: { nodes: number[]; homeward?: boolean }) =>
+      home ? bearing(home, far(c)) : 0;
+
+    for (const minTurn of [MIN_TURN_DEG, 0]) {
+      for (const c of candidates) {
+        if (picks.length === PROPOSALS || tried.size === MAX_TRIES) break;
+        if (picks.length && Date.now() - startedAt > TIME_LIMIT_MS) break;
+        if (tried.has(c)) continue;
+        if (c.homeward && picks.some((p) => p.homeward)) continue;
+        const end = far(c);
+        const h = heading(c);
+        const close = picks.some(
+          (p) =>
+            distanceKm(far(p), end) < MIN_VIA_GAP_KM ||
+            turn(heading(p), h) < minTurn,
+        );
+        if (close) continue;
+
+        tried.add(c);
+        if (tried.size % 10 === 0) progress(tried.size);
+        const p = this.fit(c, costs, ck);
+        if (!p) continue;
+        const shared = Math.max(0, ...picks.map((q) => sharedKm(graph, p, q)));
+        if (shared > MAX_SHARED * p.km) continue;
+        picks.push({
+          ...p,
+          shared: shared / p.km,
+          ...(c.homeward && { homeward: true }),
+        });
+        for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
+      }
+    }
+    progress(tried.size);
+    return { picks, failedLimit: failedLimit(ck, request) };
+  }
+
+  /**
    * One proposal per flavour, each searched with its own edge costs. A
    * flavour is dropped if its path shares too much with an earlier one or
    * adds nothing. Flat and hilly are searched last, so they can be held
@@ -592,6 +698,12 @@ function addsFlavour(
       return share >= min && share >= base + gain;
     }
   }
+}
+
+/** Angle between two bearings, 0 to 180. */
+function turn(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360;
+  return Math.min(d, 360 - d);
 }
 
 /** The limit to blame when no candidate fits. */

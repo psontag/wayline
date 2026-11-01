@@ -92,8 +92,15 @@ function boost(
   return flavour ? 1 : themeBoost(edge, theme);
 }
 
-/** Ordered candidate: nodes to chain with shortest paths. */
-export type Candidate = { quality: number; nodes: number[] };
+/**
+ * Ordered candidate: nodes to chain with shortest paths. Lower quality is
+ * better. homeward: an open ride from a station back to the start.
+ */
+export type Candidate = {
+  quality: number;
+  nodes: number[];
+  homeward?: boolean;
+};
 
 /** Base edge costs plus a penalty factor per edge. */
 export class Costs {
