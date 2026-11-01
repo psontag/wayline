@@ -1,0 +1,24 @@
+{
+  "sandbox": {
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "api.github.com",
+        "objects.githubusercontent.com",
+        "release-assets.githubusercontent.com",
+        "registry.npmjs.org",
+        "pypi.org",
+        "files.pythonhosted.org"
+      ]
+    },
+    "filesystem": {
+      "allowWrite": [
+        "~/Library/pnpm",
+        "~/Library/Caches/pnpm",
+        "~/.local/state/pnpm",
+        "~/Library/Caches/uv",
+        "~/.local/share/uv"
+      ]
+    }
+  }
+}
