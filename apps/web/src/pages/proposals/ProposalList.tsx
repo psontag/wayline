@@ -13,11 +13,10 @@ import {
   ProgressBar,
   ProposalCard,
   ProposalCardSkeleton,
-  SegmentedControl,
   useFormat,
 } from "@wayline/ui";
 import { ArrowRight, Mountain, RotateCcw, SearchX } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
 import { useNetwork, useTripsWeather } from "../../data/queries";
@@ -65,7 +64,6 @@ export function ProposalList({
   openFailed,
   onRelax,
 }: ProposalListProps) {
-  const { t } = useTranslation("proposals");
   const { status, proposals } = generation;
   const weather = useTripsWeather(proposals.map((p) => p.trip));
   const windDays = proposals.map((p, i) => {
@@ -79,19 +77,6 @@ export function ProposalList({
     }),
   );
   const tags = comparisonTags(proposals, headwind);
-  const [order, setOrder] = useState<"best" | "wind">("best");
-  // Ordering by wind needs the forecast of every proposal.
-  const canOrder = proposals.length > 1 && windDays.every(Boolean);
-  const items = proposals.map((p, i) => ({
-    p,
-    number: i + 1,
-    wind: windDays[i],
-  }));
-  if (canOrder && order === "wind") {
-    items.sort(
-      (a, b) => headwindShare(a.wind ?? []) - headwindShare(b.wind ?? []),
-    );
-  }
 
   if (status === "failed" && generation.failedLimit) {
     return (
@@ -119,28 +104,12 @@ export function ProposalList({
         />
       )}
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3">
-        {canOrder && (
-          <div className="flex items-center justify-between gap-3">
-            <span id="proposal-order" className="text-xs text-text-muted">
-              {t("order.label")}
-            </span>
-            <SegmentedControl
-              aria-labelledby="proposal-order"
-              value={order}
-              onValueChange={(value) => setOrder(value as "best" | "wind")}
-              options={[
-                { value: "best", label: t("order.best") },
-                { value: "wind", label: t("order.wind") },
-              ]}
-            />
-          </div>
-        )}
-        {items.map(({ p, number, wind }) => (
+        {proposals.map((p, i) => (
           <ProposalItem
             key={p.id}
             proposal={p}
-            number={number}
-            windDays={wind}
+            number={i + 1}
+            windDays={windDays[i]}
             tags={tags.get(p.id) ?? []}
             selected={p.id === selected}
             onSelect={() => onSelect(p.id)}

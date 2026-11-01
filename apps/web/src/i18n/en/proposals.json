@@ -129,10 +129,5 @@
     "flat": "Flat and easy",
     "hilly": "Hilly",
     "sights": "Towns and sights"
-  },
-  "order": {
-    "label": "Order",
-    "best": "Best first",
-    "wind": "Least headwind"
   }
 }
