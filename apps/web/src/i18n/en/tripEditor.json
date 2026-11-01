@@ -4,9 +4,7 @@
   "notFound": "This trip does not exist.",
   "backToList": "Back to trips",
   "header": {
-    "subtitle": "{{kind}} · {{from}} → {{to}}",
     "startDate": "Start date",
-    "startDateValue": "{{date}} · {{time}}",
     "setStartDate": "Set start date",
     "undo": "Undo",
     "redo": "Redo",
@@ -32,10 +30,12 @@
     "show": "Show trains",
     "hide": "Hide trains",
     "loading": "Looking up trains…",
-    "unavailable": "Timetable not available. Search on bahn.de."
+    "unavailable": "Timetable not available. Search on bahn.de.",
+    "from": "From {{station}}",
+    "arriveBy": "Arrive by {{time}}",
+    "summary": "{{from}} and {{to}}"
   },
   "summary": {
-    "days": "Days",
     "stageCount_one": "{{count}} day",
     "stageCount_other": "{{count}} days",
     "distance": "Distance",
@@ -53,10 +53,8 @@
     "bookHotels": "Hotels in {{place}} on Booking.com",
     "noHotel": "No hotel picked",
     "noHotelsNear": "No hotels found near {{place}}",
-    "moreHotels_one": "{{count}} more in {{place}}",
-    "moreHotels_other": "{{count}} more in {{place}}",
-    "choose": "Choose",
-    "locked": "Locked"
+    "locked": "Locked",
+    "lock": "Lock"
   },
   "profile": {
     "title": "Day {{day}} · {{from}} → {{to}}",
@@ -76,7 +74,6 @@
     "selectStage": "Day {{day}}: {{place}}",
     "network": "Signed cycling routes",
     "proposed": "Proposed route",
-    "dragHint": "Drag the route to change it",
     "tapHint": "Tap the route to add a via point",
     "removeVia": "Via point {{n}}. Click to remove, drag to move."
   },
@@ -178,7 +175,10 @@
   "panel": {
     "label": "Panel under the map",
     "elevation": "Elevation",
-    "weather": "Weather"
+    "weather": "Weather",
+    "allDays": "All days",
+    "days": "Days",
+    "day": "Day {{day}}"
   },
   "weatherPanel": {
     "play": "Play the ride",
@@ -192,5 +192,50 @@
     "rain": "Rain",
     "wind": "Wind",
     "network": "Cycling routes"
+  },
+  "section": {
+    "dates": "Dates",
+    "trip": "Trip",
+    "days": "Days",
+    "trains": "Trains",
+    "gettingThere": "Getting there",
+    "gettingHome": "Getting home",
+    "ride": "Ride",
+    "stop": "Stop",
+    "hotel": "Hotel"
+  },
+  "days": {
+    "hint": "Pick a day to edit it"
+  },
+  "trip": {
+    "summary": "{{kind}} · {{days}}"
+  },
+  "day": {
+    "eyebrow": "Day {{day}} · from {{from}}",
+    "eyebrowDate": "Day {{day}} · {{date}} · from {{from}}",
+    "title": "to {{place}}"
+  },
+  "dates": {
+    "range": "{{from}} – {{to}}",
+    "summary": "{{range}} · start {{time}}",
+    "tip": "Start on {{date}}",
+    "try": "Try it",
+    "headwind": "{{share}} headwind",
+    "noForecast": "No forecast",
+    "leastHeadwind": "Least headwind",
+    "other": "Other date"
+  },
+  "ride": {
+    "summary": "{{share}} paved"
+  },
+  "stop": {
+    "summaryLocked": "{{place}} · locked",
+    "hint": "Pick a stop here or on the map."
+  },
+  "hotels": {
+    "label": "Hotels near {{place}}",
+    "more_one": "{{count}} more hotel",
+    "more_other": "{{count}} more hotels",
+    "fewer": "Show fewer"
   }
 }

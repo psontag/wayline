@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Panel B, itinerary</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.wl{--bg:#F6F7F9;--surface:#FFFFFF;--raised:#FFFFFF;--text:#15181D;--muted:#5A616C;--border:#E1E4EA;--accent:#FFB088;--on-accent:#3B1503;--hover:#EEF0F4;--active:#E4E7EC;--selected:#FFEDE3;--selected-border:#B4532A;--success:#2F9E6B;--warning:#B7791F;--paved:#7E8BA3;--gravel:#E8B850;--unpaved:#B98E73;--stage-a:#FFC7AE;--stage-b:#C9BDE6;--marker:#15181D;--on-marker:#FFFFFF;font-family:Manrope,system-ui,sans-serif;color:var(--text);font-variant-numeric:tabular-nums}
+.wl[data-theme=dark]{--bg:#101216;--surface:#171A20;--raised:#1E222A;--text:#EDEFF3;--muted:#A0A7B3;--border:#2A2F38;--on-accent:#2A0F02;--hover:#20242C;--active:#2A2F38;--selected:#2D211B;--selected-border:#FFB088;--success:#5CCB97;--warning:#F2CF7E;--paved:#AEB9CC;--gravel:#F2CF7E;--unpaved:#D9B49C;--stage-a:#C98C72;--stage-b:#8F82B8;--marker:#EDEFF3;--on-marker:#15181D}
+.wl svg.i{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.wl button{font:inherit;color:inherit;cursor:pointer}
+.wl a{color:var(--text)}
+.rail{position:relative}
+.rail .ln{position:absolute;left:13px;top:0;bottom:0;width:4px;border-radius:2px}
+</style>
+</helmet>
+<div class="wl" data-theme="{{theme}}" style="width:440px;height:1000px;box-sizing:border-box;background:var(--surface);display:flex;flex-direction:column;overflow:hidden">
+
+  <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:16px;font-size:13px;font-weight:600">
+      <span style="display:flex;align-items:center;gap:6px" title="Days"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>3 days</span>
+      <span style="display:flex;align-items:center;gap:6px" title="Distance"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 8 4 4-4 4M6 8l-4 4 4 4M2 12h20"/></svg>207 km</span>
+      <span style="display:flex;align-items:center;gap:6px" title="Ascent"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg>1,831 m</span>
+      <div style="flex:1;display:flex;height:4px;border-radius:9999px;overflow:hidden" title="93% paved · 4% gravel · 3% unpaved">
+        <span style="width:93%;background:var(--paved)"></span><span style="width:4%;background:var(--gravel)"></span><span style="width:3%;background:var(--unpaved)"></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;padding:12px 16px 16px 8px;display:flex;flex-direction:column">
+
+    <div style="display:grid;grid-template-columns:32px 1fr;gap:8px">
+      <div class="rail"><span class="ln" style="top:14px;background:var(--stage-a)"></span><span style="position:absolute;left:6px;top:4px;width:18px;height:18px;border-radius:4px;background:var(--marker)"></span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:2px 0 14px">
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <span style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Heidelberg-Weststadt/Südstadt</span>
+          <span style="font-size:12px;color:var(--muted)">Start · Sun 8 Nov, 09:00</span>
+        </div>
+        <button style="display:flex;align-items:center;gap:6px;height:28px;padding:0 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:12px;font-weight:600"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px" aria-hidden="true"><path d="M8 3.1V7a4 4 0 0 0 8 0V3.1"/><path d="m9 15-1-1M15 15l1-1"/><path d="M9 19c-2.8 0-5-2.2-5-5v-4a8 8 0 0 1 16 0v4c0 2.8-2.2 5-5 5Z"/><path d="m8 19-2 3M16 19l2 3"/></svg>Trains there</button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:32px 1fr;gap:8px">
+      <div class="rail"><span class="ln" style="background:var(--stage-a);width:6px;left:12px"></span></div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:12px;margin-bottom:12px;border-radius:6px;background:var(--selected);border:1px solid var(--selected-border)">
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <span style="font-size:13px;font-weight:700;flex:1">Day 1 · Sun 8 Nov</span>
+          <span style="font-size:13px;font-weight:700">65 km</span><span style="font-size:13px;font-weight:700">576 m</span><span style="font-size:13px;font-weight:700">4 h 10</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;height:6px;border-radius:9999px;overflow:hidden"><span style="width:97%;background:var(--paved)"></span><span style="width:3%;background:var(--gravel)"></span></div>
+          <span style="font-size:11px;color:var(--muted)">97% paved · 3% gravel</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px">
+          <span style="display:flex;align-items:center;gap:6px" title="Temperature"><svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px;color:var(--muted)" aria-hidden="true"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>3–9 °C <span style="color:var(--muted)">feels −0 °C</span></span>
+          <span style="display:flex;align-items:center;gap:6px" title="No rain expected"><svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px;color:var(--muted)" aria-hidden="true"><path d="M12 2v1"/><path d="M15.5 21a1.85 1.85 0 0 1-3.5-1v-8H2a10 10 0 0 1 3.43-6.58"/><path d="M17.5 12H22A10 10 0 0 0 9 3.46"/><path d="m2 2 20 20"/></svg>Dry</span>
+          <span style="display:flex;align-items:center;gap:6px" title="Wind"><svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px;color:var(--muted)" aria-hidden="true"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>77% crosswind · 5 km/h</span>
+        </div>
+        <button style="display:flex;align-items:center;gap:8px;padding:8px 0 0;border:0;border-top:1px solid var(--border);background:none;font-size:12px;text-align:left">
+          <span style="flex:1"><b style="font-weight:700">6 climbs</b> <span style="color:var(--muted)">· longest 2.3 km at 2%</span></span>
+          <svg class="i" viewBox="0 0 24 24" style="color:var(--muted)" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:32px 1fr;gap:8px">
+      <div class="rail"><span class="ln" style="background:var(--stage-b)"></span><span style="position:absolute;left:3px;top:0;width:24px;height:24px;border-radius:9999px;background:var(--stage-a);border:2px solid var(--selected-border);box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#15181D">1</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:16px">
+        <div style="display:flex;align-items:center;gap:8px;min-height:24px">
+          <div style="flex:1;display:flex;flex-direction:column">
+            <span style="font-size:16px;font-weight:800;letter-spacing:-0.02em">Dallau</span>
+            <span style="font-size:12px;color:var(--muted)">Village · 6 hotels within 5 km</span>
+          </div>
+          <button aria-label="Unlock stop" title="Stop locked" style="width:28px;height:28px;border:1px solid var(--border);border-radius:4px;background:var(--surface);display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:6px">
+          <svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px;color:var(--muted)" aria-label="Hotel"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6M2 18h20"/></svg>
+          <div style="flex:1;display:flex;flex-direction:column">
+            <span style="font-size:13px;font-weight:700">Langsthof "Zur Pfalz"</span>
+            <span style="font-size:12px;color:var(--muted)">Guest house · 1.2 km off route · <a href="#">Booking.com</a></span>
+          </div>
+          <button aria-label="Save hotel" style="width:28px;height:28px;border:0;border-radius:4px;background:none;display:flex;align-items:center;justify-content:center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg></button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button style="height:28px;padding:0 10px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:12px;font-weight:600">2 other stops</button>
+          <button style="height:28px;padding:0 10px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:12px;font-weight:600">5 more hotels</button>
+          <a href="#" style="height:28px;padding:0 10px;border-radius:4px;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;text-decoration:none">Booking.com<svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px" aria-hidden="true"><path d="M15 3h6v6M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:32px 1fr;gap:8px">
+      <div class="rail"><span class="ln" style="background:var(--stage-b)"></span></div>
+      <button style="display:flex;flex-direction:column;gap:2px;padding:8px 12px;margin-bottom:12px;border:0;border-radius:6px;background:var(--bg);text-align:left">
+        <span style="display:flex;align-items:baseline;gap:8px;width:100%">
+          <span style="font-size:13px;font-weight:700;flex:1">Day 2 · Mon 9 Nov</span>
+          <span style="font-size:13px;font-weight:600">76 km</span><span style="font-size:13px;font-weight:600">717 m</span><span style="font-size:13px;font-weight:600">4 h 55</span>
+        </span>
+        <span style="font-size:12px;color:var(--muted)">4–10 °C · 0.4 mm · 62% headwind</span>
+      </button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:32px 1fr;gap:8px">
+      <div class="rail"><span class="ln" style="background:var(--stage-a)"></span><span style="position:absolute;left:4px;top:0;width:22px;height:22px;border-radius:9999px;background:var(--marker);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--on-marker)">2</span></div>
+      <div style="display:flex;flex-direction:column;padding-bottom:16px">
+        <span style="font-size:14px;font-weight:700">Bofsheim</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px" aria-hidden="true"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6M2 18h20"/></svg>Gasthaus "Zum Ochsen"</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:32px 1fr;gap:8px">
+      <div class="rail"><span class="ln" style="background:var(--stage-a)"></span></div>
+      <button style="display:flex;flex-direction:column;gap:2px;padding:8px 12px;margin-bottom:12px;border:0;border-radius:6px;background:var(--bg);text-align:left">
+        <span style="display:flex;align-items:baseline;gap:8px;width:100%">
+          <span style="font-size:13px;font-weight:700;flex:1">Day 3 · Tue 10 Nov</span>
+          <span style="font-size:13px;font-weight:600">66 km</span><span style="font-size:13px;font-weight:600">538 m</span><span style="font-size:13px;font-weight:600">4 h 15</span>
+        </span>
+        <span style="font-size:12px;color:var(--muted)">5–11 °C · dry · 54% tailwind</span>
+      </button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:32px 1fr;gap:8px">
+      <div class="rail"><span style="position:absolute;left:6px;top:4px;width:18px;height:18px;border-radius:4px;background:var(--marker)"></span></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:2px 0">
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <span style="font-size:14px;font-weight:700">Heilbronn Sülmertor</span>
+          <span style="font-size:12px;color:var(--muted)">Arrive Tue 10 Nov, about 13:30</span>
+        </div>
+        <button style="display:flex;align-items:center;gap:6px;height:28px;padding:0 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:12px;font-weight:600"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px" aria-hidden="true"><path d="M8 3.1V7a4 4 0 0 0 8 0V3.1"/><path d="m9 15-1-1M15 15l1-1"/><path d="M9 19c-2.8 0-5-2.2-5-5v-4a8 8 0 0 1 16 0v4c0 2.8-2.2 5-5 5Z"/><path d="m8 19-2 3M16 19l2 3"/></svg>Trains home</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? 'light' };
+  }
+}
+</script>
+</body>
+</html>

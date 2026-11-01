@@ -65,6 +65,8 @@ export type MapAlternative = {
 export type TripMapProps = {
   trip: Trip;
   selected: number;
+  /** Whole trip: every day at full strength, the hovered one stands out. */
+  overview?: boolean;
   onSelect: (index: number) => void;
   /** Day under the pointer in the day list. */
   hovered?: number;
@@ -129,6 +131,7 @@ const PREVIEW_MS = 120;
 export function TripMap({
   trip,
   selected,
+  overview = false,
   onSelect,
   hovered,
   alternatives = [],
@@ -173,13 +176,15 @@ export function TripMap({
         type: "Feature",
         properties: {
           index,
-          selected: index === selected,
+          selected: overview
+            ? hovered === undefined || hovered === index
+            : index === selected,
           hovered: index === hovered,
         },
         geometry: { type: "LineString", coordinates },
       })),
     }),
-    [lines, selected, hovered],
+    [lines, selected, hovered, overview],
   );
 
   // Legs of the selected stage, to drag the route.
@@ -270,10 +275,11 @@ export function TripMap({
   // Zoom to the stage when the selection changes, keeping its stop choices
   // and hotels in view. Not while the route is dragged.
   const dragging = !!drag;
-  const [fitDay, setFitDay] = useState(selected);
-  if (!dragging && fitDay !== selected) setFitDay(selected);
+  const fitTarget = overview ? -1 : selected;
+  const [fitDay, setFitDay] = useState(fitTarget);
+  if (!dragging && fitDay !== fitTarget) setFitDay(fitTarget);
   const fit = [
-    ...(lines[selected] ?? []),
+    ...(overview ? lines.flat() : (lines[selected] ?? [])),
     ...alternatives.map(({ place }) => place.coord),
     ...hotels.map((hotel) => hotel.coord),
   ];
@@ -321,10 +327,8 @@ export function TripMap({
       layers={layers}
       network={network}
       hint={
-        route && (
-          <MapHint icon={<Route aria-hidden />}>
-            {t(route.tapToAdd ? "map.tapHint" : "map.dragHint")}
-          </MapHint>
+        route?.tapToAdd && (
+          <MapHint icon={<Route aria-hidden />}>{t("map.tapHint")}</MapHint>
         )
       }
       overlay={children}
@@ -478,7 +482,9 @@ export function TripMap({
             coord: stage.end.coord,
             text: stage.end.name,
             kind:
-              index === selected ? ("selected" as const) : ("stop" as const),
+              !overview && index === selected
+                ? ("selected" as const)
+                : ("stop" as const),
           })),
           ...[first?.start, last?.end].flatMap((place) =>
             place
@@ -495,13 +501,13 @@ export function TripMap({
           latitude={stage.end.coord[1]}
           anchor="left"
           // Center the circle on the stop. It is larger when selected.
-          offset={[index === selected ? -20 : -16, 0]}
-          style={{ zIndex: index === selected ? 4 : 3 }}
+          offset={[!overview && index === selected ? -20 : -16, 0]}
+          style={{ zIndex: !overview && index === selected ? 4 : 3 }}
         >
           <StopMarker
             day={index + 1}
             name={stage.end.name}
-            selected={index === selected}
+            selected={!overview && index === selected}
             aria-label={t("map.selectStage", {
               day: index + 1,
               place: stage.end.name,

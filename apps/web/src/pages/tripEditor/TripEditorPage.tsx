@@ -31,16 +31,16 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
 import { useMe, useNetwork, useTrip, useWeatherGrid } from "../../data/queries";
-import { StageList } from "./StageList";
+import { DayPanel } from "./DayPanel";
 import { StageProfile } from "./StageProfile";
 import { useRouteStations } from "./stations";
 import { useMapHotels, useStopOptions } from "./stopChoices";
 import { ShareDialog } from "./ShareDialog";
-import { TripHeader } from "./TripHeader";
+import { TripActions } from "./TripHeader";
 import { isChanged } from "./routeEdits";
 import { type RouteEditing, TripMap } from "./TripMap";
 import { tripStops } from "./tripArea";
-import { TripSummary } from "./TripSummary";
+import { TripPanel } from "./TripPanel";
 import { PhoneTripEditor } from "./PhoneTripEditor";
 import { useIsPhone } from "../../components/useIsPhone";
 import { toHotel, useTripEditor } from "./useTripEditor";
@@ -110,11 +110,18 @@ function TripEditor({
   );
 
   const selected = Math.min(search.stage ?? 0, trip.stages.length - 1);
+  // Without a stage in the URL, the panel shows the whole trip.
+  const dayOpen = search.stage !== undefined;
   const select = (stage: number) => {
     setHoverKm(undefined);
     setHoveredClimb(undefined);
+    setHoveredDay(undefined);
     setMapTime(undefined);
     void navigate({ search: { stage }, replace: true });
+  };
+  const showTrip = () => {
+    setHoveredClimb(undefined);
+    void navigate({ search: {}, replace: true });
   };
 
   const stage = trip.stages[selected];
@@ -368,7 +375,7 @@ function TripEditor({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {shareDialog}
-      <TripHeader
+      <TripActions
         trip={trip}
         editor={editor}
         canShare={canShare}
@@ -380,14 +387,17 @@ function TripEditor({
             <TripMap
               trip={trip}
               selected={selected}
+              overview={!dayOpen}
               onSelect={select}
               hovered={hoveredDay}
               highlight={highlight}
-              alternatives={alternatives}
+              alternatives={dayOpen ? alternatives : []}
               onPickAlternative={(place) =>
                 void editor.moveStop(selected, place)
               }
-              hotels={isLast || !layers.hotels ? [] : mapHotels.hotels}
+              hotels={
+                !dayOpen || isLast || !layers.hotels ? [] : mapHotels.hotels
+              }
               {...mapLayers}
               selectedHotelId={stage?.hotel?.osmId}
               onSelectHotel={(osmId) => {
@@ -401,7 +411,7 @@ function TripEditor({
                 },
               })}
               hover={hover}
-              route={routeEditing(false)}
+              route={dayOpen ? routeEditing(false) : undefined}
             >
               <ToastProvider>
                 {toast}
@@ -413,18 +423,26 @@ function TripEditor({
           </div>
           {chart}
         </div>
-        <aside className="flex shrink-0 flex-col border-border bg-surface lg:w-panel lg:border-l">
-          <TripSummary trip={trip} editor={editor} />
-          <div className="lg:min-h-0 lg:flex-1 lg:overflow-auto">
-            <StageList
+        <aside className="flex shrink-0 flex-col border-border bg-surface lg:w-panel lg:overflow-auto lg:border-l">
+          {dayOpen ? (
+            <DayPanel
+              key={selected}
               trip={trip}
-              selected={selected}
-              onSelect={select}
-              onHover={setHoveredDay}
-              onHoverClimb={setHoveredClimb}
+              index={selected}
               editor={editor}
+              onSelect={select}
+              onBack={showTrip}
+              onHoverClimb={setHoveredClimb}
             />
-          </div>
+          ) : (
+            <TripPanel
+              trip={trip}
+              editor={editor}
+              hovered={hoveredDay}
+              onHover={setHoveredDay}
+              onOpenDay={select}
+            />
+          )}
         </aside>
       </div>
     </div>

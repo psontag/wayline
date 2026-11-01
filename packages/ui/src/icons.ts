@@ -1,10 +1,14 @@
 import {
   BedDouble,
+  Bike,
   CalendarDays,
   Clock,
   CloudRain,
   Euro,
+  List,
+  MapPin,
   MoveHorizontal,
+  Route,
   Signpost,
   Star,
   Sunset,
@@ -34,3 +38,16 @@ export const statIcons = {
 };
 
 export type StatIcon = keyof typeof statIcons;
+
+/** One icon per kind of panel section, on every screen. See docs/07-design-system.md. */
+export const sectionIcons = {
+  dates: CalendarDays,
+  trip: Bike,
+  days: List,
+  trains: TrainFront,
+  ride: Route,
+  stop: MapPin,
+  hotel: BedDouble,
+};
+
+export type SectionIcon = keyof typeof sectionIcons;

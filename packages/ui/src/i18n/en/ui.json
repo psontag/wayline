@@ -31,7 +31,6 @@
   },
   "stage": {
     "locked": "Locked",
-    "lock": "Lock",
     "temperatureRange": "{{min}}–{{max}}",
     "windWithSpeed": "{{wind}} · {{speed}}",
     "wind": {
@@ -40,10 +39,6 @@
       "cross": "{{share}} crosswind"
     },
     "feelsLike": "{{range}}, feels like {{feelsLike}}",
-    "whereToStop": "Where to stop",
-    "route": "Route",
-    "weather": "Weather",
-    "whereToSleep": "Where to sleep",
     "temperature": "Temperature",
     "rain": "Rain",
     "rainUpTo": "Up to {{amount}}/h",
@@ -187,5 +182,11 @@
     "at": "at {{km}}",
     "grade": "{{grade}} · max {{max}}",
     "gain": "+{{gain}}"
+  },
+  "dayCard": {
+    "day": "Day {{day}}",
+    "dayDate": "Day {{day}} · {{date}}",
+    "changed": "Changed",
+    "hotel": "Hotel"
   }
 }

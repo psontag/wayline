@@ -23,16 +23,19 @@ export function TrainOptions({
   trip,
   direction,
   editor,
+  defaultOpen = false,
 }: {
   trip: Trip;
   direction: Connection["direction"];
   editor: TripEditorState;
+  /** Looks up the trains right away. */
+  defaultOpen?: boolean;
 }) {
   const { t } = useTranslation("tripEditor");
   const [home] = useHomeStation();
   const query = trainQueries(trip, home)[direction];
   // Look up trains only on request: the timetable API is rate-limited.
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const found = useTrainOptions(open ? query : undefined);
   const station =
     direction === "there" ? trip.stages[0]?.start : trip.stages.at(-1)?.end;
@@ -97,4 +100,12 @@ export function TrainOptions({
       )}
     </div>
   );
+}
+
+/** True when TrainOptions has something to show for this direction. */
+export function useHasTrains(trip: Trip, direction: Connection["direction"]) {
+  const [home] = useHomeStation();
+  const station =
+    direction === "there" ? trip.stages[0]?.start : trip.stages.at(-1)?.end;
+  return !!trainQueries(trip, home)[direction] && station?.kind === "station";
 }

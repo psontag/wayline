@@ -37,11 +37,9 @@ export {
 } from "./components/Select";
 export {
   DayWeather,
-  StageDetails,
   type DayWeatherProps,
-  type StageDetailsProps,
   type Wind,
-} from "./components/StageDetails";
+} from "./components/DayWeather";
 export {
   SortableList,
   type SortableListProps,
@@ -54,7 +52,12 @@ export {
   type DayListItem,
   type DayListProps,
 } from "./components/DayList";
-export { statIcons, type StatIcon } from "./icons";
+export {
+  sectionIcons,
+  statIcons,
+  type SectionIcon,
+  type StatIcon,
+} from "./icons";
 export {
   SurfaceBar,
   SurfaceLegend,
@@ -222,3 +225,27 @@ export {
   ChoiceGroup,
   type ChoiceCardProps,
 } from "./components/ChoiceCard";
+export {
+  ChoiceList,
+  type ChoiceListProps,
+  type ChoiceOption,
+} from "./components/ChoiceList";
+export { DayCard, type DayCardProps } from "./components/DayCard";
+export {
+  MoreRow,
+  NavRow,
+  RowList,
+  type NavRowProps,
+} from "./components/NavRow";
+export { PanelHeader, type PanelHeaderProps } from "./components/PanelHeader";
+export {
+  PanelSection,
+  type PanelSectionProps,
+} from "./components/PanelSection";
+export { StatTile, type StatTileProps } from "./components/StatTile";
+export {
+  HotelActions,
+  HotelDetail,
+  type HotelActionsProps,
+  type HotelDetailProps,
+} from "./components/HotelChoice";

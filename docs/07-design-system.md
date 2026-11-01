@@ -153,7 +153,7 @@ Rules:
 - One meaning per icon. Don't use these icons for anything else.
 - Repeated stats are icon plus value (`Stat`). The label is the tooltip and the aria-label.
 - Lists show icons only in column headers, not in every row (`DayList`).
-- No icons on headings, flavour labels or plain buttons. Only known actions (zoom, close, more) are icon-only.
+- Panel section headings have an icon from `sectionIcons` (see [Side panels](#side-panels)). Other headings, flavour labels and plain buttons have none. Only known actions (zoom, close, more) are icon-only.
 - The paved share is shown as the surface bar (`SurfaceBar`), not as a number.
 
 ## Dark mode
@@ -208,6 +208,90 @@ The panel under the trip map shows one view at a time: Elevation or Weather. Mor
 - Text that changes, like warnings, replaces text in a row. It never adds a row.
 - On phones the panel sits in the stage sheet with `plain`: no frame and no title, and the view switcher fills the row.
 
+## Side panels
+
+Every side panel follows these rules: the trip editor, proposals, new trip, import, the shared view and the phone sheets. A new screen with a panel uses the same parts.
+
+### Structure
+
+```
+┌──────────────────────────────┐
+│ Panel header                 │  title and menu, or back and siblings
+├──────────────────────────────┤
+│ ▣ Section          summary ⌄ │
+│   notice                     │
+│   body                       │
+├──────────────────────────────┤
+│ ▣ Section          summary › │
+└──────────────────────────────┘
+```
+
+- A panel shows one level at a time. A list of items is one level, one item is the next.
+- The panel header names the level. On the top level: title and its menu. On a detail level: back button and switches to the items next to it (day chips, prev and next).
+- Below the header the panel is a stack of sections. Nothing else.
+- Actions for the whole screen (save state, undo, share, export) sit in the top bar, not in the panel.
+- The map and the panel stay in sync: hovering an item highlights it on the map, clicking it on the map opens it in the panel.
+
+### Section
+
+| Part | Holds |
+|---|---|
+| Header | Icon, title, summary on the right, chevron if it folds. 44 px high, the whole row is the button. |
+| Notice | Optional. One line with an action, e.g. Changed with Revert, or a wind tip. Shows also when folded. |
+| Body | Content, 16 px padding, 8–12 px gap |
+
+- Sections are split by a border. No cards around sections, no headings inside a section.
+- Every section has an icon, a title and a summary. The summary shows the current choice or the key numbers, so a folded section still says what matters.
+- A section folds when its body is a choice or details. A section that gives an overview stays open.
+- Order: what the user decides first comes first. Getting there before the ride, the ride before the stop.
+
+### Content
+
+Sections hold only these patterns:
+
+| Pattern | Component | Use |
+|---|---|---|
+| Stat tiles | `StatTile` | Totals: icon and label, value, optional second line |
+| Choice list | `ChoiceList` | Pick one of several: radio, name, muted second line, optional tag, actions at the end. The current row is `selected`. `MoreRow` shows the rest of a long list. |
+| Choice table | `StopChoices` | Pick one of several when the options are compared by numbers in columns |
+| Item rows | `NavRow` in a `RowList`, `DayCard` | Rows that open the next level. End in a right chevron. |
+| Detail rows | `Stat`, `SurfaceBar`, short text | Facts about the item |
+| Buttons | `Button`, `TextLink` | Actions on this section, at the end of the body |
+
+- Choices use `ChoiceList`, also in forms. Use `StopChoices` only when the columns matter.
+- A right chevron opens another level. A down chevron folds.
+
+### Section icons
+
+Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of section, the same on every screen. A new kind of section adds its icon here first.
+
+| Key | Icon | Section |
+|---|---|---|
+| `dates` | `CalendarDays` | Dates |
+| `trip` | `Bike` | Trip totals |
+| `days` | `List` | Days, proposals, files: lists of items |
+| `trains` | `TrainFront` | Trains, Getting there, Getting home |
+| `ride` | `Route` | Ride |
+| `stop` | `MapPin` | Stop, start, end |
+| `hotel` | `BedDouble` | Hotel |
+
+### Components
+
+| Component | Use |
+|---|---|
+| `PanelHeader` | Top of the panel. Title with menu, or a sticky row with back and sibling switch above the title. Optional line above the title, stats and a notice. |
+| `PanelSection` | Header, notice and body. `icon` is required. |
+| `StatTile`, `ChoiceList`, `StopChoices`, `NavRow`, `DayCard` | Content patterns above |
+
+### Example: trip editor
+
+| Level | Header | Sections |
+|---|---|---|
+| Trip | Trip name, trip menu | Dates, Trip, Days, Trains |
+| Day | All days, day chips | Getting there (first day), Ride, Stop, Hotel, Getting home (last day) |
+
+Click a day card, a route on the map or a day chip to open a day.
+
 ## Enforcement
 
 | Rule | How |
@@ -217,6 +301,7 @@ The panel under the trip map shows one view at a time: Elevation or Weather. Mor
 | No arbitrary values | `no-restricted-classes` with a pattern against `[...]` and `(...)` in the utility part. Arbitrary variants like `data-[state=on]:` stay allowed. |
 | Apps don't use raw `<button>`, `<input>`, `<select>`, `<textarea>` | ESLint `no-restricted-syntax` in `apps/web` |
 | Readable contrast | Vitest test over token pairs in both themes |
+| Side panels look the same | `PanelSection` takes `icon` only as a `sectionIcons` key. Panels are built from `PanelHeader` and `PanelSection` only; checked in review. |
 | Every component works in both themes | `/dev/components` page in the app shows every component in light and dark |
 
 ## Units and formats
