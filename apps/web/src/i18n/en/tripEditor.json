@@ -49,6 +49,8 @@
     "changed": "Changed",
     "longer": "{{distance}} longer than proposed",
     "shorter": "{{distance}} shorter than proposed",
+    "moreClimbing": "{{ascent}} more climbing",
+    "lessClimbing": "{{ascent}} less climbing",
     "revert": "Revert",
     "bookHotels": "Hotels in {{place}} on Booking.com",
     "noHotel": "No hotel picked",
@@ -65,7 +67,9 @@
     "noStartDate": "Set a start date to see the weather.",
     "forecastFrom": "Forecast from {{date}}",
     "loadingWeather": "Loading weather",
-    "totalsWithRiding": "{{distance}} · {{ascent}} · about {{duration}} riding"
+    "totalsWithRiding": "{{distance}} · {{ascent}} · about {{duration}} riding",
+    "proposed": "Proposed route: {{distance}} · {{ascent}}",
+    "proposedAt": "proposed {{elevation}}"
   },
   "map": {
     "label": "Map of the trip. Day {{day}} is selected.",

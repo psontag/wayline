@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { curve, gradeAt, niceStep, smooth } from "./ElevationProfile";
+import {
+  curve,
+  gradeAt,
+  gradeClass,
+  niceStep,
+  smooth,
+} from "./ElevationProfile";
 
 describe("niceStep", () => {
   it("picks round heights", () => {
@@ -40,5 +46,13 @@ describe("gradeAt", () => {
       { km: 1, ele: 150 },
     ];
     expect(gradeAt(points, 0.5, 0.1)).toBeCloseTo(0.05);
+  });
+});
+
+describe("gradeClass", () => {
+  it("splits at 4 % and 7 %", () => {
+    expect([0.02, 0.04, 0.06, 0.07, 0.12].map(gradeClass)).toEqual([
+      0, 1, 1, 2, 2,
+    ]);
   });
 });

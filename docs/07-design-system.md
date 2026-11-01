@@ -26,7 +26,9 @@ Color tokens are semantic. They name the purpose, not the color.
 | `hover`, `active`, `selected`, `selected-border` | Interaction states |
 | `scrim` | Behind dialogs and sheets |
 | `inverse`, `on-inverse`, `inverse-accent` | Toasts and tooltips |
-| `terrain-paved`, `terrain-gravel`, `terrain-unpaved`, `terrain-unknown` | Surface colors in the elevation profile. Unknown is for route parts without surface data. |
+| `terrain-paved`, `terrain-gravel`, `terrain-unpaved`, `terrain-unknown` | Surface colors, e.g. in the strip under the elevation profile. Gravel is green so it never looks like a climb. Unknown is for route parts without surface data. |
+| `grade-1`, `grade-2`, `grade-3` | Climbs in the elevation profile: under 4 %, 4–7 %, over 7 % |
+| `proposed` | The proposed route of a changed day, on the map and in the elevation profile. Always used faded. |
 | `rain` | Rain bars in the weather timeline |
 | `wind-head`, `wind-cross`, `wind-tail` | Wind relative to the route |
 | `wind-speed-1` to `wind-speed-4` | Wind speed, cyan to deep indigo, on the map and in the weather timeline: below 10, 10–20, 20–30, 30+ km/h |
@@ -45,6 +47,7 @@ Map tokens:
 | `route-outline` | Casing of the highlighted proposal |
 | `hillshade-shadow`, `hillshade-highlight` | Terrain shading on the maps |
 | `marker`, `via-point` | Stops and via points |
+| `route-highlight` | Part of the route in focus, e.g. a hovered climb. Drawn on a halo in `surface`. |
 | `network` | Signed cycling routes, a quiet layer below the route |
 
 Color values:
@@ -91,6 +94,7 @@ Color values:
 | `stage-b` | `#C9BDE6` | `#8F82B8` |
 | `marker` | `#15181D` | `#EDEFF3` |
 | `via-point` | `#B4532A` | `#FFB088` |
+| `route-highlight` | `#15181D` | `#FFFFFF` |
 | `network` | `#9DB7A0` | `#4E6B57` |
 | `route-best` | `#FF9A73` | `#FFA67F` |
 | `route-nature` | `#3FB37A` | `#62D197` |

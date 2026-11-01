@@ -26,6 +26,7 @@ import {
   DayList,
   SurfaceBar,
   SurfaceLegend,
+  ClimbLegend,
   ThemeScope,
   ThemeToggle,
   Toast,
@@ -571,6 +572,19 @@ const profile: ProfilePoint[] = Array.from({ length: 61 }, (_, i) => ({
   surface: i > 18 && i < 30 ? "gravel" : i > 44 && i < 50 ? "unpaved" : "paved",
 }));
 
+const profileClimbs = [
+  { startKm: 3, endKm: 17 },
+  { startKm: 41, endKm: 60 },
+];
+
+// A proposed route that stayed in the valley between km 26 and 38.
+const proposedProfile = profile
+  .filter((p) => p.km >= 26 && p.km <= 38)
+  .map((p) => ({
+    km: p.km,
+    ele: p.ele - 70 * Math.sin(((p.km - 26) / 12) * Math.PI),
+  }));
+
 const hours: TimelineHour[] = Array.from({ length: 12 }, (_, i) => {
   const hour = 7 + i;
   const head = hour >= 14;
@@ -600,10 +614,12 @@ function TripEditorParts() {
   return (
     <Section title={t("section.tripEditor")}>
       <Card className="flex flex-col gap-3">
-        <SurfaceLegend />
+        <ClimbLegend />
         <ElevationProfile
           axes
           points={profile}
+          climbs={profileClimbs}
+          compare={proposedProfile}
           hoverKm={hoverKm}
           onHoverKm={setHoverKm}
           aria-label={t("demo.elevation")}

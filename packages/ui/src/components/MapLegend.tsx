@@ -2,7 +2,7 @@ import { cn } from "../lib/cn";
 
 export type MapLegendItem = {
   label: string;
-  line: "route" | "route-dimmed" | "network" | "dashed";
+  line: "route" | "route-dimmed" | "network" | "dashed" | "proposed";
 };
 
 const lines = {
@@ -10,6 +10,7 @@ const lines = {
   "route-dimmed": "h-1 bg-route-dimmed",
   network: "h-1 bg-network",
   dashed: "h-0 border-t-2 border-dashed border-text-muted",
+  proposed: "h-1.5 bg-proposed opacity-40",
 } as const;
 
 export function MapLegendLine({ item }: { item: MapLegendItem }) {

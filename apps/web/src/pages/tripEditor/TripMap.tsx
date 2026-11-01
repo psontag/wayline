@@ -112,8 +112,10 @@ export type RouteEditing = {
   onAddVia: (leg: number, at: LonLat, keep?: boolean) => void;
   onMoveVia: (coord: LonLat, at: LonLat) => void;
   onRemoveVia: (coord: LonLat) => void;
-  /** Proposed routes of changed stages, drawn dotted. */
+  /** Parts of the proposed route that differ, drawn as a soft grey line. */
   proposed: LonLat[][];
+  /** Show the proposed route stronger. */
+  proposedHighlighted?: boolean;
 };
 
 /** Stations show from this zoom on, so the whole trip stays calm. */
@@ -320,7 +322,7 @@ export function TripMap({
       hiddenLabels={hiddenLabels}
       legend={
         route?.proposed.length
-          ? [{ label: t("map.proposed"), line: "dashed" }]
+          ? [{ label: t("map.proposed"), line: "proposed" }]
           : []
       }
       controls={controls}
@@ -349,9 +351,9 @@ export function TripMap({
           type="line"
           layout={lineLayout}
           paint={{
-            "line-color": tokens.textMuted,
-            "line-width": 4,
-            "line-dasharray": [0.5, 2],
+            "line-color": tokens.proposed,
+            "line-width": 8,
+            "line-opacity": route?.proposedHighlighted ? 0.6 : 0.3,
           }}
         />
       </Source>
@@ -403,10 +405,16 @@ export function TripMap({
           }}
         >
           <MapLayer
+            id="highlight-halo"
+            type="line"
+            layout={lineLayout}
+            paint={{ "line-color": tokens.surface, "line-width": 12 }}
+          />
+          <MapLayer
             id="highlight-line"
             type="line"
             layout={lineLayout}
-            paint={{ "line-color": tokens.viaPoint, "line-width": 9 }}
+            paint={{ "line-color": tokens.routeHighlight, "line-width": 6 }}
           />
         </Source>
       )}
