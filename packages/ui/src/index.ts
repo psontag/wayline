@@ -102,7 +102,11 @@ export {
   type RadioCardOption,
   type RadioCardsProps,
 } from "./components/RadioCards";
-export { TripCard, type TripCardProps } from "./components/TripCard";
+export {
+  thumbnailFit,
+  TripCard,
+  type TripCardProps,
+} from "./components/TripCard";
 export { FormField, type FormFieldProps } from "./components/FormField";
 export { PlaceMarker } from "./components/PlaceMarker";
 export { MapHint } from "./components/MapHint";
@@ -153,6 +157,7 @@ export { SaveStatus, type SaveState } from "./components/SaveStatus";
 export { TextLink, type TextLinkProps } from "./components/TextLink";
 export {
   AlternativeMarker,
+  ClusterMarker,
   EndpointMarker,
   GhostViaMarker,
   HotelMarker,
@@ -161,6 +166,7 @@ export {
   StopMarker,
   ViaMarker,
   type AlternativeMarkerProps,
+  type ClusterMarkerProps,
   type HotelKind,
   type HotelMarkerProps,
   type StationMarkerProps,

@@ -12,6 +12,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["brouter"],
       "port": 17777
+    },
+    {
+      "name": "web-5174",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@wayline/web", "exec", "vite", "--port", "5174", "--strictPort"],
+      "port": 5174
     }
   ]
 }

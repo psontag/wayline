@@ -13,6 +13,7 @@ import {
 import { Copy, Ellipsis, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMapSnapshot } from "../../components/map/mapSnapshot";
 import { useDeleteTrip, useDuplicateTrip } from "../../data/queries";
 
 export function TripListItem({ trip }: { trip: TripSummary }) {
@@ -21,6 +22,7 @@ export function TripListItem({ trip }: { trip: TripSummary }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const duplicateTrip = useDuplicateTrip();
   const deleteTrip = useDeleteTrip();
+  const map = useMapSnapshot(trip.preview);
 
   const date = (iso: string) => format.date(localTimeToDate(`${iso}T00:00`));
   const dates = !trip.startDate
@@ -78,6 +80,7 @@ export function TripListItem({ trip }: { trip: TripSummary }) {
           )
         }
         preview={trip.preview}
+        map={map}
         actions={
           <Menu
             trigger={

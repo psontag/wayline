@@ -6,6 +6,7 @@ import {
 } from "@wayline/domain";
 import {
   AlternativeMarker,
+  ClusterMarker,
   EndpointMarker,
   GhostViaMarker,
   HotelMarker,
@@ -32,9 +33,11 @@ import {
 import {
   AppMap,
   type AppMapProps,
+  boundsOf,
   MapLayer,
   type MapPadding,
 } from "../../components/map/AppMap";
+import { clusterPoints } from "../../components/map/cluster";
 import {
   nearestOnLine,
   type RouteDrag,
@@ -113,6 +116,11 @@ export type RouteEditing = {
 
 /** Stations show from this zoom on, so the whole trip stays calm. */
 const STATION_ZOOM = 10;
+
+/** Below this zoom, hotels and stations close together show as one. */
+const CLUSTER_ZOOM = 13;
+/** Screen distance in pixels within which places join a cluster. */
+const CLUSTER_RADIUS = 36;
 
 /** Waits this long after the last move before a preview is routed. */
 const PREVIEW_MS = 120;
@@ -449,8 +457,10 @@ export function TripMap({
           />
         </Marker>
       )}
-      {zoom >= STATION_ZOOM &&
-        stations.map((station) => (
+      <ClusteredMarkers
+        kind="stations"
+        items={zoom >= STATION_ZOOM ? stations : noStations}
+        render={(station) => (
           <Marker
             key={station.id}
             longitude={station.coord[0]}
@@ -459,7 +469,8 @@ export function TripMap({
           >
             <StationMarker name={station.name} href={station.href} />
           </Marker>
-        ))}
+        )}
+      />
       <AlternativeMarkers
         alternatives={alternatives}
         labels={[
@@ -499,48 +510,57 @@ export function TripMap({
           />
         </Marker>
       ))}
-      {hotels.map((hotel) => (
-        <Marker
-          key={hotel.osmId}
-          longitude={hotel.coord[0]}
-          latitude={hotel.coord[1]}
-          style={{
-            zIndex:
-              activeHotel === hotel.osmId
-                ? 5
-                : hotel.osmId === selectedHotelId
-                  ? 3
-                  : 1,
-          }}
-        >
-          <HotelMarker
-            name={hotel.name}
-            kind={hotel.kind}
-            stars={hotel.stars}
-            detour={hotel.detourKm * 1000}
-            website={
-              hotel.osmId === activeHotel && activeSite?.ok === false
-                ? undefined
-                : hotel.website
-            }
-            booking={hotelBookingUrl(trip, selected, hotel)}
-            {...(hotel.osmId === activeHotel &&
-              activeSite?.image && { image: activeSite.image })}
-            selected={hotel.osmId === selectedHotelId}
-            saved={trip.savedHotels.some((h) => h.osmId === hotel.osmId)}
-            {...(onToggleSaveHotel && {
-              onToggleSave: () => onToggleSaveHotel(hotel.osmId),
-            })}
-            compact={zoom < 11}
-            onClick={() => onSelectHotel?.(hotel.osmId)}
-            onActiveChange={(active) =>
-              setActiveHotel((id) =>
-                active ? hotel.osmId : id === hotel.osmId ? undefined : id,
-              )
-            }
-          />
-        </Marker>
-      ))}
+      <ClusteredMarkers
+        kind="hotels"
+        items={hotels}
+        // Selected and saved hotels always show on their own.
+        pinned={(hotel) =>
+          hotel.osmId === selectedHotelId ||
+          trip.savedHotels.some((h) => h.osmId === hotel.osmId)
+        }
+        render={(hotel) => (
+          <Marker
+            key={hotel.osmId}
+            longitude={hotel.coord[0]}
+            latitude={hotel.coord[1]}
+            style={{
+              zIndex:
+                activeHotel === hotel.osmId
+                  ? 5
+                  : hotel.osmId === selectedHotelId
+                    ? 3
+                    : 1,
+            }}
+          >
+            <HotelMarker
+              name={hotel.name}
+              kind={hotel.kind}
+              stars={hotel.stars}
+              detour={hotel.detourKm * 1000}
+              website={
+                hotel.osmId === activeHotel && activeSite?.ok === false
+                  ? undefined
+                  : hotel.website
+              }
+              booking={hotelBookingUrl(trip, selected, hotel)}
+              {...(hotel.osmId === activeHotel &&
+                activeSite?.image && { image: activeSite.image })}
+              selected={hotel.osmId === selectedHotelId}
+              saved={trip.savedHotels.some((h) => h.osmId === hotel.osmId)}
+              {...(onToggleSaveHotel && {
+                onToggleSave: () => onToggleSaveHotel(hotel.osmId),
+              })}
+              compact={zoom < 11}
+              onClick={() => onSelectHotel?.(hotel.osmId)}
+              onActiveChange={(active) =>
+                setActiveHotel((id) =>
+                  active ? hotel.osmId : id === hotel.osmId ? undefined : id,
+                )
+              }
+            />
+          </Marker>
+        )}
+      />
       {route &&
         trip.stages[selected]?.via.map((via, index) => (
           <Marker
@@ -582,6 +602,72 @@ export function TripMap({
       )}
     </AppMap>
   );
+}
+
+const noStations: MapStation[] = [];
+
+/**
+ * Places close together on screen as one marker with their count, below
+ * CLUSTER_ZOOM. A click zooms in to them. Pinned places never join one.
+ */
+function ClusteredMarkers<T extends { coord: LonLat }>({
+  kind,
+  items,
+  pinned = () => false,
+  render,
+}: {
+  kind: "hotels" | "stations";
+  items: T[];
+  pinned?: (item: T) => boolean;
+  /** The marker of one place, with its key. */
+  render: (item: T) => ReactNode;
+}) {
+  const { current: map } = useMap();
+  const [zoom, setZoom] = useState(() => map?.getZoom() ?? 0);
+  useEffect(() => {
+    if (!map) return;
+    const update = () => setZoom(map.getZoom());
+    update();
+    map.on("zoomend", update);
+    return () => void map.off("zoomend", update);
+  }, [map]);
+
+  if (!map || zoom >= CLUSTER_ZOOM) return items.map(render);
+  const clusters = clusterPoints(
+    items.filter((item) => !pinned(item)),
+    (coord) => map.project(coord),
+    CLUSTER_RADIUS,
+  );
+  return [
+    ...items.filter(pinned).map(render),
+    ...clusters.map(({ coord, items: members }) =>
+      members.length === 1 && members[0] ? (
+        render(members[0])
+      ) : (
+        <Marker
+          key={`${kind}-${coord.join()}`}
+          longitude={coord[0]}
+          latitude={coord[1]}
+          // A cluster often sits on the town of a stop. Below the point and
+          // above the stop, it stays readable without hiding the day.
+          anchor="top"
+          offset={[0, 12]}
+          style={{ zIndex: 5 }}
+        >
+          <ClusterMarker
+            kind={kind}
+            count={members.length}
+            onClick={() =>
+              map.fitBounds(boundsOf(members.map((m) => m.coord)), {
+                padding: 80,
+                maxZoom: CLUSTER_ZOOM,
+              })
+            }
+          />
+        </Marker>
+      ),
+    ),
+  ];
 }
 
 /** A label on the map that options must not cover. */

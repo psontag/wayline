@@ -12,6 +12,8 @@ export type TripCardProps = {
   byline?: ReactNode;
   /** Line of the trip as [lon, lat] points. */
   preview: [number, number][];
+  /** Image of the map under the line, fitted like `thumbnailFit`. */
+  map?: string;
   /** Buttons in the top right corner, e.g. a menu. */
   actions?: ReactNode;
 };
@@ -24,6 +26,7 @@ export function TripCard({
   stats,
   byline,
   preview,
+  map,
   actions,
 }: TripCardProps) {
   return (
@@ -33,7 +36,7 @@ export function TripCard({
         "has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-focus-ring",
       )}
     >
-      <RouteThumbnail points={preview} />
+      <RouteThumbnail points={preview} map={map} />
       <div className="flex flex-col gap-1 p-3.5 md:gap-1.5">
         <div className="flex items-start justify-between gap-2">
           <span className="line-clamp-2 text-md font-extrabold [&_a]:outline-none [&_a]:after:absolute [&_a]:after:inset-0">
@@ -60,11 +63,17 @@ export function TripCard({
   );
 }
 
-const WIDTH = 300;
-const HEIGHT = 100;
-const PAD = 18;
+/** Size of the thumbnail and the room around the line, in pixels. */
+export const thumbnailFit = { width: 300, height: 100, padding: 18 };
+const { width: WIDTH, height: HEIGHT, padding: PAD } = thumbnailFit;
 
-function RouteThumbnail({ points }: { points: [number, number][] }) {
+function RouteThumbnail({
+  points,
+  map,
+}: {
+  points: [number, number][];
+  map?: string;
+}) {
   const path = thumbnailPath(points);
   const first = path.points[0];
   const last = path.points.at(-1);
@@ -75,6 +84,7 @@ function RouteThumbnail({ points }: { points: [number, number][] }) {
       aria-hidden
       className="block aspect-7/2 w-full bg-hover md:aspect-3/1"
     >
+      {map && <image href={map} width={WIDTH} height={HEIGHT} />}
       <path
         d={path.d}
         fill="none"
@@ -108,12 +118,20 @@ function RouteThumbnail({ points }: { points: [number, number][] }) {
   );
 }
 
-/** Fits the line into the thumbnail, north up, keeping its shape. */
+/**
+ * Fits the line into the thumbnail, north up. Web Mercator, so it lines up
+ * with a map fitted to the same points.
+ */
 export function thumbnailPath(points: [number, number][]) {
   if (points.length === 0) return { d: "", points: [] };
-  const lat0 = points.reduce((s, p) => s + p[1], 0) / points.length;
-  const kx = Math.cos((lat0 * Math.PI) / 180);
-  const xy = points.map(([lon, lat]) => [lon * kx, -lat] as const);
+  const xy = points.map(
+    ([lon, lat]) =>
+      [
+        lon,
+        -Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) *
+          (180 / Math.PI),
+      ] as const,
+  );
   const xs = xy.map((p) => p[0]);
   const ys = xy.map((p) => p[1]);
   const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
