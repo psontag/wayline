@@ -1,0 +1,1096 @@
+<title>Trip Journal Map</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+/>
+<style>
+  /* Layout: one reading column; each option is an app-like frame (map + side panel), stacking on phones. Wayline's own tokens. */
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #15181d;
+    --muted: #5a616c;
+    --border: #e1e4ea;
+    --hover: #eef0f4;
+    --selected: #ffede3;
+    --selected-border: #b4532a;
+    --accent: #ffb088;
+    --on-accent: #3b1503;
+    --success: #2f9e6b;
+    --map: #eef0ee;
+    --map-line: #d7dcd8;
+    --water: #cfe0ef;
+    --dimmed: #c3c8d0;
+    --casing: #3a3f48;
+    --t1: #ff9a73;
+    --t2: #3fb37a;
+    --t3: #4f9ff0;
+    --t4: #a685ec;
+    --t5: #ee7fb4;
+    --t6: #2ba8a0;
+    --t7: #d9a13b;
+    --y2025: #7e8ba3;
+    --y2026: #ff9a73;
+    --font: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101216;
+      --surface: #171a20;
+      --text: #edeff3;
+      --muted: #a0a7b3;
+      --border: #2a2f38;
+      --hover: #20242c;
+      --selected: #2d211b;
+      --selected-border: #ffb088;
+      --accent: #ffb088;
+      --on-accent: #2a0f02;
+      --success: #5ccb97;
+      --map: #1c2026;
+      --map-line: #2b3038;
+      --water: #1f2b38;
+      --dimmed: #4b5260;
+      --casing: #0b0c0f;
+      --t1: #ffa67f;
+      --t2: #62d197;
+      --t3: #6db4ff;
+      --t4: #bb9eff;
+      --t5: #ff93c6;
+      --t6: #4cc4b9;
+      --t7: #f2cf7e;
+      --y2025: #aeb9cc;
+      --y2026: #ffa67f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101216;
+    --surface: #171a20;
+    --text: #edeff3;
+    --muted: #a0a7b3;
+    --border: #2a2f38;
+    --hover: #20242c;
+    --selected: #2d211b;
+    --selected-border: #ffb088;
+    --accent: #ffb088;
+    --on-accent: #2a0f02;
+    --success: #5ccb97;
+    --map: #1c2026;
+    --map-line: #2b3038;
+    --water: #1f2b38;
+    --dimmed: #4b5260;
+    --casing: #0b0c0f;
+    --t1: #ffa67f;
+    --t2: #62d197;
+    --t3: #6db4ff;
+    --t4: #bb9eff;
+    --t5: #ff93c6;
+    --t6: #4cc4b9;
+    --t7: #f2cf7e;
+    --y2025: #aeb9cc;
+    --y2026: #ffa67f;
+    color-scheme: dark;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 32px 64px;
+  }
+  main {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 44px;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    margin: 0;
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  h2 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  p {
+    margin: 0;
+    max-width: 65ch;
+  }
+  ul,
+  ol {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .lede {
+    color: var(--muted);
+    font-size: 16px;
+  }
+  .muted {
+    color: var(--muted);
+  }
+  header.top {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .pick {
+    background: var(--selected);
+    border: 1px solid var(--selected-border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  section.block {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .asks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .ask {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .ask strong {
+    font-size: 14px;
+  }
+  .ask span {
+    color: var(--muted);
+    font-size: 13.5px;
+  }
+  .option {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-top: 1px solid var(--border);
+    padding-top: 28px;
+  }
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .letter {
+    display: inline-flex;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    background: var(--text);
+    color: var(--bg);
+    font-weight: 800;
+    font-size: 13px;
+  }
+  .rec {
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--accent);
+    color: var(--on-accent);
+    border-radius: 999px;
+    padding: 2px 10px;
+  }
+  .procon {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    font-size: 14px;
+  }
+  .procon > div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .procon b {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* App frame */
+  .app {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+  }
+  .appbar {
+    height: 40px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .appbar .logo {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .appbar .spacer {
+    flex: 1;
+  }
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 12px;
+  }
+  .seg span {
+    padding: 2px 10px;
+    color: var(--muted);
+  }
+  .seg span.on {
+    background: var(--selected);
+    color: var(--text);
+    font-weight: 700;
+  }
+  .btn {
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 10px;
+    background: var(--surface);
+    color: var(--text);
+  }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
+  .app-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    min-height: 420px;
+  }
+  .mapcol {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--map);
+  }
+  .mapcol svg.map {
+    display: block;
+    width: 100%;
+    flex: 1;
+    min-height: 300px;
+  }
+  .panel {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .ph {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .ph .back {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .ph .name {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ph .name .spacer {
+    flex: 1;
+  }
+  .sec {
+    border-bottom: 1px solid var(--border);
+  }
+  .sh {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    font-weight: 700;
+  }
+  .sh .sum {
+    margin-left: auto;
+    color: var(--muted);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+  }
+  .sb {
+    padding: 0 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .ico {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .ico.sm {
+    width: 14px;
+    height: 14px;
+    color: var(--muted);
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    margin: 0 -8px;
+    border-radius: 6px;
+    cursor: default;
+  }
+  .row:hover,
+  .row.hi {
+    background: var(--hover);
+  }
+  .row .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: none;
+  }
+  .row .dot.planned {
+    background: transparent !important;
+    border: 2px dashed currentColor;
+  }
+  .row .t {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+    line-height: 1.3;
+  }
+  .row .t b {
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .row .t span {
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .row .km {
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 2px 10px;
+    color: var(--text);
+  }
+  .chip.on {
+    background: var(--selected);
+    border-color: var(--selected-border);
+  }
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .tile {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .tile span {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .tile b {
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  .choice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .choice + .choice {
+    margin-top: 6px;
+  }
+  .choice.on {
+    background: var(--selected);
+    border-color: var(--selected-border);
+  }
+  .radio {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--muted);
+    flex: none;
+  }
+  .choice.on .radio {
+    border: 4px solid var(--selected-border);
+  }
+  .choice .t {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+  }
+  .choice .t span {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .field {
+    margin-top: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .notice {
+    margin: 0 16px 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--selected);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .notice .act {
+    margin-left: auto;
+    font-weight: 700;
+    color: var(--selected-border);
+  }
+  .note-text {
+    font-size: 13px;
+    color: var(--text);
+    border-left: 2px solid var(--border);
+    padding-left: 10px;
+  }
+
+  /* Year strip in option B */
+  .strip {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 8px 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .strip svg {
+    width: 100%;
+    height: 34px;
+    display: block;
+  }
+
+  /* Color comparison */
+  .trio {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .mini {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .mini svg {
+    width: 100%;
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--map);
+  }
+  .mini p {
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .mini h3 {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .two {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 24px;
+    align-items: start;
+  }
+  .two > div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .panel.solo {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .tablewrap {
+    overflow-x: auto;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14px;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  code {
+    font-size: 13px;
+    background: var(--hover);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .prio {
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 1px 8px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .prio.now {
+    background: var(--selected);
+    border-color: var(--selected-border);
+  }
+
+  @media (max-width: 760px) {
+    .app-body,
+    .two,
+    .procon,
+    .trio {
+      grid-template-columns: 1fr;
+    }
+    .panel {
+      border-left: 0;
+      border-top: 1px solid var(--border);
+    }
+    h1 {
+      font-size: 28px;
+    }
+  }
+</style>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M3 6h.01M3 12h.01M3 18h.01M8 6h13M8 12h13M8 18h13" /></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4" /></symbol>
+  <symbol id="i-bike" viewBox="0 0 24 24"><circle cx="18.5" cy="17.5" r="3.5" /><circle cx="5.5" cy="17.5" r="3.5" /><circle cx="15" cy="5" r="1" /><path d="M12 17.5V14l-3-3 4-3 2 3h2" /></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" /></symbol>
+</svg>
+
+<main>
+  <header class="top">
+    <span class="eyebrow">Brainstorm · #165 Overview map for trips</span>
+    <h1>All trips on one map, and a diary of the ones you rode</h1>
+    <p class="lede">
+      Three layouts for the overview map, then the smaller choices inside it: line colors, how a trip
+      becomes "ridden", filters, and what else could make it feel like a diary. The sketches use
+      example trips around Franconia. Hover a trip in a panel to highlight it on the map.
+    </p>
+  </header>
+
+  <section class="block">
+    <h2>What #165 asks for</h2>
+    <div class="asks">
+      <div class="ask"><strong>All trips on a map</strong><span>Every trip from the trip list, each in its own color.</span></div>
+      <div class="ask"><strong>List in the side panel</strong><span>Same trips on the right, with useful filters.</span></div>
+      <div class="ask"><strong>Planned vs. ridden</strong><span>A flag for trips you actually rode.</span></div>
+      <div class="ask"><strong>Set the date later</strong><span>Give a ridden trip its real date after the fact.</span></div>
+      <div class="ask"><strong>A diary</strong><span>The whole thing should read like a log of your trips.</span></div>
+    </div>
+  </section>
+
+  <div class="pick">
+    <span class="eyebrow">Decided</span>
+    <ul>
+      <li><strong>Journal</strong> is its own screen. Its panel is option A's: Filters, one section per year, Planned, Shared with me.</li>
+      <li>Lines: <strong>one color per trip</strong>, planned trips dashed.</li>
+      <li>"Ridden" is renamed to <strong>Completed</strong>, since it applies to the whole trip.</li>
+      <li>Extras in the first version: year totals, notes, the "Did you complete this trip?" notice, and the My rides layer.</li>
+      <li>Trips shared with you show too.</li>
+    </ul>
+    <p class="muted">The full plan is in issue #165. The rest of this page is the original brainstorm.</p>
+  </div>
+
+  <div class="pick">
+    <span class="eyebrow">Recommendation</span>
+    <p>
+      <strong>Option A: a Map view on the trip list,</strong> with the ridden trips grouped by year
+      from option B. One screen, one list of trips, two ways to look at it. Lines in one color per
+      trip, planned trips dashed. "Ridden" lives in the Dates section of the trip editor and reuses
+      the start date.
+    </p>
+  </div>
+
+  <!-- Option A -->
+  <article class="option">
+    <div class="title-row">
+      <span class="letter">A</span>
+      <h2>Map view on the trip list</h2>
+      <span class="rec">Recommended</span>
+    </div>
+    <p>
+      The trip list gets a List / Map switch. Map shows every trip, the panel shows the same list
+      as sections: Filters, Ridden (grouped by year), Planned, Shared with me. Click a trip to open
+      its detail level in the panel; "Open trip" goes to the editor.
+    </p>
+    <div class="app">
+      <div class="appbar">
+        <span class="logo">Wayline</span>
+        <span class="seg"><span>List</span><span class="on">Map</span></span>
+        <span class="spacer"></span>
+        <span class="btn">Import GPX</span>
+        <span class="btn primary">New trip</span>
+      </div>
+      <div class="app-body">
+        <div class="mapcol"><svg class="map" data-map="trip" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map with seven trips in different colors"></svg></div>
+        <div class="panel" data-for="trip">
+          <div class="ph"><div class="name">Trips<span class="spacer"></span><svg class="ico sm"><use href="#i-more" /></svg></div></div>
+          <div class="sec">
+            <div class="sh"><svg class="ico"><use href="#i-filter" /></svg>Filters<span class="sum">All · 7 trips</span><svg class="ico sm"><use href="#i-down" /></svg></div>
+          </div>
+          <div class="sec">
+            <div class="sh"><svg class="ico"><use href="#i-check" /></svg>Ridden<span class="sum">5 trips · 643 km</span></div>
+            <div class="sb">
+              <span class="eyebrow">2026</span>
+              <div class="row" data-trip="t4"><span class="dot" style="background: var(--t4)"></span><span class="t"><b>Bamberg to Coburg</b><span>Sat 12 Sep · 1 day</span></span><span class="km">78 km</span></div>
+              <div class="row" data-trip="t3"><span class="dot" style="background: var(--t3)"></span><span class="t"><b>Fränkische Schweiz loop</b><span>Sun 17 May · 1 day</span></span><span class="km">62 km</span></div>
+              <div class="row" data-trip="t7"><span class="dot" style="background: var(--t7)"></span><span class="t"><b>To Kitzingen</b><span>Sat 25 Apr · 1 day</span></span><span class="km">85 km</span></div>
+              <span class="eyebrow" style="margin-top: 6px">2025</span>
+              <div class="row" data-trip="t2"><span class="dot" style="background: var(--t2)"></span><span class="t"><b>Altmühltal</b><span>Thu 14 – Sun 17 Aug · 4 days</span></span><span class="km">240 km</span></div>
+              <div class="row" data-trip="t1"><span class="dot" style="background: var(--t1)"></span><span class="t"><b>Main to Würzburg</b><span>Fri 6 – Sun 8 Jun · 3 days</span></span><span class="km">178 km</span></div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="sh"><svg class="ico"><use href="#i-list" /></svg>Planned<span class="sum">2 trips</span></div>
+            <div class="sb">
+              <div class="row" data-trip="t5"><span class="dot planned" style="color: var(--t5)"></span><span class="t"><b>Bodensee round</b><span>Sat 5 Jun 2027 · 5 days</span></span><span class="km">270 km</span></div>
+              <div class="row" data-trip="t6"><span class="dot planned" style="color: var(--t6)"></span><span class="t"><b>Across the Rhön</b><span>No date · 2 days</span></span><span class="km">130 km</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="procon">
+      <div><b>Good</b><span>Smallest change. Reuses the trip list data, which already has a coarse line per trip. One place for all trips. Fits the side panel rules as is.</span></div>
+      <div><b>Weaker</b><span>The diary feel comes only from grouping by year. Two views of the same list can drift apart if we add things to only one.</span></div>
+    </div>
+  </article>
+
+  <!-- Option B -->
+  <article class="option">
+    <div class="title-row">
+      <span class="letter">B</span>
+      <h2>Journal screen</h2>
+    </div>
+    <p>
+      A new screen next to Trips, called Journal. It is about what you rode: one section per year
+      with totals, lines colored by year, and a year strip under the map where the chart panel sits
+      in the editor. Planned trips are a quiet extra at the end.
+    </p>
+    <div class="app">
+      <div class="appbar">
+        <span class="logo">Wayline</span>
+        <span class="muted">Trips</span>
+        <span>Journal</span>
+        <span class="spacer"></span>
+      </div>
+      <div class="app-body">
+        <div class="mapcol">
+          <svg class="map" data-map="year" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map with trips colored by year"></svg>
+          <div class="strip">
+            <span>2026 · 225 km on 3 days</span>
+            <svg viewBox="0 0 600 34" preserveAspectRatio="none" aria-hidden="true">
+              <line x1="0" y1="24" x2="600" y2="24" stroke="var(--border)" stroke-width="1" />
+              <g fill="var(--muted)" font-size="10" font-family="Manrope, sans-serif">
+                <text x="2" y="34">Jan</text><text x="150" y="34">Apr</text><text x="300" y="34">Jul</text><text x="450" y="34">Oct</text>
+              </g>
+              <rect x="190" y="6" width="6" height="16" rx="2" fill="var(--y2026)" />
+              <rect x="228" y="10" width="6" height="12" rx="2" fill="var(--y2026)" />
+              <rect x="420" y="4" width="6" height="18" rx="2" fill="var(--y2026)" />
+              <rect x="498" y="12" width="2" height="12" fill="var(--text)" />
+            </svg>
+          </div>
+        </div>
+        <div class="panel" data-for="year">
+          <div class="ph"><div class="name">Journal<span class="spacer"></span><svg class="ico sm"><use href="#i-more" /></svg></div></div>
+          <div class="sec">
+            <div class="sh"><svg class="ico"><use href="#i-book" /></svg>2026<span class="sum">3 trips · 225 km</span><svg class="ico sm"><use href="#i-down" /></svg></div>
+            <div class="sb">
+              <div class="tiles">
+                <div class="tile"><span>Distance</span><b>225 km</b></div>
+                <div class="tile"><span>Ascent</span><b>2,140 m</b></div>
+                <div class="tile"><span>Days</span><b>3</b></div>
+              </div>
+              <div class="row" data-trip="t4"><span class="t"><b>Bamberg to Coburg</b><span>Sat 12 Sep</span></span><span class="km">78 km</span><svg class="ico sm"><use href="#i-right" /></svg></div>
+              <div class="row" data-trip="t3"><span class="t"><b>Fränkische Schweiz loop</b><span>Sun 17 May</span></span><span class="km">62 km</span><svg class="ico sm"><use href="#i-right" /></svg></div>
+              <div class="row" data-trip="t7"><span class="t"><b>To Kitzingen</b><span>Sat 25 Apr</span></span><span class="km">85 km</span><svg class="ico sm"><use href="#i-right" /></svg></div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="sh"><svg class="ico"><use href="#i-book" /></svg>2025<span class="sum">2 trips · 418 km</span><svg class="ico sm"><use href="#i-down" /></svg></div>
+          </div>
+          <div class="sec">
+            <div class="sh"><svg class="ico"><use href="#i-list" /></svg>Planned<span class="sum">2 trips</span><svg class="ico sm"><use href="#i-down" /></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="procon">
+      <div><b>Good</b><span>Feels most like a diary. Year totals give a reason to come back. Clear split: Trips is for planning, Journal for looking back.</span></div>
+      <div><b>Weaker</b><span>A second screen and a second nav entry. Planned trips are split across two places. Colors by year make neighbouring trips of the same year hard to tell apart.</span></div>
+    </div>
+  </article>
+
+  <!-- Option C -->
+  <article class="option">
+    <div class="title-row">
+      <span class="letter">C</span>
+      <h2>Map as the home screen</h2>
+    </div>
+    <p>
+      The trip list goes away. Home is the map with all trips and the list in the panel, like the
+      trip editor one level up. New trip and Import sit in the top bar. Phones get the map with the
+      list in the bottom sheet.
+    </p>
+    <div class="app">
+      <div class="appbar">
+        <span class="logo">Wayline</span>
+        <span class="spacer"></span>
+        <span class="btn">Import GPX</span>
+        <span class="btn primary">New trip</span>
+      </div>
+      <div class="app-body">
+        <div class="mapcol"><svg class="map" data-map="trip" data-variant="c" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map with all trips as the home screen"></svg></div>
+        <div class="panel" data-for="trip">
+          <div class="ph"><div class="name">My trips<span class="spacer"></span><svg class="ico sm"><use href="#i-more" /></svg></div></div>
+          <div class="sec">
+            <div class="sh"><svg class="ico"><use href="#i-filter" /></svg>Filters<span class="sum">Ridden · 2026</span><svg class="ico sm"><use href="#i-down" /></svg></div>
+            <div class="sb">
+              <div class="chips"><span class="chip">All</span><span class="chip">Planned</span><span class="chip on">Ridden</span></div>
+              <div class="chips"><span class="chip">2025</span><span class="chip on">2026</span><span class="chip">One day</span><span class="chip">Several days</span></div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="sh"><svg class="ico"><use href="#i-list" /></svg>Trips<span class="sum">3 · 225 km</span></div>
+            <div class="sb">
+              <div class="row" data-trip="t4"><span class="dot" style="background: var(--t4)"></span><span class="t"><b>Bamberg to Coburg</b><span>Sat 12 Sep · ridden</span></span><span class="km">78 km</span></div>
+              <div class="row" data-trip="t3"><span class="dot" style="background: var(--t3)"></span><span class="t"><b>Fränkische Schweiz loop</b><span>Sun 17 May · ridden</span></span><span class="km">62 km</span></div>
+              <div class="row" data-trip="t7"><span class="dot" style="background: var(--t7)"></span><span class="t"><b>To Kitzingen</b><span>Sat 25 Apr · ridden</span></span><span class="km">85 km</span></div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="sh"><svg class="ico"><use href="#i-users" /></svg>Shared with me<span class="sum">1 trip</span><svg class="ico sm"><use href="#i-down" /></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="procon">
+      <div><b>Good</b><span>Most map-first, which suits a bike trip app. One screen less. Same shape as the trip editor, so it feels consistent.</span></div>
+      <div><b>Weaker</b><span>Biggest change: the trip list, its empty state and the phone list all need a rethink. Loads MapLibre on the first screen. The empty map for a new user needs care.</span></div>
+    </div>
+  </article>
+
+  <!-- Colors -->
+  <section class="block option">
+    <h2>Line colors</h2>
+    <p>With many trips on one map, color has one job: tell lines apart and link each line to its row in the list.</p>
+    <div class="trio">
+      <div class="mini">
+        <svg data-map="trip" data-mini="1" viewBox="0 0 600 420" role="img" aria-label="Per trip colors"></svg>
+        <h3>Per trip <span class="rec">Recommended</span></h3>
+        <p>A fixed palette of 7–8 colors, picked from the trip id so a trip keeps its color. Planned trips dashed. The list shows the same color as a dot. Colors repeat past 8 trips; hover and the dot still link them.</p>
+      </div>
+      <div class="mini">
+        <svg data-map="status" data-mini="1" viewBox="0 0 600 420" role="img" aria-label="Colors by status"></svg>
+        <h3>By status</h3>
+        <p>Ridden in the route color, planned in grey and dashed. Clearest for "where have I been", but trips that touch melt into one line.</p>
+      </div>
+      <div class="mini">
+        <svg data-map="year" data-mini="1" viewBox="0 0 600 420" role="img" aria-label="Colors by year"></svg>
+        <h3>By year</h3>
+        <p>Older years fade to grey, the current year in peach. Good for the diary in option B. Same problem as status for trips of one year.</p>
+      </div>
+    </div>
+    <p class="muted">
+      New tokens: <code>trip-1</code> to <code>trip-8</code>. The first five can reuse the proposal colors
+      (<code>route-best</code> … <code>route-sights</code>); three more are needed.
+    </p>
+  </section>
+
+  <!-- Ridden -->
+  <section class="block option">
+    <h2>Marking a trip as ridden</h2>
+    <div class="two">
+      <div>
+        <p>
+          The Dates section of a trip gets a choice: Planned or Ridden. Ridden needs a date, and that
+          date is just the start date. Setting a date in the past is how you add a trip you rode
+          long ago.
+        </p>
+        <ul>
+          <li>The same section on the overview map's trip level and in the trip editor.</li>
+          <li>Once the last day of a planned trip is past, the panel shows a notice: "Did you ride this?" with Mark as ridden.</li>
+          <li>A ridden trip with a past date shows no forecast and no "Forecast from". Later: real weather from the archive.</li>
+          <li>Riding the trip the other way round, or on other days, is a different trip. Keep it simple: duplicate and edit.</li>
+          <li>Importing a GPX of a past ride offers Ridden right away.</li>
+        </ul>
+        <p class="muted">
+          Data: add <code>ridden: boolean</code> to Trip and TripSummary. Ridden requires
+          <code>startDate</code>. No new date field.
+        </p>
+      </div>
+      <div class="panel solo">
+        <div class="ph">
+          <span class="back"><svg class="ico sm"><use href="#i-left" /></svg>All trips</span>
+          <div class="name">Bamberg to Coburg<span class="spacer"></span><svg class="ico sm"><use href="#i-more" /></svg></div>
+        </div>
+        <div class="sec">
+          <div class="sh"><svg class="ico"><use href="#i-cal" /></svg>Dates<span class="sum">Ridden · Sat 12 Sep</span><svg class="ico sm"><use href="#i-down" /></svg></div>
+          <div class="sb">
+            <div class="choice"><span class="radio"></span><span class="t"><b>Planned</b><span>Not ridden yet</span></span></div>
+            <div class="choice on"><span class="radio"></span><span class="t"><b>Ridden</b><span>Shows in the diary</span></span></div>
+            <div class="field"><svg class="ico sm"><use href="#i-cal" /></svg>Sat 12 Sep 2026</div>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="sh"><svg class="ico"><use href="#i-bike" /></svg>Trip<span class="sum">78 km · 690 m</span></div>
+        </div>
+        <div class="sec">
+          <div class="sh"><svg class="ico"><use href="#i-book" /></svg>Notes<span class="sum">2 lines</span></div>
+          <div class="sb"><p class="note-text">Headwind up the Main. Coffee in Lichtenfels, train back from Coburg at 17:12.</p></div>
+        </div>
+        <div class="sec" style="border-bottom: 0">
+          <div class="sb" style="padding-top: 12px"><span class="btn primary" style="align-self: flex-start">Open trip</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filters -->
+  <section class="block option">
+    <h2>Filters</h2>
+    <p>Few, and all as chips in one folded section. The summary says what is on, so a folded section still tells you.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Filter</th><th>Values</th><th>Why</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Status</td><td>All, Planned, Ridden</td><td>The main split from the issue</td><td><span class="prio now">First</span></td></tr>
+          <tr><td>Year</td><td>One chip per year with trips, plus No date</td><td>Diary, and keeps the map readable</td><td><span class="prio now">First</span></td></tr>
+          <tr><td>Length</td><td>One day, Several days</td><td>Day rides and tours look very different on a map</td><td><span class="prio now">First</span></td></tr>
+          <tr><td>Only in view</td><td>Switch: list shows only trips visible on the map</td><td>"What did I ride around here?"</td><td><span class="prio">Later</span></td></tr>
+          <tr><td>Shared with me</td><td>Show or hide</td><td>Friends' trips are not my diary</td><td><span class="prio">Later</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">Filters live in the URL (<code>?status=ridden&amp;year=2026</code>), like <code>?stage=</code> in the editor.</p>
+  </section>
+
+  <!-- Extras -->
+  <section class="block option">
+    <h2>What else I would add</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Idea</th><th>What it gives</th><th>Cost</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><b>Year totals</b></td><td>Km, ascent, days on the bike and trips per year, as stat tiles in each year section</td><td>Small, from TripSummary</td><td><span class="prio now">Now</span></td></tr>
+          <tr><td><b>Notes</b></td><td>A short text per trip: who came, what went wrong, the good café. This is what makes it a diary</td><td>Small: one field</td><td><span class="prio now">Now</span></td></tr>
+          <tr><td><b>"Did you ride this?"</b></td><td>Notice after a planned trip's last day. Keeps the diary filled without effort</td><td>Small</td><td><span class="prio now">Now</span></td></tr>
+          <tr><td><b>My rides layer</b></td><td>All ridden lines as one quiet layer on the new trip and editor maps. Plan into places you have not been</td><td>Medium</td><td><span class="prio">Later</span></td></tr>
+          <tr><td><b>Replace with ridden track</b></td><td>Upload the GPX you actually rode to replace the planned line of a day</td><td>Medium: reuses import</td><td><span class="prio">Later</span></td></tr>
+          <tr><td><b>Days ridden</b></td><td>Mark single days as skipped, when a trip got cut short</td><td>Medium: touches totals</td><td><span class="prio">Later</span></td></tr>
+          <tr><td><b>Real weather</b></td><td>The weather you actually had, from the Open-Meteo archive, on ridden trips</td><td>Medium</td><td><span class="prio">Maybe</span></td></tr>
+          <tr><td><b>Photos</b></td><td>A few photos per day, pinned on the map</td><td>Large: needs file storage</td><td><span class="prio">Maybe</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block option">
+    <h2>Questions for you</h2>
+    <ol>
+      <li>Which layout: A, B or C? Or A with B's year grouping, as recommended.</li>
+      <li>Colors per trip, by status or by year?</li>
+      <li>Is ridden a whole-trip flag for now, with single days later?</li>
+      <li>Which extras go into the first slice? My pick: year totals, notes and the "Did you ride this?" notice.</li>
+      <li>Should trips shared with you show on the map at all?</li>
+    </ol>
+  </section>
+</main>
+
+<script>
+  // Example trips in map units (600 × 420). Planned trips are drawn dashed.
+  const trips = {
+    t1: { pts: "60,120 110,110 150,132 200,118 250,142 300,135", ridden: true, year: 2025 },
+    t2: { pts: "330,300 370,278 420,290 462,318 442,352 390,358 345,342 330,300", ridden: true, year: 2025 },
+    t3: { pts: "330,150 362,128 396,140 402,176 370,192 340,180 330,150", ridden: true, year: 2026 },
+    t4: { pts: "300,135 312,100 332,74 348,42", ridden: true, year: 2026 },
+    t5: { pts: "80,330 130,308 182,320 222,346 192,382 120,388 80,362 80,330", ridden: false, year: 2027 },
+    t6: { pts: "120,40 162,62 202,54 244,82", ridden: false },
+    t7: { pts: "300,135 280,170 250,200 205,215", ridden: true, year: 2026 },
+  };
+  const NS = "http://www.w3.org/2000/svg";
+
+  function colorFor(id, mode) {
+    const t = trips[id];
+    if (mode === "trip") return `var(--${id})`;
+    if (mode === "status") return t.ridden ? "var(--t1)" : "var(--dimmed)";
+    if (!t.ridden) return "var(--dimmed)";
+    return t.year === 2026 ? "var(--y2026)" : "var(--y2025)";
+  }
+
+  function el(name, attrs) {
+    const e = document.createElementNS(NS, name);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function drawMap(svg) {
+    const mode = svg.dataset.map;
+    const mini = svg.dataset.mini === "1";
+    // Base: a river, a lake and a few roads.
+    svg.append(el("rect", { x: 0, y: 0, width: 600, height: 420, fill: "var(--map)" }));
+    svg.append(el("path", { d: "M0,150 C80,140 140,160 220,150 S330,120 420,170 S540,210 600,190", fill: "none", stroke: "var(--water)", "stroke-width": 6 }));
+    svg.append(el("ellipse", { cx: 150, cy: 360, rx: 50, ry: 22, fill: "var(--water)" }));
+    for (const d of ["M0,260 L600,240", "M260,0 L280,420", "M480,0 L440,420", "M0,60 L600,90"]) {
+      svg.append(el("path", { d, fill: "none", stroke: "var(--map-line)", "stroke-width": 2 }));
+    }
+    const lines = {};
+    for (const id in trips) {
+      const t = trips[id];
+      const g = el("g", { "data-trip": id });
+      g.append(el("polyline", { points: t.pts, fill: "none", stroke: "var(--casing)", "stroke-width": mini ? 8 : 7, "stroke-linejoin": "round", "stroke-linecap": "round", opacity: 0.35 }));
+      const line = el("polyline", { points: t.pts, fill: "none", stroke: colorFor(id, mode), "stroke-width": mini ? 6 : 4.5, "stroke-linejoin": "round", "stroke-linecap": "round" });
+      if (!t.ridden) line.setAttribute("stroke-dasharray", "2 9");
+      g.append(line);
+      svg.append(g);
+      lines[id] = g;
+    }
+    svg._lines = lines;
+  }
+
+  document.querySelectorAll("svg[data-map]").forEach(drawMap);
+
+  // Hover a row to highlight its trip on the map in the same frame.
+  document.querySelectorAll(".app").forEach((app) => {
+    const svg = app.querySelector("svg.map");
+    if (!svg || !svg._lines) return;
+    app.querySelectorAll(".row[data-trip]").forEach((row) => {
+      const id = row.dataset.trip;
+      row.addEventListener("mouseenter", () => {
+        for (const k in svg._lines) svg._lines[k].style.opacity = k === id ? 1 : 0.25;
+        svg._lines[id].parentNode.append(svg._lines[id]);
+      });
+      row.addEventListener("mouseleave", () => {
+        for (const k in svg._lines) svg._lines[k].style.opacity = 1;
+      });
+    });
+  });
+</script>

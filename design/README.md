@@ -27,4 +27,5 @@ When the canvas changes, copy the changed files here.
 | File | Content |
 |---|---|
 | `wind-proposals/index.html` | Options for wind-aware trips (#135). Plain HTML. Live page: https://claude.ai/artifact/2frmGoLdX5oPQYLJvcQsnM (private). |
+| `trip-journal/index.html` | Journal screen with all trips on one map (#165). Plain HTML. Live page: https://claude.ai/artifact/GgwzW8QofeeV1qFZ29onTv (private). |
 | `trip-panel/` | Side panel of the trip editor (#164): options A to C and the click dummy of C (`Prototype.dc.html`). Needs the canvas runtime. Live canvas: https://claude.ai/artifact/FEJvVqgHbqwASZejCccgAx (private). |
