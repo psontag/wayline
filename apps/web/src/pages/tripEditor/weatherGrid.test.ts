@@ -63,6 +63,15 @@ describe("gridOf", () => {
     expect(grid?.cells.length).toBeLessThanOrEqual(150);
   });
 
+  it("skips more cells for very long routes", () => {
+    const grid = gridOf([
+      [8.0, 47.5],
+      [13.5, 54.0],
+    ]);
+    expect(grid?.step).toBeGreaterThan(0.2);
+    expect(grid?.cells.length).toBeLessThanOrEqual(150);
+  });
+
   it("is undefined without a route", () => {
     expect(gridOf([])).toBeUndefined();
   });

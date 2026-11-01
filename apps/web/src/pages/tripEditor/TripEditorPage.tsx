@@ -136,9 +136,17 @@ function TripEditor({
       (stage ? ridingHours(stage.stats, trip.settings.avgSpeed) : 0),
   };
   const time = mapTime ?? rideStart;
+  // The whole trip, so the weather does not end at the selected day.
   const weatherGrid = useMemo(
-    () => (weatherOn ? gridOf(points.map((p) => p.coord)) : undefined),
-    [weatherOn, points],
+    () =>
+      weatherOn
+        ? gridOf(
+            trip.stages.flatMap((s) =>
+              s.legs.flatMap((leg) => decodeLine(leg.geometry)),
+            ),
+          )
+        : undefined,
+    [weatherOn, trip.stages],
   );
   const grid = useWeatherGrid(weatherGrid?.cells ?? []);
   const date = trip.startDate && addDays(trip.startDate, selected);

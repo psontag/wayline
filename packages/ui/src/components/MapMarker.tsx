@@ -380,7 +380,7 @@ export function ClusterMarker({ kind, count, onClick }: ClusterMarkerProps) {
       )}
       onClick={onClick}
     >
-      <Icon className="size-3" aria-hidden />
+      <Icon className={kind === "hotels" ? "size-3.5" : "size-3"} aria-hidden />
       {count}
     </button>
   );

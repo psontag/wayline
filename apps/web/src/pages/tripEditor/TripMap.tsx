@@ -550,7 +550,6 @@ export function TripMap({
               {...(onToggleSaveHotel && {
                 onToggleSave: () => onToggleSaveHotel(hotel.osmId),
               })}
-              compact={zoom < 11}
               onClick={() => onSelectHotel?.(hotel.osmId)}
               onActiveChange={(active) =>
                 setActiveHotel((id) =>
