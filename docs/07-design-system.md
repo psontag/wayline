@@ -185,7 +185,7 @@ Signed cycling routes show by size:
 | Regional | 9 | 1.25–3 px |
 | Local | 11 | 1–2 px |
 
-Hovering or tapping a route highlights all of it in the loaded area and shows its name, kind, length nearby and other routes on the same way.
+Hovering or tapping a route highlights all of it and shows its name, kind, full length and other routes on the same way.
 
 Screens add only their own sources, layers and markers as children. Line and fill layers use `MapLayer`, so they sit below the base map labels. Screens don't set a base style, controls or their own fitting.
 

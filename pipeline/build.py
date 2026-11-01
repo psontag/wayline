@@ -3,8 +3,8 @@
 Usage: python build.py [--cache DIR] [--out DIR] [--states a,b]
 
 Reads the downloads from the cache (see download.py) and writes
-<out>/<version>/ with manifest.json, places.json and tiles/<x>_<y>.json,
-plus <out>/latest.json that names the newest version.
+<out>/<version>/ with manifest.json, places.json, tiles/<x>_<y>.json and
+the route lines (lines.py), plus <out>/latest.json that names the newest version.
 """
 
 import argparse
@@ -20,6 +20,7 @@ import download
 import export as X
 import extract as E
 import graph as G
+import lines as L
 import region
 import scenery as S
 from dem import Dem
@@ -152,12 +153,15 @@ def main():
     write(os.path.join(out, "manifest.json"), manifest)
     write(os.path.join(args.out, "latest.json"), {"version": version, "manifest": f"{version}/manifest.json"})
     t.step("write")
+    lines = L.build(out, L.route_networks(data["routes"]))
+    t.step("lines")
 
     mb = 1024 * 1024
     s = sorted(sizes.values())
     print(f"out: {out}")
     print(f"places.json: {places_size / mb:.1f} MiB (towns={len(places['towns'])} stations={len(places['stations'])} hotels={len(places['hotels'])})")
     print(f"tiles: {len(s)} files, {sum(s) / mb:.1f} MiB, median {s[len(s) // 2] / mb:.2f} MiB, max {s[-1] / mb:.2f} MiB")
+    print(f"lines: {lines['routes']} routes, {lines['files']} files ({lines['empty']} empty), {lines['bytes'] / mb:.1f} MiB, max {lines['max'] / 1024:.0f} KiB")
     print("scenery:", S.stats(network["edges"]))
     print(f"total: {time.time() - t.start:.0f} s")
 

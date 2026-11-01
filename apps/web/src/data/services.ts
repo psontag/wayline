@@ -1,5 +1,11 @@
 import { AreaCache, bboxAround, FakeRouting, Graph } from "@wayline/planner";
-import { type BBox, type LonLat, SiteInfo } from "@wayline/domain";
+import {
+  type BBox,
+  type LonLat,
+  type RouteInfo,
+  type RouteTable,
+  SiteInfo,
+} from "@wayline/domain";
 import {
   DbRestTrains,
   FakeTrains,
@@ -37,8 +43,21 @@ export type Services = {
   snap: (coord: LonLat) => Promise<LonLat>;
   /** The route network around a bbox. */
   graph: (bbox: BBox) => Promise<Graph>;
+  /** Vector tiles of the signed routes. Null if the data has none. */
+  lines: () => Promise<RouteLines | null>;
   /** Whether a hotel website works, and its image. Null without a server. */
   site: (url: string) => Promise<SiteInfo | null>;
+};
+
+export type RouteLines = {
+  /** Tile URL with "{z}", "{x}" and "{y}". */
+  tiles: string;
+  minzoom: number;
+  maxzoom: number;
+  /** Area with tiles. The map asks for none outside it. */
+  bounds: BBox;
+  /** Routes by id. */
+  routes: Map<number, RouteInfo>;
 };
 
 /** A dragged via point moves to a network node this close. */
@@ -105,6 +124,20 @@ export function createServices(): Services {
       return node === undefined ? coord : graph.coord(node);
     },
     graph: (bbox) => graphs.get(bbox),
+    async lines() {
+      const base = await url;
+      const { lines, files } = await network.manifest();
+      if (!lines || !files.routes) return null;
+      const table = (await fetchJson(`${base}/${files.routes}`)) as RouteTable;
+      return {
+        // Not new URL(): it would encode the braces.
+        tiles: `${location.origin}${base}/${lines.path}`,
+        minzoom: lines.minzoom,
+        maxzoom: lines.maxzoom,
+        bounds: lines.bounds,
+        routes: new Map(table.routes.map((r) => [r.id, r])),
+      };
+    },
     site: async (siteUrl) =>
       onServer
         ? SiteInfo.parse(

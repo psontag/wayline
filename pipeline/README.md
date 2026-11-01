@@ -8,7 +8,7 @@ Builds the route network and places for Baden-Württemberg, Hessen and Bayern fr
 pnpm data:build
 ```
 
-- Needs [uv](https://docs.astral.sh/uv/) and Python 3.12. `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`.
+- Needs [uv](https://docs.astral.sh/uv/), Python 3.12 and [tippecanoe](https://github.com/felt/tippecanoe) (`brew install tippecanoe`, `apt install tippecanoe`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`.
 - Downloads missing inputs to `pipeline/cache/` (gitignored, about 3 GB): Geofabrik extracts of the three states and Copernicus GLO-30 tiles N47–N51, E007–E013.
 - Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `south-<date of the extracts>`.
 - Takes about 8 minutes and up to 5.5 GB of memory on a laptop. Reading the extracts takes 7 of the 8 minutes: 5 for routes and places, 2.5 for scenery. The results are cached, so the next build takes 1 minute.
@@ -21,8 +21,22 @@ Output (October 2026):
 | Route network | 68,000 nodes, 90,000 edges, 87,000 km |
 | Tiles | 87 files of 0.5°, 39 MiB (6.6 MiB gzipped), median 0.4 MiB, largest 2.4 MiB |
 | `places.json` | 4.1 MiB (1 MiB gzipped): 16,800 towns, 2,500 stations, 15,700 hotels |
+| Route lines | 1,980 files (768 empty), 4 MiB, largest 54 KiB |
+| `routes.json` | 0.4 MiB: 3,800 routes |
 
 A trip around Heidelberg needs about 6 tiles, 4.4 MiB (0.7 MiB gzipped).
+
+## Route lines
+
+The map draws the signed routes from vector tiles, not from the network tiles.
+
+- `lines/{z}/{x}/{y}.pbf`: one layer `routes`, zoom 5–11. MapLibre stretches zoom 11 for closer views.
+- Inside the bounds in the manifest every tile exists, empty if no route runs there. The host answers a missing file with the app page, which the map can't read.
+- Each line is a signed edge with `network` (its class) and `routes` (route ids as `|1|5|`, main route first).
+- EuroVelo and national edges are in every zoom, regional ones from zoom 9, local ones from zoom 11. Every line stays in; neighbours are joined.
+- `routes.json`: id, name, class, length and bbox of each route. Routes are keyed by name, so the relations of one route (e.g. one per state) count as one.
+- A route's class is the best class of its OSM relations.
+- `python lines.py <data_dir>` rebuilds them for a built dataset. Without the OSM relations, a route's class is the one with the most km. The Oberfranken mock is built this way.
 
 ## Scenery
 
@@ -69,6 +83,7 @@ Sights within 500 m, share of edges:
 | `graph.py` | Builds the route graph (docs/05-trip-generation.md) |
 | `dem.py` | Reads elevation from the DEM tiles |
 | `export.py` | Writes nodes, edges and places in the format of `packages/domain/src/geodata.ts` |
+| `lines.py` | Writes the vector tiles of the signed routes and `routes.json` |
 | `region.py` | States, DEM tiles and tile size |
 | `check_area.py` | Checks the data around a station |
 | `subset.py` | Copies the tiles of a bbox into a small dataset |

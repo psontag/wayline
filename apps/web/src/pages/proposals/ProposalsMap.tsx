@@ -171,7 +171,6 @@ export function ProposalsMap({
       label={t("map.label")}
       fit={fit}
       fitKey={fitKey}
-      networkAround={stopCoords}
       hiddenLabels={ends.map((p) => p.name)}
       interactiveLayerIds={["proposal-hit"]}
       onClick={onClick}

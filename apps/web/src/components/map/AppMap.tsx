@@ -77,8 +77,6 @@ export type AppMapProps = {
   padding?: MapPadding;
   /** Signed cycling routes. Quiet when our own routes matter more. */
   network?: MapNetwork;
-  /** Points the network is loaded around. Defaults to the fit points. */
-  networkAround?: LonLat[];
   /** Base map place names to hide, because our markers show them. */
   hiddenLabels?: string[];
   /** Legend items after the network. */
@@ -139,7 +137,6 @@ export function AppMap({
   initialFit,
   padding = defaultPadding,
   network = "quiet",
-  networkAround,
   hiddenLabels = [],
   legend = [],
   layers,
@@ -239,7 +236,6 @@ export function AppMap({
         <HillshadeLayer beforeId={ROUTES_ANCHOR} />
         {network !== "off" && (
           <NetworkLayer
-            around={networkAround ?? fit}
             beforeId={ROUTES_ANCHOR}
             subtle={network === "quiet"}
           />
