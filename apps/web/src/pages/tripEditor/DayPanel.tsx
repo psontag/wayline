@@ -36,6 +36,7 @@ export function DayPanel({
   onSelect,
   onBack,
   onHoverClimb,
+  highlightedClimb,
   onHighlightProposed,
 }: {
   trip: Trip;
@@ -45,6 +46,8 @@ export function DayPanel({
   onBack: () => void;
   /** Climb of the day under the pointer. */
   onHoverClimb?: (index: number | undefined) => void;
+  /** Climb to show stronger, e.g. the one under the chart crosshair. */
+  highlightedClimb?: number;
   /** Called with true while the change notice is under the pointer. */
   onHighlightProposed?: (on: boolean) => void;
 }) {
@@ -160,6 +163,7 @@ export function DayPanel({
         <ClimbList
           climbs={findClimbs(routePoints(stage.legs))}
           onHoverClimb={onHoverClimb}
+          highlighted={highlightedClimb}
         />
       </PanelSection>
       {!isLast && (

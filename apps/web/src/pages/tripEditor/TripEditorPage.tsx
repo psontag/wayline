@@ -130,7 +130,14 @@ function TripEditor({
   const stage = trip.stages[selected];
   const points = useMemo(() => routePoints(stage?.legs ?? []), [stage]);
   const climbs = useMemo(() => findClimbs(points), [points]);
-  const climb = hoveredClimb === undefined ? undefined : climbs[hoveredClimb];
+  // A climb hovered in the list, or the one under the chart crosshair.
+  const crosshairClimb =
+    hoverKm === undefined
+      ? -1
+      : climbs.findIndex((c) => hoverKm >= c.startKm && hoverKm <= c.endKm);
+  const activeClimb =
+    hoveredClimb ?? (crosshairClimb >= 0 ? crosshairClimb : undefined);
+  const climb = activeClimb === undefined ? undefined : climbs[activeClimb];
   const highlight = climb
     ? points
         .filter((p) => p.km >= climb.startKm && p.km <= climb.endKm)
@@ -331,7 +338,7 @@ function TripEditor({
       hoverKm={hoverKm}
       onHoverKm={setHoverKm}
       climbs={climbs}
-      highlightedClimb={hoveredClimb}
+      highlightedClimb={activeClimb}
       proposedHighlighted={proposedHighlighted}
       onHighlightProposed={setProposedHighlighted}
       actions={switcher}
@@ -437,6 +444,7 @@ function TripEditor({
               onSelect={select}
               onBack={showTrip}
               onHoverClimb={setHoveredClimb}
+              highlightedClimb={activeClimb}
               onHighlightProposed={setProposedHighlighted}
             />
           ) : (

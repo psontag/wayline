@@ -1,6 +1,7 @@
 import { ChevronDown, TrendingUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
+import { cn } from "../lib/cn";
 
 export type ClimbItem = {
   startKm: number;
@@ -17,10 +18,16 @@ export type ClimbListProps = {
   climbs: ClimbItem[];
   /** Called with the climb under the pointer, or undefined. */
   onHoverClimb?: (index: number | undefined) => void;
+  /** Climb to show stronger, e.g. the one under the chart crosshair. */
+  highlighted?: number;
 };
 
 /** One line with the number of climbs and the longest. Opens to a list. */
-export function ClimbList({ climbs, onHoverClimb }: ClimbListProps) {
+export function ClimbList({
+  climbs,
+  onHoverClimb,
+  highlighted,
+}: ClimbListProps) {
   const { t } = useTranslation("ui");
   const format = useFormat();
   const length = (c: ClimbItem) => c.endKm - c.startKm;
@@ -40,7 +47,13 @@ export function ClimbList({ climbs, onHoverClimb }: ClimbListProps) {
   }
   return (
     <details className="group text-sm">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-sm hover:text-text-muted">
+      <summary
+        className={cn(
+          "-mx-1 flex cursor-pointer list-none items-center gap-2 rounded-sm px-1 hover:text-text-muted",
+          // Closed, the summary stands in for the highlighted row.
+          highlighted !== undefined && "bg-hover group-open:bg-transparent",
+        )}
+      >
         <TrendingUp className="size-4 shrink-0 text-text-muted" aria-hidden />
         <span className="min-w-0 flex-1">
           {t("climbs.summary", {
@@ -60,7 +73,10 @@ export function ClimbList({ climbs, onHoverClimb }: ClimbListProps) {
             key={c.startKm}
             onMouseEnter={() => onHoverClimb?.(i)}
             onMouseLeave={() => onHoverClimb?.(undefined)}
-            className="-mx-1 grid grid-cols-4 gap-2 rounded-sm px-1 text-xs hover:bg-hover"
+            className={cn(
+              "-mx-1 grid grid-cols-4 gap-2 rounded-sm px-1 text-xs hover:bg-hover",
+              i === highlighted && "bg-hover",
+            )}
           >
             <span className="text-text-muted">
               {t("climbs.at", { km: format.distance(c.startKm * 1000) })}

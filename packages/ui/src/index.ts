@@ -136,6 +136,7 @@ export {
   WindSpeedScale,
 } from "./components/MapLayerMenu";
 export {
+  ClimbLegend,
   ElevationProfile,
   type ElevationProfileProps,
   eleAt,

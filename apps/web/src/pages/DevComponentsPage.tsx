@@ -26,6 +26,7 @@ import {
   DayList,
   SurfaceBar,
   SurfaceLegend,
+  ClimbLegend,
   ThemeScope,
   ThemeToggle,
   Toast,
@@ -613,7 +614,7 @@ function TripEditorParts() {
   return (
     <Section title={t("section.tripEditor")}>
       <Card className="flex flex-col gap-3">
-        <SurfaceLegend />
+        <ClimbLegend />
         <ElevationProfile
           axes
           points={profile}

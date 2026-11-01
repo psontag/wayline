@@ -2,6 +2,7 @@ import { type PointerEvent, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
+import { SurfaceLegend } from "./SurfaceBar";
 
 export type SurfaceKind = "paved" | "gravel" | "unpaved" | "unknown";
 
@@ -64,6 +65,7 @@ const surfaceColor: Record<SurfaceKind, string> = {
 // Grade classes for climbs, as shares: under 4 %, 4–7 %, over 7 %.
 const GRADES = [0.04, 0.07];
 const gradeFill = ["fill-grade-1", "fill-grade-2", "fill-grade-3"] as const;
+const gradeBg = ["bg-grade-1", "bg-grade-2", "bg-grade-3"] as const;
 // Climbs narrower than this share of the chart get no gain label.
 const LABEL_MIN_WIDTH = 0.06;
 
@@ -154,6 +156,29 @@ export function eleAt(points: Point[], km: number): number | undefined {
   return a.ele + ((km - a.km) / (b.km - a.km)) * (b.ele - a.ele);
 }
 
+/** Color key for the climb fills in the profile. */
+export function ClimbLegend() {
+  const { t } = useTranslation("ui");
+  const format = useFormat();
+  const [low = 0, high = 0] = GRADES.map(format.percent);
+  const labels = [
+    t("climbs.below", { grade: low }),
+    t("climbs.between", { from: low, to: high }),
+    t("climbs.above", { grade: high }),
+  ];
+  return (
+    <div className="flex items-center gap-2.5 text-xs text-text-muted">
+      <span>{t("climbs.legend")}</span>
+      {labels.map((label, i) => (
+        <span key={label} className="flex items-center gap-1">
+          <span className={cn("size-2.5 rounded-sm", gradeBg[i])} />
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Elevation over distance. With axes, a strip under the chart shows the
  * surface.
@@ -189,7 +214,7 @@ export function ElevationProfile({
           <div className="border-t border-border" />
           <div className="border-t border-border" />
         </div>
-        <div className="h-7" />
+        <div className="h-12" />
       </div>
     ) : (
       <div className={cn("h-20", className)} />
@@ -429,21 +454,6 @@ export function ElevationProfile({
           )}
         </div>
       </div>
-      <div
-        aria-hidden
-        className="relative mt-1 ml-14 h-1.5 overflow-hidden rounded-full"
-      >
-        {line.surfaces.map((run) => (
-          <span
-            key={run.startKm}
-            className={cn("absolute inset-y-0", surfaceColor[run.surface])}
-            style={{
-              left: left(run.startKm),
-              width: pct(((x(run.endKm) - x(run.startKm)) / W) * 100),
-            }}
-          />
-        ))}
-      </div>
       <div aria-hidden className="relative ml-14 h-5">
         {kmTicks.map((k) => (
           <span
@@ -454,6 +464,31 @@ export function ElevationProfile({
             {format.distance(k * 1000)}
           </span>
         ))}
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <span className="w-12 shrink-0 text-right text-2xs leading-none">
+          {t("surface.title")}
+        </span>
+        <div
+          aria-hidden
+          className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full"
+        >
+          {line.surfaces.map((run) => (
+            <span
+              key={run.startKm}
+              className={cn("absolute inset-y-0", surfaceColor[run.surface])}
+              style={{
+                left: left(run.startKm),
+                width: pct(((x(run.endKm) - x(run.startKm)) / W) * 100),
+              }}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="mt-1.5 ml-14">
+        <SurfaceLegend
+          unknown={line.surfaces.some((r) => r.surface === "unknown")}
+        />
       </div>
     </div>
   );

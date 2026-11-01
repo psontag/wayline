@@ -14,12 +14,12 @@ import {
   ChartInfo,
   ChartPanel,
   ChartToolbar,
+  ClimbLegend,
   cn,
   ElevationProfile,
   eleAt,
   MapLegendLine,
   type ProfilePoint,
-  SurfaceLegend,
   useFormat,
 } from "@wayline/ui";
 import { type ReactNode, useMemo } from "react";
@@ -139,7 +139,6 @@ export function StageProfile({
     elevation: format.elevation(highest?.ele ?? 0),
     distance: format.distance((highest?.km ?? 0) * 1000),
   });
-  const unknown = points.some((p) => p.surface === "unknown");
 
   return (
     <ChartPanel
@@ -156,7 +155,7 @@ export function StageProfile({
       plain={plain}
     >
       <ChartToolbar
-        start={<SurfaceLegend unknown={unknown} />}
+        start={<ClimbLegend />}
         end={
           section && (
             <span

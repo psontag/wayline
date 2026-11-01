@@ -12,6 +12,7 @@
     "placeholder": "Choose"
   },
   "surface": {
+    "title": "Surface",
     "summary": "Surface: {{parts}}",
     "paved": "Paved",
     "gravel": "Gravel",
@@ -181,7 +182,11 @@
     "summary_other": "{{count}} climbs · longest {{length}} at {{grade}}",
     "at": "at {{km}}",
     "grade": "{{grade}} · max {{max}}",
-    "gain": "+{{gain}}"
+    "gain": "+{{gain}}",
+    "legend": "Climbs",
+    "below": "under {{grade}}",
+    "between": "{{from}}–{{to}}",
+    "above": "over {{grade}}"
   },
   "dayCard": {
     "day": "Day {{day}}",
