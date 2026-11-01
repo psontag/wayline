@@ -4,7 +4,6 @@ import {
   type FailedLimit,
   type GenerateProgress,
   type GenerateRequest,
-  headwindShare,
   type LonLat,
   pointAtKm,
   type Proposal,
@@ -13,7 +12,6 @@ import {
   routePoints,
   type Trip,
   tripStats,
-  type WindDay,
   type WindShares,
 } from "@wayline/domain";
 
@@ -51,7 +49,7 @@ export function dayBreaks(trip: Trip): number[] {
 }
 
 export type ComparisonTag =
-  "flattest" | "mostPaved" | "mostSigned" | "shortest";
+  "flattest" | "mostPaved" | "mostSigned" | "shortest" | "leastHeadwind";
 
 type Measure = {
   tag: ComparisonTag;
@@ -91,14 +89,27 @@ const measures: Measure[] = [
 
 /**
  * Tags that set a proposal apart from the others, by proposal id. A tag goes
- * only to the one proposal that wins it by a clear margin.
+ * only to the one proposal that wins it by a clear margin. headwind holds
+ * each proposal's headwind share; the wind tag waits until all are known.
  */
 export function comparisonTags(
   proposals: Proposal[],
+  headwind?: Map<string, number>,
 ): Map<string, ComparisonTag[]> {
   const tags = new Map<string, ComparisonTag[]>();
   if (proposals.length < 2) return tags;
-  for (const m of measures) {
+  const wind: Measure[] =
+    headwind && proposals.every((p) => headwind.has(p.id))
+      ? [
+          {
+            tag: "leastHeadwind",
+            value: (p) => headwind.get(p.id),
+            most: false,
+            clear: (best, next) => next - best >= 0.1,
+          },
+        ]
+      : [];
+  for (const m of [...measures, ...wind]) {
     const ranked = proposals
       .map((p) => ({ id: p.id, value: m.value(p) }))
       .filter((r): r is { id: string; value: number } => r.value !== undefined)
@@ -109,21 +120,6 @@ export function comparisonTags(
       tags.set(best.id, [...(tags.get(best.id) ?? []), m.tag]);
   }
   return tags;
-}
-
-/**
- * Index of the proposal with clearly the least headwind: at least 10
- * points less than the next one. Undefined while any forecast is missing.
- */
-export function leastHeadwind(
-  days: (WindDay[] | undefined)[],
-): number | undefined {
-  if (days.length < 2 || days.some((d) => !d)) return undefined;
-  const ranked = days
-    .map((d, i) => ({ i, share: headwindShare(d ?? []) }))
-    .sort((a, b) => a.share - b.share);
-  const [best, next] = ranked;
-  return best && next && next.share - best.share >= 0.1 ? best.i : undefined;
 }
 
 export type WindTag = { kind: "tail" } | { kind: "head"; day: number };
