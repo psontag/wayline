@@ -9,6 +9,7 @@ the route lines (lines.py), plus <out>/latest.json that names the newest version
 
 import argparse
 import datetime
+import hashlib
 import json
 import math
 import os
@@ -26,6 +27,19 @@ import scenery as S
 from dem import Dem
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def pipeline_hash():
+    """Short hash of the pipeline code, so a pipeline change gives a new version.
+
+    Files under /data/<version>/ are cached forever. Same files as the CI cache key.
+    """
+    h = hashlib.sha256()
+    names = sorted(n for n in os.listdir(HERE) if n.endswith(".py")) + ["requirements.txt"]
+    for n in names:
+        with open(os.path.join(HERE, n), "rb") as f:
+            h.update(n.encode() + b"\0" + f.read())
+    return h.hexdigest()[:8]
 
 
 class Timer:
@@ -129,7 +143,8 @@ def main():
     t.step("graph")
 
     osm_date = datetime.date.fromtimestamp(max(os.path.getmtime(p) for p in srcs)).isoformat()
-    version = f"south-{osm_date}" if states == region.STATES else f"{'-'.join(states)}-{osm_date}"
+    name = "south" if states == region.STATES else "-".join(states)
+    version = f"{name}-{osm_date}-{pipeline_hash()}"
     dem = Dem(os.path.join(args.cache, "dem"))
     network, index = X.export_network(g, dem, version, scenery)
     print(f"network: nodes={len(network['nodes'])} edges={len(network['edges'])}")

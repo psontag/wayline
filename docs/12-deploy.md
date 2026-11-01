@@ -19,6 +19,16 @@ Every push to `main` deploys the app to `https://wayline-api.<subdomain>.workers
 
 Running it again changes nothing unless something differs. Nothing is ever deleted.
 
+## Caching
+
+`apps/web/public/_headers` sets the cache headers for static files.
+
+| Path | Cache |
+|---|---|
+| `/data/<version>/*` | One year, `immutable`. The version changes with every data build or pipeline change. |
+| `/data/latest.json` | Default: checked on every visit. |
+| `/data/mock/*` | Default. Committed and rebuilt in place. |
+
 ## One-time setup by the owner
 
 These steps need a login, a card or a secret, so they can't be automated.

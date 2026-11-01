@@ -10,7 +10,7 @@ pnpm data:build
 
 - Needs [uv](https://docs.astral.sh/uv/), Python 3.12 and [tippecanoe](https://github.com/felt/tippecanoe) (`brew install tippecanoe`, `apt install tippecanoe`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`.
 - Downloads missing inputs to `pipeline/cache/` (gitignored, about 3 GB): Geofabrik extracts of the three states and Copernicus GLO-30 tiles N47–N51, E007–E013.
-- Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `south-<date of the extracts>`.
+- Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `south-<date of the extracts>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
 - Takes about 8 minutes and up to 5.5 GB of memory on a laptop. Reading the extracts takes 7 of the 8 minutes: 5 for routes and places, 2.5 for scenery. The results are cached, so the next build takes 1 minute.
 - `pnpm data:build --states hessen` builds one state.
 

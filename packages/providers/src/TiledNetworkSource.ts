@@ -11,7 +11,7 @@ import type {
 import type { FetchJson, RouteNetworkSource } from "./types";
 
 /**
- * Geodata built by pipeline/build.py, e.g. /data/south-2026-10-19/.
+ * Geodata built by pipeline/build.py, e.g. /data/south-2026-10-19-3f2a9c1d/.
  * Loads only the tiles a bbox needs. Each file loads once per source, and the
  * base URL holds the dataset version, so the cache is per version.
  */
