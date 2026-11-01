@@ -2,7 +2,7 @@
 
 Usage: python check_area.py <data_dir> <station> [radius_km] [town ...]
 
-<data_dir> holds manifest.json, e.g. apps/web/public/data/south-2026-10-19.
+<data_dir> holds manifest.json, e.g. apps/web/public/data/south-2026-10-19-3f2a9c1d.
 For each town, prints the best path from the station on the graph.
 """
 

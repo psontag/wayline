@@ -1,0 +1,9 @@
+# Files under /data/<version>/ never change. latest.json and the mock data do.
+/data/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/data/latest.json
+  ! Cache-Control
+
+/data/mock/*
+  ! Cache-Control
