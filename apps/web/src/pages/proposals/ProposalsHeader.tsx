@@ -2,7 +2,9 @@ import { Link } from "@tanstack/react-router";
 import {
   addDays,
   type GenerateRequest,
+  isOpenRide,
   localTimeToDate,
+  plansWithWind,
 } from "@wayline/domain";
 import {
   Badge,
@@ -26,7 +28,9 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
   const places =
     request && request.kind !== "one-way"
       ? from && t("request.loopFrom", { from })
-      : from && to && t("request.places", { from, to });
+      : request && isOpenRide(request)
+        ? from && t("request.anywhereFrom", { from })
+        : from && to && t("request.places", { from, to });
 
   const date = (iso: string) => localTimeToDate(`${iso}T00:00`);
   const start = request?.startDate;
@@ -67,6 +71,9 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
         { text: t(`request.profile.${request.profile}`) },
         ...(request.theme
           ? [{ text: t(`request.theme.${request.theme}`) }]
+          : []),
+        ...(plansWithWind(request)
+          ? [{ icon: "wind" as const, text: t("request.withWind") }]
           : []),
       ]
     : [];

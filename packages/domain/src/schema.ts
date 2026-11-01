@@ -257,6 +257,8 @@ export const GenerateRequest = z
     backBy: TimeOfDay.optional(),
     /** Share of a full day per stage. Missing means full days. */
     dayShares: z.array(z.number().min(0).max(1)).optional(),
+    /** Day trips: plan with the wind forecast. */
+    withWind: z.boolean().optional(),
   })
   .refine((r) => r.region || r.startStation, {
     message: "Needs a region or a start station",
@@ -285,6 +287,8 @@ export const Proposal = z.object({
   themes: z.partialRecord(Theme, z.number()).optional(),
   character: ProposalCharacter.optional(),
   flavour: Flavour.optional(),
+  /** Open day ride the other way: train out, ride home. */
+  homeward: z.boolean().optional(),
   /** 0 to 1: share of km on signed cycle routes. */
   signedShare: z.number().optional(),
 });

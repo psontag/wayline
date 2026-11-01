@@ -1,4 +1,5 @@
 import {
+  ArrowUp,
   BedDouble,
   BookmarkCheck,
   ExternalLink,
@@ -11,6 +12,7 @@ import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { focusRing } from "./Button";
 import { SaveHotelButton } from "./HotelRow";
+import { WIND_SPEED_STEPS } from "./MapLayerMenu";
 
 export type StopMarkerProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -74,6 +76,50 @@ export function EndpointMarker({
         )}
       </span>
       {name && <MarkerLabel>{shortName(name)}</MarkerLabel>}
+    </span>
+  );
+}
+
+const windSpeedColor = [
+  "text-wind-speed-1",
+  "text-wind-speed-2",
+  "text-wind-speed-3",
+  "text-wind-speed-4",
+] as const;
+
+/**
+ * Wind at a place: an arrow pointing where the wind blows, colored by
+ * speed, and the speed.
+ */
+export function WindMarker({
+  from,
+  speed,
+  label,
+}: {
+  /** Degrees the wind comes from. */
+  from: number;
+  /** km/h */
+  speed: number;
+  /** For screen readers, e.g. "Wind from the west, 18 km/h". */
+  label: string;
+}) {
+  const format = useFormat();
+  const step = WIND_SPEED_STEPS.filter((s) => speed >= s).length;
+  return (
+    <span role="img" aria-label={label} className="flex items-center gap-1.5">
+      <span
+        className={cn(
+          "flex size-7 items-center justify-center rounded-full bg-surface shadow-md",
+          windSpeedColor[step],
+        )}
+      >
+        <ArrowUp
+          aria-hidden
+          className="size-4"
+          style={{ transform: `rotate(${(from + 180) % 360}deg)` }}
+        />
+      </span>
+      <MarkerLabel>{format.speed(speed)}</MarkerLabel>
     </span>
   );
 }

@@ -16,6 +16,10 @@
     "loop": {
       "label": "Loop",
       "hint": "Ends where it starts"
+    },
+    "open": {
+      "label": "Anywhere",
+      "hint": "Ride any way, train home"
     }
   },
   "start": "Start",
@@ -41,6 +45,10 @@
     "backByDay": "Back by {{time}}",
     "fullDay": "Full day",
     "hint": "Weather, hotels and arrival times use these dates."
+  },
+  "wind": {
+    "label": "With the wind",
+    "hint": "Picks directions with a tailwind from the forecast, up to 16 days ahead."
   },
   "distance": "Distance",
   "kmPerDay": "Km per day",

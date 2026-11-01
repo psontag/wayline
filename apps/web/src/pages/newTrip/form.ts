@@ -15,7 +15,7 @@ import { z } from "zod";
 
 export const lengths = ["one", "multi"] as const;
 export type TripLength = (typeof lengths)[number];
-export const shapes = ["ab", "loop"] as const;
+export const shapes = ["ab", "loop", "open"] as const;
 export type TripShape = (typeof shapes)[number];
 
 /** Theme choices on the form. "any" means no theme. */
@@ -62,6 +62,7 @@ export const newTripSchema = z
     profile: Profile,
     hotelBudget: HotelBudget,
     theme: z.enum(themes),
+    withWind: z.boolean(),
   })
   .superRefine((v, ctx) => {
     if (v.length === "multi") {
@@ -99,6 +100,8 @@ export type NewTripValues = {
   profile: Profile;
   hotelBudget: HotelBudget;
   theme: ThemeChoice;
+  /** Day loops and open rides: plan with the wind forecast. */
+  withWind: boolean;
 };
 
 /** Length and shape for a trip kind. */
@@ -113,7 +116,7 @@ export function fromKind(kind?: TripKind): {
 }
 
 export function toKind(length: TripLength, shape: TripShape) {
-  if (shape === "ab") return "one-way" as const;
+  if (shape !== "loop") return "one-way" as const;
   return length === "one" ? ("day-loop" as const) : ("multi-day-loop" as const);
 }
 
@@ -166,6 +169,7 @@ export function defaultValues(
     profile: "touring",
     hotelBudget: "mid",
     theme: "any",
+    withWind: true,
   };
 }
 
@@ -175,10 +179,14 @@ export function fromRequest(
   defaults: NewTripValues,
 ): NewTripValues {
   const startDate = request.startDate ?? defaults.startDate;
-  const { length, shape } =
+  const open =
+    request.kind === "one-way" && request.days === 1 && !request.endStation;
+  const kind =
     request.kind === "one-way"
       ? fromKind(request.days === 1 ? "route" : "one-way")
       : fromKind(request.kind);
+  const length = kind.length;
+  const shape = open ? "open" : kind.shape;
   return {
     length,
     shape,
@@ -193,6 +201,7 @@ export function fromRequest(
     profile: request.profile,
     hotelBudget: request.hotelBudget ?? defaults.hotelBudget,
     theme: request.theme ?? "any",
+    withWind: request.withWind ?? defaults.withWind,
   };
 }
 
@@ -210,6 +219,7 @@ export function toRequest(values: NewTripValues): GenerateRequest {
     profile: v.profile,
     hotelBudget: multi ? v.hotelBudget : undefined,
     theme: v.theme === "any" ? undefined : v.theme,
+    withWind: v.withWind,
     startDate: v.startDate,
     startTime: v.startTime,
     ...(multi

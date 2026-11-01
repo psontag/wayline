@@ -24,7 +24,10 @@ export function RadioCards({
     <RadioGroup.Root
       value={value}
       onValueChange={onValueChange}
-      className="grid grid-cols-2 gap-2"
+      className={cn(
+        "grid gap-2",
+        options.length > 2 ? "grid-cols-3" : "grid-cols-2",
+      )}
       {...props}
     >
       {options.map((option) => (

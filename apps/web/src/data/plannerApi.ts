@@ -2,6 +2,7 @@ import type {
   GenerateProgress,
   GenerateRequest,
   GenerateResult,
+  HourlyWind,
   Proposal,
 } from "@wayline/domain";
 import { Planners } from "@wayline/planner";
@@ -18,6 +19,7 @@ export type PlannerApi = {
     dataUrl: string,
     onProgress?: (progress: GenerateProgress) => unknown,
     onProposal?: (proposal: Proposal) => unknown,
+    wind?: HourlyWind[],
   ): Promise<GenerateResult>;
 };
 
@@ -31,7 +33,7 @@ export function createPlannerApi(
 ): PlannerApi {
   const sources = new Map<string, Planners>();
   return {
-    async generate(request, dataUrl, onProgress, onProposal) {
+    async generate(request, dataUrl, onProgress, onProposal, wind) {
       // Callbacks may be async (comlink). Wait for all of them before the
       // result, so no proposal arrives after it.
       const pending: unknown[] = [];
@@ -46,6 +48,7 @@ export function createPlannerApi(
         onProgress: (p) => pending.push(onProgress?.(p)),
         onProposal: (p) => pending.push(onProposal?.(p)),
         ...(routing ? { routing } : {}),
+        ...(wind ? { wind } : {}),
       });
       await Promise.all(pending);
       return result;

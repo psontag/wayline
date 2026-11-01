@@ -19,6 +19,7 @@ import {
   RadioCards,
   SegmentedControl,
   Select,
+  Switch,
   useFormat,
 } from "@wayline/ui";
 import {
@@ -136,7 +137,13 @@ export function NewTripForm({
                   stretch
                   aria-labelledby={`${id}-length`}
                   value={field.state.value}
-                  onValueChange={(v) => field.handleChange(v as TripLength)}
+                  onValueChange={(v) => {
+                    field.handleChange(v as TripLength);
+                    // An open ride is one day only.
+                    if (v === "multi" && form.state.values.shape === "open") {
+                      form.setFieldValue("shape", "ab");
+                    }
+                  }}
                   options={lengths.map((l) => ({
                     value: l,
                     label: t(`length.${l}`),
@@ -146,22 +153,28 @@ export function NewTripForm({
             )}
           </form.Field>
 
-          <form.Field name="shape">
-            {(field) => (
-              <FormField label={t("shape.label")} labelId={`${id}-shape`}>
-                <RadioCards
-                  aria-labelledby={`${id}-shape`}
-                  value={field.state.value}
-                  onValueChange={(v) => field.handleChange(v as TripShape)}
-                  options={shapes.map((k) => ({
-                    value: k,
-                    label: t(`shape.${k}.label`),
-                    hint: t(`shape.${k}.hint`),
-                  }))}
-                />
-              </FormField>
+          <form.Subscribe selector={(s) => s.values.length}>
+            {(length) => (
+              <form.Field name="shape">
+                {(field) => (
+                  <FormField label={t("shape.label")} labelId={`${id}-shape`}>
+                    <RadioCards
+                      aria-labelledby={`${id}-shape`}
+                      value={field.state.value}
+                      onValueChange={(v) => field.handleChange(v as TripShape)}
+                      options={shapes
+                        .filter((k) => k !== "open" || length === "one")
+                        .map((k) => ({
+                          value: k,
+                          label: t(`shape.${k}.label`),
+                          hint: t(`shape.${k}.hint`),
+                        }))}
+                    />
+                  </FormField>
+                )}
+              </form.Field>
             )}
-          </form.Field>
+          </form.Subscribe>
 
           <form.Subscribe selector={(s) => s.values.shape}>
             {(shape) => (
@@ -322,6 +335,27 @@ export function NewTripForm({
                 )}
               </fieldset>
             )}
+          </form.Subscribe>
+
+          <form.Subscribe
+            selector={(s) =>
+              s.values.length === "one" && s.values.shape !== "ab"
+            }
+          >
+            {(dayTrip) =>
+              dayTrip && (
+                <form.Field name="withWind">
+                  {(field) => (
+                    <Switch
+                      checked={field.state.value}
+                      onCheckedChange={field.handleChange}
+                      label={t("wind.label")}
+                      hint={t("wind.hint")}
+                    />
+                  )}
+                </form.Field>
+              )
+            }
           </form.Subscribe>
 
           <form.Subscribe selector={(s) => s.values.length}>

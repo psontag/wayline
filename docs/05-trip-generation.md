@@ -11,12 +11,13 @@ How Wayline turns a few inputs into trip proposals.
 - Day shares (optional): share of a full day per stage, see below
 - Profile, hotel budget, start date, start time, back-by time
 - Theme (optional)
+- With the wind (day trips): plan with the wind forecast of the start date
 
 ## Output
 
 Up to 5 proposals. Each is a full trip with stages, hotels at stops, stats and, if dated, weather. Proposals should differ from each other, not be small variations of one route.
 
-Multi-day trips and loops get one proposal per flavour (see below). One day from A to B gets proposals with a character instead.
+Multi-day trips and loops get one proposal per flavour (see below). One day from A to B gets proposals with a character instead. An open day ride gets proposals to different destinations.
 
 ## Route network
 
@@ -107,6 +108,34 @@ The Web Worker reports phases:
 |---|---|
 | One day A to B | Graph search. Each proposal has a character: direct, longer or scenic. No flavours. |
 | Day loop | Graph search for a loop of the given length, without stops. |
+| Open day ride | One-way, one day, no end. Graph search to any station. See below. |
+
+## Open day ride
+
+Ride in any direction and take the train home.
+
+- Proposals go to stations at least 45° apart, seen from the start, and at least 10 km apart. A second pass drops the angle when too few fit.
+- Each proposal is named after its destination: "To Schweinfurt".
+- Up to 5 proposals, no flavours.
+
+## Wind
+
+Day loops and open day rides plan with the wind when the user turns it on ("With the wind", on by default) and the start date is within the forecast. The web app loads the hourly forecast at the start and passes it to the planner. Without a forecast, nothing changes.
+
+Each candidate gets a wind factor. Its parts are straight lines through its nodes, scaled to the trip length. Each part uses the wind of the hour it is ridden, at 18 km/h from the start time.
+
+| Rule | Value |
+|---|---|
+| Head part h | wind speed × cos(wind from − riding direction) |
+| Cost of a part | h when h > 0 (headwind), ½ h when h < 0 (a tailwind helps less) |
+| Late headwind | Weight 0.8 at the start to 1.2 at the end of the ride |
+| Factor | 1 + 0.6 × mean cost / 25 km/h, at least 0.5 |
+| Calm | Hours below 10 km/h count as no wind |
+
+- The candidate quality is multiplied by the factor, so rides with the wind are tried first.
+- Loops: each loop is tried in the direction with the lower factor. Out against the wind, back with it, wins.
+- Open rides: each ride is also tried the other way round, from the station back to the start ("train out, ride home"), when that has a tailwind. It costs 10 % more and at most one such proposal is shown.
+- Open rides are shown with the wind first: by factor, rounded to 0.1, then search order.
 
 ## Profiles
 

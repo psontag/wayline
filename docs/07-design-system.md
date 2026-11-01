@@ -250,7 +250,10 @@ The same thing always has the same name in the UI. Translations use one fixed te
 | Multi-day loop | A multi-day trip that ends where it starts |
 | Theme | What a trip should lean toward: Nature, Rivers & lakes, Wine or Culture |
 | Length | One day or several days |
-| Shape | A to B or loop |
+| Shape | A to B, loop, or anywhere (one day only) |
+| Anywhere | A one-day ride in any direction, back by train |
+| With the wind | Planning a day trip with the wind forecast |
+| Train out | Taking the train to the start of a ride that ends at home |
 | Back by | Latest arrival on the last day |
 | Half day, short day | A day shortened by a late start or an early back-by time |
 | Proposed route | The route of a stage as proposed, shown after a change |

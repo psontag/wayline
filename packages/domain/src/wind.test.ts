@@ -1,8 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { decodeLine, encodeLine } from "./line";
-import type { LonLat, Place, Stage, Trip } from "./schema";
+import type {
+  GenerateRequest,
+  LonLat,
+  Place,
+  Stage,
+  Trip,
+  WeatherSample,
+} from "./schema";
 import type { WindShares } from "./weather";
-import { headwindShare, reverseTrip, windEffort } from "./wind";
+import {
+  dayWind,
+  headwindShare,
+  isOpenRide,
+  plansWithWind,
+  reverseTrip,
+  windAt,
+  windEffort,
+} from "./wind";
 
 const wind = (head: number, tail: number, avgSpeed = 20): WindShares => ({
   head,
@@ -108,5 +123,68 @@ describe("reverseTrip", () => {
     expect(back.settings.dayShares).toEqual([0.75, 0.5, 1]);
     const short = reverseTrip({ ...trip, name: "Bamberg – Würz" });
     expect(short.name).toBe("Würz – Bamberg");
+  });
+});
+
+describe("wind of the ride day", () => {
+  const sample = (time: string, windDirection: number): WeatherSample => ({
+    time,
+    temperature: 18,
+    precipitation: 0,
+    precipitationProbability: 0,
+    windSpeed: 15,
+    windDirection,
+    apparentTemperature: 18,
+    windGusts: 25,
+  });
+  const samples = [
+    sample("2027-06-01T23:00", 0),
+    sample("2027-06-02T09:00", 270),
+    sample("2027-06-02T13:00", 180),
+  ];
+
+  it("keeps the hours of the date", () => {
+    expect(dayWind(samples, "2027-06-02")).toEqual([
+      { hour: 9, from: 270, speed: 15 },
+      { hour: 13, from: 180, speed: 15 },
+    ]);
+    expect(dayWind(samples, "2027-06-20")).toEqual([]);
+  });
+
+  it("takes the nearest hour", () => {
+    const wind = dayWind(samples, "2027-06-02");
+    expect(windAt(wind, 10)?.from).toBe(270);
+    expect(windAt(wind, 12)?.from).toBe(180);
+    expect(windAt([], 12)).toBeUndefined();
+  });
+});
+
+describe("planning with the wind", () => {
+  const request: GenerateRequest = {
+    kind: "one-way",
+    startStation: { name: "Bamberg", kind: "station", coord: [10.9, 49.9] },
+    days: 1,
+    kmPerDay: 60,
+    maxAscentPerDay: 600,
+    profile: "touring",
+    startTime: "09:00",
+    startDate: "2027-06-02",
+    withWind: true,
+  };
+
+  it("applies to open rides and day loops", () => {
+    expect(isOpenRide(request)).toBe(true);
+    expect(plansWithWind(request)).toBe(true);
+    expect(plansWithWind({ ...request, kind: "day-loop" })).toBe(true);
+  });
+
+  it("does not apply to other trips, or without a date or the switch", () => {
+    const end: Place = { name: "Coburg", kind: "station", coord: [11, 50.3] };
+    expect(isOpenRide({ ...request, endStation: end })).toBe(false);
+    expect(plansWithWind({ ...request, endStation: end })).toBe(false);
+    expect(plansWithWind({ ...request, days: 2 })).toBe(false);
+    expect(plansWithWind({ ...request, kind: "multi-day-loop" })).toBe(false);
+    expect(plansWithWind({ ...request, startDate: undefined })).toBe(false);
+    expect(plansWithWind({ ...request, withWind: false })).toBe(false);
   });
 });

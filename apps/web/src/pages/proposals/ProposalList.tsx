@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   type GenerateRequest,
   headwindShare,
+  isOpenRide,
   type Proposal,
   type StageWeather,
   type WindDay,
@@ -110,6 +111,7 @@ export function ProposalList({
             proposal={p}
             number={i + 1}
             windDays={windDays[i]}
+            open={isOpenRide(request)}
             tags={tags.get(p.id) ?? []}
             selected={p.id === selected}
             onSelect={() => onSelect(p.id)}
@@ -218,6 +220,7 @@ function ProposalItem({
   proposal,
   number,
   windDays,
+  open,
   tags,
   selected,
   onSelect,
@@ -231,6 +234,8 @@ function ProposalItem({
   number: number;
   /** Undefined while loading or without a forecast. */
   windDays: WindDay[] | undefined;
+  /** An open day ride: named after where it goes. */
+  open: boolean;
   tags: ComparisonTag[];
   selected: boolean;
   onSelect: () => void;
@@ -261,27 +266,54 @@ function ProposalItem({
   );
   const firstWeak = beds.findIndex((count) => count <= WEAK_STOP_BEDS);
   const flavour = flavourOf(proposal);
+  const first = trip.stages[0];
+  const last = trip.stages.at(-1);
   const name = flavour
     ? t(`flavour.${flavour}`)
-    : proposal.character
-      ? t(`card.character.${proposal.character}`)
-      : t("card.option", { number });
+    : proposal.homeward && first
+      ? t("card.homeward", { place: first.start.name })
+      : open && last
+        ? t("card.destination", { place: last.end.name })
+        : proposal.character
+          ? t(`card.character.${proposal.character}`)
+          : t("card.option", { number });
+  // One day: the wind speed says more than the day number.
+  const speed =
+    trip.stages.length === 1 && windDays?.[0]
+      ? format.speed(windDays[0].wind.avgSpeed)
+      : undefined;
 
   return (
     <ProposalCard
       number={number}
       color={routeColorKey(proposal, number - 1)}
       title={name}
-      subtitle={via.length ? t("card.via", { stops: format.list(via) }) : ""}
+      subtitle={
+        via.length
+          ? t(proposal.homeward ? "card.trainOutVia" : "card.via", {
+              stops: format.list(via),
+            })
+          : ""
+      }
       // Warnings first: the row cuts off what doesn't fit.
       tags={[
         ...(firstWeak >= 0
           ? [t("card.tag.fewBeds", { day: firstWeak + 1 })]
           : []),
         ...tags.map((tag) => t(`card.tag.${tag}`)),
-        ...(wind?.kind === "tail" ? [t("card.tag.tailwind")] : []),
+        ...(wind?.kind === "tail"
+          ? [
+              speed
+                ? t("card.tag.tailwindSpeed", { speed })
+                : t("card.tag.tailwind"),
+            ]
+          : []),
         ...(wind?.kind === "head"
-          ? [t("card.tag.headwind", { day: wind.day })]
+          ? [
+              speed
+                ? t("card.tag.headwindSpeed", { speed })
+                : t("card.tag.headwind", { day: wind.day }),
+            ]
           : []),
       ]}
       stats={[
