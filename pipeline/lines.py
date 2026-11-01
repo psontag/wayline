@@ -22,7 +22,7 @@ from collections import defaultdict
 MIN_ZOOM = 5
 MAX_ZOOM = 11
 # Lowest zoom a line is in the tiles at, by network class. Matches NetworkLayer.
-CLASS_ZOOM = {"icn": 0, "ncn": 0, "rcn": 9, "lcn": 11, "connector": 11}
+CLASS_ZOOM = {"icn": 0, "ncn": 0, "rcn": 8, "lcn": 11, "connector": 11}
 CLASS_ORDER = ["icn", "ncn", "rcn", "lcn", "connector"]
 
 
