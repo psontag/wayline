@@ -7,7 +7,6 @@ import { focusRing } from "./Button";
 import { Badge } from "./Chip";
 import { type RouteColor, routeColorClasses } from "./RouteLabel";
 import { Tooltip } from "./Tooltip";
-import { WindBar, type WindBarShares } from "./WindBar";
 
 export type DayColor = RouteColor | "stage-a" | "stage-b";
 
@@ -28,8 +27,6 @@ export type DayListItem = {
   tag?: string;
   /** Problem with the day, e.g. "1 place to sleep". */
   warning?: string;
-  /** Wind shares of the day, shown as a thin bar. Leave out when calm or unknown. */
-  wind?: WindBarShares;
   /** Fill of the day badge. Defaults to the stop marker color. */
   color?: DayColor;
 };
@@ -126,9 +123,6 @@ export function DayList({
                 </span>
                 {day.date && (
                   <span className="text-xs text-text-muted">{day.date}</span>
-                )}
-                {day.wind && (
-                  <WindBar shares={day.wind} className="mt-1 w-24" />
                 )}
                 {day.warning && (
                   <span className="flex items-center gap-1 text-xs text-warning">

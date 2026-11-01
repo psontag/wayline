@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
 import {
-  CALM_KMH,
   type GenerateRequest,
   headwindShare,
   type Proposal,
@@ -34,7 +33,6 @@ import {
   proposalStats,
   relaxOptions,
   tripRidingHours,
-  leastHeadwind,
   type Relaxed,
   windTag,
 } from "./proposalView";
@@ -69,13 +67,18 @@ export function ProposalList({
 }: ProposalListProps) {
   const { t } = useTranslation("proposals");
   const { status, proposals } = generation;
-  const tags = useMemo(() => comparisonTags(proposals), [proposals]);
   const weather = useTripsWeather(proposals.map((p) => p.trip));
   const windDays = proposals.map((p, i) => {
     const days = weather[i];
     return days ? toWindDays(days, p) : undefined;
   });
-  const least = leastHeadwind(windDays);
+  const headwind = new Map(
+    proposals.flatMap((p, i) => {
+      const days = windDays[i];
+      return days ? [[p.id, headwindShare(days)] as const] : [];
+    }),
+  );
+  const tags = comparisonTags(proposals, headwind);
   const [order, setOrder] = useState<"best" | "wind">("best");
   // Ordering by wind needs the forecast of every proposal.
   const canOrder = proposals.length > 1 && windDays.every(Boolean);
@@ -138,7 +141,6 @@ export function ProposalList({
             proposal={p}
             number={number}
             windDays={wind}
-            leastHeadwind={p.id === proposals[least ?? -1]?.id}
             tags={tags.get(p.id) ?? []}
             selected={p.id === selected}
             onSelect={() => onSelect(p.id)}
@@ -247,7 +249,6 @@ function ProposalItem({
   proposal,
   number,
   windDays,
-  leastHeadwind,
   tags,
   selected,
   onSelect,
@@ -261,7 +262,6 @@ function ProposalItem({
   number: number;
   /** Undefined while loading or without a forecast. */
   windDays: WindDay[] | undefined;
-  leastHeadwind: boolean;
   tags: ComparisonTag[];
   selected: boolean;
   onSelect: () => void;
@@ -311,9 +311,6 @@ function ProposalItem({
           : []),
         ...tags.map((tag) => t(`card.tag.${tag}`)),
         ...(wind?.kind === "tail" ? [t("card.tag.tailwind")] : []),
-        ...(leastHeadwind && wind?.kind !== "tail"
-          ? [t("card.tag.leastHeadwind")]
-          : []),
         ...(wind?.kind === "head"
           ? [t("card.tag.headwind", { day: wind.day })]
           : []),
@@ -340,7 +337,6 @@ function ProposalItem({
       days={trip.stages.map((stage, i) => {
         const share = trip.settings.dayShares?.[i] ?? 1;
         const count = beds[i];
-        const dayWind = windDays?.[i]?.wind;
         return {
           label: String(i + 1),
           place: stage.end.name,
@@ -352,7 +348,6 @@ function ProposalItem({
           ...(count !== undefined && count <= WEAK_STOP_BEDS
             ? { warning: t("card.beds", { count }) }
             : {}),
-          ...(dayWind && dayWind.avgSpeed >= CALM_KMH ? { wind: dayWind } : {}),
         };
       })}
       footer={
