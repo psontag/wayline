@@ -24,6 +24,7 @@ const colorTokens = {
   hillshadeHighlight: "hillshade-highlight",
   marker: "marker",
   viaPoint: "via-point",
+  routeHighlight: "route-highlight",
   network: "network",
   terrainPaved: "terrain-paved",
   terrainGravel: "terrain-gravel",

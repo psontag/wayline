@@ -62,6 +62,7 @@
   --color-stage-b: #c9bde6;
   --color-marker: #15181d;
   --color-via-point: #b4532a;
+  --color-route-highlight: #15181d;
   --color-network: #6f9b79;
   --color-rain: #3d84d6;
   --color-wind-head: #c2412d;
@@ -234,6 +235,7 @@
       --color-stage-b: #8f82b8;
       --color-marker: #edeff3;
       --color-via-point: #ffb088;
+      --color-route-highlight: #ffffff;
       --color-network: #4e6b57;
       --color-rain: #6ab0f5;
       --color-wind-head: #ff8f7d;
@@ -297,6 +299,7 @@
     --color-stage-b: #c9bde6;
     --color-marker: #15181d;
     --color-via-point: #b4532a;
+    --color-route-highlight: #15181d;
     --color-network: #6f9b79;
     --color-rain: #3d84d6;
     --color-wind-head: #c2412d;
@@ -360,6 +363,7 @@
     --color-stage-b: #8f82b8;
     --color-marker: #edeff3;
     --color-via-point: #ffb088;
+    --color-route-highlight: #ffffff;
     --color-network: #4e6b57;
     --color-rain: #6ab0f5;
     --color-wind-head: #ff8f7d;

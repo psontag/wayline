@@ -47,6 +47,7 @@ Map tokens:
 | `route-outline` | Casing of the highlighted proposal |
 | `hillshade-shadow`, `hillshade-highlight` | Terrain shading on the maps |
 | `marker`, `via-point` | Stops and via points |
+| `route-highlight` | Part of the route in focus, e.g. a hovered climb. Drawn on a halo in `surface`. |
 | `network` | Signed cycling routes, a quiet layer below the route |
 
 Color values:
@@ -93,6 +94,7 @@ Color values:
 | `stage-b` | `#C9BDE6` | `#8F82B8` |
 | `marker` | `#15181D` | `#EDEFF3` |
 | `via-point` | `#B4532A` | `#FFB088` |
+| `route-highlight` | `#15181D` | `#FFFFFF` |
 | `network` | `#9DB7A0` | `#4E6B57` |
 | `route-best` | `#FF9A73` | `#FFA67F` |
 | `route-nature` | `#3FB37A` | `#62D197` |

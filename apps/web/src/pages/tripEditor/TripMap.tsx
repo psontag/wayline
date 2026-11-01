@@ -405,10 +405,16 @@ export function TripMap({
           }}
         >
           <MapLayer
+            id="highlight-halo"
+            type="line"
+            layout={lineLayout}
+            paint={{ "line-color": tokens.surface, "line-width": 12 }}
+          />
+          <MapLayer
             id="highlight-line"
             type="line"
             layout={lineLayout}
-            paint={{ "line-color": tokens.viaPoint, "line-width": 9 }}
+            paint={{ "line-color": tokens.routeHighlight, "line-width": 6 }}
           />
         </Source>
       )}
