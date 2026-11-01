@@ -8,7 +8,7 @@ Builds the route network and places for Baden-Württemberg, Hessen and Bayern fr
 pnpm data:build
 ```
 
-- Needs [uv](https://docs.astral.sh/uv/), Python 3.12 and [tippecanoe](https://github.com/felt/tippecanoe) (`brew install tippecanoe`, `apt install tippecanoe`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`.
+- Needs [uv](https://docs.astral.sh/uv/), Python 3.12 and [tippecanoe](https://github.com/felt/tippecanoe) (`brew install tippecanoe`, `apt install tippecanoe`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
 - Downloads missing inputs to `pipeline/cache/` (gitignored, about 3 GB): Geofabrik extracts of the three states and Copernicus GLO-30 tiles N47–N51, E007–E013.
 - Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `south-<date of the extracts>`.
 - Takes about 8 minutes and up to 5.5 GB of memory on a laptop. Reading the extracts takes 7 of the 8 minutes: 5 for routes and places, 2.5 for scenery. The results are cached, so the next build takes 1 minute.
@@ -36,7 +36,7 @@ The map draws the signed routes from vector tiles, not from the network tiles.
 - EuroVelo and national edges are in every zoom, regional ones from zoom 8, local ones from zoom 11. Every line stays in; neighbours are joined.
 - `routes.json`: id, name, class, length and bbox of each route. Routes are keyed by name, so the relations of one route (e.g. one per state) count as one.
 - A route's class is the best class of its OSM relations.
-- `python lines.py <data_dir>` rebuilds them for a built dataset. Without the OSM relations, a route's class is the one with the most km. The Oberfranken mock is built this way.
+- `uv run lines.py <data_dir>` rebuilds them for a built dataset. Without the OSM relations, a route's class is the one with the most km. The Oberfranken mock is built this way.
 
 ## Scenery
 
@@ -92,7 +92,7 @@ Sights within 500 m, share of edges:
 
 ```sh
 cd pipeline
-.venv/bin/python check_area.py ../apps/web/public/data/<version> "Heidelberg Hauptbahnhof" 80 Mosbach Michelstadt Eppingen
+uv run check_area.py ../apps/web/public/data/<version> "Heidelberg Hauptbahnhof" 80 Mosbach Michelstadt Eppingen
 ```
 
 Prints how much of the network within 80 km is connected to the station, the towns with hotels, and the best path to each named town.
@@ -103,7 +103,7 @@ Prints how much of the network within 80 km is connected to the station, the tow
 
 ```sh
 cd pipeline
-.venv/bin/python subset.py ../apps/web/public/data/<version> ../apps/web/public/data/mock/heidelberg 8.0 49.0 9.49 49.99 Heidelberg
+uv run subset.py ../apps/web/public/data/<version> ../apps/web/public/data/mock/heidelberg 8.0 49.0 9.49 49.99 Heidelberg
 ```
 
 ## Mock data
@@ -112,8 +112,8 @@ cd pipeline
 
 ```sh
 cd pipeline
-.venv/bin/python extract.py oberfranken-latest.osm.pbf extract.json
-.venv/bin/python spike/export_mock.py extract.json <dem-dir> ../apps/web/public/data/mock/oberfranken
+uv run extract.py oberfranken-latest.osm.pbf extract.json
+uv run spike/export_mock.py extract.json <dem-dir> ../apps/web/public/data/mock/oberfranken
 ```
 
 - `oberfranken-latest.osm.pbf` is from Geofabrik.

@@ -35,6 +35,9 @@ Follow `docs/07-design-system.md`. Mockups are in `design/`.
 ## Workflow
 
 - Commands: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm dev`.
+- In a new worktree, run `pnpm setup:worktree` first.
+- Run Python only through uv: `uv run script.py`, `uv run --no-project python -`. Never call `python`, `python3` or `pip` directly. Pipeline scripts run from `pipeline/` with `uv run <script>.py`.
+- Edit files with the Edit tool, not with `sed -i` or Python scripts.
 - Done means lint, typecheck and test pass. UI changes are checked in light and dark on `/dev/components` or in the app.
 - Never use `PROVIDERS=live` unless asked.
 - Never edit an applied migration.
