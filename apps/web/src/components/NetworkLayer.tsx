@@ -1,19 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  type BBox,
-  decodeLine,
-  type LonLat,
-  type NetworkClass,
-} from "@wayline/domain";
+import type { BBox, LonLat, NetworkClass } from "@wayline/domain";
 import { bboxAround } from "@wayline/planner";
 import {
   type NetworkRank,
   NetworkRouteCard,
   useThemeTokens,
 } from "@wayline/ui";
-import type { FeatureCollection, LineString } from "geojson";
 import type { MapLayerMouseEvent } from "maplibre-gl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Layer, Marker, Source, useMap } from "react-map-gl/maplibre";
 import { useServices } from "../data/ServicesProvider";
 
@@ -37,104 +31,79 @@ const ranks: Record<NetworkClass, NetworkRank> = {
   connector: "local",
 };
 
-type NetworkProps = {
-  rank: NetworkRank;
-  /** Main route name. */
-  name: string;
-  /** All route names as "|a|b|", so a filter can find one by "|a|". */
-  names: string;
-  lengthKm: number;
-};
+const CLASSES: NetworkClass[] = ["icn", "ncn", "rcn", "lcn", "connector"];
 
-/** Signed routes of the network around bbox as map lines. */
-function useNetworkLines(bbox: BBox | undefined) {
-  const { network } = useServices();
+/** Line tiles and route table of the data, loaded once. */
+function useRouteLines() {
+  const { lines } = useServices();
   return useQuery({
-    queryKey: ["networkLines", bbox],
-    enabled: !!bbox,
+    queryKey: ["routeLines"],
     staleTime: Infinity,
-    queryFn: async (): Promise<FeatureCollection<LineString, NetworkProps>> => {
-      const graph = await network.network(bbox);
-      return {
-        type: "FeatureCollection",
-        features: graph.edges
-          .filter((e) => e.routes.length > 0)
-          .map((e) => ({
-            type: "Feature",
-            properties: {
-              rank: ranks[e.network],
-              name: e.routes[0] ?? "",
-              names: `|${e.routes.join("|")}|`,
-              lengthKm: e.lengthKm,
-            },
-            geometry: {
-              type: "LineString",
-              coordinates: decodeLine(e.geometry),
-            },
-          })),
-      };
-    },
+    queryFn: lines,
   });
 }
 
 /**
  * Big routes first: EuroVelo and national routes always, regional ones
- * from zoom 9, local ones from zoom 11.
+ * from zoom 9, local ones from zoom 11. The line tiles hold each class
+ * from the same zoom on.
  */
 const levels = [
-  { id: "network-major", ranks: ["international", "national"], minzoom: 0 },
-  { id: "network-regional", ranks: ["regional"], minzoom: 9 },
-  { id: "network-local", ranks: ["local"], minzoom: 11 },
+  { id: "network-major", classes: ["icn", "ncn"], minzoom: 0 },
+  { id: "network-regional", classes: ["rcn"], minzoom: 9 },
+  { id: "network-local", classes: ["lcn", "connector"], minzoom: 11 },
 ] as const;
 
 const LAYER_IDS = levels.map((l) => l.id);
 
-type Hovered = { names: string[]; at: LonLat };
+type Hovered = { ids: number[]; at: LonLat };
 
 /**
- * Signed cycling routes around the given points as a quiet layer. Hover
- * or tap a line to see the route's name and length and to highlight it.
+ * Signed cycling routes as a quiet layer, wherever the map is. Hover or
+ * tap a line to see the route's name and length and to highlight it.
  * beforeId keeps it below our route lines, since it may load after them.
  * subtle makes it fainter, for maps where the routes matter more.
  */
 export function NetworkLayer({
-  around,
   beforeId,
   subtle = false,
 }: {
-  around: LonLat[];
   beforeId?: string;
   subtle?: boolean;
 }) {
   const tokens = useThemeTokens();
-  const { data } = useNetworkLines(networkArea(around));
+  const { data } = useRouteLines();
   const hovered = useHoveredRoute(!!data);
-  const name = hovered?.names[0];
-
-  const lengthKm = useMemo(() => {
-    if (!data || !name) return 0;
-    return data.features
-      .filter((f) => f.properties.names.includes(`|${name}|`))
-      .reduce((sum, f) => sum + f.properties.lengthKm, 0);
-  }, [data, name]);
 
   if (!data) return null;
-  const rank =
-    name &&
-    data.features.find((f) => f.properties.name === name)?.properties.rank;
+  // Biggest class first, then most km on this line.
+  const [main, ...others] = (hovered?.ids ?? [])
+    .flatMap((id) => {
+      const route = data.routes.get(id);
+      return route ? [route] : [];
+    })
+    .sort((a, b) => CLASSES.indexOf(a.network) - CLASSES.indexOf(b.network));
   const opacity = subtle ? 0.6 : 1;
 
   return (
     <>
-      <Source id="network" type="geojson" data={data}>
+      <Source
+        id="network"
+        type="vector"
+        tiles={[data.tiles]}
+        minzoom={data.minzoom}
+        maxzoom={data.maxzoom}
+        bounds={data.bounds}
+      >
         {levels.map((level) => (
           <Layer
             key={level.id}
             id={level.id}
             beforeId={beforeId}
+            source-layer="routes"
             type="line"
             minzoom={level.minzoom}
-            filter={["in", ["get", "rank"], ["literal", level.ranks]]}
+            filter={["in", ["get", "network"], ["literal", level.classes]]}
             layout={{ "line-cap": "round", "line-join": "round" }}
             paint={{
               "line-color": tokens.network,
@@ -147,12 +116,13 @@ export function NetworkLayer({
         <Layer
           id="network-hover"
           beforeId={beforeId}
+          source-layer="routes"
           type="line"
-          filter={["in", `|${name ?? ""}|`, ["get", "names"]]}
+          filter={["in", `|${main?.id ?? ""}|`, ["get", "routes"]]}
           layout={{
             "line-cap": "round",
             "line-join": "round",
-            visibility: name ? "visible" : "none",
+            visibility: main ? "visible" : "none",
           }}
           paint={{
             "line-color": tokens.network,
@@ -160,7 +130,7 @@ export function NetworkLayer({
           }}
         />
       </Source>
-      {hovered && name && rank && (
+      {hovered && main && (
         <Marker
           longitude={hovered.at[0]}
           latitude={hovered.at[1]}
@@ -169,10 +139,10 @@ export function NetworkLayer({
           style={{ zIndex: 6, pointerEvents: "none" }}
         >
           <NetworkRouteCard
-            name={name}
-            rank={rank}
-            length={lengthKm * 1000}
-            others={hovered.names.slice(1)}
+            name={main.name}
+            rank={ranks[main.network]}
+            length={main.lengthKm * 1000}
+            others={others.map((r) => r.name)}
           />
         </Marker>
       )}
@@ -213,12 +183,13 @@ function useHoveredRoute(ready: boolean): Hovered | undefined {
         .queryRenderedFeatures(event.point)
         .find((f) => f.layer.type === "line");
       if (topLine && topLine.source !== "network") return hide();
-      const names = String(event.features?.[0]?.properties?.names ?? "")
+      const ids = String(event.features?.[0]?.properties?.routes ?? "")
         .split("|")
-        .filter(Boolean);
+        .filter(Boolean)
+        .map(Number);
       setHovered(
-        names.length
-          ? { names, at: [event.lngLat.lng, event.lngLat.lat] }
+        ids.length
+          ? { ids, at: [event.lngLat.lng, event.lngLat.lat] }
           : undefined,
       );
     };

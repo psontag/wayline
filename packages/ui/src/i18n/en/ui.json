@@ -102,7 +102,7 @@
     "noForecast": "No forecast"
   },
   "networkRoute": {
-    "meta": "{{rank}} · {{distance}} nearby",
+    "meta": "{{rank}} · {{distance}}",
     "also": "Also: {{names}}",
     "rank": {
       "international": "EuroVelo route",

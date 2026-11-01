@@ -1,1 +1,1 @@
-{"version":"oberfranken-1","region":{"name":"Oberfranken","bbox":[10.44843,49.58611,12.25995,50.52409]},"files":{"network":"network.json","places":"places.json"},"createdAt":"2026-10-19"}
+{"version":"oberfranken-1","region":{"name":"Oberfranken","bbox":[10.44843,49.58611,12.25995,50.52409]},"files":{"network":"network.json","places":"places.json","routes":"routes.json"},"createdAt":"2026-10-19","lines":{"path":"lines/{z}/{x}/{y}.pbf","minzoom":5,"maxzoom":11,"bounds":[10.4484,49.5861,12.2599,50.5241]}}

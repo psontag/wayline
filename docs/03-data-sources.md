@@ -157,7 +157,7 @@ Later: live connections with a bike filter. `db-vendo-client` / `v6.db.transport
 ## Map
 
 - MapLibre GL JS with OpenFreeMap tiles. Free, no key.
-- Overlay of signed cycling routes as tiled files in the static assets.
+- Overlay of signed cycling routes as vector tiles in the static assets (`pipeline/lines.py`).
 
 ## Cloudflare free plan
 

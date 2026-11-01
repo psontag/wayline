@@ -47,7 +47,6 @@ import { useSiteInfo } from "../../data/queries";
 import { hotelBookingUrl } from "./BookingLink";
 import type { MapHotel } from "./mapTypes";
 import type { MapStation } from "./stations";
-import { tripStops } from "./tripArea";
 import type { WeatherField } from "./weatherGrid";
 import { WeatherLayers } from "./WeatherLayers";
 
@@ -316,7 +315,6 @@ export function TripMap({
       fitKey={fitDay}
       initialFit={lines.flat()}
       padding={padding}
-      networkAround={tripStops(trip)}
       hiddenLabels={hiddenLabels}
       legend={
         route?.proposed.length

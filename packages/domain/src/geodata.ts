@@ -7,9 +7,11 @@ export type Manifest = {
   version: string;
   region: { name: string; bbox: BBox };
   /** File names relative to the manifest. A tiled dataset has no network file. */
-  files: { network?: string; places: string };
+  files: { network?: string; places: string; routes?: string };
   /** Only in tiled datasets. */
   tiles?: TileIndex;
+  /** Vector tiles of the signed routes, for the map. Built by pipeline/lines.py. */
+  lines?: LineTiles;
   createdAt: string;
 };
 
@@ -20,6 +22,34 @@ export type TileIndex = {
   path: string;
   /** Tiles that exist. Others have no network. */
   keys: string[];
+};
+
+export type LineTiles = {
+  /** File path relative to the manifest, with "{z}", "{x}" and "{y}". */
+  path: string;
+  minzoom: number;
+  maxzoom: number;
+  /** Area with tiles. Inside it, every tile exists, if empty. */
+  bounds: BBox;
+};
+
+/**
+ * A signed route, keyed by name. Line tiles hold its id in the "routes"
+ * property ("|1|5|", main route first).
+ */
+export type RouteInfo = {
+  id: number;
+  name: string;
+  /** Lowest network class of its edges. */
+  network: NetworkClass;
+  /** Sum of its edges. */
+  lengthKm: number;
+  bbox: BBox;
+};
+
+export type RouteTable = {
+  version: string;
+  routes: RouteInfo[];
 };
 
 /**

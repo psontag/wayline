@@ -7,7 +7,7 @@ export type NetworkRank = "international" | "national" | "regional" | "local";
 export type NetworkRouteCardProps = {
   name: string;
   rank: NetworkRank;
-  /** Meters of the route in the loaded map area. */
+  /** Meters of the whole route. */
   length: number;
   /** Other signed routes on the same way. */
   others?: string[];
