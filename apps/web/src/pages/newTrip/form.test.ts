@@ -6,6 +6,7 @@ import {
   detour,
   formDays,
   fromRequest,
+  missingPlaces,
   newTripSchema,
   toRequest,
   type TripLength,
@@ -49,13 +50,29 @@ describe("searchPlaces", () => {
 });
 
 describe("new trip form", () => {
-  const defaults = defaultValues(places, "2027-06-01");
+  const empty = defaultValues("2027-06-01");
+  const town = (name: string) =>
+    places.find((p) => p.kind === "town" && p.name === name)!;
+  const defaults = { ...empty, start: town("Bamberg"), end: town("Coburg") };
 
-  it("defaults to Bamberg to Coburg in three days", () => {
-    expect(defaults.start).toMatchObject({ name: "Bamberg", kind: "town" });
-    expect(defaults.end).toMatchObject({ name: "Coburg", kind: "town" });
-    expect(formDays(defaults)).toBe(3);
-    expect(defaults.startDate).toBe("2027-06-08");
+  it("starts empty, three days from next week", () => {
+    expect(empty.start).toBeNull();
+    expect(empty.end).toBeNull();
+    expect(formDays(empty)).toBe(3);
+    expect(empty.startDate).toBe("2027-06-08");
+    expect(empty.kmPerDay).toBe(70);
+  });
+
+  it("can't find routes without a start, or an end for A to B", () => {
+    expect(missingPlaces(empty)).toBe("startAndEnd");
+    expect(missingPlaces({ ...empty, shape: "loop" })).toBe("start");
+    expect(missingPlaces({ ...empty, start: defaults.start })).toBe("end");
+    expect(missingPlaces({ ...defaults, end: null, shape: "loop" })).toBe(
+      undefined,
+    );
+    expect(missingPlaces(defaults)).toBeUndefined();
+    const result = newTripSchema.safeParse({ ...empty, shape: "loop" });
+    expect(result.error?.issues[0]?.message).toBe("startRequired");
   });
 
   it("turns the defaults into a generate request", () => {

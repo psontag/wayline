@@ -95,6 +95,11 @@
   "summary_one": "{{count}} day · about {{distance}}",
   "summary_other": "{{count}} days · about {{distance}}",
   "submit": "Find routes",
+  "missing": {
+    "start": "Choose a start to find routes.",
+    "end": "Choose an end to find routes.",
+    "startAndEnd": "Choose a start and an end to find routes."
+  },
   "errors": {
     "startRequired": "Choose a start.",
     "endRequired": "Choose an end.",
@@ -104,9 +109,8 @@
     "maxAscentPerDay": "Enter 100 to 5,000 m."
   },
   "map": {
-    "label": "Map with the start and end of the trip",
+    "label": "Map of the cycling routes and the trip's start and end",
     "network": "Signed cycling routes",
-    "area": "Area with route data",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out"
   },

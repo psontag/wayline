@@ -41,6 +41,7 @@ import {
   fromRequest,
   isFormError,
   lengths,
+  missingPlaces,
   newTripSchema,
   type NewTripValues,
   shapes,
@@ -87,8 +88,8 @@ export function NewTripForm({
 
   const form = useForm({
     defaultValues: request
-      ? fromRequest(request, defaultValues(places, now, kind))
-      : defaultValues(places, now, kind),
+      ? fromRequest(request, defaultValues(now, kind))
+      : defaultValues(now, kind),
     validators: { onChange: newTripSchema },
     onSubmit: ({ value }) =>
       navigate({ to: "/proposals", search: { request: toRequest(value) } }),
@@ -501,12 +502,33 @@ export function NewTripForm({
 
         <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-4">
           <form.Subscribe selector={(s) => s.values}>
-            {(values) => <Summary values={values} />}
+            {(values) => {
+              const missing = missingPlaces(values);
+              return (
+                <>
+                  {missing ? (
+                    <span
+                      id={`${id}-missing`}
+                      className="text-xs text-text-muted"
+                    >
+                      {t(`missing.${missing}`)}
+                    </span>
+                  ) : (
+                    <Summary values={values} />
+                  )}
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={!!missing}
+                    aria-describedby={missing && `${id}-missing`}
+                  >
+                    {t("submit")}
+                    <ArrowRight aria-hidden />
+                  </Button>
+                </>
+              );
+            }}
           </form.Subscribe>
-          <Button type="submit" variant="primary">
-            {t("submit")}
-            <ArrowRight aria-hidden />
-          </Button>
         </div>
       </form>
     </div>

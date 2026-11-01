@@ -145,21 +145,13 @@ export function formDays(v: NewTripValues): number {
   return v.length === "one" ? 1 : dayCount(v.startDate, v.endDate);
 }
 
-/** Bamberg to Coburg in three days: works well on the test network. */
-export function defaultValues(
-  places: Place[],
-  today: string,
-  kind?: TripKind,
-): NewTripValues {
-  const town = (name: string) =>
-    places.find((p) => p.kind === "town" && p.name === name) ??
-    places.find((p) => p.name === name) ??
-    null;
+/** Three days from next week, with no start or end yet. */
+export function defaultValues(today: string, kind?: TripKind): NewTripValues {
   const startDate = addDays(today, 7);
   return {
     ...fromKind(kind),
-    start: town("Bamberg"),
-    end: town("Coburg"),
+    start: null,
+    end: null,
     startDate,
     startTime: "09:00",
     endDate: addDays(startDate, 2),
@@ -229,6 +221,15 @@ export function toRequest(values: NewTripValues): GenerateRequest {
         }
       : {}),
   });
+}
+
+/** Places still missing before routes can be found. */
+export function missingPlaces(
+  v: Pick<NewTripValues, "shape" | "start" | "end">,
+): "start" | "end" | "startAndEnd" | undefined {
+  const end = v.shape === "ab" && !v.end;
+  if (!v.start) return end ? "startAndEnd" : "start";
+  return end ? "end" : undefined;
 }
 
 export function isFormError(message: unknown): message is FormError {
