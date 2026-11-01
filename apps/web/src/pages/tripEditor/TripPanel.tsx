@@ -9,10 +9,8 @@ import {
   DayCard,
   DayWeather,
   InlineEdit,
-  NavRow,
   PanelHeader,
   PanelSection,
-  RowList,
   StatTile,
   SurfaceBar,
   useFormat,
@@ -24,7 +22,7 @@ import { DatesSection } from "./DatesSection";
 import { isChanged } from "./routeEdits";
 import { stageWind } from "./stageWeather";
 import { TripMenu } from "./TripHeader";
-import { useHasTrains } from "./TrainOptions";
+import { TrainOptions, useHasTrains } from "./TrainOptions";
 import type { TripEditorState } from "./useTripEditor";
 
 /** Trip level of the side panel: dates, totals, days and trains. */
@@ -125,23 +123,30 @@ export function TripPanel({
         ))}
       </PanelSection>
       {(there || home) && (
-        <PanelSection icon="trains" title={t("section.trains")}>
-          <RowList>
-            {there && (
-              <NavRow
-                title={t("section.gettingThere")}
-                detail={t("trains.to", { station: start })}
-                onClick={() => onOpenDay(0)}
-              />
-            )}
-            {home && (
-              <NavRow
-                title={t("section.gettingHome")}
-                detail={t("trains.from", { station: end })}
-                onClick={() => onOpenDay(trip.stages.length - 1)}
-              />
-            )}
-          </RowList>
+        // Folded, so the rate-limited timetable is asked only on request.
+        <PanelSection
+          icon="trains"
+          title={t("section.trains")}
+          summary={t("trains.summary", { from: start, to: end })}
+          collapsible
+          defaultOpen={false}
+        >
+          {there && (
+            <TrainOptions
+              trip={trip}
+              direction="there"
+              editor={editor}
+              defaultOpen
+            />
+          )}
+          {home && (
+            <TrainOptions
+              trip={trip}
+              direction="back"
+              editor={editor}
+              defaultOpen
+            />
+          )}
         </PanelSection>
       )}
     </>

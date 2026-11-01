@@ -14,18 +14,19 @@ import { useTripsWeather, useTripWeather } from "../../data/queries";
 import type { TripEditorState } from "./useTripEditor";
 
 /** Start dates to compare, in days from the planned one. */
-const SHIFTS = [-2, -1, 0, 1, 2];
+export const SHIFTS = [-2, -1, 0, 1, 2];
 
-/** Headwind now, the other way round and on nearby start dates. */
-export function useWindOptions(trip: Trip) {
+/**
+ * Headwind now, the other way round and on start dates near `center`
+ * (default: the start date).
+ */
+export function useWindOptions(trip: Trip, center = trip.startDate) {
   const now = useTripWeather(trip);
   const back = useTripWeather(trip, !!now.data, "reversed");
 
   const today = localToday();
-  const dates = trip.startDate
-    ? SHIFTS.map((d) => addDays(trip.startDate as string, d)).filter(
-        (date) => date >= today,
-      )
+  const dates = center
+    ? SHIFTS.map((d) => addDays(center, d)).filter((date) => date >= today)
     : [];
   const shifted = dates.map((startDate) => ({ ...trip, startDate }));
   const dateWeather = useTripsWeather(now.data ? shifted : []);

@@ -8,9 +8,10 @@ import {
   useFormat,
 } from "@wayline/ui";
 import { Wind } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TripEditorState } from "./useTripEditor";
-import { useWindOptions } from "./WindAdvice";
+import { SHIFTS, useWindOptions } from "./WindAdvice";
 
 /** Start date with the headwind on nearby dates, and wind tips. */
 export function DatesSection({
@@ -22,7 +23,15 @@ export function DatesSection({
 }) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
-  const wind = useWindOptions(trip);
+  // The dates to pick from stay put when one of them is picked. Only a
+  // start date outside the list moves it.
+  const [center, setCenter] = useState(trip.startDate);
+  const inList =
+    !!trip.startDate &&
+    !!center &&
+    SHIFTS.some((d) => addDays(center, d) === trip.startDate);
+  if (!inList && center !== trip.startDate) setCenter(trip.startDate);
+  const wind = useWindOptions(trip, inList ? center : trip.startDate);
   const days = trip.stages.length;
   const dateLabel = (date: string) => format.date(localTimeToDate(date));
   const range = (start: string) =>

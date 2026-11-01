@@ -31,9 +31,9 @@
     "hide": "Hide trains",
     "loading": "Looking up trains…",
     "unavailable": "Timetable not available. Search on bahn.de.",
-    "to": "To {{station}}",
     "from": "From {{station}}",
-    "arriveBy": "Arrive by {{time}}"
+    "arriveBy": "Arrive by {{time}}",
+    "summary": "{{from}} and {{to}}"
   },
   "summary": {
     "stageCount_one": "{{count}} day",
