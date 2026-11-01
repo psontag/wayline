@@ -45,12 +45,12 @@ function useRouteLines() {
 
 /**
  * Big routes first: EuroVelo and national routes always, regional ones
- * from zoom 9, local ones from zoom 11. The line tiles hold each class
+ * from zoom 8, local ones from zoom 11. The line tiles hold each class
  * from the same zoom on.
  */
 const levels = [
   { id: "network-major", classes: ["icn", "ncn"], minzoom: 0 },
-  { id: "network-regional", classes: ["rcn"], minzoom: 9 },
+  { id: "network-regional", classes: ["rcn"], minzoom: 8 },
   { id: "network-local", classes: ["lcn", "connector"], minzoom: 11 },
 ] as const;
 

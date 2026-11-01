@@ -21,7 +21,7 @@ Output (October 2026):
 | Route network | 68,000 nodes, 90,000 edges, 87,000 km |
 | Tiles | 87 files of 0.5°, 39 MiB (6.6 MiB gzipped), median 0.4 MiB, largest 2.4 MiB |
 | `places.json` | 4.1 MiB (1 MiB gzipped): 16,800 towns, 2,500 stations, 15,700 hotels |
-| Route lines | 1,980 files (768 empty), 4 MiB, largest 54 KiB |
+| Route lines | 1,980 files (768 empty), 4.6 MiB, largest 73 KiB |
 | `routes.json` | 0.4 MiB: 3,800 routes |
 
 A trip around Heidelberg needs about 6 tiles, 4.4 MiB (0.7 MiB gzipped).
@@ -33,7 +33,7 @@ The map draws the signed routes from vector tiles, not from the network tiles.
 - `lines/{z}/{x}/{y}.pbf`: one layer `routes`, zoom 5–11. MapLibre stretches zoom 11 for closer views.
 - Inside the bounds in the manifest every tile exists, empty if no route runs there. The host answers a missing file with the app page, which the map can't read.
 - Each line is a signed edge with `network` (its class) and `routes` (route ids as `|1|5|`, main route first).
-- EuroVelo and national edges are in every zoom, regional ones from zoom 9, local ones from zoom 11. Every line stays in; neighbours are joined.
+- EuroVelo and national edges are in every zoom, regional ones from zoom 8, local ones from zoom 11. Every line stays in; neighbours are joined.
 - `routes.json`: id, name, class, length and bbox of each route. Routes are keyed by name, so the relations of one route (e.g. one per state) count as one.
 - A route's class is the best class of its OSM relations.
 - `python lines.py <data_dir>` rebuilds them for a built dataset. Without the OSM relations, a route's class is the one with the most km. The Oberfranken mock is built this way.
