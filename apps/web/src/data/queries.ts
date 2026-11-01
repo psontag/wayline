@@ -1,6 +1,7 @@
 import {
   keepPreviousData,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -10,6 +11,7 @@ import {
   type Daylight,
   type LonLat,
   type RoutePoint,
+  reverseTrip,
   routePoints,
   sampleAt,
   stageSpeed,
@@ -168,26 +170,50 @@ export function useWeather(trip: Trip | undefined, stageIndex: number) {
 
 /**
  * Weather of every day of a trip. Data is null when any day has no
- * forecast.
+ * forecast. "reversed" gives the weather of the trip ridden the other way
+ * round, with its days in that order.
  */
-export function useTripWeather(trip: Trip | undefined, enabled = true) {
+export function useTripWeather(
+  trip: Trip | undefined,
+  enabled = true,
+  variant: "" | "reversed" = "",
+) {
   const forecast = useForecast();
-  return useQuery({
+  return useQuery(tripWeatherQuery(trip, forecast, enabled, variant));
+}
+
+/** useTripWeather for many trips at once, e.g. all proposals. */
+export function useTripsWeather(trips: Trip[]) {
+  const forecast = useForecast();
+  return useQueries({
+    queries: trips.map((trip) => tripWeatherQuery(trip, forecast, true, "")),
+  }).map((q) => q.data);
+}
+
+function tripWeatherQuery(
+  trip: Trip | undefined,
+  forecast: (cell: LonLat) => Promise<Forecast>,
+  enabled: boolean,
+  variant: "" | "reversed",
+) {
+  return {
     queryKey: [
       "tripWeather",
       trip?.id,
+      variant,
       trip?.startDate,
       trip?.stages.map((s) => s.id).join(","),
     ],
     enabled: enabled && !!trip?.startDate,
     queryFn: async () => {
       if (!trip) return null;
+      const ridden = variant === "reversed" ? reverseTrip(trip) : trip;
       const days = await Promise.all(
-        trip.stages.map((_, i) => stageWeather(trip, i, forecast)),
+        ridden.stages.map((_, i) => stageWeather(ridden, i, forecast)),
       );
       return days.some((d) => !d) ? null : (days as StageWeather[]);
     },
-  });
+  };
 }
 
 /** Forecasts of many cells, e.g. for the weather map. Off when empty. */

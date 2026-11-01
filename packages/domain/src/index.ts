@@ -11,3 +11,4 @@ export * from "./time";
 export * from "./trip";
 export * from "./weather";
 export * from "./climbs";
+export * from "./wind";

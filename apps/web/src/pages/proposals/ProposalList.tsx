@@ -1,5 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { type GenerateRequest, type Proposal } from "@wayline/domain";
+import {
+  CALM_KMH,
+  type GenerateRequest,
+  headwindShare,
+  type Proposal,
+  type StageWeather,
+  type WindDay,
+} from "@wayline/domain";
 import {
   Button,
   ElevationProfile,
@@ -7,13 +14,14 @@ import {
   ProgressBar,
   ProposalCard,
   ProposalCardSkeleton,
+  SegmentedControl,
   useFormat,
 } from "@wayline/ui";
 import { ArrowRight, Mountain, RotateCcw, SearchX } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
-import { useNetwork, useTripWeather } from "../../data/queries";
+import { useNetwork, useTripsWeather } from "../../data/queries";
 import { tripStops } from "../tripEditor/tripArea";
 import { bedsNear, usePlaceIndex } from "../tripEditor/stopChoices";
 import { profilePoints } from "../tripEditor/surfaceProfile";
@@ -26,6 +34,7 @@ import {
   proposalStats,
   relaxOptions,
   tripRidingHours,
+  leastHeadwind,
   type Relaxed,
   windTag,
 } from "./proposalView";
@@ -58,8 +67,28 @@ export function ProposalList({
   openFailed,
   onRelax,
 }: ProposalListProps) {
+  const { t } = useTranslation("proposals");
   const { status, proposals } = generation;
   const tags = useMemo(() => comparisonTags(proposals), [proposals]);
+  const weather = useTripsWeather(proposals.map((p) => p.trip));
+  const windDays = proposals.map((p, i) => {
+    const days = weather[i];
+    return days ? toWindDays(days, p) : undefined;
+  });
+  const least = leastHeadwind(windDays);
+  const [order, setOrder] = useState<"best" | "wind">("best");
+  // Ordering by wind needs the forecast of every proposal.
+  const canOrder = proposals.length > 1 && windDays.every(Boolean);
+  const items = proposals.map((p, i) => ({
+    p,
+    number: i + 1,
+    wind: windDays[i],
+  }));
+  if (canOrder && order === "wind") {
+    items.sort(
+      (a, b) => headwindShare(a.wind ?? []) - headwindShare(b.wind ?? []),
+    );
+  }
 
   if (status === "failed" && generation.failedLimit) {
     return (
@@ -87,11 +116,29 @@ export function ProposalList({
         />
       )}
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3">
-        {proposals.map((p, i) => (
+        {canOrder && (
+          <div className="flex items-center justify-between gap-3">
+            <span id="proposal-order" className="text-xs text-text-muted">
+              {t("order.label")}
+            </span>
+            <SegmentedControl
+              aria-labelledby="proposal-order"
+              value={order}
+              onValueChange={(value) => setOrder(value as "best" | "wind")}
+              options={[
+                { value: "best", label: t("order.best") },
+                { value: "wind", label: t("order.wind") },
+              ]}
+            />
+          </div>
+        )}
+        {items.map(({ p, number, wind }) => (
           <ProposalItem
             key={p.id}
             proposal={p}
-            number={i + 1}
+            number={number}
+            windDays={wind}
+            leastHeadwind={p.id === proposals[least ?? -1]?.id}
             tags={tags.get(p.id) ?? []}
             selected={p.id === selected}
             onSelect={() => onSelect(p.id)}
@@ -186,12 +233,21 @@ function ResultLine({
   );
 }
 
+function toWindDays(days: StageWeather[], proposal: Proposal): WindDay[] {
+  return days.map((d, i) => ({
+    wind: d.wind,
+    distance: proposal.trip.stages[i]?.stats.distance ?? 0,
+  }));
+}
+
 /** A stop with this many places to sleep or fewer is flagged. */
 const WEAK_STOP_BEDS = 2;
 
 function ProposalItem({
   proposal,
   number,
+  windDays,
+  leastHeadwind,
   tags,
   selected,
   onSelect,
@@ -203,6 +259,9 @@ function ProposalItem({
 }: {
   proposal: Proposal;
   number: number;
+  /** Undefined while loading or without a forecast. */
+  windDays: WindDay[] | undefined;
+  leastHeadwind: boolean;
   tags: ComparisonTag[];
   selected: boolean;
   onSelect: () => void;
@@ -219,15 +278,7 @@ function ProposalItem({
   const via = proposal.via.length
     ? proposal.via
     : trip.stages.slice(0, -1).map((s) => s.end.name);
-  const weather = useTripWeather(trip, selected && trip.kind === "one-way");
-  const wind =
-    weather.data &&
-    windTag(
-      weather.data.map((d, i) => ({
-        wind: d.wind,
-        distance: trip.stages[i]?.stats.distance ?? 0,
-      })),
-    );
+  const wind = windDays && windTag(windDays);
   const places = usePlaceIndex();
   // All beds, not only in budget: budgets guess from OSM stars.
   const beds = useMemo(
@@ -260,6 +311,9 @@ function ProposalItem({
           : []),
         ...tags.map((tag) => t(`card.tag.${tag}`)),
         ...(wind?.kind === "tail" ? [t("card.tag.tailwind")] : []),
+        ...(leastHeadwind && wind?.kind !== "tail"
+          ? [t("card.tag.leastHeadwind")]
+          : []),
         ...(wind?.kind === "head"
           ? [t("card.tag.headwind", { day: wind.day })]
           : []),
@@ -286,6 +340,7 @@ function ProposalItem({
       days={trip.stages.map((stage, i) => {
         const share = trip.settings.dayShares?.[i] ?? 1;
         const count = beds[i];
+        const dayWind = windDays?.[i]?.wind;
         return {
           label: String(i + 1),
           place: stage.end.name,
@@ -297,6 +352,7 @@ function ProposalItem({
           ...(count !== undefined && count <= WEAK_STOP_BEDS
             ? { warning: t("card.beds", { count }) }
             : {}),
+          ...(dayWind && dayWind.avgSpeed >= CALM_KMH ? { wind: dayWind } : {}),
         };
       })}
       footer={

@@ -144,6 +144,8 @@ export {
   type HotelRowProps,
   SaveHotelButton,
 } from "./components/HotelRow";
+export { WindBar, type WindBarShares } from "./components/WindBar";
+export { type WindDateOption, WindDateStrip } from "./components/WindDateStrip";
 export {
   StopChoices,
   type StopChoice,

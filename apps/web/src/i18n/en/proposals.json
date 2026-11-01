@@ -106,6 +106,7 @@
       "shortest": "Shortest",
       "tailwind": "Mostly tailwind",
       "headwind": "Headwind on day {{day}}",
+      "leastHeadwind": "Least headwind",
       "fewBeds": "Few beds on day {{day}}"
     },
     "beds_zero": "No place to sleep",
@@ -128,5 +129,10 @@
     "flat": "Flat and easy",
     "hilly": "Hilly",
     "sights": "Towns and sights"
+  },
+  "order": {
+    "label": "Order",
+    "best": "Best first",
+    "wind": "Least headwind"
   }
 }
