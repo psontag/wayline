@@ -98,3 +98,11 @@ export function TrainOptions({
     </div>
   );
 }
+
+/** True when TrainOptions has something to show for this direction. */
+export function useHasTrains(trip: Trip, direction: Connection["direction"]) {
+  const [home] = useHomeStation();
+  const station =
+    direction === "there" ? trip.stages[0]?.start : trip.stages.at(-1)?.end;
+  return !!trainQueries(trip, home)[direction] && station?.kind === "station";
+}

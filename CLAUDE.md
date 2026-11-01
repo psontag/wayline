@@ -26,6 +26,7 @@ Applies to docs, code comments, commit messages and PR descriptions.
 Follow `docs/07-design-system.md`. Mockups are in `design/`.
 
 - Use components from `packages/ui`. Add a new component there instead of styling inline.
+- Every side panel follows "Side panels" in `docs/07-design-system.md`: panel header, then sections with icon, title and summary.
 - Use only design tokens. No raw colors, sizes or arbitrary Tailwind values.
 - Check every UI change in light and dark mode.
 - Use the terms and formats from the design system doc.

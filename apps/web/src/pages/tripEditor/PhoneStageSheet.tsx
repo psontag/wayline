@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
 import { downloadTripGpx } from "../../data/gpx";
-import { StageChange } from "./StageList";
+import { StageChange } from "./StageChange";
 import { TrainOptions } from "./TrainOptions";
 import { WindAdvice } from "./WindAdvice";
 import type { TripEditorState } from "./useTripEditor";

@@ -46,7 +46,7 @@ export type DayListProps = {
   className?: string;
 };
 
-const colorClasses: Record<DayColor, string> = {
+export const dayColorClasses: Record<DayColor, string> = {
   ...routeColorClasses,
   "stage-a": "bg-stage-a",
   "stage-b": "bg-stage-b",
@@ -103,7 +103,7 @@ export function DayList({
                   className={cn(
                     "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-extrabold tabular-nums",
                     day.color
-                      ? [colorClasses[day.color], "text-on-route"]
+                      ? [dayColorClasses[day.color], "text-on-route"]
                       : selected
                         ? "bg-route-selected text-on-route"
                         : "bg-marker text-surface",

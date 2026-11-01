@@ -8,7 +8,15 @@ import {
   Label,
   SegmentedControl,
   Select,
-  StageDetails,
+  ChangeNotice,
+  ChoiceList,
+  DayCard,
+  MoreRow,
+  NavRow,
+  PanelHeader,
+  PanelSection,
+  RowList,
+  StatTile,
   StatBlock,
   Stat,
   statIcons,
@@ -82,7 +90,6 @@ import {
   Download,
   Ellipsis,
   EllipsisVertical,
-  ExternalLink,
   MousePointerClick,
   Pencil,
   Redo2,
@@ -162,7 +169,6 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
   const profileLabelId = useId();
   const [profile, setProfile] = useState("touring");
   const [selectedDay, setSelectedDay] = useState(2);
-  const selectedStage = stages.find((s) => s.day === selectedDay);
   const [locked, setLocked] = useState<Record<number, boolean>>({
     1: true,
     2: true,
@@ -320,80 +326,118 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
 
       <Section title={t("section.stages")}>
         <div className="flex max-w-panel flex-col rounded-md bg-surface">
-          <DayList
-            className="p-3"
-            start={stages[0].from}
-            days={stages.map((stage) => ({
-              label: String(stage.day),
-              place: stage.day === 2 ? stop : stage.to,
-              date: format.date(stage.date),
-              distance: format.distance(stage.distance),
-              ascent: format.elevation(stage.ascent),
-              ridingTime: format.duration(stage.ridingHours),
-              tag: locked[stage.day] ? t("demo.locked") : undefined,
-            }))}
-            selectedDay={selectedDay}
-            onSelectDay={setSelectedDay}
-            details={
-              selectedStage && (
-                <StageDetails
-                  surface={selectedStage.surface}
-                  weather={{
-                    temperature: selectedStage.temperature,
-                    feelsLike: selectedStage.feelsLike,
-                    rain: selectedStage.day === 2 ? 1.2 : 0,
-                    wind: selectedStage.wind,
-                  }}
-                  locked={locked[selectedDay] ?? false}
-                  onLockedChange={(value) =>
-                    setLocked({ ...locked, [selectedDay]: value })
-                  }
-                  alternatives={
-                    <div className="flex flex-wrap gap-1.5">
-                      {alternatives.map((alt) => (
-                        <Chip
-                          key={alt.name}
-                          selected={alt.name === stop}
-                          onClick={() => setStop(alt.name)}
-                        >
-                          {t("demo.alternative", {
-                            name: alt.name,
-                            distance: format.distance(alt.distance),
-                          })}
-                        </Chip>
-                      ))}
-                    </div>
-                  }
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      asChild
-                      variant="primary"
-                      size="sm"
-                      className="flex-1"
-                    >
-                      <a
-                        href="https://www.booking.com"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {t("demo.bookHotels", { place: stop })}
-                        <ExternalLink aria-hidden />
-                      </a>
-                    </Button>
-                    <div className="w-20 shrink-0">
-                      <Select
-                        size="sm"
-                        aria-label={t("demo.rating")}
-                        defaultValue="8"
-                        options={ratingOptions(t("demo.ratingAny"))}
-                      />
-                    </div>
-                  </div>
-                </StageDetails>
-              )
+          <PanelHeader
+            title={t("demo.tripName")}
+            actions={
+              <IconButton
+                size="sm"
+                label={t("demo.more")}
+                icon={<Ellipsis aria-hidden />}
+              />
             }
           />
+          <PanelSection
+            icon="trip"
+            title={t("demo.sectionTrip")}
+            summary={t("demo.tripSummary")}
+          >
+            <div className="grid grid-cols-3 gap-2">
+              <StatTile
+                icon="distance"
+                label={t("demo.distance")}
+                value={format.distance(252_000)}
+              />
+              <StatTile
+                icon="ascent"
+                label={t("demo.ascent")}
+                value={format.elevation(2140)}
+              />
+              <StatTile
+                icon="ridingTime"
+                label={t("demo.ridingTime")}
+                value={format.duration(16.2)}
+                detail={t("demo.tileDetail")}
+              />
+            </div>
+          </PanelSection>
+          <PanelSection
+            icon="days"
+            title={t("demo.sectionDays")}
+            summary={t("demo.daysHint")}
+          >
+            {stages.map((stage) => (
+              <DayCard
+                key={stage.day}
+                label={String(stage.day)}
+                date={format.date(stage.date)}
+                place={stage.day === 2 ? stop : stage.to}
+                color={stage.day % 2 ? "stage-a" : "stage-b"}
+                distance={format.distance(stage.distance)}
+                ascent={format.elevation(stage.ascent)}
+                ridingTime={format.duration(stage.ridingHours)}
+                weather={
+                  <DayWeather
+                    temperature={stage.temperature}
+                    rain={stage.day === 2 ? 1.2 : 0}
+                    wind={stage.wind}
+                  />
+                }
+                hotel={t("demo.hotelName")}
+                locked={locked[stage.day]}
+                changed={stage.day === 3}
+                highlighted={stage.day === selectedDay}
+                onClick={() => setSelectedDay(stage.day)}
+              />
+            ))}
+          </PanelSection>
+          <PanelSection
+            icon="stop"
+            title={t("demo.sectionStop")}
+            summary={stop}
+            collapsible
+            notice={
+              <ChangeNotice
+                title={t("demo.changed")}
+                detail={t("demo.changedDetail")}
+                actionLabel={t("demo.revert")}
+                onAction={() => setStop("Kronach")}
+              />
+            }
+          >
+            <ChoiceList
+              aria-label={t("demo.sectionStop")}
+              value={stop}
+              onValueChange={setStop}
+              options={alternatives.map((alt) => ({
+                id: alt.name,
+                title: alt.name,
+                detail: format.distance(alt.distance),
+                ...(alt.name === "Kronach" && { tag: t("demo.proposed") }),
+              }))}
+              footer={
+                <MoreRow
+                  label={t("demo.moreStops")}
+                  expanded={false}
+                  onClick={() => setLocked({ ...locked, 2: !locked[2] })}
+                />
+              }
+            />
+          </PanelSection>
+          <PanelSection
+            icon="trains"
+            title={t("demo.sectionTrains")}
+            collapsible
+            defaultOpen={false}
+            summary={t("demo.trainsSummary")}
+          >
+            <RowList>
+              <NavRow
+                title={t("demo.gettingThere")}
+                detail={t("demo.trainTo")}
+                onClick={() => setSelectedDay(1)}
+              />
+            </RowList>
+          </PanelSection>
         </div>
       </Section>
 

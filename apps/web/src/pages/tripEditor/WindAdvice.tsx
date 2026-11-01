@@ -16,19 +16,8 @@ import type { TripEditorState } from "./useTripEditor";
 /** Start dates to compare, in days from the planned one. */
 const SHIFTS = [-2, -1, 0, 1, 2];
 
-/**
- * Ways to ride with less headwind: the other way round, or on another
- * start date. Shows only when one of them cuts the headwind a lot.
- */
-export function WindAdvice({
-  trip,
-  editor,
-}: {
-  trip: Trip;
-  editor: TripEditorState;
-}) {
-  const { t } = useTranslation("tripEditor");
-  const format = useFormat();
+/** Headwind now, the other way round and on nearby start dates. */
+export function useWindOptions(trip: Trip) {
   const now = useTripWeather(trip);
   const back = useTripWeather(trip, !!now.data, "reversed");
 
@@ -41,16 +30,16 @@ export function WindAdvice({
   const shifted = dates.map((startDate) => ({ ...trip, startDate }));
   const dateWeather = useTripsWeather(now.data ? shifted : []);
 
-  // Suggestions are for the owner; shared viewers can't apply them.
-  if (!now.data || editor.readOnly) return null;
-  const share = headwindShare(windDays(now.data, trip));
+  const share = now.data ? headwindShare(windDays(now.data, trip)) : undefined;
   const backShare = back.data
     ? headwindShare(
         windDays(back.data, { ...trip, stages: [...trip.stages].reverse() }),
       )
     : undefined;
   const reverseHelps =
-    backShare !== undefined && share - backShare >= WIND_GAIN;
+    share !== undefined &&
+    backShare !== undefined &&
+    share - backShare >= WIND_GAIN;
 
   const options = dates.map((date, i) => {
     const days = dateWeather[i];
@@ -69,9 +58,32 @@ export function WindAdvice({
     undefined,
   );
   const dateHelps =
+    share !== undefined &&
     !!best &&
     best.date !== trip.startDate &&
     share - (best.headwind ?? 1) >= WIND_GAIN;
+
+  return { share, backShare, reverseHelps, options, best, dateHelps };
+}
+
+/**
+ * Ways to ride with less headwind: the other way round, or on another
+ * start date. Shows only when one of them cuts the headwind a lot.
+ */
+export function WindAdvice({
+  trip,
+  editor,
+}: {
+  trip: Trip;
+  editor: TripEditorState;
+}) {
+  const { t } = useTranslation("tripEditor");
+  const format = useFormat();
+  const { share, backShare, reverseHelps, options, best, dateHelps } =
+    useWindOptions(trip);
+
+  // Suggestions are for the owner; shared viewers can't apply them.
+  if (share === undefined || editor.readOnly) return null;
   if (!reverseHelps && !dateHelps) return null;
 
   const first = trip.stages[0]?.start.name ?? "";
