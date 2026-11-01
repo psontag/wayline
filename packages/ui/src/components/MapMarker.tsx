@@ -356,6 +356,36 @@ export function StationMarker({ name, href }: StationMarkerProps) {
   );
 }
 
+export type ClusterMarkerProps = {
+  kind: "hotels" | "stations";
+  count: number;
+  /** Usually zooms in to the places of the cluster. */
+  onClick?: () => void;
+};
+
+/** Hotels or stations close together on a zoomed out map, with their count. */
+export function ClusterMarker({ kind, count, onClick }: ClusterMarkerProps) {
+  const { t } = useTranslation("ui");
+  const Icon = kind === "hotels" ? BedDouble : TrainFront;
+  return (
+    <button
+      type="button"
+      aria-label={t(`marker.${kind}`, { count })}
+      className={cn(
+        "flex items-center gap-0.5 border px-1.5 py-0.5 text-2xs font-bold tabular-nums shadow-sm transition-colors",
+        kind === "hotels"
+          ? "rounded-full border-border bg-surface text-text hover:border-marker"
+          : "rounded-sm border-transparent bg-text-muted text-surface hover:bg-text",
+        focusRing,
+      )}
+      onClick={onClick}
+    >
+      <Icon className={kind === "hotels" ? "size-3.5" : "size-3"} aria-hidden />
+      {count}
+    </button>
+  );
+}
+
 function MarkerLabel({
   muted = false,
   strong = false,

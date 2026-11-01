@@ -136,7 +136,11 @@
   },
   "marker": {
     "beds_one": "{{count}} place to sleep",
-    "beds_other": "{{count}} places to sleep"
+    "beds_other": "{{count}} places to sleep",
+    "hotels_one": "{{count}} hotel, zoom in",
+    "hotels_other": "{{count}} hotels, zoom in",
+    "stations_one": "{{count}} station, zoom in",
+    "stations_other": "{{count}} stations, zoom in"
   },
   "save": {
     "saved": "Saved",

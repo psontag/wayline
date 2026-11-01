@@ -29,7 +29,7 @@ Color tokens are semantic. They name the purpose, not the color.
 | `terrain-paved`, `terrain-gravel`, `terrain-unpaved`, `terrain-unknown` | Surface colors in the elevation profile. Unknown is for route parts without surface data. |
 | `rain` | Rain bars in the weather timeline |
 | `wind-head`, `wind-cross`, `wind-tail` | Wind relative to the route |
-| `wind-speed-1` to `wind-speed-4` | Wind speed, pale cyan to deep indigo, on the map and in the weather timeline: below 10, 10–20, 20–30, 30+ km/h |
+| `wind-speed-1` to `wind-speed-4` | Wind speed, cyan to deep indigo, on the map and in the weather timeline: below 10, 10–20, 20–30, 30+ km/h |
 | `night` | Dark hours in the weather timeline |
 
 Map tokens:
@@ -79,10 +79,10 @@ Color values:
 | `wind-head` | `#C2412D` | `#FF8F7D` |
 | `wind-cross` | `#B7791F` | `#F2CF7E` |
 | `wind-tail` | `#2F9E6B` | `#5CCB97` |
-| `wind-speed-1` | `#8FD0D8` | `#4E98A3` |
-| `wind-speed-2` | `#2A9AA8` | `#4CC4B9` |
-| `wind-speed-3` | `#3C5BB8` | `#8B9CF5` |
-| `wind-speed-4` | `#3A2580` | `#C0A8FF` |
+| `wind-speed-1` | `#4FA5B2` | `#4E98A3` |
+| `wind-speed-2` | `#1D7F8C` | `#4CC4B9` |
+| `wind-speed-3` | `#2F4AA6` | `#8B9CF5` |
+| `wind-speed-4` | `#2B1A6B` | `#C0A8FF` |
 | `night` | `#E4E7EC` | `#0B0D11` |
 | `route`, `route-selected` | `#FF9A73` | `#FFA67F` |
 | `route-casing` | `#B4532A` | `#101216` |

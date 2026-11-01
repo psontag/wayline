@@ -3,8 +3,8 @@ import { cellOf, type Forecast } from "@wayline/providers";
 import type { FeatureCollection, Point } from "geojson";
 
 /** Room around the route, in degrees. */
-const PAD = 0.15;
-/** More cells than this use every second cell. */
+const PAD = 0.4;
+/** Large areas use every second, third, … cell to stay below this. */
 const MAX_CELLS = 150;
 
 /** Forecast cells in rows from south to north, each row west to east. */
@@ -20,8 +20,8 @@ export type Grid = {
 
 /**
  * Forecast cells over the area of a route, with some room around it.
- * Cells sit on the 0.1° grid of the forecast cache. Long routes use every
- * second cell to keep the number of requests low.
+ * Cells sit on the 0.1° grid of the forecast cache. Large areas skip cells
+ * to keep the number of requests low.
  */
 export function gridOf(route: LonLat[]): Grid | undefined {
   if (!route.length) return undefined;
@@ -34,11 +34,14 @@ export function gridOf(route: LonLat[]): Grid | undefined {
   }
   const origin = cellOf([w - PAD, s - PAD]);
   const [e0, n0] = cellOf([e + PAD, n + PAD]);
-  let cols = Math.round((e0 - origin[0]) * 10) + 1;
-  let rows = Math.round((n0 - origin[1]) * 10) + 1;
-  const skip = cols * rows > MAX_CELLS ? 2 : 1;
-  cols = Math.ceil(cols / skip);
-  rows = Math.ceil(rows / skip);
+  const allCols = Math.round((e0 - origin[0]) * 10) + 1;
+  const allRows = Math.round((n0 - origin[1]) * 10) + 1;
+  let skip = 1;
+  while (Math.ceil(allCols / skip) * Math.ceil(allRows / skip) > MAX_CELLS) {
+    skip++;
+  }
+  const cols = Math.ceil(allCols / skip);
+  const rows = Math.ceil(allRows / skip);
   const step = skip / 10;
   const cells: LonLat[] = [];
   for (let r = 0; r < rows; r++) {

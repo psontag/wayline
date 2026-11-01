@@ -36,7 +36,7 @@ import { useHiddenPlaceLabels } from "../placeLabels";
 // point it to the worker that Vite bundles.
 setWorkerUrl(workerUrl);
 
-const mapStyles = {
+export const mapStyles = {
   light: "https://tiles.openfreemap.org/styles/positron",
   dark: "https://tiles.openfreemap.org/styles/dark",
 };
@@ -106,7 +106,7 @@ export type AppMapProps = {
 };
 
 /** Bounds of the points. A single point gets some room around it. */
-function boundsOf(coords: LonLat[]): LngLatBoundsLike {
+export function boundsOf(coords: LonLat[]): LngLatBoundsLike {
   let [w, s, e, n] = [180, 90, -180, -90];
   for (const [lon, lat] of coords) {
     w = Math.min(w, lon);

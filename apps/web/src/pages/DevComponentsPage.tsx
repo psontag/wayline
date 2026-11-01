@@ -44,6 +44,7 @@ import {
   ElevationProfile,
   EndpointMarker,
   GhostViaMarker,
+  ClusterMarker,
   HotelMarker,
   StationMarker,
   HotelRow,
@@ -697,7 +698,9 @@ function TripEditorParts() {
           detour={800}
           compact
         />
+        <ClusterMarker kind="hotels" count={7} />
         <StationMarker name="Lichtenfels" href="https://www.bahn.de" />
+        <ClusterMarker kind="stations" count={3} />
         <HoverMarker />
         <ViaMarker aria-label={t("demo.removeVia")} />
         <GhostViaMarker />

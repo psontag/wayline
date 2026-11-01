@@ -18,11 +18,11 @@ function arrowImage(): ImageData | undefined {
   if (!ctx) return undefined;
   const c = ARROW_PX / 2;
   ctx.fillStyle = "#fff";
-  ctx.fillRect(c - 1.25, 14, 2.5, 18);
+  ctx.fillRect(c - 1.75, 14, 3.5, 18);
   ctx.beginPath();
-  ctx.moveTo(c, 7);
-  ctx.lineTo(c + 6, 16);
-  ctx.lineTo(c - 6, 16);
+  ctx.moveTo(c, 6);
+  ctx.lineTo(c + 7, 16);
+  ctx.lineTo(c - 7, 16);
   ctx.closePath();
   ctx.fill();
   return ctx.getImageData(0, 0, ARROW_PX, ARROW_PX);
