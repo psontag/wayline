@@ -26,7 +26,9 @@ Color tokens are semantic. They name the purpose, not the color.
 | `hover`, `active`, `selected`, `selected-border` | Interaction states |
 | `scrim` | Behind dialogs and sheets |
 | `inverse`, `on-inverse`, `inverse-accent` | Toasts and tooltips |
-| `terrain-paved`, `terrain-gravel`, `terrain-unpaved`, `terrain-unknown` | Surface colors in the elevation profile. Unknown is for route parts without surface data. |
+| `terrain-paved`, `terrain-gravel`, `terrain-unpaved`, `terrain-unknown` | Surface colors in the strip under the elevation profile. Unknown is for route parts without surface data. |
+| `grade-1`, `grade-2`, `grade-3` | Climbs in the elevation profile: under 4 %, 4–7 %, over 7 % |
+| `proposed` | The proposed route of a changed day, on the map and in the elevation profile. Always used faded. |
 | `rain` | Rain bars in the weather timeline |
 | `wind-head`, `wind-cross`, `wind-tail` | Wind relative to the route |
 | `wind-speed-1` to `wind-speed-4` | Wind speed, cyan to deep indigo, on the map and in the weather timeline: below 10, 10–20, 20–30, 30+ km/h |

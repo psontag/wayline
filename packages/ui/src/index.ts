@@ -121,7 +121,11 @@ export {
   ChartPanel,
   ChartToolbar,
 } from "./components/ChartPanel";
-export { MapLegend, type MapLegendItem } from "./components/MapLegend";
+export {
+  MapLegend,
+  type MapLegendItem,
+  MapLegendLine,
+} from "./components/MapLegend";
 export {
   MapLayerMenu,
   type MapLayerGroup,
@@ -134,6 +138,7 @@ export {
 export {
   ElevationProfile,
   type ElevationProfileProps,
+  eleAt,
   type ProfilePoint,
   type SurfaceKind,
 } from "./components/ElevationProfile";

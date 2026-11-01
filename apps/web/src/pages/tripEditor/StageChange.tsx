@@ -9,10 +9,13 @@ export function StageChange({
   trip,
   index,
   editor,
+  onHighlight,
 }: {
   trip: Trip;
   index: number;
   editor: TripEditorState;
+  /** Called with true while the notice is under the pointer. */
+  onHighlight?: (on: boolean) => void;
 }) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -22,18 +25,25 @@ export function StageChange({
     return null;
   }
   const diff = stage.stats.distance - proposed.stats.distance;
-  const distance = format.distance(Math.abs(diff));
+  const climb = stage.stats.ascent - proposed.stats.ascent;
+  const details = [
+    Math.abs(diff) >= 500 &&
+      t(diff > 0 ? "stage.longer" : "stage.shorter", {
+        distance: format.distance(Math.abs(diff)),
+      }),
+    Math.abs(climb) >= 20 &&
+      t(climb > 0 ? "stage.moreClimbing" : "stage.lessClimbing", {
+        ascent: format.elevation(Math.abs(climb)),
+      }),
+  ].filter(Boolean);
   return (
     <ChangeNotice
       title={t("stage.changed")}
-      detail={
-        Math.abs(diff) < 500
-          ? undefined
-          : t(diff > 0 ? "stage.longer" : "stage.shorter", { distance })
-      }
+      detail={details.length ? details.join(" · ") : undefined}
       actionLabel={t("stage.revert")}
       onAction={() => void editor.revert(index)}
       disabled={!editor.canEdit}
+      onHighlight={onHighlight}
     />
   );
 }

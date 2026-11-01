@@ -5,7 +5,6 @@ import {
   localTimeToDate,
   ridingHours,
   type RouteNetwork,
-  routePoints,
   stageSpeed,
   stageStartTime,
   type Trip,
@@ -15,7 +14,10 @@ import {
   ChartInfo,
   ChartPanel,
   ChartToolbar,
+  cn,
   ElevationProfile,
+  eleAt,
+  MapLegendLine,
   type ProfilePoint,
   SurfaceLegend,
   useFormat,
@@ -23,6 +25,7 @@ import {
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { isChanged } from "./routeEdits";
+import { proposedSection } from "./proposedSection";
 import { profilePoints } from "./surfaceProfile";
 
 export type StageProfileProps = {
@@ -39,6 +42,9 @@ export type StageProfileProps = {
   highlightedClimb?: number;
   /** Controls at the end of the header, e.g. the panel switcher. */
   actions?: ReactNode;
+  /** Show the proposed route of a changed day stronger. */
+  proposedHighlighted?: boolean;
+  onHighlightProposed?: (on: boolean) => void;
 };
 
 /** Elevation of a stage by surface, in a ChartPanel. */
@@ -52,6 +58,8 @@ export function StageProfile({
   climbs,
   highlightedClimb,
   actions,
+  proposedHighlighted: highlightRequested = false,
+  onHighlightProposed,
 }: StageProfileProps) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -62,11 +70,12 @@ export function StageProfile({
     [legs, network],
   );
   const proposed = isChanged(trip, index) ? trip.proposed?.[index] : undefined;
-  const compare = useMemo(
-    () => (proposed ? routePoints(proposed.legs) : []),
-    [proposed],
+  const section = useMemo(
+    () => (legs && proposed ? proposedSection(legs, proposed.legs) : undefined),
+    [legs, proposed],
   );
   if (!stage) return null;
+  const proposedHighlighted = highlightRequested && !!section;
 
   const date = trip.startDate && addDays(trip.startDate, index);
   const highest = points.reduce<ProfilePoint | undefined>(
@@ -100,6 +109,18 @@ export function StageProfile({
           ),
         })
       : t("profile.at", values);
+    const other =
+      section && hoverKm >= section.startKm && hoverKm <= section.endKm
+        ? eleAt(section.points, hoverKm)
+        : undefined;
+    if (other !== undefined) {
+      readout += ` · ${t("profile.proposedAt", { elevation: format.elevation(other) })}`;
+    }
+  } else if (proposedHighlighted && proposed) {
+    readout = t("profile.proposed", {
+      distance: format.distance(proposed.stats.distance),
+      ascent: format.elevation(proposed.stats.ascent),
+    });
   } else {
     const values = {
       distance: format.distance(stage.stats.distance),
@@ -134,7 +155,25 @@ export function StageProfile({
       tabs={actions}
       plain={plain}
     >
-      <ChartToolbar start={<SurfaceLegend unknown={unknown} />} />
+      <ChartToolbar
+        start={<SurfaceLegend unknown={unknown} />}
+        end={
+          section && (
+            <span
+              className={cn(
+                "-mx-1 rounded-sm px-1 text-xs text-text-muted",
+                proposedHighlighted && "bg-hover text-text",
+              )}
+              onPointerEnter={() => onHighlightProposed?.(true)}
+              onPointerLeave={() => onHighlightProposed?.(false)}
+            >
+              <MapLegendLine
+                item={{ label: t("map.proposed"), line: "proposed" }}
+              />
+            </span>
+          )
+        }
+      />
       <ChartBody>
         <ElevationProfile
           axes
@@ -143,7 +182,8 @@ export function StageProfile({
           climbs={climbs}
           highlightedClimb={highlightedClimb}
           points={points}
-          compare={compare}
+          compare={section?.points}
+          compareHighlighted={proposedHighlighted}
           hoverKm={hoverKm}
           onHoverKm={onHoverKm}
           aria-label={label}

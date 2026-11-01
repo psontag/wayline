@@ -37,6 +37,7 @@ import { useRouteStations } from "./stations";
 import { useMapHotels, useStopOptions } from "./stopChoices";
 import { ShareDialog } from "./ShareDialog";
 import { TripActions } from "./TripHeader";
+import { proposedSection } from "./proposedSection";
 import { isChanged } from "./routeEdits";
 import { type RouteEditing, TripMap } from "./TripMap";
 import { tripStops } from "./tripArea";
@@ -100,6 +101,7 @@ function TripEditor({
   const [hoverKm, setHoverKm] = useState<number>();
   const [hoveredDay, setHoveredDay] = useState<number>();
   const [hoveredClimb, setHoveredClimb] = useState<number>();
+  const [proposedHighlighted, setProposedHighlighted] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [view, setView] = usePanelView();
   const [layers, setLayers] = useMapLayers();
@@ -116,6 +118,7 @@ function TripEditor({
     setHoverKm(undefined);
     setHoveredClimb(undefined);
     setHoveredDay(undefined);
+    setProposedHighlighted(false);
     setMapTime(undefined);
     void navigate({ search: { stage }, replace: true });
   };
@@ -200,19 +203,17 @@ function TripEditor({
             }),
           }));
 
-  const proposed = useMemo(
-    () =>
-      trip.stages.flatMap((_, i) =>
-        isChanged(trip, i)
-          ? [
-              (trip.proposed?.[i]?.legs ?? []).flatMap((leg) =>
-                decodeLine(leg.geometry),
-              ),
-            ]
-          : [],
-      ),
-    [trip],
-  );
+  const selectedLegs = stage?.legs;
+  const proposedLegs = isChanged(trip, selected)
+    ? trip.proposed?.[selected]?.legs
+    : undefined;
+  const proposed = useMemo(() => {
+    const section =
+      selectedLegs &&
+      proposedLegs &&
+      proposedSection(selectedLegs, proposedLegs);
+    return section ? [section.coords] : [];
+  }, [selectedLegs, proposedLegs]);
   const routeEditing = (tapToAdd: boolean): RouteEditing | undefined =>
     readOnly
       ? undefined
@@ -225,6 +226,7 @@ function TripEditor({
           onMoveVia: (coord, at) => void editor.moveVia(selected, coord, at),
           onRemoveVia: (coord) => void editor.removeVia(selected, coord),
           proposed,
+          proposedHighlighted,
         };
 
   const toast = editor.note && (
@@ -330,6 +332,8 @@ function TripEditor({
       onHoverKm={setHoverKm}
       climbs={climbs}
       highlightedClimb={hoveredClimb}
+      proposedHighlighted={proposedHighlighted}
+      onHighlightProposed={setProposedHighlighted}
       actions={switcher}
       plain={isPhone}
     />
@@ -433,6 +437,7 @@ function TripEditor({
               onSelect={select}
               onBack={showTrip}
               onHoverClimb={setHoveredClimb}
+              onHighlightProposed={setProposedHighlighted}
             />
           ) : (
             <TripPanel

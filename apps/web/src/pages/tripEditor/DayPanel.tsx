@@ -36,6 +36,7 @@ export function DayPanel({
   onSelect,
   onBack,
   onHoverClimb,
+  onHighlightProposed,
 }: {
   trip: Trip;
   index: number;
@@ -44,6 +45,8 @@ export function DayPanel({
   onBack: () => void;
   /** Climb of the day under the pointer. */
   onHoverClimb?: (index: number | undefined) => void;
+  /** Called with true while the change notice is under the pointer. */
+  onHighlightProposed?: (on: boolean) => void;
 }) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -120,7 +123,14 @@ export function DayPanel({
             />
           </>
         }
-        notice={<StageChange trip={trip} index={index} editor={editor} />}
+        notice={
+          <StageChange
+            trip={trip}
+            index={index}
+            editor={editor}
+            onHighlight={onHighlightProposed}
+          />
+        }
       />
       {isFirst && there && (
         <PanelSection

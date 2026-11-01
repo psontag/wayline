@@ -28,6 +28,7 @@ const colorTokens = {
   terrainPaved: "terrain-paved",
   terrainGravel: "terrain-gravel",
   terrainUnpaved: "terrain-unpaved",
+  proposed: "proposed",
   rain: "rain",
   windSpeed1: "wind-speed-1",
   windSpeed2: "wind-speed-2",
