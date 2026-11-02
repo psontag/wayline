@@ -67,7 +67,7 @@ def load_extract(cache, state):
         return json.load(f), src
 
 
-def load_scenery(cache, state):
+def scenery_file(cache, state):
     """Scenery of one state (see scenery.extract). Cached like load_extract."""
     src = os.path.join(cache, "osm", f"{state}-latest.osm.pbf")
     dst = os.path.join(cache, "work", f"{state}-scenery.npz")
@@ -76,7 +76,7 @@ def load_scenery(cache, state):
         # In a child process, so its memory is free again afterwards.
         with ProcessPoolExecutor(1) as pool:
             pool.submit(S.extract_to, src, dst).result()
-    return S.load(dst)
+    return dst
 
 
 def tile_key(lon, lat):
@@ -121,11 +121,12 @@ def main():
     args = ap.parse_args()
     states = args.states.split(",")
     t = Timer()
-    download.main(args.cache)
+    download.main(args.cache, states)
     t.step("download")
 
-    # Before the route extracts, so the scenery extract's peak memory doesn't add to theirs.
-    scenery = S.Scenery(*S.merge(load_scenery(args.cache, s) for s in states))
+    # Extracted before the route extracts and loaded after the graph, so the
+    # peaks of the three steps don't add up.
+    scenery_files = [scenery_file(args.cache, s) for s in states]
     t.step("scenery")
 
     parts, srcs = [], []
@@ -136,14 +137,16 @@ def main():
         print(f"{s}: {E.summary(data)}")
         t.step(f"extract {s}")
     data = E.merge(parts) if len(parts) > 1 else parts[0]
+    del parts
     print(f"merged: {E.summary(data)}")
 
     g = G.build(data)
     print("graph:", {k: round(v, 3) if isinstance(v, float) else v for k, v in g["stats"].items()})
     t.step("graph")
+    scenery = S.Scenery(*S.merge(S.load(f) for f in scenery_files))
 
     osm_date = datetime.date.fromtimestamp(max(os.path.getmtime(p) for p in srcs)).isoformat()
-    name = "south" if states == region.STATES else "-".join(states)
+    name = region.ID if states == region.STATES else "-".join(states)
     version = f"{name}-{osm_date}-{pipeline_hash()}"
     dem = Dem(os.path.join(args.cache, "dem"))
     network, index = X.export_network(g, dem, version, scenery)
@@ -166,7 +169,10 @@ def main():
         "createdAt": datetime.date.today().isoformat(),
     }
     write(os.path.join(out, "manifest.json"), manifest)
-    write(os.path.join(args.out, "latest.json"), {"version": version, "manifest": f"{version}/manifest.json"})
+    # Replaced, not written through: in a worktree it is a link to the main checkout.
+    latest = os.path.join(args.out, "latest.json")
+    write(latest + ".tmp", {"version": version, "manifest": f"{version}/manifest.json"})
+    os.replace(latest + ".tmp", latest)
     t.step("write")
     lines = L.build(out, L.route_networks(data["routes"]))
     t.step("lines")

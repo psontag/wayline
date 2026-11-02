@@ -1,6 +1,6 @@
 # Pipeline
 
-Builds the route network and places for Baden-Württemberg, Hessen and Bayern from OSM data and the Copernicus DEM.
+Builds the route network and places for Germany from OSM data and the Copernicus DEM.
 
 ## Build
 
@@ -9,20 +9,22 @@ pnpm data:build
 ```
 
 - Needs [uv](https://docs.astral.sh/uv/), Python 3.12 and [tippecanoe](https://github.com/felt/tippecanoe) (`brew install tippecanoe`, `apt install tippecanoe`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
-- Downloads missing inputs to `pipeline/cache/` (gitignored, about 3 GB): Geofabrik extracts of the three states and Copernicus GLO-30 tiles N47–N51, E007–E013.
-- Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `south-<date of the extracts>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
-- Takes about 8 minutes and up to 5.5 GB of memory on a laptop. Reading the extracts takes 7 of the 8 minutes: 5 for routes and places, 2.5 for scenery. The results are cached, so the next build takes 1 minute.
+- Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): Geofabrik extracts of the 16 states (4.7 GB) and Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB).
+- Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `de-<date of the extracts>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
+- Takes about 18 minutes and up to 5.5 GB of memory on a laptop: 3.5 for the download, 7 for scenery, 6 for routes and places. The extracts are cached, so the next build takes 2.5 minutes.
 - `pnpm data:build --states hessen` builds one state.
 
-Output (October 2026):
+Output (November 2026):
 
 | | |
 |---|---|
-| Route network | 68,000 nodes, 90,000 edges, 87,000 km |
-| Tiles | 87 files of 0.5°, 39 MiB (6.6 MiB gzipped), median 0.4 MiB, largest 2.4 MiB |
-| `places.json` | 4.1 MiB (1 MiB gzipped): 16,800 towns, 2,500 stations, 15,700 hotels |
-| Route lines | 1,980 files (768 empty), 4.6 MiB, largest 73 KiB |
-| `routes.json` | 0.4 MiB: 3,800 routes |
+| Route network | 151,000 nodes, 203,000 edges, 212,000 km |
+| Tiles | 226 files of 0.5°, 89 MiB (15 MiB gzipped), median 0.26 MiB, largest 2.5 MiB |
+| `places.json` | 9.8 MiB (2.3 MiB gzipped): 39,300 towns, 5,900 stations, 38,000 hotels |
+| Route lines | 5,000 files (1,493 empty), 15 MiB, largest 206 KiB |
+| `routes.json` | 1.8 MiB: 16,300 routes |
+
+A 200 km trip loads up to about 110 tiles, 53 MiB (9 MiB gzipped).
 
 A trip around Heidelberg needs about 6 tiles, 4.4 MiB (0.7 MiB gzipped).
 

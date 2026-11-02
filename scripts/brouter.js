@@ -1,4 +1,4 @@
-// Downloads the BRouter segments for BW, Hessen and Bayern if missing, then
+// Downloads the BRouter segments for Germany (5–15° E, 45–55° N) if missing, then
 // starts BRouter in Docker on localhost:17777. On macOS it starts Docker
 // Desktop if needed. With a Cloudflare token in .cloudflare.env it also
 // starts cloudflared, so the deployed app can route.

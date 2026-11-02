@@ -32,10 +32,10 @@ def fetch(url, path):
     os.replace(tmp, path)
 
 
-def main(cache):
+def main(cache, states=STATES):
     os.makedirs(os.path.join(cache, "osm"), exist_ok=True)
     os.makedirs(os.path.join(cache, "dem"), exist_ok=True)
-    for state in STATES:
+    for state in states:
         fetch(GEOFABRIK.format(state), os.path.join(cache, "osm", f"{state}-latest.osm.pbf"))
     for lat, lon in DEM_TILES:
         name = dem_name(lat, lon)
