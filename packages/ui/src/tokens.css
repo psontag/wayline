@@ -156,6 +156,7 @@
   --z-index-map: 0;
   --z-index-panel: 10;
   --z-index-sheet: 20;
+  --z-index-maximized: 25;
   --z-index-popover: 30;
   --z-index-dialog: 40;
   --z-index-toast: 50;
