@@ -3,8 +3,11 @@ import type { LonLat, Place } from "@wayline/domain";
 import { EndpointMarker } from "@wayline/ui";
 import { useTranslation } from "react-i18next";
 import { Marker } from "react-map-gl/maplibre";
-import { AppMap } from "../../components/map/AppMap";
+import { AppMap, type MapPadding } from "../../components/map/AppMap";
+import { useIsPhone } from "../../components/useIsPhone";
 import { useServices } from "../../data/ServicesProvider";
+
+const compactPadding: MapPadding = { top: 24, right: 80, bottom: 24, left: 32 };
 
 /** Corners of the area with route data. */
 function useDataRegion() {
@@ -31,6 +34,7 @@ export function NewTripMap({
 }) {
   const { t } = useTranslation("newTrip");
   const region = useDataRegion();
+  const isPhone = useIsPhone();
   const places = [start, end].filter((p): p is Place => p !== null);
 
   // Wait for the region, so the map opens on it instead of moving there.
@@ -41,6 +45,7 @@ export function NewTripMap({
       fit={places.length ? places.map((p) => p.coord) : (region.data ?? [])}
       network="full"
       hiddenLabels={places.map((p) => p.name)}
+      {...(isPhone && { padding: compactPadding, controls: false })}
     >
       {places.map((place) => (
         <Marker

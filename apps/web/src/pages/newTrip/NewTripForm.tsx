@@ -85,14 +85,15 @@ export function NewTripForm({
   };
 
   return (
-    <div className="flex min-h-0 flex-1">
+    <div className="flex min-h-0 flex-1 flex-col md:flex-row">
       <form.Subscribe
         selector={(s) =>
           [s.values.shape, s.values.start, s.values.end] as const
         }
       >
         {([shape, start, end]) => (
-          <div className="relative hidden min-w-0 flex-1 md:block">
+          // Phones: a small map, so the form keeps most of the screen.
+          <div className="relative h-1/4 shrink-0 md:h-auto md:min-w-0 md:flex-1">
             <NewTripMap start={start} end={shape === "ab" ? end : null} />
           </div>
         )}
@@ -104,7 +105,7 @@ export function NewTripForm({
           e.preventDefault();
           void form.handleSubmit();
         }}
-        className="flex min-h-0 w-full flex-col bg-surface md:max-w-panel md:border-l md:border-border"
+        className="flex min-h-0 w-full flex-col border-border bg-surface max-md:flex-1 max-md:border-t md:max-w-panel md:border-l"
       >
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-5">
           <h1 className="text-xl font-extrabold tracking-tight">

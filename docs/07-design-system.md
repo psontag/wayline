@@ -122,7 +122,7 @@ Other tokens:
 | Line height | `tight` 1.15, `normal` 1.5 |
 | Letter spacing | `tight` −0.02 em, `wide` 0.06 em |
 | Shadow | `sm`, `md`, `sheet` (upwards, for bottom sheets) |
-| Z-index | `map`, `panel`, `sheet`, `popover`, `dialog`, `toast` |
+| Z-index | `map`, `panel`, `sheet`, `maximized`, `popover`, `dialog`, `toast` |
 | Motion duration | `fast` 120 ms, `normal` 200 ms |
 | Breakpoints | `sm` 640, `md` 768, `lg` 1024 px |
 
@@ -178,6 +178,7 @@ Every screen uses `AppMap` (`apps/web/src/components/map/AppMap.tsx`). It owns:
 - hillshade
 - signed cycling routes: `full`, `quiet` or `off`
 - zoom buttons, legend or map layers, hint and attribution
+- maximise button, on layouts where the map is stacked with a panel
 - fitting to points, with padding for panels and sheets
 
 Signed cycling routes show by size:

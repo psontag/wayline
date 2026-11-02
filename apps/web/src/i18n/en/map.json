@@ -2,5 +2,7 @@
   "label": "Map with a demo route from Bamberg to Coburg",
   "zoomIn": "Zoom in",
   "zoomOut": "Zoom out",
+  "maximize": "Maximise map",
+  "restore": "Show panels",
   "network": "Signed cycling routes"
 }

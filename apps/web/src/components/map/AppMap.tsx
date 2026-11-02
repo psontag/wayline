@@ -1,5 +1,6 @@
 import type { LonLat } from "@wayline/domain";
 import {
+  cn,
   IconButton,
   MapControlGroup,
   MapLayerMenu,
@@ -8,7 +9,7 @@ import {
   type MapLegendItem,
   useTheme,
 } from "@wayline/ui";
-import { Minus, Plus } from "lucide-react";
+import { Maximize2, Minimize2, Minus, Plus } from "lucide-react";
 import { type LngLatBoundsLike, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
@@ -50,6 +51,14 @@ const defaultPadding: MapPadding = {
   right: 120,
   bottom: 72,
   left: 56,
+};
+
+// Mostly phones, where the default leaves little width for the route.
+const maximizedPadding: MapPadding = {
+  top: 64,
+  right: 72,
+  bottom: 56,
+  left: 40,
 };
 
 /** Hillshade and network go below this layer, screen layers above it. */
@@ -159,6 +168,7 @@ export function AppMap({
   const mapRef = outerRef ?? ownRef;
   const [labelLayerId, setLabelLayerId] = useState<string>();
   const [hovering, setHovering] = useState(false);
+  const [maximized, setMaximized] = useState(false);
 
   const hideLabels = useHiddenPlaceLabels(mapRef, hiddenLabels);
   const onStyle = () => {
@@ -168,16 +178,21 @@ export function AppMap({
   };
 
   // Fit when the key changes, not on load: initialViewState does that.
-  const key = JSON.stringify(fitKey === undefined ? fit : fitKey);
+  const key = JSON.stringify([
+    fitKey === undefined ? fit : fitKey,
+    maximized,
+  ]);
   const fitted = useRef(key);
   const latest = useRef({ fit, padding });
   useEffect(() => {
-    latest.current = { fit, padding };
+    latest.current = { fit, padding: maximized ? maximizedPadding : padding };
   });
   useEffect(() => {
     if (fitted.current === key) return;
     fitted.current = key;
     const { fit, padding } = latest.current;
+    // The map may not have seen its new size yet after maximising.
+    mapRef.current?.resize();
     if (!fit.length) return;
     mapRef.current?.fitBounds(boundsOf(fit), {
       padding,
@@ -197,7 +212,14 @@ export function AppMap({
   ];
 
   return (
-    <div className="absolute inset-0" role="region" aria-label={label}>
+    <div
+      className={cn(
+        "bg-bg",
+        maximized ? "fixed inset-0 z-maximized" : "absolute inset-0",
+      )}
+      role="region"
+      aria-label={label}
+    >
       <MapGL
         ref={mapRef}
         initialViewState={{
@@ -249,45 +271,57 @@ export function AppMap({
           {hint}
         </div>
       )}
-      {!controls && layers && (
-        // Below a floating header, as on phones.
-        <div className="absolute top-16 right-3 z-panel">
+      {/* Layers without controls sit below a floating header, as on phones.
+          A maximised map covers it. */}
+      <div
+        className={cn(
+          "absolute right-3 z-panel flex flex-col gap-2",
+          layers && !controls && !maximized ? "top-16" : "top-3",
+        )}
+      >
+        {/* Only stacked layouts need it. Stays when maximised, as the way back. */}
+        <div className={cn(!maximized && "lg:hidden")}>
+          <MapControlGroup>
+            <IconButton
+              label={maximized ? t("restore") : t("maximize")}
+              icon={
+                maximized ? (
+                  <Minimize2 aria-hidden />
+                ) : (
+                  <Maximize2 aria-hidden />
+                )
+              }
+              size="sm"
+              onClick={() => setMaximized(!maximized)}
+            />
+          </MapControlGroup>
+        </div>
+        {controls && (
+          <MapControlGroup>
+            <IconButton
+              label={t("zoomIn")}
+              icon={<Plus aria-hidden />}
+              size="sm"
+              onClick={() => mapRef.current?.zoomIn()}
+            />
+            <IconButton
+              label={t("zoomOut")}
+              icon={<Minus aria-hidden />}
+              size="sm"
+              onClick={() => mapRef.current?.zoomOut()}
+            />
+          </MapControlGroup>
+        )}
+        {layers && (
           <MapControlGroup>
             <MapLayerMenu {...layers} legend={legendItems} />
           </MapControlGroup>
+        )}
+      </div>
+      {controls && !layers && legendItems.length > 0 && (
+        <div className="absolute bottom-3 left-3 z-panel max-sm:hidden">
+          <MapLegend items={legendItems} />
         </div>
-      )}
-      {controls && (
-        <>
-          <div className="absolute top-3 right-3 z-panel">
-            <MapControlGroup>
-              <IconButton
-                label={t("zoomIn")}
-                icon={<Plus aria-hidden />}
-                size="sm"
-                onClick={() => mapRef.current?.zoomIn()}
-              />
-              <IconButton
-                label={t("zoomOut")}
-                icon={<Minus aria-hidden />}
-                size="sm"
-                onClick={() => mapRef.current?.zoomOut()}
-              />
-            </MapControlGroup>
-            {layers && (
-              <div className="mt-2">
-                <MapControlGroup>
-                  <MapLayerMenu {...layers} legend={legendItems} />
-                </MapControlGroup>
-              </div>
-            )}
-          </div>
-          {!layers && legendItems.length > 0 && (
-            <div className="absolute bottom-3 left-3 z-panel max-sm:hidden">
-              <MapLegend items={legendItems} />
-            </div>
-          )}
-        </>
       )}
       {overlay}
     </div>
