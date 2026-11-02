@@ -271,12 +271,12 @@ export function AppMap({
           {hint}
         </div>
       )}
-      {/* Without controls there may be a floating header above, as on phones.
+      {/* Layers without controls sit below a floating header, as on phones.
           A maximised map covers it. */}
       <div
         className={cn(
           "absolute right-3 z-panel flex flex-col gap-2",
-          controls || maximized ? "top-3" : "top-16",
+          layers && !controls && !maximized ? "top-16" : "top-3",
         )}
       >
         {/* Only stacked layouts need it. Stays when maximised, as the way back. */}
