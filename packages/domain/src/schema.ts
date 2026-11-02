@@ -304,6 +304,8 @@ export const Proposal = z.object({
   score: z.number(),
   /** Main signed routes, longest first. */
   routeNames: z.array(z.string()),
+  /** Signed route the proposal rides for most of its length. */
+  followedRoute: z.string().optional(),
   /** Best-known towns on the way, in route order. */
   via: z.array(z.string()),
   /** Share of km with each theme. Missing without scenery data. */

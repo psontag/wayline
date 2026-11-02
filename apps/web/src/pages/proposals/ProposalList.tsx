@@ -305,36 +305,67 @@ function ProposalItem({
       : undefined;
   const isOffInput = (tag: RouteTag) =>
     tag === "longer" || tag === "shorter" || tag === "moreClimbing";
+  const tagOf = (
+    key: RouteTag | ComparisonTag | "rain" | "dry" | "tailwind",
+  ) => ({
+    label: t(`card.tag.${key}`),
+    hint: t(`card.tagHint.${key}`),
+  });
   // Most useful first: a closed card shows only the first few.
   const cardTags = [
-    ...(firstWeak >= 0 ? [t("card.tag.fewBeds", { day: firstWeak + 1 })] : []),
-    ...routeTags.filter(isOffInput).map((tag) => t(`card.tag.${tag}`)),
+    ...(firstWeak >= 0
+      ? [
+          {
+            label: t("card.tag.fewBeds", { day: firstWeak + 1 }),
+            hint: t("card.tagHint.fewBeds", { day: firstWeak + 1 }),
+          },
+        ]
+      : []),
+    ...(proposal.followedRoute
+      ? [
+          {
+            label: proposal.followedRoute,
+            hint: t("card.tagHint.followedRoute"),
+          },
+        ]
+      : []),
+    ...routeTags.filter(isOffInput).map(tagOf),
     ...(rain?.kind === "rain"
       ? [
           rain.day
-            ? t("card.tag.rainDay", { day: rain.day })
-            : t("card.tag.rain"),
+            ? {
+                label: t("card.tag.rainDay", { day: rain.day }),
+                hint: t("card.tagHint.rainDay", { day: rain.day }),
+              }
+            : tagOf("rain"),
         ]
       : []),
-    ...(rain?.kind === "dry" ? [t("card.tag.dry")] : []),
+    ...(rain?.kind === "dry" ? [tagOf("dry")] : []),
     ...(wind?.kind === "tail"
       ? [
           speed
-            ? t("card.tag.tailwindSpeed", { speed })
-            : t("card.tag.tailwind"),
+            ? {
+                label: t("card.tag.tailwindSpeed", { speed }),
+                hint: t("card.tagHint.tailwindSpeed", { speed }),
+              }
+            : tagOf("tailwind"),
         ]
       : []),
     ...(wind?.kind === "head"
       ? [
           speed
-            ? t("card.tag.headwindSpeed", { speed })
-            : t("card.tag.headwind", { day: wind.day }),
+            ? {
+                label: t("card.tag.headwindSpeed", { speed }),
+                hint: t("card.tagHint.headwindSpeed", { speed }),
+              }
+            : {
+                label: t("card.tag.headwind", { day: wind.day }),
+                hint: t("card.tagHint.headwind", { day: wind.day }),
+              },
         ]
       : []),
-    ...tags.map((tag) => t(`card.tag.${tag}`)),
-    ...routeTags
-      .filter((tag) => !isOffInput(tag))
-      .map((tag) => t(`card.tag.${tag}`)),
+    ...tags.map(tagOf),
+    ...routeTags.filter((tag) => !isOffInput(tag)).map(tagOf),
   ];
 
   return (

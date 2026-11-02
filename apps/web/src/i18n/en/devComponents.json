@@ -82,6 +82,7 @@
     "proposalRoutes": "Routes: Main-Radweg · Frankenwaldweg",
     "shortDay": "Short day",
     "flattest": "Flattest",
+    "flattestHint": "Clearly the least climbing of these proposals",
     "openTrip": "Open trip",
     "noResultTitle": "No trip fits these limits",
     "noResultText": "Every path climbs more than 800 m on at least one day.",

@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import { Graph } from "../graph/Graph";
 import { Costs } from "./search";
 import {
+  followedRoute,
   kmOnRoute,
   routeCandidates,
-  routeExtent,
+  kmUnused,
+  routeLengths,
   routesInReach,
 } from "./signedRoutes";
 
@@ -62,11 +64,9 @@ describe("routesInReach", () => {
   });
 });
 
-describe("routeExtent", () => {
-  it("gives the km and the middle", () => {
-    const { km, middle } = routeExtent(graph, named("S"));
-    expect(km).toBe(20);
-    expect(middle[0]).toBeCloseTo(9.25);
+describe("kmUnused", () => {
+  it("leaves out used edges", () => {
+    expect(kmUnused(graph, named("R"), new Set([0, 2]))).toBe(20);
   });
 });
 
@@ -81,44 +81,33 @@ describe("routeCandidates", () => {
   const costs = new Costs(graph, { kmPerDay: 40, maxAscentPerDay: 1000 });
 
   it("rides between two vias, longest ride first", () => {
-    const list = routeCandidates(
-      graph,
-      costs,
-      0,
-      4,
-      named("R"),
-      [1, 2, 3],
-      40,
-      8,
-    );
+    const list = routeCandidates(graph, costs, 0, 4, named("R"), [1, 2, 3], 8);
     expect(list[0]?.nodes).toEqual([0, 1, 3, 4]);
-  });
-
-  it("drops candidates of the wrong length", () => {
-    const list = routeCandidates(
-      graph,
-      costs,
-      0,
-      4,
-      named("R"),
-      [1, 2, 3],
-      200,
-      8,
-    );
-    expect(list).toEqual([]);
+    expect(list[0]?.km).toBe(40);
   });
 
   it("limits the vias", () => {
-    const list = routeCandidates(
-      graph,
-      costs,
-      0,
-      4,
-      named("R"),
-      [1, 2, 3],
-      40,
-      2,
-    );
+    const list = routeCandidates(graph, costs, 0, 4, named("R"), [1, 2, 3], 2);
     expect(new Set(list.flatMap((c) => c.nodes.slice(1, -1))).size).toBe(2);
+  });
+});
+
+describe("followedRoute", () => {
+  const lengths = routeLengths(graph);
+  const steps = (...edges: number[]) =>
+    edges.map((edge) => ({ edge, forward: true }));
+
+  it("names a route ridden for most of its length", () => {
+    expect(followedRoute(graph, steps(0, 1, 2), lengths, 0.3)).toBe("R");
+  });
+
+  it("names no route ridden for half or less", () => {
+    expect(followedRoute(graph, steps(0, 1), lengths, 0.3)).toBeUndefined();
+  });
+
+  it("needs a share of the path on the route", () => {
+    const short = new Map([["R", 15]]);
+    expect(followedRoute(graph, steps(0), short, 0.3)).toBe("R");
+    expect(followedRoute(graph, steps(0), short, 1.1)).toBeUndefined();
   });
 });

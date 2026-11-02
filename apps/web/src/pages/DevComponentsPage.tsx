@@ -1209,7 +1209,16 @@ function ProposalDemos() {
             color={n === 1 ? "route1" : "route2"}
             title={t("demo.proposalTitle")}
             subtitle={t("demo.proposalSubtitle")}
-            tags={n === 2 ? [t("demo.flattest")] : []}
+            tags={
+              n === 2
+                ? [
+                    {
+                      label: t("demo.flattest"),
+                      hint: t("demo.flattestHint"),
+                    },
+                  ]
+                : []
+            }
             stats={stats}
             surface={{ paved: 84, gravel: 12, unpaved: 4 }}
             chart={

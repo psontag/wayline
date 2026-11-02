@@ -64,15 +64,24 @@ const FLAT_PENALTY = 1;
 /** Hilly flavour: an edge climbing at the average allowed costs 1 / (1 + this) as much. */
 const HILLY_REWARD = 30;
 
+/** A rider with this much room wants to climb. */
+export function seeksClimbs(
+  request: Pick<GenerateRequest, "kmPerDay" | "maxAscentPerDay">,
+): boolean {
+  return request.maxAscentPerDay / request.kmPerDay >= ROOMY_CLIMB;
+}
+
 /**
  * Climb part of the edge cost for a flavour. allowedPerKm is the daily
- * average: max ascent per day / km per day.
+ * average: max ascent per day / km per day. seek: every flavour but flat
+ * looks for climbs like hilly.
  */
 export function flavourClimb(
   ascent: number,
   lengthKm: number,
   allowedPerKm: number,
   flavour?: Flavour,
+  seek = false,
 ): number {
   const free = Math.min(1, Math.max(CLIMB_FREE, allowedPerKm / ROOMY_CLIMB));
   const base = climbFactor(ascent, lengthKm, free * allowedPerKm);
@@ -81,7 +90,7 @@ export function flavourClimb(
   if (flavour === "flat") return base * (1 + FLAT_PENALTY * steep);
   // Hilly seeks climbs. Over the daily average the cost grows with the
   // square, so very steep edges cost more than flat ground.
-  if (flavour === "hilly") {
+  if (flavour === "hilly" || seek) {
     const over = Math.max(1, steep);
     return (over * over) / (1 + HILLY_REWARD * Math.min(steep, 1));
   }
@@ -114,6 +123,7 @@ export class Costs {
     graph: Graph,
     request: Pick<GenerateRequest, "region" | "kmPerDay" | "maxAscentPerDay">,
     readonly flavour?: Flavour,
+    seek = false,
   ) {
     const { region } = request;
     const allowed = request.maxAscentPerDay / request.kmPerDay;
@@ -135,6 +145,7 @@ export class Costs {
               e.lengthKm,
               allowed,
               flavour,
+              seek,
             )) /
           Math.pow(Math.max(e.score, 0.05) * boost(e, flavour), SCORE_POWER)
         : Infinity,

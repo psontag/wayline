@@ -45,6 +45,9 @@ describe("flavours", () => {
     // A low limit: only a part of the daily average is free.
     expect(flavourClimb(16, 10, 4, "best")).toBe(1);
     expect(flavourClimb(32, 10, 4, "best")).toBe(2);
+    // Seeking climbs: best rewards them like hilly, flat still avoids them.
+    expect(flavourClimb(150, 10, 15, "best", true)).toBeLessThan(0.1);
+    expect(flavourClimb(150, 10, 15, "flat", true)).toBeGreaterThan(1);
     const allowed = 10;
     expect(flavourClimb(30, 10, allowed, "flat")).toBeGreaterThan(1);
     expect(flavourClimb(80, 10, allowed, "hilly")).toBeLessThan(
@@ -80,8 +83,21 @@ describe("flavours", () => {
     }
   });
 
+  it("climbs on most proposals with a roomy limit", async () => {
+    const total = (proposals: Proposal[]) =>
+      proposals.reduce(
+        (sum, p) => sum + p.trip.stages.reduce((s, x) => s + x.stats.ascent, 0),
+        0,
+      ) / proposals.length;
+    const roomy = await generate(heidelberg);
+    const low = await generate({ ...heidelberg, maxAscentPerDay: 800 });
+    expect(total(roomy)).toBeGreaterThan(total(low));
+  });
+
   it("keeps flat the least and hilly the most climbing", async () => {
-    const proposals = await generate(heidelberg);
+    // Below a roomy limit, so only hilly seeks climbs.
+    const request = { ...heidelberg, maxAscentPerDay: 800 };
+    const proposals = await generate(request);
     const ascent = (p: Proposal) =>
       p.trip.stages.reduce((sum, s) => sum + s.stats.ascent, 0);
     const best = proposals.find((p) => p.flavour === "best");
@@ -95,7 +111,7 @@ describe("flavours", () => {
       if (flat && p !== flat) expect(ascent(p)).toBeGreaterThan(ascent(flat));
     }
     for (const s of hilly.trip.stages) {
-      expect(s.stats.ascent).toBeLessThanOrEqual(heidelberg.maxAscentPerDay);
+      expect(s.stats.ascent).toBeLessThanOrEqual(request.maxAscentPerDay);
     }
   });
 

@@ -77,14 +77,24 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 
 ## Signed routes
 
-Adds up to 3 proposals that follow a named cycle route. Without this, a path only takes what is cheapest between its vias, and hilly routes rank behind flat ones.
+Adds up to 3 proposals that follow a named cycle route. Without this, a path only takes what is cheapest between its vias.
 
 - Runs on trips with a known end or a loop, not on rides with the wind.
-- Routes: at least 30 % of the trip within reach. Longest first, in the direction from the middle of the trip with the fewest proposals. Hilly does not count, so a gentler route can still go that way.
-- A route's edges cost × 0.3. Vias are 2 of up to 8 towns on the route, longest ride on it first. Estimated length within 10 % of the target.
-- A proposal has at least 30 % of its km on the route, at most 40 % shared km and at most 60 % in the same corridor as another proposal. It must pass the same filters as all others.
+- Routes count within 1.45 × the trip, there and back. The route with the most km no proposal rides yet comes first. It needs at least 30 % of the trip.
+- A route's edges cost × 0.3. Vias are 2 of up to 12 towns on the route.
+- Tries the km per day as asked and + 20 %. Estimated length within 10 % of that. A route can so come out about a third longer than asked.
+- Keeps the path with the most km on the route, with at least 30 % of its km on it, at most 40 % shared km and at most 60 % in the same corridor as another proposal. It must pass the same filters as all others.
 - Skips a route that a proposal already rides for 30 % of its km.
-- Limit: about 1.5 s, 12 routes, 20 candidates per route.
+- Limit: about 2 s, 12 routes, 30 candidates per route and length.
+
+## Seeking climbs
+
+From 12 m/km allowed, the rider wants to climb. Rides with the wind, open rides and one day from A to B do not seek climbs.
+
+- Best, nature, sights and the fill use the hilly climb cost.
+- Flavours keep the path that climbs most, until one reaches 85 % of the max ascent. Hilly otherwise aims for 65 %.
+- Hilly only has to climb most, not 1.5 × best.
+- Flat stays flat. Signed routes use the usual cost, so they follow their route.
 
 ## Fill
 

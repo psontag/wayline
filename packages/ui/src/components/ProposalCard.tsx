@@ -7,10 +7,13 @@ import { DayList, type DayListItem } from "./DayList";
 import { type RouteColor, routeColorClasses } from "./RouteLabel";
 import { Stat } from "./Stat";
 import { SurfaceBar, type SurfaceShares } from "./SurfaceBar";
+import { Tooltip } from "./Tooltip";
 
 export type ProposalStat = { icon: StatIcon; value: string; label: string };
 
 export type ProposalDay = DayListItem;
+
+export type ProposalTag = { label: string; hint: string };
 
 export type ProposalCardProps = {
   /** Same number as on the map. */
@@ -20,8 +23,8 @@ export type ProposalCardProps = {
   subtitle?: string;
   /** Route color of the number, as on the map. */
   color?: RouteColor;
-  /** Short badges, e.g. "Flattest". */
-  tags?: string[];
+  /** Short badges, e.g. "Flattest". The hint shows on hover. */
+  tags?: ProposalTag[];
   /** Three stats. A compact card shows them in one line. */
   stats: ProposalStat[];
   /** Shown as a surface bar under the stats when selected. */
@@ -94,8 +97,12 @@ export function ProposalCard({
           )}
           {tags.length > 0 && (
             <span className="mt-1 flex flex-wrap gap-1">
-              {tags.map((tag) => (
-                <Badge key={tag}>{tag}</Badge>
+              {tags.map(({ label, hint }) => (
+                <Tooltip key={label} label={hint}>
+                  <span>
+                    <Badge>{label}</Badge>
+                  </span>
+                </Tooltip>
               ))}
             </span>
           )}

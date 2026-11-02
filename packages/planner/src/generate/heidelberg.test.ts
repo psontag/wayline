@@ -96,9 +96,11 @@ describe("Planner on the Heidelberg tiles", () => {
       for (const stop of [stages[0]!, stages[1]!]) {
         expect(distanceKm(home, stop.end.coord)).toBeGreaterThan(15);
       }
+      // The fill and signed routes may ride 20 % more per day.
+      const target = p.flavour ? 70 : 1.2 * 70;
       for (const s of stages) {
         expect(s.stats.distance / 1000).toBeGreaterThan(0.5 * 70);
-        expect(s.stats.distance / 1000).toBeLessThan(1.35 * 70);
+        expect(s.stats.distance / 1000).toBeLessThan(1.35 * target);
       }
       const line = routePoints(stages.flatMap((s) => s.legs));
       const total = line.at(-1)!.km;

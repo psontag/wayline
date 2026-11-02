@@ -1,4 +1,3 @@
-import type { LonLat } from "@wayline/domain";
 import type { Graph, PathStep } from "../graph/Graph";
 import type { Candidate, Costs } from "./search";
 
@@ -24,22 +23,17 @@ export function routesInReach(
   return [...routes.values()];
 }
 
-/** Km of a route within reach, and its middle. */
-export function routeExtent(
+/** Km of a route on edges not in used. */
+export function kmUnused(
   graph: Graph,
   route: SignedRoute,
-): { km: number; middle: LonLat } {
+  used: Set<number>,
+): number {
   let km = 0;
-  let lon = 0;
-  let lat = 0;
   for (const id of route.edges) {
-    const e = graph.edge(id);
-    const [x, y] = graph.coord(e.from);
-    km += e.lengthKm;
-    lon += x * e.lengthKm;
-    lat += y * e.lengthKm;
+    if (!used.has(id)) km += graph.edge(id).lengthKm;
   }
-  return { km, middle: km ? [lon / km, lat / km] : [0, 0] };
+  return km;
 }
 
 export function kmOnRoute(
@@ -55,9 +49,51 @@ export function kmOnRoute(
 }
 
 /**
- * Candidates that ride a route between two of its vias. Costs should make the
- * route cheap. Longest ride on the route first. The vias are an even spread
- * of the route's vias by distance from the start, up to maxVias.
+ * The route a path follows for most of its length on the graph, if any. It
+ * needs at least minShare of the path. Longest ride first.
+ */
+export function followedRoute(
+  graph: Graph,
+  steps: PathStep[],
+  routeKm: Map<string, number>,
+  minShare: number,
+): string | undefined {
+  const ridden = new Map<string, number>();
+  let total = 0;
+  for (const s of steps) {
+    const e = graph.edge(s.edge);
+    total += e.lengthKm;
+    for (const name of e.routes) {
+      ridden.set(name, (ridden.get(name) ?? 0) + e.lengthKm);
+    }
+  }
+  let found: string | undefined;
+  let most = minShare * total;
+  for (const [name, km] of ridden) {
+    if (km >= most && km > 0.5 * (routeKm.get(name) ?? Infinity)) {
+      found = name;
+      most = km;
+    }
+  }
+  return found;
+}
+
+/** Km per signed route on the graph. */
+export function routeLengths(graph: Graph): Map<string, number> {
+  const km = new Map<string, number>();
+  for (const e of graph.edges) {
+    for (const name of e.routes) {
+      km.set(name, (km.get(name) ?? 0) + e.lengthKm);
+    }
+  }
+  return km;
+}
+
+/**
+ * Candidates that ride a route between two of its vias, with their estimated
+ * km. Costs should make the route cheap. Longest ride on the route first. The
+ * vias are an even spread of the route's vias by distance from the start, up
+ * to maxVias.
  */
 export function routeCandidates(
   graph: Graph,
@@ -66,9 +102,8 @@ export function routeCandidates(
   end: number,
   route: SignedRoute,
   vias: number[],
-  totalKm: number,
   maxVias: number,
-): Candidate[] {
+): (Candidate & { km: number })[] {
   const onRoute = new Set<number>();
   for (const id of route.edges) {
     const e = graph.edge(id);
@@ -86,16 +121,16 @@ export function routeCandidates(
     (_, i) => all[Math.floor(i * every)] as number,
   );
 
-  const out: Candidate[] = [];
+  const out: (Candidate & { km: number })[] = [];
   for (const a of some) {
     const fromA = costs.from(graph, a);
     for (const b of some) {
       if (a === b) continue;
       const ride = fromA.km[b] ?? Infinity;
-      const est =
+      const km =
         (fromStart.km[a] ?? Infinity) + ride + (fromEnd.km[b] ?? Infinity);
-      if (!(Math.abs(est - totalKm) < 0.1 * totalKm)) continue;
-      out.push({ quality: -ride, nodes: [start, a, b, end] });
+      if (km === Infinity) continue;
+      out.push({ quality: -ride, nodes: [start, a, b, end], km });
     }
   }
   return out.sort((x, y) => x.quality - y.quality);

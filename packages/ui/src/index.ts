@@ -198,6 +198,7 @@ export {
   ProposalCard,
   ProposalCardSkeleton,
   type ProposalCardProps,
+  type ProposalTag,
   type ProposalDay,
   type ProposalStat,
 } from "./components/ProposalCard";
