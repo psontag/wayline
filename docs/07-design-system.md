@@ -41,7 +41,7 @@ Map tokens:
 | `route`, `route-casing` | Route line and its outline |
 | `route-dimmed` | Unselected routes in the legend |
 | `route-selected` | Selected stage |
-| `stage-a`, `stage-b` | Stages in the trip editor alternate between these two |
+| `stage-a`, `stage-b` | Days in the trip editor alternate between these two, in the list and on the map |
 | `route-1` … `route-8` | One color per proposal on the proposals map, by list order |
 | `on-route` | Text on a route color |
 | `route-outline` | Casing of the highlighted proposal |

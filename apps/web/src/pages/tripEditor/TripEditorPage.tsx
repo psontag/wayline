@@ -9,6 +9,7 @@ import {
   addHours,
   decodeLine,
   findClimbs,
+  type Place,
   pointAtKm,
   ridingHours,
   routePoints,
@@ -107,6 +108,7 @@ function TripEditor({
   const [layers, setLayers] = useMapLayers();
   // Hour the weather map shows. Follows the ride start until moved.
   const [mapTime, setMapTime] = useState<number>();
+  const [findingDestination, setFindingDestination] = useState(false);
   const shareDialog = canShare && (
     <ShareDialog trip={trip} open={sharing} onOpenChange={setSharing} />
   );
@@ -120,10 +122,12 @@ function TripEditor({
     setHoveredDay(undefined);
     setProposedHighlighted(false);
     setMapTime(undefined);
+    setFindingDestination(false);
     void navigate({ search: { stage }, replace: true });
   };
   const showTrip = () => {
     setHoveredClimb(undefined);
+    setFindingDestination(false);
     void navigate({ search: {}, replace: true });
   };
 
@@ -193,22 +197,25 @@ function TripEditor({
       : undefined;
 
   const isLast = selected === trip.stages.length - 1;
-  const options = useStopOptions(trip, selected);
+  const options = useStopOptions(trip, selected, findingDestination);
   const mapHotels = useMapHotels(trip, selected);
   const stations = useRouteStations(trip);
-  const alternatives =
-    isLast || readOnly
-      ? []
-      : options
-          .filter((o) => !o.current)
-          .map(({ place, distance }) => ({
-            place,
-            beds: mapHotels.beds.get(place.name),
-            label: t("stage.alternative", {
-              name: place.name,
-              distance: format.distance(distance),
-            }),
-          }));
+  const pickAlternative = (place: Place) => {
+    setFindingDestination(false);
+    void editor.moveStop(selected, place);
+  };
+  const alternatives = readOnly
+    ? []
+    : options
+        .filter((o) => !o.current)
+        .map(({ place, distance }) => ({
+          place,
+          beds: mapHotels.beds.get(place.name),
+          label: t("stage.alternative", {
+            name: place.name,
+            distance: format.distance(distance),
+          }),
+        }));
 
   const selectedLegs = stage?.legs;
   const proposedLegs = isChanged(trip, selected)
@@ -372,7 +379,7 @@ function TripEditor({
           selected={selected}
           onSelect={select}
           alternatives={alternatives}
-          onPickAlternative={(place) => void editor.moveStop(selected, place)}
+          onPickAlternative={pickAlternative}
           hover={hover}
           chart={chart}
           mapLayers={mapLayers}
@@ -403,9 +410,7 @@ function TripEditor({
               hovered={hoveredDay}
               highlight={highlight}
               alternatives={dayOpen ? alternatives : []}
-              onPickAlternative={(place) =>
-                void editor.moveStop(selected, place)
-              }
+              onPickAlternative={pickAlternative}
               hotels={
                 !dayOpen || isLast || !layers.hotels ? [] : mapHotels.hotels
               }
@@ -446,6 +451,8 @@ function TripEditor({
               onHoverClimb={setHoveredClimb}
               highlightedClimb={activeClimb}
               onHighlightProposed={setProposedHighlighted}
+              findingDestination={findingDestination}
+              onFindingDestination={setFindingDestination}
             />
           ) : (
             <TripPanel

@@ -128,7 +128,7 @@ const CLUSTER_RADIUS = 36;
 /** Waits this long after the last move before a preview is routed. */
 const PREVIEW_MS = 120;
 
-/** Trip on the map in one color. The selected day is full strength. */
+/** Trip on the map, days in the colors of the day list. The selected day is full strength. */
 export function TripMap({
   trip,
   selected,
@@ -177,6 +177,7 @@ export function TripMap({
         type: "Feature",
         properties: {
           index,
+          color: index % 2 ? tokens.stageB : tokens.stageA,
           selected: overview
             ? hovered === undefined || hovered === index
             : index === selected,
@@ -185,7 +186,7 @@ export function TripMap({
         geometry: { type: "LineString", coordinates },
       })),
     }),
-    [lines, selected, hovered, overview],
+    [lines, selected, hovered, overview, tokens.stageA, tokens.stageB],
   );
 
   // Legs of the selected stage, to drag the route.
@@ -314,7 +315,8 @@ export function TripMap({
     <AppMap
       label={t("map.label", { day: selected + 1 })}
       fit={fit}
-      fitKey={fitDay}
+      // Also when options show up or go, e.g. train stops for the last day.
+      fitKey={[fitDay, alternatives.length > 0]}
       initialFit={lines.flat()}
       padding={padding}
       hiddenLabels={hiddenLabels}
@@ -362,7 +364,7 @@ export function TripMap({
           filter={notSelected}
           layout={lineLayout}
           paint={{
-            "line-color": tokens.routeSelected,
+            "line-color": ["get", "color"],
             "line-width": 5,
             "line-opacity": ["case", ["get", "hovered"], 0.85, 0.45],
           }}
@@ -372,14 +374,14 @@ export function TripMap({
           type="line"
           filter={isSelected}
           layout={lineLayout}
-          paint={{ "line-color": tokens.routeOutline, "line-width": 10 }}
+          paint={{ "line-color": tokens.routeOutline, "line-width": 8 }}
         />
         <MapLayer
           id="selected-line"
           type="line"
           filter={isSelected}
           layout={lineLayout}
-          paint={{ "line-color": tokens.routeSelected, "line-width": 7 }}
+          paint={{ "line-color": ["get", "color"], "line-width": 5.5 }}
         />
         <Layer
           id="stage-hit"

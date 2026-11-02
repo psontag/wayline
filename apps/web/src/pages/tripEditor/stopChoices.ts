@@ -143,11 +143,61 @@ export function stopHotels(
   );
 }
 
+/** Train stops this close to the end can become the destination. */
+const DESTINATION_KM = 20;
+/** Train stops closer than this to each other count as one choice. */
+const DESTINATION_GAP_KM = 2;
+const DESTINATIONS = 6;
+const SIZE_RANK: Record<TownSize, number> = { city: 0, town: 1, village: 2 };
+
+/** A loop has to end where it starts. */
+export function hasMovableDestination(trip: Trip): boolean {
+  return trip.kind === "one-way" || trip.kind === "route";
+}
+
+/**
+ * Train stops the last stage could end at instead: in bigger towns first,
+ * then closer ones first, each in another place.
+ */
+export function destinationStations(
+  stage: Stage,
+  { stations, towns }: PlaceIndex,
+): Place[] {
+  const taken = [stage.start.coord, stage.end.coord];
+  const found = stations.flatMap((s) => {
+    const coord: LonLat = [s.lon, s.lat];
+    const km = distanceKm(coord, stage.end.coord);
+    if (km > DESTINATION_KM) return [];
+    const town = towns.find((t) => distanceKm([t.lon, t.lat], coord) < 3);
+    const rank = town ? SIZE_RANK[town.place] : 3;
+    const place: Place = {
+      name: s.name,
+      kind: "station",
+      coord,
+      osmId: s.id,
+    };
+    return [{ place, km, rank }];
+  });
+  const out: Place[] = [];
+  for (const { place } of found.sort(
+    (a, b) => a.rank - b.rank || a.km - b.km,
+  )) {
+    if (out.length === DESTINATIONS) break;
+    if (taken.some((c) => distanceKm(c, place.coord) < DESTINATION_GAP_KM)) {
+      continue;
+    }
+    taken.push(place.coord);
+    out.push(place);
+  }
+  return out;
+}
+
 /** The stop and its alternatives with km, ascent, beds and town size. */
 export function stopChoices(
   trip: Trip,
   index: number,
   places?: PlaceIndex,
+  alternatives = trip.stages[index]?.end.alternatives ?? [],
 ): StopChoice[] {
   const stage = trip.stages[index];
   if (!stage) return [];
@@ -168,7 +218,7 @@ export function stopChoices(
     ...(next ? { nextDistance: next.stats.distance } : {}),
     ...extra(stage.end),
   };
-  const others = stage.end.alternatives.map((place): StopChoice => ({
+  const others = alternatives.map((place): StopChoice => ({
     place,
     current: false,
     ...stageIfEndingAt(stage, next, place.coord),
@@ -192,15 +242,22 @@ export function withRouted(
 
 /**
  * The stop and its alternatives, shortest stage first. Alternatives show an
- * estimate until they are routed the same way picking them routes.
+ * estimate until they are routed the same way picking them routes. The last
+ * stage has alternatives only with `findStations`, as each one is routed.
  */
-export function useStopOptions(trip: Trip, index: number): StopChoice[] {
+export function useStopOptions(
+  trip: Trip,
+  index: number,
+  findStations = false,
+): StopChoice[] {
   const places = useTripPlaces(trip);
   const { routing } = useServices();
-  const alternatives = useMemo(
-    () => trip.stages[index]?.end.alternatives ?? [],
-    [trip, index],
-  );
+  const alternatives = useMemo(() => {
+    const stage = trip.stages[index];
+    if (!stage) return [];
+    if (index < trip.stages.length - 1) return stage.end.alternatives;
+    return findStations && places ? destinationStations(stage, places) : [];
+  }, [trip, index, findStations, places]);
   const routed = useQueries({
     queries: alternatives.map((place) => ({
       queryKey: ["stopRoute", trip.id, trip.updatedAt, index, place.name],
@@ -219,7 +276,7 @@ export function useStopOptions(trip: Trip, index: number): StopChoice[] {
       const r = routed[i];
       if (r) byName.set(place.name, r);
     });
-    return withRouted(stopChoices(trip, index, places), byName);
+    return withRouted(stopChoices(trip, index, places, alternatives), byName);
   }, [trip, index, places, alternatives, routed]);
 }
 
