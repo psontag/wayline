@@ -16,7 +16,8 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "data:build": "pipeline/build.sh"
+    "data:build": "pipeline/build.sh",
+    "report:trips": "vitest run --config packages/planner/report/vitest.config.ts --root . --disable-console-intercept"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

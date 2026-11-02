@@ -14,6 +14,7 @@ import {
   type Proposal,
   Theme,
   timeToHours,
+  type Trip,
 } from "@wayline/domain";
 import type {
   AbortSignalLike,
@@ -43,12 +44,54 @@ import {
   stopCandidates,
 } from "./stages";
 import { Stops } from "./stops";
-import { flavourValue, themeFit, themeValue } from "./theme";
+import { corridorShare } from "./corridor";
+import { routeTags } from "./tags";
+import { flavourValue, themeValue } from "./theme";
 import { buildTrip, meanScore, routeNames, splitSteps, viaNames } from "./trip";
 import { type Ride, windFactor, windRanked } from "./wind";
 
-/** Proposals to look for on a one-day A to B trip. */
+/** Proposals a trip should get at least. Also what one-day trips first look for. */
 const PROPOSALS = 5;
+/** Most proposals a trip gets. */
+const MAX_PROPOSALS = 8;
+/**
+ * Fill: inputs to try in order. km and ascent scale the km per day and the
+ * max ascent. Start, end, days and hotel budget stay as asked.
+ */
+const FILL_INPUTS = [
+  { km: 1, ascent: 1 },
+  { km: 0.8, ascent: 1 },
+  { km: 1.2, ascent: 1 },
+  { km: 1, ascent: 1.3 },
+];
+/**
+ * Fill: how different a route must be, strictest first. turn: degrees from
+ * every other route, when the end is free. shared: km on the same edges.
+ * corridor: km near another route. gap: share of the via gap. upTo: the step
+ * adds routes up to this count, so near copies only fill a short list.
+ */
+const FILL_STEPS = [
+  { turn: 35, shared: 0.4, corridor: 0.6, gap: 1, upTo: MAX_PROPOSALS },
+  { turn: 0, shared: 0.4, corridor: 0.6, gap: 1, upTo: MAX_PROPOSALS },
+  { turn: 0, shared: 0.7, corridor: 1, gap: 0.5, upTo: PROPOSALS },
+];
+/**
+ * Fill: time limit in ms, without building the first list. Each step gets its
+ * share, so a strict step that finds little does not use up the time.
+ */
+const FILL_TIME_MS = 2500;
+/** Fill: candidates to try per input and step. */
+const FILL_TRIES = 60;
+/** Width of a corridor cell in km. See corridorShare. */
+const CORRIDOR_KM = 2;
+/** Near both ends of a route, all routes share a corridor. */
+const CORRIDOR_ENDS = { share: 0.08, minKm: 5 };
+/** Via gap as a share of the trip, for short trips. */
+const VIA_GAP_SHARE = 0.12;
+/** Day trips need no hotels, so any node can be a via, up to about this many. */
+const MAX_DAY_VIAS = 2000;
+/** All flavours together, in ms. Keeps time for the fill on large areas. */
+const FLAVOURS_TIME_MS = 4000;
 /** Candidates to try before giving up. */
 const MAX_TRIES = 300;
 /** Search time limit in ms. Stops early once at least one proposal fits. */
@@ -75,13 +118,6 @@ const FLAT_SHARE = 0.85;
 const HILLY_GAIN = 1.5;
 /** Hilly aims for this share of the max ascent. */
 const HILLY_TARGET = 0.65;
-/** The flavour of the theme picked in the form goes first. */
-const THEME_FLAVOUR: Record<Theme, Flavour> = {
-  nature: "nature",
-  water: "nature",
-  wine: "sights",
-  culture: "sights",
-};
 /** Open day ride: ends of two proposals this far apart, seen from the start. */
 const MIN_TURN_DEG = 45;
 /** Via nodes of two proposals must be at least this far apart. */
@@ -204,7 +240,9 @@ export class Planner {
       }
     }
 
-    onProgress?.({ phase: "searching", done: 0, total: MAX_TRIES });
+    const total =
+      MAX_TRIES + FILL_INPUTS.length * FILL_STEPS.length * FILL_TRIES;
+    onProgress?.({ phase: "searching", done: 0, total });
     const vias = this.stops.townNodes();
     // Open day ride: any direction, back by train.
     const open =
@@ -215,7 +253,7 @@ export class Planner {
       options.wind?.length && (open || request.kind === "day-loop")
         ? { wind: options.wind, startHour: timeToHours(request.startTime) }
         : undefined;
-    const candidates = (c: Costs) => {
+    const candidates = (c: Costs, km = totalKm, via = vias) => {
       const list =
         request.kind === "one-way"
           ? oneWayCandidates(
@@ -225,16 +263,16 @@ export class Planner {
               endStation === undefined
                 ? this.stops.stationNodes().filter((n) => n !== start)
                 : [endStation],
-              vias,
-              totalKm,
+              via,
+              km,
               endStation === undefined ? undefined : 0,
             )
-          : loopCandidates(graph, c, start, vias, totalKm);
-      return ride ? windRanked(graph, list, totalKm, ride, open) : list;
+          : loopCandidates(graph, c, start, via, km);
+      return ride ? windRanked(graph, list, km, ride, open) : list;
     };
     const progress = (done: number) => {
       check();
-      onProgress?.({ phase: "searching", done, total: MAX_TRIES });
+      onProgress?.({ phase: "searching", done, total });
     };
 
     // One-day A to B keeps its characters. Other trips get one per flavour.
@@ -257,41 +295,49 @@ export class Planner {
         progress,
       );
       picks = found.picks;
-      // Rides with the wind first. Close factors keep the search order.
-      if (ride) {
-        const wind = (p: Pick) =>
-          Math.round(
-            windFactor(
-              p.nodes.map((n) => graph.coord(n)),
-              totalKm,
-              ride,
-            ) * 10,
-          );
-        picks.sort((a, b) => wind(a) - wind(b));
-      }
     } else {
       found = this.pickFlavours(candidates, request, totalKm, progress);
       picks = found.picks;
     }
+    // Trips of one day have no stops, so any node can turn them.
+    const fillVias = request.days === 1 ? dayVias(graph) : vias;
+    this.fill(
+      picks,
+      start,
+      endStation !== undefined,
+      request,
+      totalKm,
+      (c, km) => candidates(c, km, fillVias),
+      progress,
+    );
     if (!picks.length) return { ok: false, failedLimit: found.failedLimit };
+    // Rides with the wind first. Close factors keep the search order.
+    if (open && ride) {
+      const wind = (p: Pick) =>
+        Math.round(
+          windFactor(
+            p.nodes.map((n) => graph.coord(n)),
+            totalKm,
+            ride,
+          ) * 10,
+        );
+      picks.sort((a, b) => wind(a) - wind(b));
+    }
     // Stages are cut during the search, since a path only counts if it cuts.
     onProgress?.({ phase: "cutting", done: picks.length, total: picks.length });
 
-    const proposals: Proposal[] = [];
-    for (const [i, p] of picks.entries()) {
-      check();
-      onProgress?.({ phase: "routing", done: i, total: picks.length });
+    // All at once: the routing provider limits how many requests are open.
+    const routed = picks.map(async (p, i) => {
       const placeAt = (node: number) =>
         this.endpoint(
           node,
           node === start ? request.startStation : request.endStation,
         );
-      const from = p.nodes[0] ?? start;
-      let trip = buildTrip(graph, this.stops, {
+      const trip = buildTrip(graph, this.stops, {
         id: `draft-${runId}-${i + 1}`,
         now,
         request,
-        start: placeAt(from),
+        start: placeAt(p.nodes[0] ?? start),
         end: placeAt(p.nodes.at(-1) ?? start),
         steps: p.steps,
         stops: p.stops,
@@ -299,28 +345,39 @@ export class Planner {
       if (p.homeward) {
         trip.name = `${trip.stages[0]?.start.name ?? ""} – ${request.startStation?.name ?? trip.stages.at(-1)?.end.name ?? ""}`;
       }
-      if (options.routing) {
-        const waypoints = stageWaypoints(
-          graph,
-          trip,
-          splitSteps(p.steps, p.stops),
-        );
-        try {
-          trip = await routeTrip(
-            trip,
-            waypoints,
-            options.routing,
-            request,
-            signal,
-          );
-        } catch {
-          check();
-        }
+      if (!options.routing) return trip;
+      const waypoints = stageWaypoints(
+        graph,
+        trip,
+        splitSteps(p.steps, p.stops),
+      );
+      try {
+        return await routeTrip(trip, waypoints, options.routing, signal);
+      } catch {
+        return trip;
       }
+    });
+
+    const urban = this.stops.urbanNodes();
+    const proposals: Proposal[] = [];
+    for (const [i, p] of picks.entries()) {
+      check();
+      onProgress?.({ phase: "routing", done: i, total: picks.length });
+      const trip = await (routed[i] as Promise<Trip>);
+      check();
+      const from = p.nodes[0] ?? start;
       const proposal: Proposal = {
         id: `${runId}-${i + 1}`,
         trip,
-        score: score(graph, p, totalKm, request),
+        score: score(graph, p, totalKm),
+        tags: routeTags(
+          graph,
+          p.steps,
+          trip,
+          urban,
+          request,
+          direct ? undefined : totalKm,
+        ),
         signedShare: signedShare(graph, p.steps),
         routeNames: routeNames(graph, p.steps),
         via: viaNames(graph, this.stops, from, p.steps, [
@@ -601,7 +658,8 @@ export class Planner {
     let best: Pick | undefined;
     let ck: Check | undefined;
     let tries = 0;
-    const order = flavourOrder(request.theme, graph.hasScenery);
+    const flavoursStart = Date.now();
+    const order = flavourOrder(graph.hasScenery);
     const climbs: Flavour[] = ["flat", "hilly"];
     const search = [
       ...order.filter((f) => !climbs.includes(f)),
@@ -609,6 +667,7 @@ export class Planner {
     ];
     for (const flavour of search) {
       const startedAt = Date.now();
+      if (picks.length && startedAt - flavoursStart > FLAVOURS_TIME_MS) break;
       const costs = new Costs(graph, request, flavour);
       // Once per edge: compounding pushes late flavours into detours.
       for (const p of picks) {
@@ -662,18 +721,138 @@ export class Planner {
       failedLimit: ck ? failedLimit(ck, request) : emptyLimit(request),
     };
   }
+
+  /**
+   * Adds proposals to the picks, up to MAX_PROPOSALS. Tries the inputs as
+   * asked first, then wider ones. For each, routes that differ most first.
+   */
+  private fill(
+    picks: Pick[],
+    start: number,
+    endFixed: boolean,
+    request: GenerateRequest,
+    totalKm: number,
+    candidates: (costs: Costs, km: number) => Candidate[],
+    progress: (tries: number) => void,
+  ) {
+    const graph = this.graph;
+    let left = FILL_TIME_MS;
+    const home = graph.coord(start);
+    const lines = new Map<Pick, LonLat[]>();
+    const line = (p: Pick) => {
+      let l = lines.get(p);
+      if (!l) {
+        l = pathPoints(graph, p.nodes[0] ?? start, p.steps).map((q) =>
+          graph.coord(q.node),
+        );
+        lines.set(p, l);
+      }
+      return l;
+    };
+    const heading = (p: Pick) => bearing(home, farthest(home, line(p)));
+    const gapKm = Math.min(MIN_VIA_GAP_KM, VIA_GAP_SHARE * totalKm);
+    const endsKm = Math.max(CORRIDOR_ENDS.minKm, CORRIDOR_ENDS.share * totalKm);
+    const mids = (nodes: number[]) => nodes.slice(1, -1);
+    let tries = 0;
+
+    for (const input of FILL_INPUTS) {
+      if (picks.length >= MAX_PROPOSALS || left <= 0) return;
+      const km = totalKm * input.km;
+      const asked = {
+        ...request,
+        kmPerDay: request.kmPerDay * input.km,
+        maxAscentPerDay: request.maxAscentPerDay * input.ascent,
+      };
+      const costs = new Costs(graph, asked);
+      const listStart = Date.now();
+      const list = candidates(costs, km);
+      if (input !== FILL_INPUTS[0]) left -= Date.now() - listStart;
+      const ck = this.checker(list, asked, km);
+      for (const step of FILL_STEPS) {
+        if (step.turn && endFixed) continue;
+        for (const p of picks) {
+          for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
+        }
+        let mine = 0;
+        const stepStart = Date.now();
+        const stepMs = Math.min(left, FILL_TIME_MS / FILL_STEPS.length);
+        for (const c of list) {
+          if (picks.length >= step.upTo || mine === FILL_TRIES) break;
+          if (Date.now() - stepStart > stepMs) break;
+          if (c.homeward && picks.some((p) => p.homeward)) continue;
+          const via = mids(c.nodes);
+          const close = picks.some((p) =>
+            mids(p.nodes).some((v) =>
+              via.some(
+                (w) =>
+                  distanceKm(graph.coord(v), graph.coord(w)) < gapKm * step.gap,
+              ),
+            ),
+          );
+          if (close) continue;
+
+          mine++;
+          if (++tries % 10 === 0) progress(MAX_TRIES + tries);
+          const p = this.fit(c, costs, ck);
+          if (!p) continue;
+          const shared = Math.max(
+            0,
+            ...picks.map((q) => sharedKm(graph, p, q)),
+          );
+          if (shared > step.shared * p.km) continue;
+          const a = line(p);
+          const ends = [a[0] ?? home, a.at(-1) ?? home];
+          const near = picks.some(
+            (q) =>
+              corridorShare(a, line(q), CORRIDOR_KM, ends, endsKm) >
+              step.corridor,
+          );
+          if (near) continue;
+          if (
+            step.turn &&
+            picks.some((q) => turn(heading(q), heading(p)) < step.turn)
+          ) {
+            continue;
+          }
+          picks.push({
+            ...p,
+            shared: shared / p.km,
+            ...(c.homeward && { homeward: true }),
+          });
+          for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
+        }
+        left -= Date.now() - stepStart;
+      }
+    }
+  }
+}
+
+/** Point of a line farthest from a place. */
+function farthest(from: LonLat, line: LonLat[]): LonLat {
+  let best = from;
+  let bestKm = -1;
+  for (const p of line) {
+    const km = distanceKm(from, p);
+    if (km > bestKm) {
+      best = p;
+      bestKm = km;
+    }
+  }
+  return best;
+}
+
+/** Vias for day trips: towns and stations, and an even part of the junctions. */
+function dayVias(graph: Graph): number[] {
+  const every = Math.ceil(graph.nodes.length / MAX_DAY_VIAS);
+  return graph.nodes
+    .filter((n, i) => n.kind !== "junction" || i % every === 0)
+    .map((n) => n.id);
 }
 
 /** Flavours to search, in the order they are shown. */
-export function flavourOrder(theme: Theme | undefined, scenery: boolean) {
-  const first = theme && scenery ? THEME_FLAVOUR[theme] : undefined;
+export function flavourOrder(scenery: boolean) {
   const all: Flavour[] = ["best", "nature", "flat", "hilly", "sights"];
-  return [
-    ...(first ? [first] : []),
-    ...all.filter(
-      (f) => f !== first && (scenery || (f !== "nature" && f !== "sights")),
-    ),
-  ];
+  return all.filter((f) => scenery || (f !== "nature" && f !== "sights"));
 }
 
 /**
@@ -881,26 +1060,14 @@ export function requestBBox(request: GenerateRequest): BBox {
 }
 
 /**
- * Higher is better. Nice edges, length close to the target, little overlap
- * with earlier proposals and, with a theme, much of it.
+ * Higher is better. Nice edges, length close to the target and little
+ * overlap with earlier proposals.
  */
-function score(
-  graph: Graph,
-  p: Pick,
-  totalKm: number,
-  request: GenerateRequest,
-): number {
+function score(graph: Graph, p: Pick, totalKm: number): number {
   const lengthFit = 1 - Math.abs(p.km - totalKm) / totalKm;
-  const theme = request.theme
-    ? 0.5 + 0.5 * themeFit(graph, p.steps, request.theme)
-    : 1;
   return (
     Math.round(
-      meanScore(graph, p.steps) *
-        lengthFit *
-        (1 - 0.5 * p.shared) *
-        theme *
-        1000,
+      meanScore(graph, p.steps) * lengthFit * (1 - 0.5 * p.shared) * 1000,
     ) / 1000
   );
 }

@@ -7,9 +7,12 @@ import {
   type LonLat,
   pointAtKm,
   type Proposal,
+  rainKind,
   ridingHours,
   type RoutePoint,
   routePoints,
+  type RouteTag,
+  type StageWeather,
   type Trip,
   tripStats,
   type WindShares,
@@ -49,7 +52,7 @@ export function dayBreaks(trip: Trip): number[] {
 }
 
 export type ComparisonTag =
-  "flattest" | "mostPaved" | "mostSigned" | "shortest" | "leastHeadwind";
+  "flattest" | "mostPaved" | "shortest" | "fastest" | "leastHeadwind";
 
 type Measure = {
   tag: ComparisonTag;
@@ -74,16 +77,16 @@ const measures: Measure[] = [
     clear: (best, next) => best - next >= 0.03,
   },
   {
-    tag: "mostSigned",
-    value: (p) => (p as Proposal & { signedShare?: number }).signedShare,
-    most: true,
-    clear: (best, next) => best - next >= 0.05,
-  },
-  {
     tag: "shortest",
     value: (p) => proposalStats(p.trip).distance,
     most: false,
     clear: (best, next) => next - best >= Math.max(3000, best * 0.03),
+  },
+  {
+    tag: "fastest",
+    value: (p) => tripRidingHours(p.trip),
+    most: false,
+    clear: (best, next) => next - best >= Math.max(0.25, best * 0.03),
   },
 ];
 
@@ -116,10 +119,74 @@ export function comparisonTags(
       .sort((a, b) => (m.most ? b.value - a.value : a.value - b.value));
     const [best, next] = ranked;
     if (!best || !next) continue;
-    if (m.clear(best.value, next.value))
-      tags.set(best.id, [...(tags.get(best.id) ?? []), m.tag]);
+    if (!m.clear(best.value, next.value)) continue;
+    const own = tags.get(best.id) ?? [];
+    // Shortest already says it.
+    if (m.tag === "fastest" && own.includes("shortest")) continue;
+    tags.set(best.id, [...own, m.tag]);
   }
   return tags;
+}
+
+/** Tags that say a proposal leaves the inputs. Always shown. */
+const OFF_INPUT: readonly RouteTag[] = ["longer", "shorter", "moreClimbing"];
+
+/**
+ * Route tags to show, by proposal id: leaving the inputs first, then the
+ * rarest in the list. A tag every proposal has says nothing, so it goes.
+ */
+export function shownRouteTags(proposals: Proposal[]): Map<string, RouteTag[]> {
+  const counts = new Map<RouteTag, number>();
+  for (const p of proposals) {
+    for (const tag of p.tags ?? []) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+  const rank = (tag: RouteTag) =>
+    OFF_INPUT.includes(tag) ? -1 : (counts.get(tag) ?? 0);
+  return new Map(
+    proposals.map((p) => [
+      p.id,
+      (p.tags ?? [])
+        .filter(
+          (tag) =>
+            OFF_INPUT.includes(tag) ||
+            proposals.length < 2 ||
+            counts.get(tag) !== proposals.length,
+        )
+        .sort((a, b) => rank(a) - rank(b)),
+    ]),
+  );
+}
+
+export type RainTag = { kind: "rain"; day?: number } | { kind: "dry" };
+
+/**
+ * Rain on the first wet day, or dry when all days are. Undefined when a day
+ * has no forecast or only light rain falls.
+ */
+export function rainTag(days: StageWeather[] | undefined): RainTag | undefined {
+  if (!days?.length) return undefined;
+  const kinds = days.map(rainKind);
+  const wet = kinds.indexOf("wet");
+  if (wet >= 0) {
+    return days.length > 1 ? { kind: "rain", day: wet + 1 } : { kind: "rain" };
+  }
+  return kinds.every((k) => k === "dry") ? { kind: "dry" } : undefined;
+}
+
+/**
+ * Town each proposal is named after: its first via no earlier proposal has,
+ * else its first via. Undefined without a via.
+ */
+export function titleTowns(proposals: Proposal[]): Map<string, string> {
+  const used = new Set<string>();
+  const towns = new Map<string, string>();
+  for (const p of proposals) {
+    const town = p.via.find((v) => !used.has(v)) ?? p.via[0];
+    if (!town) continue;
+    used.add(town);
+    towns.set(p.id, town);
+  }
+  return towns;
 }
 
 export type WindTag = { kind: "tail" } | { kind: "head"; day: number };

@@ -12,6 +12,7 @@ import {
 import type { Graph, PathStep } from "../graph/Graph";
 import { pathToLeg } from "../graph/leg";
 import { endNode, legSteps } from "./route";
+import { PLAN_PROFILE } from "./search";
 import { type Stop, STOP_KM } from "./stages";
 import type { Stops } from "./stops";
 
@@ -31,7 +32,7 @@ export type TripParts = {
 /** Builds a draft trip from a cut path. One leg per piece of about 10 km. */
 export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
   const { request } = p;
-  const meta = { provider: GRAPH_PROVIDER, profileHash: request.profile };
+  const meta = { provider: GRAPH_PROVIDER, profileHash: PLAN_PROFILE };
   const ends: StopPlace[] = p.stops.map((s) => ({
     ...places.town(s.node),
     locked: false,
@@ -84,7 +85,7 @@ export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
     kind: request.kind,
     ...(request.startDate ? { startDate: request.startDate } : {}),
     settings: {
-      profile: request.profile,
+      profile: PLAN_PROFILE,
       kmPerDay: request.kmPerDay,
       maxAscentPerDay: request.maxAscentPerDay,
       ...(request.hotelBudget ? { hotelBudget: request.hotelBudget } : {}),

@@ -77,6 +77,7 @@ import {
   ProposalCard,
   ProposalCardSkeleton,
   RouteLabel,
+  routeColors,
   ChoiceCard,
   ChoiceGroup,
   FloatingButton,
@@ -1205,7 +1206,7 @@ function ProposalDemos() {
           <ProposalCard
             key={n}
             number={n}
-            color={n === 1 ? "best" : "nature"}
+            color={n === 1 ? "route1" : "route2"}
             title={t("demo.proposalTitle")}
             subtitle={t("demo.proposalSubtitle")}
             tags={n === 2 ? [t("demo.flattest")] : []}
@@ -1230,11 +1231,10 @@ function ProposalDemos() {
         <ProposalCardSkeleton />
       </div>
       <div className="flex items-center gap-3">
-        <RouteLabel label="1" color="best" selected />
-        <RouteLabel label="2" color="nature" />
-        <RouteLabel label="3" color="flat" />
-        <RouteLabel label="4" color="hilly" />
-        <RouteLabel label="5" color="sights" />
+        <RouteLabel label="1" color="route1" selected />
+        {routeColors.slice(1).map((color, i) => (
+          <RouteLabel key={color} label={String(i + 2)} color={color} />
+        ))}
       </div>
       <Card padding="none">
         <MessagePanel

@@ -6,8 +6,6 @@ import {
   HotelBudget,
   IsoDate,
   Place,
-  Profile,
-  Theme,
   TimeOfDay,
   type TripKind,
 } from "@wayline/domain";
@@ -17,10 +15,6 @@ export const lengths = ["one", "multi"] as const;
 export type TripLength = (typeof lengths)[number];
 export const shapes = ["ab", "loop", "open"] as const;
 export type TripShape = (typeof shapes)[number];
-
-/** Theme choices on the form. "any" means no theme. */
-export const themes = ["any", ...Theme.options] as const;
-export type ThemeChoice = (typeof themes)[number];
 
 export const formErrors = [
   "startRequired",
@@ -59,9 +53,7 @@ export const newTripSchema = z
     backBy: TimeOfDay,
     kmPerDay: whole("kmPerDay", limits.kmPerDay),
     maxAscentPerDay: whole("maxAscentPerDay", limits.maxAscentPerDay),
-    profile: Profile,
     hotelBudget: HotelBudget,
-    theme: z.enum(themes),
     withWind: z.boolean(),
   })
   .superRefine((v, ctx) => {
@@ -97,9 +89,7 @@ export type NewTripValues = {
   /** Km per day, or the distance of a one-day trip. */
   kmPerDay: number | undefined;
   maxAscentPerDay: number | undefined;
-  profile: Profile;
   hotelBudget: HotelBudget;
-  theme: ThemeChoice;
   /** Day loops and open rides: plan with the wind forecast. */
   withWind: boolean;
 };
@@ -158,9 +148,7 @@ export function defaultValues(today: string, kind?: TripKind): NewTripValues {
     backBy: "17:00",
     kmPerDay: 70,
     maxAscentPerDay: 900,
-    profile: "touring",
     hotelBudget: "mid",
-    theme: "any",
     withWind: true,
   };
 }
@@ -190,9 +178,7 @@ export function fromRequest(
     backBy: request.backBy ?? defaults.backBy,
     kmPerDay: request.kmPerDay,
     maxAscentPerDay: request.maxAscentPerDay,
-    profile: request.profile,
     hotelBudget: request.hotelBudget ?? defaults.hotelBudget,
-    theme: request.theme ?? "any",
     withWind: request.withWind ?? defaults.withWind,
   };
 }
@@ -208,9 +194,7 @@ export function toRequest(values: NewTripValues): GenerateRequest {
     days,
     kmPerDay: v.kmPerDay,
     maxAscentPerDay: v.maxAscentPerDay,
-    profile: v.profile,
     hotelBudget: multi ? v.hotelBudget : undefined,
-    theme: v.theme === "any" ? undefined : v.theme,
     withWind: v.withWind,
     startDate: v.startDate,
     startTime: v.startTime,

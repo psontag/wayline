@@ -42,7 +42,7 @@ Map tokens:
 | `route-dimmed` | Unselected routes in the legend |
 | `route-selected` | Selected stage |
 | `stage-a`, `stage-b` | Stages in the trip editor alternate between these two |
-| `route-best`, `route-nature`, `route-flat`, `route-hilly`, `route-sights` | One color per proposal on the proposals map, by flavour or list order |
+| `route-1` … `route-8` | One color per proposal on the proposals map, by list order |
 | `on-route` | Text on a route color |
 | `route-outline` | Casing of the highlighted proposal |
 | `hillshade-shadow`, `hillshade-highlight` | Terrain shading on the maps |
@@ -96,11 +96,14 @@ Color values:
 | `via-point` | `#B4532A` | `#FFB088` |
 | `route-highlight` | `#15181D` | `#FFFFFF` |
 | `network` | `#9DB7A0` | `#4E6B57` |
-| `route-best` | `#FF9A73` | `#FFA67F` |
-| `route-nature` | `#3FB37A` | `#62D197` |
-| `route-flat` | `#4F9FF0` | `#6DB4FF` |
-| `route-hilly` | `#A685EC` | `#BB9EFF` |
-| `route-sights` | `#EE7FB4` | `#FF93C6` |
+| `route-1` | `#FF9A73` | `#FFA67F` |
+| `route-2` | `#3FB37A` | `#62D197` |
+| `route-3` | `#4F9FF0` | `#6DB4FF` |
+| `route-4` | `#A685EC` | `#BB9EFF` |
+| `route-5` | `#EE7FB4` | `#FF93C6` |
+| `route-6` | `#D9A83A` | `#E8BC55` |
+| `route-7` | `#35B6B0` | `#4FD0CA` |
+| `route-8` | `#9DB83A` | `#B4CF52` |
 | `on-route` | `#15181D` | `#101216` |
 | `route-outline` | `#3A3F48` | `#0B0C0F` |
 | `hillshade-shadow` | `#5A616C` | `#000000` |
@@ -157,7 +160,7 @@ Rules:
 - One meaning per icon. Don't use these icons for anything else.
 - Repeated stats are icon plus value (`Stat`). The label is the tooltip and the aria-label.
 - Lists show icons only in column headers, not in every row (`DayList`).
-- Panel section headings have an icon from `sectionIcons` (see [Side panels](#side-panels)). Other headings, flavour labels and plain buttons have none. Only known actions (zoom, close, more) are icon-only.
+- Panel section headings have an icon from `sectionIcons` (see [Side panels](#side-panels)). Other headings, route labels and plain buttons have none. Only known actions (zoom, close, more) are icon-only.
 - The paved share is shown as the surface bar (`SurfaceBar`), not as a number.
 
 ## Dark mode
@@ -337,7 +340,6 @@ The same thing always has the same name in the UI. Translations use one fixed te
 | Via point | Point the user adds to change a route |
 | Day loop | A one-day ride that ends where it starts |
 | Multi-day loop | A multi-day trip that ends where it starts |
-| Theme | What a trip should lean toward: Nature, Rivers & lakes, Wine or Culture |
 | Length | One day or several days |
 | Shape | A to B, loop, or anywhere (one day only) |
 | Anywhere | A one-day ride in any direction, back by train |
@@ -348,6 +350,7 @@ The same thing always has the same name in the UI. Translations use one fixed te
 | Proposed route | The route of a stage as proposed, shown after a change |
 | Changed, Revert | A stage that differs from its proposal, and the action that restores it |
 | Direct, longer, scenic | Characters of one-day A to B proposals |
+| Nature, Rivers & lakes, Wine, Sights, Mostly towns, Scenic, Quiet, Gravel, Main roads, Off signed routes, Flat, Hilly, Lots of climbing, Longer, Shorter, More climbing | Route tags on proposals |
 | Riding time | Time on the bike for a stage, without breaks |
 | Ride window | The hours of a stage on the bike, shown on the weather timeline |
 | Best start | The start time with the least rain, then the least headwind |

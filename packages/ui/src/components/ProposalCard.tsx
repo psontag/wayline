@@ -82,22 +82,20 @@ export function ProposalCard({
       >
         <NumberBadge number={number} color={color} />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-center gap-2">
-            <span className="min-w-0 flex-1 truncate text-md font-bold">
-              {title}
-            </span>
-            {tags.map((tag) => (
-              <Badge key={tag} className="shrink-0">
-                {tag}
-              </Badge>
-            ))}
-          </span>
+          <span className="truncate text-md font-bold">{title}</span>
           {selected ? (
             <span className="truncate text-xs text-text-muted">{subtitle}</span>
           ) : (
             <span className="flex min-w-0 items-center gap-3 overflow-hidden">
               {stats.map((stat) => (
                 <Stat key={stat.icon} size="sm" {...stat} />
+              ))}
+            </span>
+          )}
+          {tags.length > 0 && (
+            <span className="mt-1 flex flex-wrap gap-1">
+              {tags.map((tag) => (
+                <Badge key={tag}>{tag}</Badge>
               ))}
             </span>
           )}

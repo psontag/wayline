@@ -20,6 +20,11 @@ import type { Graph } from "../graph/Graph";
 
 /** Hotels within this distance count as in the town. */
 const TOWN_HOTEL_KM = 2;
+/** Built-up radius around each kind of place. */
+const URBAN_KM: Partial<Record<GeoTown["place"], number>> = {
+  city: 4,
+  town: 1.5,
+};
 
 /**
  * Names, places and hotels for network nodes. Built once per network.
@@ -28,6 +33,7 @@ export class Stops {
   private towns = new Map<number, GeoTown>();
   private stations = new Map<number, GeoStation>();
   private hotels: HotelIndex;
+  private urban?: Set<number>;
 
   constructor(
     private graph: Graph,
@@ -56,6 +62,20 @@ export class Stops {
   /** Town node ids. */
   townNodes(): number[] {
     return this.graph.nodes.filter((n) => n.kind === "town").map((n) => n.id);
+  }
+
+  /** Nodes in built-up areas: near a city or town. Villages don't count. */
+  urbanNodes(): Set<number> {
+    if (this.urban) return this.urban;
+    this.urban = new Set();
+    for (const [node, t] of this.towns) {
+      const km = URBAN_KM[t.place];
+      if (!km) continue;
+      for (const n of this.graph.nodesWithin(this.graph.coord(node), km)) {
+        this.urban.add(n);
+      }
+    }
+    return this.urban;
   }
 
   /**

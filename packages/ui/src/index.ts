@@ -204,6 +204,7 @@ export {
 export {
   RouteLabel,
   routeColorClasses,
+  routeColors,
   type RouteColor,
   type RouteLabelProps,
 } from "./components/RouteLabel";

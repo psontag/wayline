@@ -249,8 +249,10 @@ export const GenerateRequest = z
     days: z.number().int().min(1).max(14),
     kmPerDay: z.number().positive(),
     maxAscentPerDay: z.number().positive(),
-    profile: Profile,
+    /** Not used. Old links may still have it. */
+    profile: Profile.optional(),
     hotelBudget: HotelBudget.optional(),
+    /** Not used. Old links may still have it. */
     theme: Theme.optional(),
     startDate: IsoDate.optional(),
     startTime: TimeOfDay.default("09:00"),
@@ -273,6 +275,27 @@ export type ProposalCharacter = z.infer<typeof ProposalCharacter>;
 export const Flavour = z.enum(["best", "nature", "flat", "hilly", "sights"]);
 export type Flavour = z.infer<typeof Flavour>;
 
+/** What a proposal's route is like. See docs/05. */
+export const RouteTag = z.enum([
+  "nature",
+  "water",
+  "wine",
+  "sights",
+  "urban",
+  "scenic",
+  "quiet",
+  "mainRoads",
+  "gravel",
+  "offRoutes",
+  "flat",
+  "hilly",
+  "climbs",
+  "longer",
+  "shorter",
+  "moreClimbing",
+]);
+export type RouteTag = z.infer<typeof RouteTag>;
+
 export const Proposal = z.object({
   id: z.string(),
   /** Draft trip. Not saved until the user opens it. */
@@ -287,6 +310,7 @@ export const Proposal = z.object({
   themes: z.partialRecord(Theme, z.number()).optional(),
   character: ProposalCharacter.optional(),
   flavour: Flavour.optional(),
+  tags: z.array(RouteTag).optional(),
   /** Open day ride the other way: train out, ride home. */
   homeward: z.boolean().optional(),
   /** 0 to 1: share of km on signed cycle routes. */

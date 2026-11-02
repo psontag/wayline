@@ -6,12 +6,10 @@ import {
   type GenerateRequest,
   localTimeToDate,
   type Place,
-  type Profile,
   type TripKind,
 } from "@wayline/domain";
 import {
   Button,
-  Chip,
   DateField,
   DayStrip,
   FormField,
@@ -22,15 +20,7 @@ import {
   Switch,
   useFormat,
 } from "@wayline/ui";
-import {
-  ArrowRight,
-  Castle,
-  Grape,
-  type LucideIcon,
-  Shuffle,
-  Trees,
-  Waves,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -46,8 +36,6 @@ import {
   type NewTripValues,
   shapes,
   startTimes,
-  type ThemeChoice,
-  themes,
   toRequest,
   type TripLength,
   type TripShape,
@@ -55,15 +43,7 @@ import {
 import { NewTripMap } from "./NewTripMap";
 import { PlaceField } from "./PlaceField";
 
-const profiles: Profile[] = ["touring", "fast", "scenic", "quiet"];
 const budgets = ["low", "mid", "high"] as const;
-const themeIcons: Record<ThemeChoice, LucideIcon> = {
-  any: Shuffle,
-  nature: Trees,
-  water: Waves,
-  wine: Grape,
-  culture: Castle,
-};
 
 function today() {
   const d = new Date();
@@ -446,58 +426,6 @@ export function NewTripForm({
               />
             )}
           </form.Subscribe>
-
-          <form.Field name="profile">
-            {(field) => (
-              <FormField
-                label={t("profile.label")}
-                labelId={`${id}-profile`}
-                hint={t(`profile.hint.${field.state.value}`)}
-              >
-                <SegmentedControl
-                  stretch
-                  aria-labelledby={`${id}-profile`}
-                  value={field.state.value}
-                  onValueChange={(v) => field.handleChange(v as Profile)}
-                  options={profiles.map((p) => ({
-                    value: p,
-                    label: t(`profile.${p}`),
-                  }))}
-                />
-              </FormField>
-            )}
-          </form.Field>
-
-          <form.Field name="theme">
-            {(field) => (
-              <FormField
-                label={t("theme.label")}
-                labelId={`${id}-theme`}
-                hint={t(`theme.hint.${field.state.value}`)}
-              >
-                <div
-                  role="group"
-                  aria-labelledby={`${id}-theme`}
-                  className="flex flex-wrap gap-2"
-                >
-                  {themes.map((theme) => {
-                    const Icon = themeIcons[theme];
-                    return (
-                      <Chip
-                        key={theme}
-                        size="md"
-                        selected={field.state.value === theme}
-                        onClick={() => field.handleChange(theme)}
-                      >
-                        <Icon aria-hidden />
-                        {t(`theme.${theme}`)}
-                      </Chip>
-                    );
-                  })}
-                </div>
-              </FormField>
-            )}
-          </form.Field>
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-4">

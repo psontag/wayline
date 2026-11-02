@@ -1,11 +1,7 @@
-import {
-  type GenerateRequest,
-  type LonLat,
-  statsFromLegs,
-  type Trip,
-} from "@wayline/domain";
+import { type LonLat, statsFromLegs, type Trip } from "@wayline/domain";
 import type { AbortSignalLike, RoutingProvider } from "@wayline/providers";
 import type { Graph, PathStep } from "../graph/Graph";
+import { PLAN_PROFILE } from "./search";
 
 /** Gap between router waypoints on graph nodes. */
 const WAYPOINT_KM = 10;
@@ -69,13 +65,12 @@ export async function routeTrip(
   trip: Trip,
   waypoints: LonLat[][],
   routing: RoutingProvider,
-  request: GenerateRequest,
   signal?: AbortSignalLike,
 ): Promise<Trip> {
   // Stage ends are shared, so the stage lists join into one.
   const points = waypoints.flatMap((w, i) => (i === 0 ? w : w.slice(1)));
   const legs = await routing.route(points, {
-    profile: request.profile,
+    profile: PLAN_PROFILE,
     ...(signal ? { signal } : {}),
   });
   let next = 0;

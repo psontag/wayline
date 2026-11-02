@@ -68,10 +68,6 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
             ascent: format.elevation(request.maxAscentPerDay),
           }),
         },
-        { text: t(`request.profile.${request.profile}`) },
-        ...(request.theme
-          ? [{ text: t(`request.theme.${request.theme}`) }]
-          : []),
         ...(plansWithWind(request)
           ? [{ icon: "wind" as const, text: t("request.withWind") }]
           : []),

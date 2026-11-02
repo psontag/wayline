@@ -61,11 +61,14 @@ const textPairs = [
 ] as const;
 
 const routeColors = [
-  "route-best",
-  "route-nature",
-  "route-flat",
-  "route-hilly",
-  "route-sights",
+  "route-1",
+  "route-2",
+  "route-3",
+  "route-4",
+  "route-5",
+  "route-6",
+  "route-7",
+  "route-8",
 ] as const;
 
 const colors = readColors();
