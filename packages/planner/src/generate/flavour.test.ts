@@ -39,10 +39,13 @@ function checkFlavours(proposals: Proposal[]) {
 
 describe("flavours", () => {
   it("climbs less on flat and more on hilly, within the limit", () => {
-    // Daily average 10 m/km. 5 m/km is free for best, 8 m/km is not.
+    // A roomy limit: climbing at the daily average is free for best.
+    expect(flavourClimb(150, 10, 15, "best")).toBe(1);
+    expect(flavourClimb(300, 10, 15, "best")).toBe(2);
+    // A low limit: only a part of the daily average is free.
+    expect(flavourClimb(16, 10, 4, "best")).toBe(1);
+    expect(flavourClimb(32, 10, 4, "best")).toBe(2);
     const allowed = 10;
-    expect(flavourClimb(30, 10, allowed, "best")).toBe(1);
-    expect(flavourClimb(80, 10, allowed, "best")).toBe(2);
     expect(flavourClimb(30, 10, allowed, "flat")).toBeGreaterThan(1);
     expect(flavourClimb(80, 10, allowed, "hilly")).toBeLessThan(
       flavourClimb(30, 10, allowed, "hilly"),

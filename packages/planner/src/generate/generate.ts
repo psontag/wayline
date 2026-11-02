@@ -45,6 +45,12 @@ import {
 } from "./stages";
 import { Stops } from "./stops";
 import { corridorShare } from "./corridor";
+import {
+  kmOnRoute,
+  routeCandidates,
+  routeExtent,
+  routesInReach,
+} from "./signedRoutes";
 import { routeTags } from "./tags";
 import { flavourValue, themeValue } from "./theme";
 import { buildTrip, meanScore, routeNames, splitSteps, viaNames } from "./trip";
@@ -88,6 +94,26 @@ const CORRIDOR_KM = 2;
 const CORRIDOR_ENDS = { share: 0.08, minKm: 5 };
 /** Via gap as a share of the trip, for short trips. */
 const VIA_GAP_SHARE = 0.12;
+/**
+ * Proposals that follow a signed route. picks: slots they get. share: part of
+ * the proposal on the route, and of the trip the route must have unused in
+ * reach. sectorDeg: width of a direction. corridor: km near another proposal.
+ * cost: edge cost on the route. routes, vias, tries: limits per search, per
+ * route, per route.
+ */
+const SIGNED = {
+  picks: 3,
+  share: 0.3,
+  sectorDeg: 45,
+  corridor: 0.6,
+  cost: 0.3,
+  routes: 12,
+  vias: 8,
+  tries: 20,
+  timeMs: 1500,
+};
+/** A signed route reaches this share more than the trip, there and back. */
+const SIGNED_REACH = 1.1;
 /** Day trips need no hotels, so any node can be a via, up to about this many. */
 const MAX_DAY_VIAS = 2000;
 /** All flavours together, in ms. Keeps time for the fill on large areas. */
@@ -301,6 +327,18 @@ export class Planner {
     }
     // Trips of one day have no stops, so any node can turn them.
     const fillVias = request.days === 1 ? dayVias(graph) : vias;
+    const end = request.kind === "one-way" ? endStation : start;
+    if (end !== undefined && !ride) {
+      this.followRoutes(
+        picks,
+        start,
+        end,
+        request,
+        totalKm,
+        fillVias,
+        progress,
+      );
+    }
     this.fill(
       picks,
       start,
@@ -723,6 +761,92 @@ export class Planner {
   }
 
   /**
+   * Adds proposals that ride a signed route the others leave out, like a
+   * route through hills that flat routes rank above.
+   */
+  private followRoutes(
+    picks: Pick[],
+    start: number,
+    end: number,
+    request: GenerateRequest,
+    totalKm: number,
+    vias: number[],
+    progress: (tries: number) => void,
+  ) {
+    const graph = this.graph;
+    const costs = new Costs(graph, request);
+    const fromStart = costs.from(graph, start);
+    const fromEnd = end === start ? fromStart : costs.from(graph, end);
+    const routes = routesInReach(
+      graph,
+      (n) =>
+        (fromStart.km[n] ?? Infinity) + (fromEnd.km[n] ?? Infinity) <=
+        SIGNED_REACH * totalKm,
+    );
+    const ck = this.checker([{ quality: 0, nodes: [start] }], request, totalKm);
+    const line = routeLine(graph, start);
+    const endsKm = Math.max(CORRIDOR_ENDS.minKm, CORRIDOR_ENDS.share * totalKm);
+    const startedAt = Date.now();
+    const inTime = () => Date.now() - startedAt < SIGNED.timeMs;
+    // Directions from the middle of the trip. Hilly is for those who seek
+    // climbs, so it leaves its direction open for a gentler route.
+    const [sx, sy] = graph.coord(start);
+    const [ex, ey] = graph.coord(end);
+    const centre: LonLat = [(sx + ex) / 2, (sy + ey) / 2];
+    const sector = (c: LonLat) =>
+      Math.floor(bearing(centre, c) / SIGNED.sectorDeg);
+    const taken = new Map<number, number>();
+    const take = (p: Pick) => {
+      if (p.flavour === "hilly") return;
+      const s = sector(lineMiddle(line(p)));
+      taken.set(s, (taken.get(s) ?? 0) + 1);
+    };
+    picks.forEach(take);
+    const open = routes
+      .map((route) => ({ route, ...routeExtent(graph, route) }))
+      .filter((r) => r.km >= SIGNED.share * totalKm);
+    let added = 0;
+    for (let i = 0; i < SIGNED.routes; i++) {
+      if (added === SIGNED.picks || !inTime() || !open.length) break;
+      progress(MAX_TRIES);
+      // The longest route in the direction with the fewest proposals.
+      const turnout = (m: LonLat) => taken.get(sector(m)) ?? 0;
+      open.sort((a, b) => turnout(a.middle) - turnout(b.middle) || b.km - a.km);
+      const on = (open.shift() as (typeof open)[number]).route;
+      const rides = (p: Pick) =>
+        kmOnRoute(graph, p.steps, on) >= SIGNED.share * p.km;
+      if (picks.some(rides)) continue;
+      costs.penalty.fill(1);
+      for (const p of picks) {
+        for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
+      }
+      for (const id of on.edges) costs.penalty[id] = SIGNED.cost;
+      const list = routeCandidates(
+        graph,
+        costs,
+        start,
+        end,
+        on,
+        vias,
+        totalKm,
+        SIGNED.vias,
+      );
+      for (const c of list.slice(0, SIGNED.tries)) {
+        if (!inTime()) break;
+        const p = this.fit(c, costs, ck);
+        if (!p || !rides(p)) continue;
+        const shared = Math.max(0, ...picks.map((q) => sharedKm(graph, p, q)));
+        if (shared > MAX_SHARED * p.km) continue;
+        if (nearOther(p, picks, line, endsKm, SIGNED.corridor)) continue;
+        picks.push({ ...p, shared: shared / p.km });
+        take(p);
+        added++;
+        break;
+      }
+    }
+  }
+
+  /**
    * Adds proposals to the picks, up to MAX_PROPOSALS. Tries the inputs as
    * asked first, then wider ones. For each, routes that differ most first.
    */
@@ -738,17 +862,7 @@ export class Planner {
     const graph = this.graph;
     let left = FILL_TIME_MS;
     const home = graph.coord(start);
-    const lines = new Map<Pick, LonLat[]>();
-    const line = (p: Pick) => {
-      let l = lines.get(p);
-      if (!l) {
-        l = pathPoints(graph, p.nodes[0] ?? start, p.steps).map((q) =>
-          graph.coord(q.node),
-        );
-        lines.set(p, l);
-      }
-      return l;
-    };
+    const line = routeLine(graph, start);
     const heading = (p: Pick) => bearing(home, farthest(home, line(p)));
     const gapKm = Math.min(MIN_VIA_GAP_KM, VIA_GAP_SHARE * totalKm);
     const endsKm = Math.max(CORRIDOR_ENDS.minKm, CORRIDOR_ENDS.share * totalKm);
@@ -800,14 +914,7 @@ export class Planner {
             ...picks.map((q) => sharedKm(graph, p, q)),
           );
           if (shared > step.shared * p.km) continue;
-          const a = line(p);
-          const ends = [a[0] ?? home, a.at(-1) ?? home];
-          const near = picks.some(
-            (q) =>
-              corridorShare(a, line(q), CORRIDOR_KM, ends, endsKm) >
-              step.corridor,
-          );
-          if (near) continue;
+          if (nearOther(p, picks, line, endsKm, step.corridor)) continue;
           if (
             step.turn &&
             picks.some((q) => turn(heading(q), heading(p)) < step.turn)
@@ -825,6 +932,42 @@ export class Planner {
       }
     }
   }
+}
+
+/** Line of a pick, kept per pick. */
+function routeLine(graph: Graph, start: number) {
+  const lines = new Map<Pick, LonLat[]>();
+  return (p: Pick) => {
+    let l = lines.get(p);
+    if (!l) {
+      l = pathPoints(graph, p.nodes[0] ?? start, p.steps).map((q) =>
+        graph.coord(q.node),
+      );
+      lines.set(p, l);
+    }
+    return l;
+  };
+}
+
+/** Mean of the points of a line. */
+function lineMiddle(line: LonLat[]): LonLat {
+  const sum = line.reduce<LonLat>((s, [x, y]) => [s[0] + x, s[1] + y], [0, 0]);
+  return [sum[0] / line.length, sum[1] / line.length];
+}
+
+/** Does a pick run near another for more than the limit? */
+function nearOther(
+  p: Pick,
+  picks: Pick[],
+  line: (p: Pick) => LonLat[],
+  endsKm: number,
+  limit: number,
+): boolean {
+  const a = line(p);
+  const ends = [a[0], a.at(-1)].filter((c) => c !== undefined);
+  return picks.some(
+    (q) => corridorShare(a, line(q), CORRIDOR_KM, ends, endsKm) > limit,
+  );
 }
 
 /** Point of a line farthest from a place. */

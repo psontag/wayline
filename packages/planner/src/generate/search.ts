@@ -54,9 +54,11 @@ export function climbFactor(
 
 /**
  * Share of the daily average climb an edge may have before it costs more.
- * Below 1, so the usual search does not pick hills it could avoid.
+ * A low limit means the rider wants to avoid hills, so the share is small. From
+ * ROOMY_CLIMB m/km on, the rider is fine with climbing, so the average is free.
  */
 const CLIMB_FREE = 0.4;
+const ROOMY_CLIMB = 12;
 /** Flat flavour: cost grows by this per unit of climb over the average allowed. */
 const FLAT_PENALTY = 1;
 /** Hilly flavour: an edge climbing at the average allowed costs 1 / (1 + this) as much. */
@@ -72,7 +74,8 @@ export function flavourClimb(
   allowedPerKm: number,
   flavour?: Flavour,
 ): number {
-  const base = climbFactor(ascent, lengthKm, CLIMB_FREE * allowedPerKm);
+  const free = Math.min(1, Math.max(CLIMB_FREE, allowedPerKm / ROOMY_CLIMB));
+  const base = climbFactor(ascent, lengthKm, free * allowedPerKm);
   if (lengthKm <= 0) return base;
   const steep = ascent / lengthKm / allowedPerKm;
   if (flavour === "flat") return base * (1 + FLAT_PENALTY * steep);

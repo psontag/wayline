@@ -69,11 +69,22 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 4. **Filter** by length (within 12 % of the target), ascent and surface, using edge data. Drop loops whose middle part (20–80 % of the length) comes within 4 % of the length, or 4 km, of the start. Drop paths that ride back along themselves: parts within 1.5 km of an earlier part more than 10 km back may add up to 4 % of the length (min 4 km). A short touch, like a river bend, is fine.
 5. **Cut into stages.** See below. Each stage becomes one leg per piece of about 10 km, so an edit routes only the legs it touches.
 6. **Pick** one proposal per flavour, or up to 5 diverse ones for one day from A to B.
-7. **Fill** up to 8 proposals. See below.
+7. **Signed routes**, then **fill** up to 8 proposals. See below.
 8. **Route** the chosen proposals, all at once. The browser sends at most 3 requests at a time. Waypoints are graph nodes about every 10 km, so the router follows the graph path. Proposals share nodes, so legs hit the cache. If routing fails, the proposal keeps the graph path.
 9. **Find hotels** at each stop from the OSM hotel data.
 10. **Tag** each proposal. See below.
 11. **Add weather** if the start date is within the forecast range.
+
+## Signed routes
+
+Adds up to 3 proposals that follow a named cycle route. Without this, a path only takes what is cheapest between its vias, and hilly routes rank behind flat ones.
+
+- Runs on trips with a known end or a loop, not on rides with the wind.
+- Routes: at least 30 % of the trip within reach. Longest first, in the direction from the middle of the trip with the fewest proposals. Hilly does not count, so a gentler route can still go that way.
+- A route's edges cost × 0.3. Vias are 2 of up to 8 towns on the route, longest ride on it first. Estimated length within 10 % of the target.
+- A proposal has at least 30 % of its km on the route, at most 40 % shared km and at most 60 % in the same corridor as another proposal. It must pass the same filters as all others.
+- Skips a route that a proposal already rides for 30 % of its km.
+- Limit: about 1.5 s, 12 routes, 20 candidates per route.
 
 ## Fill
 
@@ -259,7 +270,7 @@ Ascent drops rises and falls under 10 m (hysteresis on the elevation profile). T
 - Stages and paths filter along the whole path, across edge ends. On 59 stages in six regions this comes out 12 % above BRouter (median 5 %). Filtering each edge alone gave 30 % more, unfiltered about 3×.
 - Edge costs use each edge's own filtered ascent.
 
-Edges that climb more steeply than 40 % of the daily average allowed (max ascent per day / km per day) cost more: twice as steep costs twice as much.
+Edges that climb more steeply than a share of the daily average allowed (max ascent per day / km per day) cost more: twice as steep costs twice as much. The share is daily average / 12 m/km, from 40 % to 100 %. So from 12 m/km on, climbing at the average costs nothing, and a low limit still avoids hills.
 
 ## Hotel budget
 
