@@ -45,6 +45,55 @@ export function filteredClimb(elevation: number[]): {
   };
 }
 
+/**
+ * Ascent and descent along a path of edges, filtered like filteredClimb but
+ * across edge ends. Edges are about 1 km long, so filtering each one alone
+ * still counts much of the noise: about 30 % more than the router reports.
+ */
+export class PathClimb {
+  /** Climbing counted so far, without the rest under the threshold. */
+  ascent = 0;
+  descent = 0;
+  private ref: number | undefined;
+  private last = 0;
+
+  add(edge: NetworkEdge, forward: boolean): void {
+    const ele = edge.elevation;
+    if (ele.length < 2) {
+      // No profile: take the edge's own numbers.
+      const up = forward ? edge.ascent : edge.descent;
+      const down = forward ? edge.descent : edge.ascent;
+      this.ascent += up;
+      this.descent += down;
+      this.last += up - down;
+      if (this.ref !== undefined) this.ref += up - down;
+      return;
+    }
+    const n = ele.length;
+    for (let i = 0; i < n; i++) {
+      const x = ele[forward ? i : n - 1 - i] ?? 0;
+      this.last = x;
+      if (this.ref === undefined) this.ref = x;
+      else if (x > this.ref + CLIMB_HYSTERESIS_M) {
+        this.ascent += x - this.ref;
+        this.ref = x;
+      } else if (x < this.ref - CLIMB_HYSTERESIS_M) {
+        this.descent += this.ref - x;
+        this.ref = x;
+      }
+    }
+  }
+
+  /** Totals with the rest counted, so ascent − descent is the net change. */
+  total(): { ascent: number; descent: number } {
+    const rest = this.last - (this.ref ?? this.last);
+    return {
+      ascent: this.ascent + Math.max(0, rest),
+      descent: this.descent + Math.max(0, -rest),
+    };
+  }
+}
+
 /** One step of a path: an edge and the direction it is used in. */
 export type PathStep = { edge: number; forward: boolean };
 

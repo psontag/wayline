@@ -18,6 +18,9 @@ import {
 } from "@wayline/providers";
 import type { Graph } from "../graph/Graph";
 
+/** Hotels within this distance count as in the town. */
+const TOWN_HOTEL_KM = 2;
+
 /**
  * Names, places and hotels for network nodes. Built once per network.
  */
@@ -98,11 +101,12 @@ export class Stops {
     return this.hotels.near(coord, radiusKm);
   }
 
-  /** Hotels at a stop node that fit the budget. */
+  /**
+   * Hotels in the town at a stop node that fit the budget. Hotels further
+   * away still show at the stop, but mean a detour.
+   */
   hotelCount(node: number, budget?: HotelBudget): number {
-    const all = this.graph.node(node).hotelCount;
-    if (!budget) return all;
-    return this.hotelsNear(this.town(node).coord).filter((h) =>
+    return this.hotelsNear(this.town(node).coord, TOWN_HOTEL_KM).filter((h) =>
       fitsBudget(h, budget),
     ).length;
   }

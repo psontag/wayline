@@ -5,7 +5,7 @@ import {
   type LonLat,
   type Surface,
 } from "@wayline/domain";
-import type { Graph, PathStep } from "./Graph";
+import { type Graph, PathClimb, type PathStep } from "./Graph";
 
 export type LegMeta = { provider: string; profileHash: string };
 
@@ -23,8 +23,7 @@ export function pathToLeg(
   const coords: LonLat[] = [];
   const elevation: number[] = [];
   let km = 0;
-  let ascent = 0;
-  let descent = 0;
+  const climb = new PathClimb();
   const surfaceKm: Surface = { paved: 0, gravel: 0, unpaved: 0 };
 
   for (const { edge, forward } of steps) {
@@ -35,8 +34,7 @@ export function pathToLeg(
     coords.push(...line.coords.slice(skip));
     elevation.push(...line.elevation.slice(skip));
     km += e.lengthKm;
-    ascent += forward ? e.ascent : e.descent;
-    descent += forward ? e.descent : e.ascent;
+    climb.add(e, forward);
     surfaceKm.paved += e.surface.paved * e.lengthKm;
     surfaceKm.gravel += e.surface.gravel * e.lengthKm;
     surfaceKm.unpaved += e.surface.unpaved * e.lengthKm;
@@ -56,6 +54,7 @@ export function pathToLeg(
   }
   km += access;
   surfaceKm.paved += access;
+  const { ascent, descent } = climb.total();
 
   return {
     from,

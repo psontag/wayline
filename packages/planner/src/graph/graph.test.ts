@@ -5,7 +5,7 @@ import {
   type RouteNetwork,
 } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
-import { filteredClimb } from "./Graph";
+import { filteredClimb, PathClimb } from "./Graph";
 import { dijkstra, Graph, pathToLeg, shortestPath } from "./index";
 
 // Square with a nice long way (0-1-2) and a short ugly way (0-3-2).
@@ -148,5 +148,37 @@ describe("filteredClimb", () => {
     });
     // Never less than the net change.
     expect(filteredClimb([300, 308])).toEqual({ ascent: 8, descent: 0 });
+  });
+});
+
+describe("PathClimb", () => {
+  it("filters across edge ends", () => {
+    // Noise at the edge ends: each edge alone counts its net 6 m rise.
+    const bumps = [
+      [300, 306],
+      [306, 300],
+      [300, 306],
+      [306, 300],
+    ];
+    const climb = new PathClimb();
+    bumps.forEach((elevation, i) =>
+      climb.add(edge(i, 0, 1, { elevation }), true),
+    );
+    expect(climb.total()).toEqual({ ascent: 0, descent: 0 });
+    expect(bumps.reduce((a, e) => a + filteredClimb(e).ascent, 0)).toBe(12);
+  });
+
+  it("keeps a climb over several edges and runs edges backwards", () => {
+    const climb = new PathClimb();
+    climb.add(edge(0, 0, 1, { elevation: [300, 306] }), true);
+    climb.add(edge(1, 1, 2, { elevation: [312, 306] }), false);
+    climb.add(edge(2, 2, 3, { elevation: [312, 330] }), true);
+    expect(climb.total()).toEqual({ ascent: 30, descent: 0 });
+  });
+
+  it("uses the edge numbers without a profile", () => {
+    const climb = new PathClimb();
+    climb.add(edge(0, 0, 1, { elevation: [], ascent: 15, descent: 5 }), false);
+    expect(climb.total()).toEqual({ ascent: 5, descent: 15 });
   });
 });
