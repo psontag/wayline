@@ -19,6 +19,7 @@ import { ChevronLeft, Download, Share2 } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { downloadTripGpx } from "../../data/gpx";
+import { PhoneDestinationSheet } from "./PhoneDestinationSheet";
 import { PhoneStageSheet } from "./PhoneStageSheet";
 import { PhoneStopSheet } from "./PhoneStopSheet";
 import {
@@ -71,6 +72,7 @@ export function PhoneTripEditor({
   const { t } = useTranslation("tripEditor");
   const [snap, setSnap] = useState<SheetSnap>("half");
   const [stopOpen, setStopOpen] = useState(false);
+  const [destinationOpen, setDestinationOpen] = useState(false);
 
   // Fit the trip into the part of the map above the half-open sheet.
   const padding = useMemo<MapPadding>(() => {
@@ -110,8 +112,17 @@ export function PhoneTripEditor({
           onSelect={onSelect}
           chart={chart}
           onOpenStop={() => setStopOpen(true)}
+          onOpenDestination={() => setDestinationOpen(true)}
         />
       </BottomSheet>
+      {destinationOpen && (
+        <PhoneDestinationSheet
+          trip={trip}
+          index={selected}
+          editor={editor}
+          onClose={() => setDestinationOpen(false)}
+        />
+      )}
       <PhoneStopSheet
         trip={trip}
         index={selected}

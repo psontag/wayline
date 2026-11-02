@@ -171,6 +171,7 @@
     "feelsLike": "Feels like",
     "rain": "Rain",
     "wind": "Wind",
+    "gusts": "Gusts",
     "rainAt": "{{rain}}/h · {{chance}}",
     "hour": "Hour",
     "rainTick": "{{rain}}/h",

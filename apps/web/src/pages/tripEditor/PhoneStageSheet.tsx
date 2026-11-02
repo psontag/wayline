@@ -21,6 +21,7 @@ import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
 import { downloadTripGpx } from "../../data/gpx";
 import { StageChange } from "./StageChange";
+import { hasMovableDestination } from "./stopChoices";
 import { TrainOptions } from "./TrainOptions";
 import { WindAdvice } from "./WindAdvice";
 import type { TripEditorState } from "./useTripEditor";
@@ -33,6 +34,7 @@ export type PhoneStageSheetProps = {
   /** Elevation or weather of the stage. */
   chart: ReactNode;
   onOpenStop: () => void;
+  onOpenDestination: () => void;
   editor: TripEditorState;
 };
 
@@ -43,6 +45,7 @@ export function PhoneStageSheet({
   onSelect,
   chart,
   onOpenStop,
+  onOpenDestination,
   editor,
 }: PhoneStageSheetProps) {
   const { t } = useTranslation("tripEditor");
@@ -160,6 +163,14 @@ export function PhoneStageSheet({
               )
             }
             onClick={onOpenStop}
+          />
+        )}
+        {isLast && !editor.readOnly && hasMovableDestination(trip) && (
+          <LinkRow
+            icon={<statIcons.train aria-hidden />}
+            title={t("destination.current", { place: stage.end.name })}
+            subtitle={t("destination.change")}
+            onClick={onOpenDestination}
           />
         )}
         {!isLast && (

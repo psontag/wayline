@@ -182,7 +182,11 @@ export async function moveStop(
       rest,
     );
   }
-  return { ...trip, stages };
+  // Saved trains home leave from the old destination.
+  const trains = next
+    ? trip.trains
+    : trip.trains.filter((train) => train.direction !== "back");
+  return { ...trip, stages, trains };
 }
 
 /** A stage if it ended at another place. Meters. */

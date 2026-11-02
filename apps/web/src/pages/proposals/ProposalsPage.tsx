@@ -12,6 +12,7 @@ import { Button, MessagePanel } from "@wayline/ui";
 import { Route } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useDebouncedHover } from "../../components/useDebouncedHover";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useDayWind } from "../../data/queries";
 import { ProposalList } from "./ProposalList";
@@ -19,6 +20,9 @@ import { ProposalsHeader } from "./ProposalsHeader";
 import { ProposalsMap } from "./ProposalsMap";
 import { useGeneration } from "./useGeneration";
 import { useOpenProposal } from "./useOpenProposal";
+
+/** Waits this long before the map follows the pointer in the list. */
+const HOVER_MS = 120;
 
 export function ProposalsPage() {
   const { t } = useTranslation("proposals");
@@ -63,7 +67,7 @@ function Proposals({ request }: { request: GenerateRequest }) {
       timeToHours(request.startTime) + request.kmPerDay / AVG_SPEED_KMH / 2,
     );
   const open = useOpenProposal();
-  const [hovered, setHovered] = useState<string>();
+  const [hovered, setHovered] = useDebouncedHover<string>(HOVER_MS);
   const [hoveredDay, setHoveredDay] = useState<number>();
   const isPhone = useIsPhone();
   const { proposals } = generation;

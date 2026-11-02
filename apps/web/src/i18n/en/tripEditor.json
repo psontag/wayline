@@ -206,7 +206,18 @@
     "gettingHome": "Getting home",
     "ride": "Ride",
     "stop": "Stop",
-    "hotel": "Hotel"
+    "hotel": "Hotel",
+    "destination": "Destination"
+  },
+  "destination": {
+    "title": "Where to end",
+    "hint": "End at another train stop nearby.",
+    "pick": "Pick a train stop here or on the map.",
+    "find": "Find train stops",
+    "hide": "Hide",
+    "none": "No other train stops nearby.",
+    "current": "Destination: {{place}}",
+    "change": "Change to another train stop"
   },
   "days": {
     "hint": "Pick a day to edit it"

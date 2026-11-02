@@ -81,6 +81,10 @@ const windColor: Record<WindKind, string> = {
 const W = 1000;
 const H = 100;
 const WIND_H = 40;
+/** Room above the wind scale for the label of the strongest gust. */
+const WIND_PAD = 8;
+/** Least distance between the two line labels, in percent of the row. */
+const WIND_LABEL_GAP = 28;
 
 /**
  * Weather by hour for one day: rain, wind relative to the route,
@@ -147,16 +151,30 @@ export function WeatherTimeline({
   const windTop =
     Math.ceil(Math.max(MIN_WIND_TOP, ...shown.map((h) => h.wind.gusts)) / 10) *
     10;
-  const wy = (v: number) => WIND_H - (v / windTop) * (WIND_H - 2);
+  const wy = (v: number) => WIND_H - (v / windTop) * (WIND_H - WIND_PAD);
+  const windPct = (v: number) => (wy(v) / WIND_H) * 100;
   const windPath = (pick: (h: TimelineHour) => number) =>
     edgeToEdge(shown, (h) => wy(pick(h))).map(
       ([px, py]) => `${px.toFixed(1)} ${py.toFixed(1)}`,
     );
   const speedLine = windPath((h) => h.wind.speed);
-  const gustBand = [
-    ...windPath((h) => h.wind.gusts),
-    ...windPath((h) => h.wind.speed).reverse(),
-  ];
+  const gustLine = windPath((h) => h.wind.gusts);
+  const windStep = windTop <= 30 ? 10 : windTop <= 60 ? 20 : 50;
+  const windTicks: number[] = [];
+  for (let v = 0; v <= windTop; v += windStep) windTicks.push(v);
+  const topTick = windTicks.at(-1);
+  const strongest = shown.reduce<TimelineHour | undefined>(
+    (best, h) => (!best || h.wind.gusts > best.wind.gusts ? h : best),
+    undefined,
+  );
+  // The labels name the lines where they end. They must not touch.
+  const lastHour = shown.at(-1);
+  const speedEnd = lastHour ? windPct(lastHour.wind.speed) : 100;
+  const gustEnd = Math.min(
+    lastHour ? windPct(lastHour.wind.gusts) : 0,
+    speedEnd - WIND_LABEL_GAP,
+  );
+  const hasRain = shown.some((h) => h.rain > 0);
 
   const clampTime = (v: number) =>
     Math.min(to, Math.max(from, Math.round(v / TIME_STEP) * TIME_STEP));
@@ -258,8 +276,9 @@ export function WeatherTimeline({
       ? [{ from: Math.max(sunset, from), to }]
       : []),
   ];
+  // Every second hour, away from the edges, so the labels never touch.
   const labelHours: number[] = [];
-  for (let h = from; h <= to; h++) labelHours.push(h);
+  for (let h = from + 1; h <= to; h += 2) labelHours.push(h);
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -320,8 +339,8 @@ export function WeatherTimeline({
         }
       />
 
-      {/* The left margin holds the scales, as in the elevation chart. */}
-      <ChartBody className="gap-1 pl-14">
+      {/* The margins hold the scales and line labels, off the charts. */}
+      <ChartBody className="gap-1 pr-12 pl-14">
         <div
           ref={areaRef}
           className={cn(
@@ -340,7 +359,7 @@ export function WeatherTimeline({
               style={{ left: pct(hovered), width: `${(1 / span) * 100}%` }}
             />
           )}
-          <div ref={chartRef} className="relative h-16">
+          <div ref={chartRef} className="relative h-12">
             <svg
               viewBox={`0 0 ${W} ${H}`}
               preserveAspectRatio="none"
@@ -381,16 +400,18 @@ export function WeatherTimeline({
                   />
                 ) : null,
               )}
-              <line
-                x1={0}
-                x2={W}
-                y1={rainY(maxRain)}
-                y2={rainY(maxRain)}
-                strokeWidth={1}
-                strokeDasharray="2 3"
-                vectorEffect="non-scaling-stroke"
-                className="stroke-border"
-              />
+              {hasRain && (
+                <line
+                  x1={0}
+                  x2={W}
+                  y1={rainY(maxRain)}
+                  y2={rainY(maxRain)}
+                  strokeWidth={1}
+                  strokeDasharray="2 3"
+                  vectorEffect="non-scaling-stroke"
+                  className="stroke-border"
+                />
+              )}
               <line
                 x1={0}
                 x2={W}
@@ -416,12 +437,14 @@ export function WeatherTimeline({
                 {format.temperature(c)}
               </Tick>
             ))}
-            <Tick side="inside" top={rainY(maxRain)}>
-              {t("timeline.rainTick", { rain: format.rain(maxRain) })}
-            </Tick>
+            {hasRain && (
+              <Tick side="right" top={rainY(maxRain)}>
+                {t("timeline.rainTick", { rain: format.rain(maxRain) })}
+              </Tick>
+            )}
           </div>
 
-          <div className="relative h-8">
+          <div className="relative h-12">
             <svg
               viewBox={`0 0 ${W} ${WIND_H}`}
               preserveAspectRatio="none"
@@ -429,49 +452,68 @@ export function WeatherTimeline({
               role="img"
               aria-label={t("timeline.windSpeedLabel")}
             >
+              {windTicks.map((v) => (
+                <line
+                  key={v}
+                  x1={0}
+                  x2={W}
+                  y1={wy(v)}
+                  y2={wy(v)}
+                  strokeWidth={1}
+                  strokeDasharray={v === 0 ? undefined : "2 3"}
+                  vectorEffect="non-scaling-stroke"
+                  className="stroke-border"
+                />
+              ))}
               {shown.length > 1 && (
                 <>
                   <path
-                    d={`M${gustBand.join(" L")} Z`}
-                    className="fill-wind-speed-1"
-                    fillOpacity={0.45}
+                    d={`M${gustLine.join(" L")}`}
+                    fill="none"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 3"
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                    className="stroke-wind-speed-2"
                   />
                   <path
                     d={`M${speedLine.join(" L")}`}
                     fill="none"
-                    strokeWidth={1.5}
+                    strokeWidth={2}
                     strokeLinejoin="round"
                     vectorEffect="non-scaling-stroke"
                     className="stroke-wind-speed-3"
                   />
                 </>
               )}
-              <line
-                x1={0}
-                x2={W}
-                y1={0}
-                y2={0}
-                strokeWidth={1}
-                strokeDasharray="2 3"
-                vectorEffect="non-scaling-stroke"
-                className="stroke-border"
-              />
-              <line
-                x1={0}
-                x2={W}
-                y1={WIND_H}
-                y2={WIND_H}
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-                className="stroke-border"
-              />
             </svg>
-            <Tick side="left" top={0}>
-              {format.speed(windTop)}
-            </Tick>
-            <Tick side="left" top={100}>
-              0
-            </Tick>
+            {windTicks.map((v) => (
+              <Tick key={v} side="left" top={windPct(v)}>
+                {v === topTick ? format.speed(v) : v}
+              </Tick>
+            ))}
+            {strongest && (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -translate-x-1/2 -translate-y-full pb-0.5 text-2xs leading-none font-bold whitespace-nowrap text-text tabular-nums"
+                style={{
+                  left: pct(strongest.hour + 0.5),
+                  top: `${windPct(strongest.wind.gusts)}%`,
+                }}
+              >
+                {format.speed(strongest.wind.gusts)}
+              </span>
+            )}
+            {shown.length > 1 && (
+              <>
+                <Tick side="right" top={gustEnd}>
+                  {t("timeline.gusts")}
+                </Tick>
+                <Tick side="right" top={speedEnd}>
+                  {t("timeline.wind")}
+                </Tick>
+              </>
+            )}
           </div>
 
           <ul className="relative h-3.5" aria-label={t("timeline.windLabel")}>
@@ -565,16 +607,10 @@ export function WeatherTimeline({
           {labelHours.map((h) => (
             <span
               key={h}
-              // Keep the outer labels inside the chart.
+              // Keep the last label inside the chart.
               className={cn(
                 "absolute",
-                h === from
-                  ? ""
-                  : h === to
-                    ? "-translate-x-full"
-                    : "-translate-x-1/2",
-                // Every second hour on narrow screens, away from the edges.
-                (h - from) % 2 === 0 && "max-sm:hidden",
+                h === to ? "-translate-x-full" : "-translate-x-1/2",
               )}
               style={{ left: pct(h) }}
             >
@@ -645,8 +681,7 @@ function Tick({
   top,
   children,
 }: {
-  /** inside: at the right edge, above the line. */
-  side: "left" | "right" | "inside";
+  side: "left" | "right";
   top: number;
   children: ReactNode;
 }) {
@@ -656,7 +691,6 @@ function Tick({
         "pointer-events-none absolute text-2xs leading-none whitespace-nowrap text-text-muted tabular-nums",
         side === "left" && "right-full -translate-y-1/2 pr-1.5 text-right",
         side === "right" && "left-full -translate-y-1/2 pl-1.5",
-        side === "inside" && "right-1 -translate-y-full pb-0.5",
       )}
       style={{ top: `${top}%` }}
     >

@@ -1,10 +1,12 @@
-import { parseTrip, type Places } from "@wayline/domain";
+import { distanceKm, parseTrip, type Places } from "@wayline/domain";
 import { fitsBudget } from "@wayline/providers";
 import { describe, expect, it } from "vitest";
 import places from "../../../public/data/mock/oberfranken/places.json";
 import sample from "../../../public/data/mock/oberfranken/sample-trip.json";
 import {
   bedsNear,
+  destinationStations,
+  hasMovableDestination,
   placeIndex,
   routeNear,
   stopChoices,
@@ -16,6 +18,31 @@ import {
 const trip = parseTrip(sample);
 const index = placeIndex(places as Places);
 const [stage, next] = trip.stages;
+
+describe("destinationStations", () => {
+  const last = trip.stages.at(-1)!;
+  const found = destinationStations(last, index);
+
+  it("lists train stops near the end, apart from each other", () => {
+    expect(found.length).toBeGreaterThan(0);
+    expect(found.length).toBeLessThanOrEqual(6);
+    for (const [i, place] of found.entries()) {
+      expect(place.kind).toBe("station");
+      expect(distanceKm(place.coord, last.end.coord)).toBeLessThanOrEqual(20);
+      expect(distanceKm(place.coord, last.end.coord)).toBeGreaterThan(2);
+      for (const other of found.slice(i + 1)) {
+        expect(distanceKm(place.coord, other.coord)).toBeGreaterThan(2);
+      }
+    }
+  });
+
+  it("works only on trips that need not end at the start", () => {
+    expect(hasMovableDestination({ ...trip, kind: "one-way" })).toBe(true);
+    expect(hasMovableDestination({ ...trip, kind: "multi-day-loop" })).toBe(
+      false,
+    );
+  });
+});
 
 describe("stopChoices", () => {
   it("lists the stop and its alternatives with context, shortest first", () => {
