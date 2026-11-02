@@ -1,5 +1,6 @@
 {
   "sandbox": {
+    "excludedCommands": ["git commit *"],
     "network": {
       "allowedDomains": [
         "github.com",
