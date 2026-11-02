@@ -16,3 +16,4 @@ apps/web/public/data/*
 pipeline/.venv/
 .cache/
 .env.local
+packages/planner/report/out/

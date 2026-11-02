@@ -2,8 +2,8 @@ import { Link } from "@tanstack/react-router";
 import {
   type GenerateRequest,
   headwindShare,
-  isOpenRide,
   type Proposal,
+  type RouteTag,
   type StageWeather,
   type WindDay,
 } from "@wayline/domain";
@@ -24,14 +24,18 @@ import { useNetwork, useTripsWeather } from "../../data/queries";
 import { tripStops } from "../tripEditor/tripArea";
 import { bedsNear, useTripPlaces } from "../tripEditor/stopChoices";
 import { profilePoints } from "../tripEditor/surfaceProfile";
-import { flavourOf, routeColorKey } from "./routeColor";
+import { routeColorAt } from "./routeColor";
 import {
   type ComparisonTag,
   comparisonTags,
   dayBreaks,
   progressValue,
   proposalStats,
+  type RainTag,
+  rainTag,
   relaxOptions,
+  shownRouteTags,
+  titleTowns,
   tripRidingHours,
   type Relaxed,
   windTag,
@@ -78,6 +82,11 @@ export function ProposalList({
     }),
   );
   const tags = comparisonTags(proposals, headwind);
+  const routeTags = shownRouteTags(proposals);
+  const towns = titleTowns(proposals);
+  const rain = proposals.map((_, i) => rainTag(weather[i] ?? undefined));
+  // Dry on every route says nothing about the route.
+  const allDry = rain.every((r) => r?.kind === "dry");
 
   if (status === "failed" && generation.failedLimit) {
     return (
@@ -111,8 +120,11 @@ export function ProposalList({
             proposal={p}
             number={i + 1}
             windDays={windDays[i]}
-            open={isOpenRide(request)}
+            toEnd={request.kind === "one-way" && !request.endStation}
+            town={towns.get(p.id)}
             tags={tags.get(p.id) ?? []}
+            routeTags={routeTags.get(p.id) ?? []}
+            rain={allDry ? undefined : rain[i]}
             selected={p.id === selected}
             onSelect={() => onSelect(p.id)}
             onHover={(hover) => onHover(hover ? p.id : undefined)}
@@ -215,13 +227,18 @@ function toWindDays(days: StageWeather[], proposal: Proposal): WindDay[] {
 
 /** A stop with this many places to sleep or fewer is flagged. */
 const WEAK_STOP_BEDS = 2;
+/** Tags on a card that is not selected. */
+const CLOSED_CARD_TAGS = 3;
 
 function ProposalItem({
   proposal,
   number,
   windDays,
-  open,
+  toEnd,
+  town,
   tags,
+  routeTags,
+  rain,
   selected,
   onSelect,
   onHover,
@@ -234,9 +251,13 @@ function ProposalItem({
   number: number;
   /** Undefined while loading or without a forecast. */
   windDays: WindDay[] | undefined;
-  /** An open day ride: named after where it goes. */
-  open: boolean;
+  /** The trip has no chosen end: named after where it goes. */
+  toEnd: boolean;
+  /** Town to name the proposal after. */
+  town: string | undefined;
   tags: ComparisonTag[];
+  routeTags: RouteTag[];
+  rain: RainTag | undefined;
   selected: boolean;
   onSelect: () => void;
   onHover: (hover: boolean) => void;
@@ -265,28 +286,92 @@ function ProposalItem({
     [places, trip],
   );
   const firstWeak = beds.findIndex((count) => count <= WEAK_STOP_BEDS);
-  const flavour = flavourOf(proposal);
   const first = trip.stages[0];
   const last = trip.stages.at(-1);
-  const name = flavour
-    ? t(`flavour.${flavour}`)
-    : proposal.homeward && first
+  const name =
+    proposal.homeward && first
       ? t("card.homeward", { place: first.start.name })
-      : open && last
+      : toEnd && last
         ? t("card.destination", { place: last.end.name })
         : proposal.character
           ? t(`card.character.${proposal.character}`)
-          : t("card.option", { number });
+          : town
+            ? t("card.via", { stops: town })
+            : t("card.option", { number });
   // One day: the wind speed says more than the day number.
   const speed =
     trip.stages.length === 1 && windDays?.[0]
       ? format.speed(windDays[0].wind.avgSpeed)
       : undefined;
+  const isOffInput = (tag: RouteTag) =>
+    tag === "longer" || tag === "shorter" || tag === "moreClimbing";
+  const tagOf = (
+    key: RouteTag | ComparisonTag | "rain" | "dry" | "tailwind",
+  ) => ({
+    label: t(`card.tag.${key}`),
+    hint: t(`card.tagHint.${key}`),
+  });
+  // Most useful first: a closed card shows only the first few.
+  const cardTags = [
+    ...(firstWeak >= 0
+      ? [
+          {
+            label: t("card.tag.fewBeds", { day: firstWeak + 1 }),
+            hint: t("card.tagHint.fewBeds", { day: firstWeak + 1 }),
+          },
+        ]
+      : []),
+    ...(proposal.followedRoute
+      ? [
+          {
+            label: proposal.followedRoute,
+            hint: t("card.tagHint.followedRoute"),
+          },
+        ]
+      : []),
+    ...routeTags.filter(isOffInput).map(tagOf),
+    ...(rain?.kind === "rain"
+      ? [
+          rain.day
+            ? {
+                label: t("card.tag.rainDay", { day: rain.day }),
+                hint: t("card.tagHint.rainDay", { day: rain.day }),
+              }
+            : tagOf("rain"),
+        ]
+      : []),
+    ...(rain?.kind === "dry" ? [tagOf("dry")] : []),
+    ...(wind?.kind === "tail"
+      ? [
+          speed
+            ? {
+                label: t("card.tag.tailwindSpeed", { speed }),
+                hint: t("card.tagHint.tailwindSpeed", { speed }),
+              }
+            : tagOf("tailwind"),
+        ]
+      : []),
+    ...(wind?.kind === "head"
+      ? [
+          speed
+            ? {
+                label: t("card.tag.headwindSpeed", { speed }),
+                hint: t("card.tagHint.headwindSpeed", { speed }),
+              }
+            : {
+                label: t("card.tag.headwind", { day: wind.day }),
+                hint: t("card.tagHint.headwind", { day: wind.day }),
+              },
+        ]
+      : []),
+    ...tags.map(tagOf),
+    ...routeTags.filter((tag) => !isOffInput(tag)).map(tagOf),
+  ];
 
   return (
     <ProposalCard
       number={number}
-      color={routeColorKey(proposal, number - 1)}
+      color={routeColorAt(number - 1)}
       title={name}
       subtitle={
         via.length
@@ -295,27 +380,7 @@ function ProposalItem({
             })
           : ""
       }
-      // Warnings first: the row cuts off what doesn't fit.
-      tags={[
-        ...(firstWeak >= 0
-          ? [t("card.tag.fewBeds", { day: firstWeak + 1 })]
-          : []),
-        ...tags.map((tag) => t(`card.tag.${tag}`)),
-        ...(wind?.kind === "tail"
-          ? [
-              speed
-                ? t("card.tag.tailwindSpeed", { speed })
-                : t("card.tag.tailwind"),
-            ]
-          : []),
-        ...(wind?.kind === "head"
-          ? [
-              speed
-                ? t("card.tag.headwindSpeed", { speed })
-                : t("card.tag.headwind", { day: wind.day }),
-            ]
-          : []),
-      ]}
+      tags={selected ? cardTags : cardTags.slice(0, CLOSED_CARD_TAGS)}
       stats={[
         {
           icon: "distance",

@@ -3,13 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Graph } from "../graph/Graph";
 import { doublesBack } from "./generate";
 import { Costs } from "./search";
-import {
-  flavourShare,
-  themeBoost,
-  themeShare,
-  themeValue,
-  wayQuality,
-} from "./theme";
+import { flavourShare, themeShare, themeValue, wayQuality } from "./theme";
 
 const scenery = {
   forest: 0.2,
@@ -48,11 +42,9 @@ describe("themes", () => {
     expect(themeShare(e, "culture")).toBe(1);
   });
 
-  it("leaves edges without data and requests without a theme alone", () => {
+  it("leaves edges without data alone", () => {
     const plain = { ...edge(0, 4), scenery: undefined };
     expect(themeShare(plain, "water")).toBe(0);
-    expect(themeBoost(edge(0, 4))).toBe(1);
-    expect(themeBoost(edge(0, 4), "water")).toBeGreaterThan(1);
   });
 
   it("joins forest and water for nature, and culture and wine for sights", () => {
@@ -84,7 +76,6 @@ describe("themes", () => {
       edges: [paved, gravel, mainRoad],
     };
     const request = {
-      profile: "scenic" as const,
       kmPerDay: 70,
       maxAscentPerDay: 900,
     };

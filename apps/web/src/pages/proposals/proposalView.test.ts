@@ -2,6 +2,8 @@ import type {
   GenerateRequest,
   Proposal,
   RoutePoint,
+  RouteTag,
+  StageWeather,
   WindShares,
 } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
@@ -9,7 +11,10 @@ import {
   comparisonTags,
   labelPoints,
   progressValue,
+  rainTag,
   relaxOptions,
+  shownRouteTags,
+  titleTowns,
   windTag,
 } from "./proposalView";
 
@@ -101,7 +106,7 @@ function proposal(
   return {
     id,
     signedShare,
-    trip: { stages: [{ legs: [leg] }] },
+    trip: { settings: { avgSpeed: 18 }, stages: [{ legs: [leg], stats: leg }] },
   } as unknown as Proposal;
 }
 
@@ -112,7 +117,7 @@ describe("comparisonTags", () => {
       proposal("b", 180, 1400, 0.8, 0.6),
       proposal("c", 210, 1300, 0.82, 0.7),
     ]);
-    expect(tags.get("a")).toEqual(["flattest", "mostPaved", "mostSigned"]);
+    expect(tags.get("a")).toEqual(["flattest", "mostPaved"]);
     expect(tags.get("b")).toEqual(["shortest"]);
     expect(tags.get("c")).toBeUndefined();
   });
@@ -127,6 +132,62 @@ describe("comparisonTags", () => {
 
   it("tags nothing for a single proposal", () => {
     expect(comparisonTags([proposal("a", 200, 800, 0.9)]).size).toBe(0);
+  });
+});
+
+describe("shownRouteTags", () => {
+  const tagged = (id: string, tags: RouteTag[]) =>
+    ({ id, tags }) as unknown as Proposal;
+
+  it("hides tags every proposal has, and puts the rarest first", () => {
+    const shown = shownRouteTags([
+      tagged("a", ["flat", "water", "wine"]),
+      tagged("b", ["flat", "water"]),
+      tagged("c", ["flat"]),
+    ]);
+    expect(shown.get("a")).toEqual(["wine", "water"]);
+    expect(shown.get("c")).toEqual([]);
+  });
+
+  it("always shows when a proposal leaves the inputs, first", () => {
+    const shown = shownRouteTags([
+      tagged("a", ["wine", "longer"]),
+      tagged("b", ["longer"]),
+    ]);
+    expect(shown.get("a")).toEqual(["longer", "wine"]);
+    expect(shown.get("b")).toEqual(["longer"]);
+  });
+
+  it("keeps all tags of a single proposal", () => {
+    expect(shownRouteTags([tagged("a", ["flat"])]).get("a")).toEqual(["flat"]);
+  });
+});
+
+describe("rainTag", () => {
+  const day = (mm: number) => ({ maxPrecipitation: mm }) as StageWeather;
+
+  it("names the first wet day on longer trips", () => {
+    expect(rainTag([day(0), day(3), day(4)])).toEqual({ kind: "rain", day: 2 });
+    expect(rainTag([day(3)])).toEqual({ kind: "rain" });
+  });
+
+  it("says dry when all days are, and nothing for light rain", () => {
+    expect(rainTag([day(0), day(0)])).toEqual({ kind: "dry" });
+    expect(rainTag([day(0.5)])).toBeUndefined();
+    expect(rainTag(undefined)).toBeUndefined();
+  });
+});
+
+describe("titleTowns", () => {
+  it("prefers a town no earlier proposal is named after", () => {
+    const towns = titleTowns([
+      { id: "a", via: ["Speyer", "Worms"] },
+      { id: "b", via: ["Speyer", "Worms"] },
+      { id: "c", via: [] },
+    ] as unknown as Proposal[]);
+    expect(towns.get("a")).toBe("Speyer");
+    expect(towns.get("b")).toBe("Worms");
+    expect(towns.has("c")).toBe(false);
   });
 });
 

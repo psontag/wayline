@@ -60,34 +60,6 @@
     "mid": "€80–140",
     "high": "€140+"
   },
-  "profile": {
-    "label": "Profile",
-    "touring": "Touring",
-    "fast": "Fast",
-    "scenic": "Scenic",
-    "quiet": "Quiet",
-    "hint": {
-      "touring": "Mostly paved and quiet roads. Some forest and farm tracks.",
-      "fast": "Paved and direct. Main roads are fine.",
-      "scenic": "The nicest signed routes. Detours are fine.",
-      "quiet": "Away from traffic, even if it takes longer."
-    }
-  },
-  "theme": {
-    "label": "Theme",
-    "any": "Any",
-    "nature": "Nature",
-    "water": "Rivers & lakes",
-    "wine": "Wine",
-    "culture": "Culture",
-    "hint": {
-      "any": "No preference. Good routes and surfaces first.",
-      "nature": "Through forests and nature reserves.",
-      "water": "Along rivers and past lakes.",
-      "wine": "Through vineyards and wine villages.",
-      "culture": "Past castles, monasteries, old towns and museums."
-    }
-  },
   "unit": {
     "km": "km",
     "m": "m"

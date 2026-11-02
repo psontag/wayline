@@ -8,15 +8,12 @@ import {
 } from "@wayline/domain";
 import { dijkstra, type EdgeCost, shortestPath } from "../graph/dijkstra";
 import type { Graph, PathStep } from "../graph/Graph";
-import { flavourShare, sceneryBoost, themeBoost } from "./theme";
+import { flavourShare, sceneryBoost } from "./theme";
 
-/** cost = length / score^k. A higher k prefers nicer edges more. */
-export const SCORE_POWER: Record<Profile, number> = {
-  fast: 1,
-  touring: 2,
-  quiet: 2.5,
-  scenic: 3,
-};
+/** Every proposal searches and routes with this profile. */
+export const PLAN_PROFILE: Profile = "touring";
+/** k in cost = length / score^k. A higher k prefers nicer edges more. */
+const SCORE_POWER = 2;
 
 /** Edges already used in this proposal. */
 const REUSE_PENALTY = 5;
@@ -57,47 +54,54 @@ export function climbFactor(
 
 /**
  * Share of the daily average climb an edge may have before it costs more.
- * Below 1, so the usual search does not pick hills it could avoid.
+ * A low limit means the rider wants to avoid hills, so the share is small. From
+ * ROOMY_CLIMB m/km on, the rider is fine with climbing, so the average is free.
  */
 const CLIMB_FREE = 0.4;
+const ROOMY_CLIMB = 12;
 /** Flat flavour: cost grows by this per unit of climb over the average allowed. */
 const FLAT_PENALTY = 1;
 /** Hilly flavour: an edge climbing at the average allowed costs 1 / (1 + this) as much. */
 const HILLY_REWARD = 30;
 
+/** A rider with this much room wants to climb. */
+export function seeksClimbs(
+  request: Pick<GenerateRequest, "kmPerDay" | "maxAscentPerDay">,
+): boolean {
+  return request.maxAscentPerDay / request.kmPerDay >= ROOMY_CLIMB;
+}
+
 /**
  * Climb part of the edge cost for a flavour. allowedPerKm is the daily
- * average: max ascent per day / km per day.
+ * average: max ascent per day / km per day. seek: every flavour but flat
+ * looks for climbs like hilly.
  */
 export function flavourClimb(
   ascent: number,
   lengthKm: number,
   allowedPerKm: number,
   flavour?: Flavour,
+  seek = false,
 ): number {
-  const base = climbFactor(ascent, lengthKm, CLIMB_FREE * allowedPerKm);
+  const free = Math.min(1, Math.max(CLIMB_FREE, allowedPerKm / ROOMY_CLIMB));
+  const base = climbFactor(ascent, lengthKm, free * allowedPerKm);
   if (lengthKm <= 0) return base;
   const steep = ascent / lengthKm / allowedPerKm;
   if (flavour === "flat") return base * (1 + FLAT_PENALTY * steep);
   // Hilly seeks climbs. Over the daily average the cost grows with the
   // square, so very steep edges cost more than flat ground.
-  if (flavour === "hilly") {
+  if (flavour === "hilly" || seek) {
     const over = Math.max(1, steep);
     return (over * over) / (1 + HILLY_REWARD * Math.min(steep, 1));
   }
   return base;
 }
 
-/** Score factor for scenery. A flavour replaces the theme of the request. */
-function boost(
-  edge: NetworkEdge,
-  flavour?: Flavour,
-  theme?: GenerateRequest["theme"],
-) {
-  if (flavour === "nature" || flavour === "sights") {
-    return sceneryBoost(edge, flavourShare(edge, flavour));
-  }
-  return flavour ? 1 : themeBoost(edge, theme);
+/** Score factor for scenery. */
+function boost(edge: NetworkEdge, flavour?: Flavour) {
+  return flavour === "nature" || flavour === "sights"
+    ? sceneryBoost(edge, flavourShare(edge, flavour))
+    : 1;
 }
 
 /**
@@ -117,14 +121,11 @@ export class Costs {
 
   constructor(
     graph: Graph,
-    request: Pick<
-      GenerateRequest,
-      "profile" | "region" | "theme" | "kmPerDay" | "maxAscentPerDay"
-    >,
+    request: Pick<GenerateRequest, "region" | "kmPerDay" | "maxAscentPerDay">,
     readonly flavour?: Flavour,
+    seek = false,
   ) {
-    const { profile, region, theme } = request;
-    const k = SCORE_POWER[profile];
+    const { region } = request;
     const allowed = request.maxAscentPerDay / request.kmPerDay;
     const inside = (n: number) => {
       if (!region) return true;
@@ -144,8 +145,9 @@ export class Costs {
               e.lengthKm,
               allowed,
               flavour,
+              seek,
             )) /
-          Math.pow(Math.max(e.score, 0.05) * boost(e, flavour, theme), k)
+          Math.pow(Math.max(e.score, 0.05) * boost(e, flavour), SCORE_POWER)
         : Infinity,
     );
     this.penalty = new Float64Array(graph.edges.length).fill(1);

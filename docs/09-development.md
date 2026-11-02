@@ -42,6 +42,7 @@ The Worker config is `apps/api/cloudflare.config.ts`. Build settings, such as th
 | Command | Does |
 |---|---|
 | `pnpm build` | Builds the web app, then the Worker with `cf build` |
+| `pnpm report:trips` | Reports how proposals come out on fixed test trips. Needs the built data. |
 | `pnpm --filter @wayline/api exec cf deploy --dry-run` | Checks the deploy without uploading |
 | `pnpm --filter @wayline/api exec cf workers types` | Writes `Env` and runtime types. `typecheck` runs it. |
 

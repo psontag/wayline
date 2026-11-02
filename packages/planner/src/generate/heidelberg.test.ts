@@ -96,9 +96,11 @@ describe("Planner on the Heidelberg tiles", () => {
       for (const stop of [stages[0]!, stages[1]!]) {
         expect(distanceKm(home, stop.end.coord)).toBeGreaterThan(15);
       }
+      // The fill and signed routes may ride 20 % more per day.
+      const target = p.flavour ? 70 : 1.2 * 70;
       for (const s of stages) {
         expect(s.stats.distance / 1000).toBeGreaterThan(0.5 * 70);
-        expect(s.stats.distance / 1000).toBeLessThan(1.35 * 70);
+        expect(s.stats.distance / 1000).toBeLessThan(1.35 * target);
       }
       const line = routePoints(stages.flatMap((s) => s.legs));
       const total = line.at(-1)!.km;
@@ -183,9 +185,33 @@ describe("Planner on the Heidelberg tiles", () => {
       const [stage] = p.trip.stages;
       expect(stage!.start.name).toBe(stage!.end.name);
       expect(stage!.hotel).toBeUndefined();
-      expect(stage!.stats.distance / 1000).toBeGreaterThan(45);
-      expect(stage!.stats.distance / 1000).toBeLessThan(75);
+      // The asked 60 km, 20 % either way on fill proposals, plus tolerance.
+      expect(stage!.stats.distance / 1000).toBeGreaterThan(42);
+      expect(stage!.stats.distance / 1000).toBeLessThan(81);
       expect(p.trip.name).toContain(" – ");
+    }
+  });
+
+  it("fills loops up to 8 proposals that differ", async () => {
+    const planner = await new Planners(source()).for(request);
+    const result = await planner.generate(request);
+    if (!result.ok) throw new Error(result.failedLimit);
+    expect(result.proposals.length).toBeGreaterThanOrEqual(5);
+    expect(result.proposals.length).toBeLessThanOrEqual(8);
+    expect(new Set(result.proposals.map((p) => p.via.join())).size).toBe(
+      result.proposals.length,
+    );
+  });
+
+  it("tags proposals outside the inputs", async () => {
+    const planner = await new Planners(source()).for(request);
+    const result = await planner.generate(request);
+    if (!result.ok) throw new Error(result.failedLimit);
+    const target = request.days * request.kmPerDay;
+    for (const p of result.proposals) {
+      const km = p.trip.stages.reduce((s, x) => s + x.stats.distance, 0) / 1000;
+      if (km >= 1.1 * target) expect(p.tags).toContain("longer");
+      if (km <= 0.9 * target) expect(p.tags).toContain("shorter");
     }
   });
 

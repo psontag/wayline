@@ -61,11 +61,6 @@ export function sceneryBoost(edge: NetworkEdge, share: number): number {
   return 1 + THEME_WEIGHT * share * wayQuality(edge) ** 2;
 }
 
-/** Score factor for an edge: 1 without a theme. */
-export function themeBoost(edge: NetworkEdge, theme?: Theme): number {
-  return theme ? sceneryBoost(edge, themeShare(edge, theme)) : 1;
-}
-
 /** Flavours that lean toward scenery. */
 export type SceneryFlavour = Extract<Flavour, "nature" | "sights">;
 
@@ -119,20 +114,4 @@ export function themeValue(
     else value += themeShare(e, theme) * e.lengthKm;
   }
   return km ? value / km : 0;
-}
-
-/** 0 to 1, for ranking proposals. */
-export function themeFit(
-  graph: Graph,
-  steps: PathStep[],
-  theme: Theme,
-): number {
-  let km = 0;
-  let fit = 0;
-  for (const { edge } of steps) {
-    const e = graph.edge(edge);
-    km += e.lengthKm;
-    fit += themeShare(e, theme) * e.lengthKm;
-  }
-  return km ? fit / km : 0;
 }

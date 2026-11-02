@@ -27,7 +27,7 @@ import {
 } from "react-map-gl/maplibre";
 import { AppMap, MapLayer, type MapPadding } from "../../components/map/AppMap";
 import { labelPoints, tripPoints } from "./proposalView";
-import { flavourOf, routeColorKey, routeColorToken } from "./routeColor";
+import { routeColorAt } from "./routeColor";
 
 const lineLayout = { "line-cap": "round", "line-join": "round" } as const;
 
@@ -69,7 +69,7 @@ export function ProposalsMap({
   );
 
   const colors = useMemo(
-    () => proposals.map((p, i) => tokens[routeColorToken[routeColorKey(p, i)]]),
+    () => proposals.map((_, i) => tokens[routeColorAt(i)]),
     [proposals, tokens],
   );
 
@@ -81,7 +81,7 @@ export function ProposalsMap({
         properties: {
           id: p.id,
           highlighted: p.id === highlighted,
-          color: colors[i] ?? tokens.routeBest,
+          color: colors[i] ?? tokens.route1,
         },
         geometry: {
           type: "LineString",
@@ -89,13 +89,13 @@ export function ProposalsMap({
         },
       })),
     }),
-    [proposals, routes, highlighted, colors, tokens.routeBest],
+    [proposals, routes, highlighted, colors, tokens.route1],
   );
 
   // The highlighted proposal day by day, so one day can stand out.
   const shownIndex = proposals.findIndex((p) => p.id === highlighted);
   const shown = proposals[shownIndex];
-  const shownColor = colors[shownIndex] ?? tokens.routeBest;
+  const shownColor = colors[shownIndex] ?? tokens.route1;
   const days = useMemo<FeatureCollection<LineString>>(
     () => ({
       type: "FeatureCollection",
@@ -271,7 +271,6 @@ export function ProposalsMap({
         const at = labels[i];
         if (!at) return null;
         const selected = p.id === highlighted;
-        const flavour = flavourOf(p);
         return (
           <Marker
             key={p.id}
@@ -280,8 +279,8 @@ export function ProposalsMap({
             style={{ zIndex: selected ? 2 : 1 }}
           >
             <RouteLabel
-              label={flavour ? t(`flavour.${flavour}`) : String(i + 1)}
-              color={routeColorKey(p, i)}
+              label={String(i + 1)}
+              color={routeColorAt(i)}
               selected={selected}
               aria-label={t("map.select", { number: i + 1 })}
               onClick={() => onSelect(p.id)}

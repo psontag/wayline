@@ -198,12 +198,14 @@ export {
   ProposalCard,
   ProposalCardSkeleton,
   type ProposalCardProps,
+  type ProposalTag,
   type ProposalDay,
   type ProposalStat,
 } from "./components/ProposalCard";
 export {
   RouteLabel,
   routeColorClasses,
+  routeColors,
   type RouteColor,
   type RouteLabelProps,
 } from "./components/RouteLabel";

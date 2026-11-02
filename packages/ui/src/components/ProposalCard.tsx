@@ -7,10 +7,13 @@ import { DayList, type DayListItem } from "./DayList";
 import { type RouteColor, routeColorClasses } from "./RouteLabel";
 import { Stat } from "./Stat";
 import { SurfaceBar, type SurfaceShares } from "./SurfaceBar";
+import { Tooltip } from "./Tooltip";
 
 export type ProposalStat = { icon: StatIcon; value: string; label: string };
 
 export type ProposalDay = DayListItem;
+
+export type ProposalTag = { label: string; hint: string };
 
 export type ProposalCardProps = {
   /** Same number as on the map. */
@@ -20,8 +23,8 @@ export type ProposalCardProps = {
   subtitle?: string;
   /** Route color of the number, as on the map. */
   color?: RouteColor;
-  /** Short badges, e.g. "Flattest". */
-  tags?: string[];
+  /** Short badges, e.g. "Flattest". The hint shows on hover. */
+  tags?: ProposalTag[];
   /** Three stats. A compact card shows them in one line. */
   stats: ProposalStat[];
   /** Shown as a surface bar under the stats when selected. */
@@ -82,22 +85,24 @@ export function ProposalCard({
       >
         <NumberBadge number={number} color={color} />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-center gap-2">
-            <span className="min-w-0 flex-1 truncate text-md font-bold">
-              {title}
-            </span>
-            {tags.map((tag) => (
-              <Badge key={tag} className="shrink-0">
-                {tag}
-              </Badge>
-            ))}
-          </span>
+          <span className="truncate text-md font-bold">{title}</span>
           {selected ? (
             <span className="truncate text-xs text-text-muted">{subtitle}</span>
           ) : (
             <span className="flex min-w-0 items-center gap-3 overflow-hidden">
               {stats.map((stat) => (
                 <Stat key={stat.icon} size="sm" {...stat} />
+              ))}
+            </span>
+          )}
+          {tags.length > 0 && (
+            <span className="mt-1 flex flex-wrap gap-1">
+              {tags.map(({ label, hint }) => (
+                <Tooltip key={label} label={hint}>
+                  <span>
+                    <Badge>{label}</Badge>
+                  </span>
+                </Tooltip>
               ))}
             </span>
           )}

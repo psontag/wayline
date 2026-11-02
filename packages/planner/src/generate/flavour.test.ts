@@ -29,10 +29,9 @@ async function generate(request: GenerateRequest): Promise<Proposal[]> {
 }
 
 function checkFlavours(proposals: Proposal[]) {
-  const flavours = proposals.map((p) => p.flavour);
-  expect(new Set(flavours).size).toBe(proposals.length);
+  const flavours = proposals.flatMap((p) => p.flavour ?? []);
+  expect(new Set(flavours).size).toBe(flavours.length);
   for (const p of proposals) {
-    expect(p.flavour).toBeDefined();
     expect(p.signedShare).toBeGreaterThanOrEqual(0);
     expect(p.signedShare).toBeLessThanOrEqual(1);
   }
@@ -40,10 +39,16 @@ function checkFlavours(proposals: Proposal[]) {
 
 describe("flavours", () => {
   it("climbs less on flat and more on hilly, within the limit", () => {
-    // Daily average 10 m/km. 5 m/km is free for best, 8 m/km is not.
+    // A roomy limit: climbing at the daily average is free for best.
+    expect(flavourClimb(150, 10, 15, "best")).toBe(1);
+    expect(flavourClimb(300, 10, 15, "best")).toBe(2);
+    // A low limit: only a part of the daily average is free.
+    expect(flavourClimb(16, 10, 4, "best")).toBe(1);
+    expect(flavourClimb(32, 10, 4, "best")).toBe(2);
+    // Seeking climbs: best rewards them like hilly, flat still avoids them.
+    expect(flavourClimb(150, 10, 15, "best", true)).toBeLessThan(0.1);
+    expect(flavourClimb(150, 10, 15, "flat", true)).toBeGreaterThan(1);
     const allowed = 10;
-    expect(flavourClimb(30, 10, allowed, "best")).toBe(1);
-    expect(flavourClimb(80, 10, allowed, "best")).toBe(2);
     expect(flavourClimb(30, 10, allowed, "flat")).toBeGreaterThan(1);
     expect(flavourClimb(80, 10, allowed, "hilly")).toBeLessThan(
       flavourClimb(30, 10, allowed, "hilly"),
@@ -53,23 +58,15 @@ describe("flavours", () => {
     expect(flavourClimb(600, 10, allowed, "hilly")).toBeGreaterThan(1);
   });
 
-  it("puts the theme from the form first, then best", () => {
-    expect(flavourOrder(undefined, true)).toEqual([
+  it("searches best first, and scenery flavours only with data", () => {
+    expect(flavourOrder(true)).toEqual([
       "best",
       "nature",
       "flat",
       "hilly",
       "sights",
     ]);
-    expect(flavourOrder("water", true)).toEqual([
-      "nature",
-      "best",
-      "flat",
-      "hilly",
-      "sights",
-    ]);
-    expect(flavourOrder("wine", true)[0]).toBe("sights");
-    expect(flavourOrder("culture", false)).toEqual(["best", "flat", "hilly"]);
+    expect(flavourOrder(false)).toEqual(["best", "flat", "hilly"]);
   });
 
   it("proposes one loop per flavour on the Heidelberg tiles", async () => {
@@ -86,8 +83,21 @@ describe("flavours", () => {
     }
   });
 
+  it("climbs on most proposals with a roomy limit", async () => {
+    const total = (proposals: Proposal[]) =>
+      proposals.reduce(
+        (sum, p) => sum + p.trip.stages.reduce((s, x) => s + x.stats.ascent, 0),
+        0,
+      ) / proposals.length;
+    const roomy = await generate(heidelberg);
+    const low = await generate({ ...heidelberg, maxAscentPerDay: 800 });
+    expect(total(roomy)).toBeGreaterThan(total(low));
+  });
+
   it("keeps flat the least and hilly the most climbing", async () => {
-    const proposals = await generate(heidelberg);
+    // Below a roomy limit, so only hilly seeks climbs.
+    const request = { ...heidelberg, maxAscentPerDay: 800 };
+    const proposals = await generate(request);
     const ascent = (p: Proposal) =>
       p.trip.stages.reduce((sum, s) => sum + s.stats.ascent, 0);
     const best = proposals.find((p) => p.flavour === "best");
@@ -96,27 +106,29 @@ describe("flavours", () => {
     expect(hilly).toBeDefined();
     if (!best || !hilly) return;
     expect(ascent(hilly)).toBeGreaterThanOrEqual(1.5 * ascent(best));
-    for (const p of proposals) {
+    for (const p of proposals.filter((q) => q.flavour)) {
       if (p !== hilly) expect(ascent(p)).toBeLessThan(ascent(hilly));
       if (flat && p !== flat) expect(ascent(p)).toBeGreaterThan(ascent(flat));
     }
     for (const s of hilly.trip.stages) {
-      expect(s.stats.ascent).toBeLessThanOrEqual(heidelberg.maxAscentPerDay);
+      expect(s.stats.ascent).toBeLessThanOrEqual(request.maxAscentPerDay);
     }
   });
 
-  it("starts with the flavour of the theme", async () => {
-    const proposals = await generate({ ...heidelberg, theme: "wine" });
-    checkFlavours(proposals);
-    expect(proposals[0]?.flavour).toBe("sights");
-    expect(proposals[1]?.flavour).toBe("best");
+  it("ignores a theme and profile from an old link", async () => {
+    const proposals = await generate({
+      ...heidelberg,
+      theme: "wine",
+      profile: "scenic",
+    });
+    expect(proposals[0]?.flavour).toBe("best");
+    expect(proposals[0]?.trip.settings.profile).toBe("touring");
   });
 
   it("skips scenery flavours without scenery data", async () => {
     const planner = await loadPlanner(new MockNetworkSource(readMockFile));
     const result = await planner.generate({
       ...heidelberg,
-      theme: "nature",
       startStation: {
         name: "Bamberg",
         kind: "station",
@@ -127,7 +139,7 @@ describe("flavours", () => {
     if (!result.ok) throw new Error(result.failedLimit);
     checkFlavours(result.proposals);
     expect(result.proposals[0]?.flavour).toBe("best");
-    for (const p of result.proposals) {
+    for (const p of result.proposals.filter((q) => q.flavour)) {
       expect(["best", "flat", "hilly"]).toContain(p.flavour);
     }
   });

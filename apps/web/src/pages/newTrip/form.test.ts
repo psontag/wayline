@@ -128,18 +128,18 @@ describe("new trip form", () => {
     const request = toRequest({
       ...defaults,
       endDate: "2027-06-12",
-      profile: "scenic",
     });
     expect(toRequest(fromRequest(request, defaults))).toEqual(request);
     const day = toRequest({ ...defaults, length: "one", shape: "loop" });
     expect(toRequest(fromRequest(day, defaults))).toEqual(day);
   });
 
-  it("sends a theme only when one is picked", () => {
-    expect(toRequest(defaults).theme).toBeUndefined();
-    const request = toRequest({ ...defaults, theme: "water" });
-    expect(request.theme).toBe("water");
-    expect(fromRequest(request, defaults).theme).toBe("water");
+  it("sends no theme or profile, and opens old links with them", () => {
+    const request = toRequest(defaults);
+    expect(request.theme).toBeUndefined();
+    expect(request.profile).toBeUndefined();
+    const old = { ...request, theme: "water", profile: "scenic" } as const;
+    expect(toRequest(fromRequest(old, defaults))).toEqual(request);
   });
 
   it("suggests km per day when A to B is much shorter than planned", () => {
