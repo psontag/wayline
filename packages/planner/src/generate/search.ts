@@ -33,6 +33,14 @@ const LOOP_MIN_ANGLE = 40;
 const LOOP_MAX_ANGLE = 120;
 /** Chained loop paths come out longer than the estimate: legs avoid each other and the start. */
 const LOOP_STRETCH = 1.15;
+/**
+ * One-way ends: each costs a search over the whole area. When ends times
+ * area nodes pass END_WORK, keep one end per sector around the start and
+ * band of straight distance. A 200 km area has about 70,000 nodes.
+ */
+const END_WORK = 5_000_000;
+const END_SECTORS = 24;
+const END_BANDS = 3;
 
 /**
  * Climbing over the daily average allowed raises the cost: an edge that
@@ -237,11 +245,20 @@ export function oneWayCandidates(
 ): Candidate[] {
   const fromStart = costs.from(graph, start);
   const startCoord = graph.coord(start);
-  const out: Candidate[] = [];
+  let picked: End[] = [];
   for (const end of ends) {
     const straight = distanceKm(startCoord, graph.coord(end));
     if (straight < minKm || straight > totalKm) continue;
-    if (fromStart.cost[end] === Infinity) continue;
+    const cost = fromStart.cost[end] ?? Infinity;
+    if (cost === Infinity) continue;
+    const turn = bearing(startCoord, graph.coord(end));
+    picked.push({ end, straight, bearing: turn, rate: cost / straight });
+  }
+  if (picked.length * graph.nodes.length > END_WORK) {
+    picked = spreadEnds(picked, totalKm);
+  }
+  const out: Candidate[] = [];
+  for (const { end, straight } of picked) {
     const fromEnd = costs.from(graph, end);
     // Prefer ends far from the start, so the trip goes somewhere.
     const far = Math.min(straight, 100) / 100;
@@ -259,6 +276,33 @@ export function oneWayCandidates(
     }
   }
   return out.sort((a, b) => a.quality - b.quality);
+}
+
+/**
+ * End station, seen from the start: straight km, bearing and path cost per
+ * straight km.
+ */
+export type End = {
+  end: number;
+  straight: number;
+  bearing: number;
+  rate: number;
+};
+
+/** In each sector and band, the end with the nicest way there. */
+export function spreadEnds(ends: End[], totalKm: number): End[] {
+  const cells = new Map<number, End>();
+  for (const e of ends) {
+    const sector = Math.floor((e.bearing / 360) * END_SECTORS);
+    const band = Math.min(
+      Math.floor((e.straight / totalKm) * END_BANDS),
+      END_BANDS - 1,
+    );
+    const key = sector * END_BANDS + band;
+    const best = cells.get(key);
+    if (!best || e.rate < best.rate) cells.set(key, e);
+  }
+  return [...cells.values()];
 }
 
 /**
