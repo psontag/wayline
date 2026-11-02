@@ -36,6 +36,7 @@ import {
 } from "./search";
 import {
   cutStages,
+  MIN_HOTELS,
   type PathPoint,
   pathPoints,
   type Stop,
@@ -56,6 +57,8 @@ const TIME_LIMIT_MS = 2000;
 const MAX_SHARED = 0.4;
 /** Candidates to try per flavour, once some flavour has a proposal. */
 const FLAVOUR_TRIES = 60;
+/** Candidates to try after a flavour's first fit, for stops with more hotels. */
+const STOP_TRIES = 15;
 /** Search time per flavour in ms, once some flavour has a proposal. */
 const FLAVOUR_TIME_MS = 1500;
 /**
@@ -126,6 +129,8 @@ type Pick = {
   /** Meters. */
   ascent: number;
   shared: number;
+  /** Stops with fewer than MIN_HOTELS hotels in town. */
+  weak?: number;
   flavour?: Flavour;
   homeward?: boolean;
 };
@@ -456,7 +461,8 @@ export class Planner {
     }
     const km = pathKm(graph, steps);
     const ascent = points.at(-1)?.ascent ?? 0;
-    return { nodes: c.nodes, steps, stops, km, ascent, shared: 0 };
+    const weak = stops.filter((s) => s.hotels < MIN_HOTELS).length;
+    return { nodes: c.nodes, steps, stops, km, ascent, shared: 0, weak };
   }
 
   /**
@@ -618,6 +624,8 @@ export class Planner {
           : 0;
       let found: Pick | undefined;
       let mine = 0;
+      // Tries since the first fit. Keeps looking for stops with more hotels.
+      let more = 0;
       for (const c of list) {
         if (tries === MAX_TRIES) break;
         if (
@@ -626,6 +634,7 @@ export class Planner {
         ) {
           break;
         }
+        if (found && more++ === STOP_TRIES) break;
         mine++;
         if (++tries % 10 === 0) progress(tries);
         const p = this.fit(c, costs, ck);
@@ -634,10 +643,15 @@ export class Planner {
         const shared = Math.max(0, ...picks.map((q) => sharedKm(graph, p, q)));
         if (shared > MAX_SHARED * p.km) continue;
         if (!addsFlavour(graph, flavour, p, best, picks)) continue;
-        if (!found || p.ascent > found.ascent) {
-          found = { ...p, shared: shared / p.km, flavour };
-        }
-        if (found.ascent >= target) break;
+        // Hilly: more climbing first. Others: fewer weak stops, else the first.
+        const better = !found
+          ? true
+          : flavour === "hilly"
+            ? p.ascent > found.ascent ||
+              (p.ascent >= target && (p.weak ?? 0) < (found.weak ?? 0))
+            : (p.weak ?? 0) < (found.weak ?? 0);
+        if (better) found = { ...p, shared: shared / p.km, flavour };
+        if (found && found.ascent >= target && !found.weak) break;
       }
       if (found) picks.push(found);
     }

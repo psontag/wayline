@@ -1,5 +1,5 @@
 import { distanceKm, type LonLat } from "@wayline/domain";
-import type { Graph, PathStep } from "../graph/Graph";
+import { type Graph, PathClimb, type PathStep } from "../graph/Graph";
 
 /** Max distance from the path to a stop town. */
 export const STOP_KM = 2;
@@ -17,6 +17,8 @@ const MIN_STAGE = 0.5;
 const MAX_STAGE = 1.35;
 /** Loop stops are at least this far from the start, in a straight line. */
 const HOME_KM = 15;
+/** A stop with fewer hotels in town gives little choice. */
+export const MIN_HOTELS = 3;
 
 /** Node on a path with km and ascent from the start. */
 export type PathPoint = { node: number; km: number; ascent: number };
@@ -30,14 +32,16 @@ export function pathPoints(
   const out: PathPoint[] = [{ node: start, km: 0, ascent: 0 }];
   let node = start;
   let km = 0;
-  let ascent = 0;
+  const climb = new PathClimb();
   for (const { edge, forward } of steps) {
     const e = graph.edge(edge);
     node = graph.other(edge, node);
     km += e.lengthKm;
-    ascent += forward ? e.ascent : e.descent;
-    out.push({ node, km, ascent });
+    climb.add(e, forward);
+    out.push({ node, km, ascent: climb.ascent });
   }
+  const last = out.at(-1);
+  if (last && steps.length) last.ascent = climb.total().ascent;
   return out;
 }
 
@@ -124,11 +128,15 @@ export function stageCost(
   return dev * dev;
 }
 
-/** Prefer towns with more hotels (about 10 km of deviation) and on the path. */
+/**
+ * Prefer towns with more hotels (about 10 km of deviation), at least
+ * MIN_HOTELS (about 12 km more), and on the path.
+ */
 function stopCost(c: StopCandidate): number {
   const hotels =
     c.hotels > 0 ? Math.log2(1 + Math.min(c.hotels, 15)) / 4 : -0.5;
-  return -0.03 * hotels + 0.005 * c.offKm;
+  const few = c.hotels < MIN_HOTELS ? 0.03 : 0;
+  return -0.03 * hotels + few + 0.005 * c.offKm;
 }
 
 /**

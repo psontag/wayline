@@ -37,6 +37,16 @@ describe("cutStages", () => {
     expect(stops?.[0]?.km).toBe(80);
   });
 
+  it("takes a longer day for a town with at least 3 hotels", () => {
+    const towns = [town(15, 2), town(16, 3)];
+    const stops = cutStages(points, towns, {
+      ...options,
+      days: 2,
+      kmPerDay: 150,
+    });
+    expect(stops?.[0]?.km).toBe(160);
+  });
+
   it("keeps nearby towns as alternatives", () => {
     const stops = cutStages(
       points,

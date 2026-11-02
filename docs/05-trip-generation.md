@@ -76,8 +76,8 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 
 Stops must be towns with hotels. For a route of length L and n days:
 
-1. Collect towns near the route with their position (km from start). Only towns with a named hotel within 2 km count.
-2. Choose n − 1 towns with dynamic programming. Cost per stage: deviation from its target km. If no cut fits, the path is dropped. Not allowed:
+1. Collect towns within 2 km of the route with their position (km from start). Only towns with a named hotel within 5 km count.
+2. Choose n − 1 towns with dynamic programming. Cost per stage: deviation from its target km. Each stop costs less with more hotels in town (within 2 km) that fit the budget, and more with fewer than 3. A town with 3 hotels is worth about 12 km more on a 70 km day than one with 2. If no cut fits, the path is dropped. Not allowed:
    - a stage that climbs more than its max ascent
    - a stage shorter than 0.5× or longer than 1.35× its target km
    - two stops closer than a quarter of the target km in a straight line
@@ -189,6 +189,7 @@ Each flavour searches with its own edge costs.
 - Order: the flavour of the form theme first (`nature`, `water` → nature; `culture`, `wine` → sights), then best, then the rest.
 - Flat and hilly are searched last, so they can be held to the least and the most climbing.
 - Each flavour raises the cost of edges of earlier proposals ×2, once per edge (penalty method), and tries candidates best first. After the first proposal, each flavour gets about 60 candidates or 1.5 s.
+- If a flavour's first path has stops with fewer than 3 hotels, it tries up to 15 more candidates and keeps the one with the fewest such stops.
 - A flavour is dropped when its path shares more than 40 % of its km with an earlier proposal, or when it adds nothing over best:
 
 | Flavour | Needs |
@@ -203,7 +204,10 @@ Each flavour searches with its own edge costs.
 
 ## Climbing
 
-Edge ascent drops rises and falls under 10 m (hysteresis on the edge profile). The DEM is a surface model, so trees add noise. Without the filter, ascent comes out about 3× what the router reports.
+Ascent drops rises and falls under 10 m (hysteresis on the elevation profile). The DEM is a surface model, so trees and buildings add noise.
+
+- Stages and paths filter along the whole path, across edge ends. On 59 stages in six regions this comes out 12 % above BRouter (median 5 %). Filtering each edge alone gave 30 % more, unfiltered about 3×.
+- Edge costs use each edge's own filtered ascent.
 
 Edges that climb more steeply than 40 % of the daily average allowed (max ascent per day / km per day) cost more: twice as steep costs twice as much.
 
