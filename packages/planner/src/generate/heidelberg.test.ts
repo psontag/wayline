@@ -164,7 +164,8 @@ describe("Planner on the Heidelberg tiles", () => {
     if (!result.ok) throw new Error(result.failedLimit);
     for (const p of result.proposals) {
       const [first, second] = p.trip.stages.map((s) => s.stats.distance / 1000);
-      expect(first).toBeLessThan(0.7 * 70);
+      // Signed routes and fills may run 20 % longer.
+      expect(first).toBeLessThan(0.7 * (p.flavour ? 70 : 84));
       expect(first).toBeLessThan(second!);
       expect(p.trip.settings.dayShares).toEqual([0.5, 1, 1]);
     }
@@ -201,6 +202,21 @@ describe("Planner on the Heidelberg tiles", () => {
     expect(new Set(result.proposals.map((p) => p.via.join())).size).toBe(
       result.proposals.length,
     );
+  });
+
+  it("climbs more in the fill when the limit is roomy", async () => {
+    const hills = async (maxAscentPerDay: number) => {
+      const asked = { ...request, maxAscentPerDay };
+      const planner = await new Planners(source()).for(asked);
+      const result = await planner.generate(asked);
+      if (!result.ok) throw new Error(result.failedLimit);
+      const fills = result.proposals.filter((p) => !p.flavour);
+      const up = fills.map((p) =>
+        p.trip.stages.reduce((sum, s) => sum + s.stats.ascent, 0),
+      );
+      return Math.max(...up);
+    };
+    expect(await hills(1000)).toBeGreaterThan(await hills(700));
   });
 
   it("tags proposals outside the inputs", async () => {

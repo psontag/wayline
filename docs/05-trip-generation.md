@@ -80,12 +80,13 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 Adds up to 3 proposals that follow a named cycle route. Without this, a path only takes what is cheapest between its vias.
 
 - Runs on trips with a known end or a loop, not on rides with the wind.
-- Routes count within 1.45 × the trip, there and back. The route with the most km no proposal rides yet comes first. It needs at least 30 % of the trip.
+- Routes count within 1.45 × the trip, there and back. Each needs at least 30 % of the trip unused by other proposals.
+- Routes with more than half their km in reach come first, the longest of them. Then the route with the most km no proposal rides yet.
 - A route's edges cost × 0.3. Vias are 2 of up to 12 towns on the route.
 - Tries the km per day as asked and + 20 %. Estimated length within 10 % of that. A route can so come out about a third longer than asked.
 - Keeps the path with the most km on the route, with at least 30 % of its km on it, at most 40 % shared km and at most 60 % in the same corridor as another proposal. It must pass the same filters as all others.
-- Skips a route that a proposal already rides for 30 % of its km.
-- Limit: about 2 s, 12 routes, 30 candidates per route and length.
+- Skips a route when a proposal already rides more than half of it, for at least 30 % of that proposal.
+- Limit: about 2 s, 12 routes, 30 candidates per route and length. A length is given up after 8 candidates in a row that don't fit.
 
 ## Seeking climbs
 
@@ -93,6 +94,8 @@ From 12 m/km allowed, the rider wants to climb. Rides with the wind, open rides 
 
 - Best, nature, sights and the fill use the hilly climb cost.
 - Flavours keep the path that climbs most, until one reaches 85 % of the max ascent. Hilly otherwise aims for 65 %.
+- The fill keeps the path that climbs most out of each 15 tries.
+- How close a trip gets depends on its roads and length. Heidelberg to Heilbronn at 3 × 60 km and 1000 m reaches about 70 % at most.
 - Hilly only has to climb most, not 1.5 × best.
 - Flat stays flat. Signed routes use the usual cost, so they follow their route.
 

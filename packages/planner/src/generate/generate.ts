@@ -103,7 +103,8 @@ const VIA_GAP_SHARE = 0.12;
  * the proposal on the route, and of the trip the route must have unused in
  * reach. sizes: trip lengths to try, as shares of the asked km per day; the
  * length check adds 12 % to them. corridor: km near another proposal. cost: edge cost on the route. routes, vias, tries:
- * limits per search, per route, per route and size.
+ * limits per search, per route, per route and size. misses: tries without a
+ * fit before a size is given up.
  */
 const SIGNED = {
   picks: 3,
@@ -114,10 +115,16 @@ const SIGNED = {
   routes: 12,
   vias: 12,
   tries: 30,
+  misses: 8,
   timeMs: 2000,
 };
 /** A signed route counts this far from the start and end, as a share of the trip. */
 const SIGNED_REACH = 1.45;
+/** A proposal follows a signed route when it rides more than this share of it. */
+const FOLLOW_SHARE = 0.5;
+/** Added to the rank of a route a trip can follow, to put it first. */
+const FOLLOWABLE = 1e6;
+const NONE = new Set<number>();
 /** Climb-seeking proposals aim for this share of the max ascent. */
 const SEEK_TARGET = 0.85;
 /** Day trips need no hotels, so any node can be a via, up to about this many. */
@@ -134,6 +141,10 @@ const MAX_SHARED = 0.4;
 const FLAVOUR_TRIES = 60;
 /** Candidates to try after a flavour's first fit, for stops with more hotels. */
 const STOP_TRIES = 15;
+/** The same for climbing flavours, for paths that climb more. */
+const CLIMB_TRIES = 40;
+/** Fill when seeking climbs: fits to compare, keeping the one that climbs most. */
+const SEEK_BATCH = 15;
 /** Search time per flavour in ms, once some flavour has a proposal. */
 const FLAVOUR_TIME_MS = 1500;
 /**
@@ -746,7 +757,7 @@ export class Planner {
         ) {
           break;
         }
-        if (found && more++ === STOP_TRIES) break;
+        if (found && more++ === (climbing ? CLIMB_TRIES : STOP_TRIES)) break;
         mine++;
         if (++tries % 10 === 0) progress(tries);
         const p = this.fit(c, costs, ck);
@@ -809,18 +820,24 @@ export class Planner {
     const startedAt = Date.now();
     const inTime = () => Date.now() - startedAt < SIGNED.timeMs;
     const used = new Set(picks.flatMap((p) => p.steps.map((s) => s.edge)));
+    const lengths = routeLengths(graph);
     let added = 0;
     for (let i = 0; i < SIGNED.routes; i++) {
       if (added === SIGNED.picks || !inTime()) break;
       progress(MAX_TRIES);
-      // The route with the most km no proposal rides yet.
+      // Routes a trip can follow most of first, the longest of them. Then the
+      // route with the most km no proposal rides yet.
       let on: SignedRoute | undefined;
-      let unused = SIGNED.share * totalKm;
+      let score = 0;
       for (const route of routes) {
         const km = kmUnused(graph, route, used);
-        if (km >= unused) {
+        if (km < SIGNED.share * totalKm) continue;
+        const reach = kmUnused(graph, route, NONE);
+        const whole = lengths.get(route.name) ?? Infinity;
+        const s = reach > FOLLOW_SHARE * whole ? FOLLOWABLE + reach : km;
+        if (s >= score) {
           on = route;
-          unused = km;
+          score = s;
         }
       }
       if (!on) break;
@@ -828,7 +845,11 @@ export class Planner {
       const route = on;
       const rides = (p: Pick) =>
         kmOnRoute(graph, p.steps, route) >= SIGNED.share * p.km;
-      if (picks.some(rides)) continue;
+      // A pick that only touches the route leaves room for one that follows it.
+      const covered = FOLLOW_SHARE * (lengths.get(route.name) ?? Infinity);
+      const follows = (p: Pick) =>
+        rides(p) && kmOnRoute(graph, p.steps, route) > covered;
+      if (picks.some(follows)) continue;
       costs.penalty.fill(1);
       for (const p of picks) {
         for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
@@ -848,10 +869,14 @@ export class Planner {
       let most = 0;
       for (const { km, ck } of sizes) {
         const fits = list.filter((c) => Math.abs(c.km - km) < 0.1 * km);
+        let tried = 0;
+        let fitted = false;
         for (const c of fits.slice(0, SIGNED.tries)) {
-          if (!inTime()) break;
+          if (!inTime() || (!fitted && tried++ === SIGNED.misses)) break;
           const p = this.fit(c, costs, ck);
-          if (!p || !rides(p)) continue;
+          if (!p) continue;
+          fitted = true;
+          if (!rides(p)) continue;
           const ridden = kmOnRoute(graph, p.steps, route);
           if (ridden <= most) continue;
           const shared = Math.max(
@@ -917,7 +942,17 @@ export class Planner {
         let mine = 0;
         const stepStart = Date.now();
         const stepMs = Math.min(left, FILL_TIME_MS / FILL_STEPS.length);
+        const add = (p: Pick) => {
+          picks.push(p);
+          for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
+        };
+        // Seeking climbs: the fit that climbs most of a batch.
+        let held: Pick | undefined;
         for (const c of list) {
+          if (held && mine % SEEK_BATCH === 0) {
+            add(held);
+            held = undefined;
+          }
           if (picks.length >= step.upTo || mine === FILL_TRIES) break;
           if (Date.now() - stepStart > stepMs) break;
           if (c.homeward && picks.some((p) => p.homeward)) continue;
@@ -948,13 +983,15 @@ export class Planner {
           ) {
             continue;
           }
-          picks.push({
+          const kept: Pick = {
             ...p,
             shared: shared / p.km,
             ...(c.homeward && { homeward: true }),
-          });
-          for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
+          };
+          if (!seek) add(kept);
+          else if (!held || kept.ascent > held.ascent) held = kept;
         }
+        if (held && picks.length < step.upTo) add(held);
         left -= Date.now() - stepStart;
       }
     }
