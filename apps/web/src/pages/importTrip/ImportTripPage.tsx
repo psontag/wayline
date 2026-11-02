@@ -20,7 +20,7 @@ import {
   useFormat,
 } from "@wayline/ui";
 import { TriangleAlert, X } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSaveTrip } from "../../data/queries";
 import { useServices } from "../../data/ServicesProvider";
@@ -55,10 +55,14 @@ export function ImportTripPage() {
   const id = useId();
   const navigate = useNavigate();
   const { routing, lodging, graph } = useServices();
-  const places = usePlaceIndex();
   const save = useSaveTrip();
 
   const [files, setFiles] = useState<ImportFile[]>([]);
+  const points = useMemo(
+    () => files.flatMap((f) => f.points.map((p) => p.coord)),
+    [files],
+  );
+  const places = usePlaceIndex(points);
   const [failed, setFailed] = useState<string[]>([]);
   const [hovered, setHovered] = useState<number>();
   const [name, setName] = useState<string>();

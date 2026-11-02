@@ -22,7 +22,7 @@ import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
 import { useNetwork, useTripsWeather } from "../../data/queries";
 import { tripStops } from "../tripEditor/tripArea";
-import { bedsNear, usePlaceIndex } from "../tripEditor/stopChoices";
+import { bedsNear, useTripPlaces } from "../tripEditor/stopChoices";
 import { profilePoints } from "../tripEditor/surfaceProfile";
 import { flavourOf, routeColorKey } from "./routeColor";
 import {
@@ -253,7 +253,7 @@ function ProposalItem({
     ? proposal.via
     : trip.stages.slice(0, -1).map((s) => s.end.name);
   const wind = windDays && windTag(windDays);
-  const places = usePlaceIndex();
+  const places = useTripPlaces(trip);
   // All beds, not only in budget: budgets guess from OSM stars.
   const beds = useMemo(
     () =>

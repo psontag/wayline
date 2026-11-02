@@ -9,6 +9,8 @@ import os
 import shutil
 import sys
 
+import export as X
+
 
 def main(src, dst, west, south, east, north, name):
     with open(os.path.join(src, "manifest.json")) as f:
@@ -32,18 +34,20 @@ def main(src, dst, west, south, east, north, name):
     def inside(p):
         return west <= p["lon"] <= east and south <= p["lat"] <= north
 
-    with open(os.path.join(src, manifest["files"]["places"])) as f:
-        places = json.load(f)
+    # One places.json: the subset is small, and the app reads it without a search index.
+    places = X.read_places(src)
     out = {"version": places["version"]}
     for kind in ("towns", "stations", "hotels"):
         out[kind] = [p for p in places[kind] if inside(p)]
         for p in out[kind]:
             if p.get("nodeId") is not None and p["nodeId"] not in node_ids:
                 p["nodeId"] = None
-    with open(os.path.join(dst, manifest["files"]["places"]), "w") as f:
+    with open(os.path.join(dst, "places.json"), "w") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
 
     manifest["region"] = {"name": name, "bbox": [west, south, east, north]}
+    manifest["files"] = {"places": "places.json"}
+    manifest["tiles"].pop("places", None)
     manifest["tiles"]["keys"] = keys
     with open(os.path.join(dst, "manifest.json"), "w") as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(",", ":"))

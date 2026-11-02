@@ -1,4 +1,10 @@
-import type { Manifest, Places, RouteNetwork } from "@wayline/domain";
+import type {
+  Manifest,
+  Places,
+  RouteNetwork,
+  SearchIndex,
+} from "@wayline/domain";
+import { searchIndex } from "../TiledNetworkSource";
 import type { FetchJson, RouteNetworkSource } from "../types";
 
 /** Geodata from the mock JSON files, e.g. /data/mock/oberfranken/. */
@@ -21,9 +27,15 @@ export class MockNetworkSource implements RouteNetworkSource {
     return this.load(files.network) as Promise<RouteNetwork>;
   }
 
+  /** All places. They are few, so a bbox is ignored. */
   async places(): Promise<Places> {
-    const manifest = await this.manifest();
-    return this.load(manifest.files.places) as Promise<Places>;
+    const { files } = await this.manifest();
+    if (!files.places) throw new Error(`${this.baseUrl} has no places file`);
+    return this.load(files.places) as Promise<Places>;
+  }
+
+  async search(): Promise<SearchIndex> {
+    return searchIndex(await this.places());
   }
 
   private load(file: string): Promise<unknown> {

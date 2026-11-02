@@ -123,3 +123,89 @@ describe("TiledNetworkSource", () => {
     expect(network.edges.length).toBeGreaterThan(0);
   });
 });
+
+describe("place tiles", () => {
+  const town = (id: string, lon: number, nodeId: number | null) => ({
+    id,
+    name: id,
+    place: "town" as const,
+    lon,
+    lat: 49.2,
+    hotelCount: 0,
+    nodeId,
+  });
+  const files: Record<string, unknown> = {
+    "manifest.json": {
+      version: "v",
+      region: { name: "Test", bbox: [8, 49, 9.5, 49.5] },
+      files: { search: "search.json" },
+      tiles: {
+        size: 0.5,
+        path: "tiles/{key}.json",
+        keys: ["16_98", "17_98"],
+        places: { path: "places/{key}.json", keys: ["16_98", "18_98"] },
+      },
+      createdAt: "2026-11-02",
+    },
+    "places/16_98.json": {
+      version: "v",
+      tile: "16_98",
+      towns: [town("a", 8.2, 1)],
+      stations: [],
+      hotels: [],
+    },
+    "places/18_98.json": {
+      version: "v",
+      tile: "18_98",
+      towns: [town("b", 9.2, null)],
+      stations: [],
+      hotels: [],
+    },
+    "search.json": {
+      version: "v",
+      places: [{ i: "a", n: "a", k: "town", x: 8.2, y: 49.2 }],
+    },
+  };
+  function tiled() {
+    const urls: string[] = [];
+    const s = new TiledNetworkSource(async (url) => {
+      urls.push(url);
+      return files[url.replace("/data/test/", "")];
+    }, "/data/test");
+    return { s, urls };
+  }
+
+  it("loads only the place tiles near a bbox", async () => {
+    const { s, urls } = tiled();
+    const places = await s.places([8.1, 49.1, 8.4, 49.3]);
+    expect(places.towns.map((t) => t.id)).toEqual(["a"]);
+    expect(urls.filter((u) => u.includes("/places/"))).toEqual([
+      "/data/test/places/16_98.json",
+    ]);
+  });
+
+  it("merges all place tiles without a bbox", async () => {
+    const { s } = tiled();
+    const places = await s.places();
+    expect(places.towns.map((t) => t.id)).toEqual(["a", "b"]);
+  });
+
+  it("loads the search index, not the places", async () => {
+    const { s, urls } = tiled();
+    expect((await s.search()).places.map((p) => p.i)).toEqual(["a"]);
+    expect(urls.some((u) => u.includes("/places/"))).toBe(false);
+  });
+
+  it("builds a search index from places.json in older data", async () => {
+    const { s } = source();
+    const index = await s.search();
+    const places = await s.places();
+    const onNetwork =
+      places.towns.filter((t) => t.nodeId !== null).length +
+      places.stations.filter((st) => st.nodeId !== null).length;
+    expect(index.places).toHaveLength(onNetwork);
+    expect(index.places.find((p) => p.n === "Heidelberg Hauptbahnhof")?.k).toBe(
+      "station",
+    );
+  });
+});

@@ -11,8 +11,8 @@ export function NewTripPage() {
   const { network } = useServices();
   const { kind, request } = useSearch({ from: "/new" });
   const places = useQuery({
-    queryKey: ["places"],
-    queryFn: () => network.places(),
+    queryKey: ["search"],
+    queryFn: () => network.search(),
     staleTime: Infinity,
   });
   const options = useMemo(
