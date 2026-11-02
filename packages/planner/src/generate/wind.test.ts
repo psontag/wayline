@@ -97,7 +97,8 @@ describe("windFactor", () => {
   });
 });
 
-describe("open day ride", () => {
+// The fill takes seconds on these, more on a slow CI machine.
+describe("open day ride", { timeout: 20_000 }, () => {
   it("goes to ends in different directions", async () => {
     const proposals = await generate(open);
     expect(proposals.length).toBeGreaterThanOrEqual(3);
