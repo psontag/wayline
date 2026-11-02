@@ -94,7 +94,8 @@ export function createServices(): Services {
   const network: RouteNetworkSource = {
     manifest: async () => (await source).manifest(),
     network: async (bbox) => (await source).network(bbox),
-    places: async () => (await source).places(),
+    places: async (bbox) => (await source).places(bbox),
+    search: async () => (await source).search(),
   };
   const graphs = new AreaCache(network, (n) => new Graph(n));
   // VITE_ROUTING=api routes through the Worker. Default: the route network.

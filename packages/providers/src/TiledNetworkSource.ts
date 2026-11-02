@@ -4,14 +4,17 @@ import type {
   NetworkEdge,
   NetworkNode,
   NetworkTile,
+  PlaceTile,
   Places,
   RouteNetwork,
+  SearchEntry,
+  SearchIndex,
   TileIndex,
 } from "@wayline/domain";
 import type { FetchJson, RouteNetworkSource } from "./types";
 
 /**
- * Geodata built by pipeline/build.py, e.g. /data/south-2026-10-19-3f2a9c1d/.
+ * Geodata built by pipeline/build.py, e.g. /data/de-2026-11-02-a8986415/.
  * Loads only the tiles a bbox needs. Each file loads once per source, and the
  * base URL holds the dataset version, so the cache is per version.
  */
@@ -27,9 +30,28 @@ export class TiledNetworkSource implements RouteNetworkSource {
     return this.load("manifest.json") as Promise<Manifest>;
   }
 
-  async places(): Promise<Places> {
-    const manifest = await this.manifest();
-    return this.load(manifest.files.places) as Promise<Places>;
+  async places(bbox?: BBox): Promise<Places> {
+    const { version, files, tiles } = await this.manifest();
+    const index = tiles?.places;
+    if (!index) {
+      if (!files.places) throw new Error(`${this.baseUrl} has no places`);
+      return this.load(files.places) as Promise<Places>;
+    }
+    const keys = bbox
+      ? tileKeys({ ...tiles, keys: index.keys }, bbox)
+      : index.keys;
+    return mergePlaces(
+      version,
+      (await Promise.all(
+        keys.map((k) => this.load(index.path.replace("{key}", k))),
+      )) as PlaceTile[],
+    );
+  }
+
+  async search(): Promise<SearchIndex> {
+    const { files } = await this.manifest();
+    if (files.search) return this.load(files.search) as Promise<SearchIndex>;
+    return searchIndex(await this.places());
   }
 
   async network(bbox?: BBox): Promise<RouteNetwork> {
@@ -72,6 +94,44 @@ export function tileKeys(index: TileIndex, [west, south, east, north]: BBox) {
     }
   }
   return keys;
+}
+
+/** Places of several tiles. Each place is in one tile only. */
+export function mergePlaces(version: string, tiles: PlaceTile[]): Places {
+  return {
+    version,
+    towns: tiles.flatMap((t) => t.towns),
+    stations: tiles.flatMap((t) => t.stations),
+    hotels: tiles.flatMap((t) => t.hotels),
+  };
+}
+
+/** Search index of data without one: towns and stations on the network. */
+export function searchIndex(places: Places): SearchIndex {
+  return {
+    version: places.version,
+    places: [
+      ...places.towns
+        .filter((t) => t.nodeId !== null)
+        .map((t): SearchEntry => ({
+          i: t.id,
+          n: t.name,
+          k: t.place,
+          x: t.lon,
+          y: t.lat,
+          ...(t.hotelCount ? { h: t.hotelCount } : {}),
+        })),
+      ...places.stations
+        .filter((s) => s.nodeId !== null)
+        .map((s): SearchEntry => ({
+          i: s.id,
+          n: s.name,
+          k: "station",
+          x: s.lon,
+          y: s.lat,
+        })),
+    ],
+  };
 }
 
 /** One network from several tiles. Nodes and edges are sorted by id. */

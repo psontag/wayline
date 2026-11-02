@@ -20,6 +20,7 @@ import {
 } from "@wayline/providers";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { networkArea } from "../../components/NetworkLayer";
 import { useServices } from "../../data/ServicesProvider";
 import {
   routedStageIfEnding,
@@ -40,25 +41,46 @@ export type StopChoice = StageIfEnding & {
   size?: TownSize;
 };
 
-/** Places of the region, for lookups without the network. */
+/** Places of an area, for lookups without the network. */
 export type PlaceIndex = {
   hotels: HotelIndex;
   towns: GeoTown[];
   stations: GeoStation[];
 };
 
-/** Region places, loaded once. */
-export function usePlaceIndex(): PlaceIndex | undefined {
+/** Places around points, e.g. a route. Undefined while they load. */
+export function usePlaceIndex(points: LonLat[]): PlaceIndex | undefined {
   const { network } = useServices();
+  // Every 20th point is enough for the area, and keeps Math.min in bboxAround
+  // well below the argument limit for long tracks.
+  const area = networkArea(
+    points.filter((_, i) => i % 20 === 0 || i === points.length - 1),
+  );
   const places = useQuery({
-    queryKey: ["places"],
-    queryFn: () => network.places(),
+    queryKey: ["places", area],
+    queryFn: () => network.places(area),
+    enabled: !!area,
     staleTime: Infinity,
   });
   return useMemo(
     () => (places.data ? placeIndex(places.data) : undefined),
     [places.data],
   );
+}
+
+/** Places along a trip: its route and the stop alternatives. */
+export function useTripPlaces(trip: Trip): PlaceIndex | undefined {
+  const points = useMemo(
+    () =>
+      trip.stages.flatMap((stage) => [
+        stage.start.coord,
+        stage.end.coord,
+        ...stage.legs.flatMap((leg) => decodeLine(leg.geometry)),
+        ...stage.end.alternatives.map((a) => a.coord),
+      ]),
+    [trip.stages],
+  );
+  return usePlaceIndex(points);
 }
 
 export function placeIndex(places: Places): PlaceIndex {
@@ -173,7 +195,7 @@ export function withRouted(
  * estimate until they are routed the same way picking them routes.
  */
 export function useStopOptions(trip: Trip, index: number): StopChoice[] {
-  const places = usePlaceIndex();
+  const places = useTripPlaces(trip);
   const { routing } = useServices();
   const alternatives = useMemo(
     () => trip.stages[index]?.end.alternatives ?? [],
@@ -203,7 +225,7 @@ export function useStopOptions(trip: Trip, index: number): StopChoice[] {
 
 /** Hotels at the stop of a stage, with the route to measure detours. */
 export function useStopHotels(trip: Trip, index: number) {
-  const places = usePlaceIndex();
+  const places = useTripPlaces(trip);
   return useMemo(() => {
     const stage = trip.stages[index];
     if (!stage) return { hotels: [], route: [] };

@@ -126,11 +126,12 @@ The deploy job builds it with `pnpm data:build` and caches the result per month,
 | `latest.json` | Names the current dataset version |
 | `<version>/manifest.json` | Region, bbox and the list of tiles |
 | `<version>/tiles/<x>_<y>.json` | Route network of one 0.5° tile: nodes, edges with geometry and elevation |
-| `<version>/places.json` | All towns, stations and hotels of the region. Used for place search. |
+| `<version>/places/<x>_<y>.json` | Towns, stations and hotels of one tile. Towns and stations are in the tile of their network node. |
+| `<version>/search.json` | Towns and stations on the network, with short keys. Used for place search. |
 | `<version>/lines/{z}/{x}/{y}.pbf` | Vector tiles of the signed routes, for the map |
 | `<version>/routes.json` | Name, class, length and bbox of each signed route |
 
-The browser loads only the network tiles near a trip (`TiledNetworkSource` in `packages/providers`). The map loads the line tiles in view (`NetworkLayer` in `apps/web`). Node and edge ids are stable within one version. The pipeline is described in `pipeline/README.md`.
+The browser loads only the network and place tiles near a trip (`TiledNetworkSource` in `packages/providers`). Place search loads `search.json`. The map loads the line tiles in view (`NetworkLayer` in `apps/web`). Node and edge ids are stable within one version. The pipeline is described in `pipeline/README.md`.
 
 ## Auth and storage
 

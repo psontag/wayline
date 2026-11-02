@@ -1,22 +1,7 @@
-import type { BBox, LonLat, Places, RouteNetwork } from "@wayline/domain";
+import type { BBox, Places, RouteNetwork } from "@wayline/domain";
 import { type RouteNetworkSource, tileKeys } from "@wayline/providers";
 
-const KM_PER_LAT = 110.57;
-
-/** Bbox around points, padded by km. */
-export function bboxAround(points: LonLat[], km: number): BBox {
-  const lons = points.map((p) => p[0]);
-  const lats = points.map((p) => p[1]);
-  const lat = (Math.min(...lats) + Math.max(...lats)) / 2;
-  const dLat = km / KM_PER_LAT;
-  const dLon = km / (KM_PER_LAT * Math.cos((lat * Math.PI) / 180));
-  return [
-    Math.min(...lons) - dLon,
-    Math.min(...lats) - dLat,
-    Math.max(...lons) + dLon,
-    Math.max(...lats) + dLat,
-  ];
-}
+export { bboxAround } from "@wayline/domain";
 
 /**
  * Network and places with node and edge ids as array indexes, as Graph
@@ -99,7 +84,7 @@ export class AreaCache<T> {
   private async load(bbox: BBox): Promise<T> {
     const [network, places] = await Promise.all([
       this.source.network(bbox),
-      this.source.places(),
+      this.source.places(bbox),
     ]);
     const local = localIds(network, places);
     return this.build(local.network, local.places);

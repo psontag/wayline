@@ -39,7 +39,7 @@ const LOOP_STRETCH = 1.15;
  * band of straight distance. A 200 km area has about 70,000 nodes.
  */
 const END_WORK = 5_000_000;
-const END_SECTORS = 24;
+const END_SECTORS = 16;
 const END_BANDS = 3;
 
 /**

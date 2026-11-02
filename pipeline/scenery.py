@@ -16,9 +16,10 @@ import numpy as np
 import osmium
 from PIL import Image, ImageDraw
 
-# Grid over all states. Points outside count as no scenery.
-WEST, SOUTH, EAST, NORTH = 7.4, 47.2, 14.0, 51.8
-CELL_LON, CELL_LAT = 0.0007, 0.00045  # about 50 m at 49° N
+from region import BBOX
+
+WEST, SOUTH, EAST, NORTH = BBOX
+CELL_LON, CELL_LAT = 0.0007, 0.00045  # about 50 m at 49° N, 45 m at 55° N
 WIDTH = math.ceil((EAST - WEST) / CELL_LON)
 HEIGHT = math.ceil((NORTH - SOUTH) / CELL_LAT)
 

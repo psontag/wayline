@@ -25,7 +25,7 @@ Used for:
 - Hotels: `tourism=hotel`, `tourism=guest_house`, `tourism=motel`.
 - Scenic features: rivers, lakes, forests, nature parks, viewpoints.
 
-The pipeline downloads Geofabrik extracts (Germany first). It builds static files that are deployed as static assets. No runtime calls to Overpass.
+The pipeline downloads the Geofabrik extracts of the 16 German states. It builds static files that are deployed as static assets. No runtime calls to Overpass. Size and build time: `pipeline/README.md`.
 
 License: ODbL. The map must show OSM attribution.
 

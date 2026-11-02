@@ -1,4 +1,5 @@
 import {
+  bboxAround,
   distanceKm,
   type GeoHotel,
   type HotelBudget,
@@ -11,10 +12,8 @@ import type {
 } from "../types";
 import { byBudget, detourKm, HOTEL_KM, HotelIndex } from "./hotels";
 
-/** OSM hotels from places.json of the region data. */
+/** OSM hotels from the place tiles of the region data. */
 export class OsmLodging implements LodgingProvider {
-  private index?: Promise<HotelIndex>;
-
   constructor(private source: RouteNetworkSource) {}
 
   async hotelsNear(
@@ -31,8 +30,8 @@ export class OsmLodging implements LodgingProvider {
       route?: LonLat[];
     } = {},
   ): Promise<HotelOption[]> {
-    this.index ??= this.source.places().then((p) => new HotelIndex(p.hotels));
-    const near = (await this.index).near(coord, radiusKm);
+    const { hotels } = await this.source.places(bboxAround([coord], radiusKm));
+    const near = new HotelIndex(hotels).near(coord, radiusKm);
     return byBudget(
       near.map((h) => toOption(h, coord, route)),
       budget,

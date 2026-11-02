@@ -41,4 +41,10 @@ export {
   parsePlan,
   planUrl,
 } from "./transitous/TransitousTrains";
-export { mergeTiles, TiledNetworkSource, tileKeys } from "./TiledNetworkSource";
+export {
+  mergePlaces,
+  mergeTiles,
+  searchIndex,
+  TiledNetworkSource,
+  tileKeys,
+} from "./TiledNetworkSource";

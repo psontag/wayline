@@ -8,6 +8,7 @@ import type {
   LonLat,
   Manifest,
   Places,
+  SearchIndex,
   Profile,
   RouteNetwork,
   TrainQuery,
@@ -77,8 +78,14 @@ export interface RouteNetworkSource {
    * hold more. Without bbox, the whole region. Pass a bbox for tiled data.
    */
   network(bbox?: BBox): Promise<RouteNetwork>;
-  /** Towns, stations and hotels of the whole region. */
-  places(): Promise<Places>;
+  /**
+   * Towns, stations and hotels around bbox, like network(). Towns and
+   * stations come with the tile of their node. Without bbox, the whole
+   * region. Pass a bbox for tiled data.
+   */
+  places(bbox?: BBox): Promise<Places>;
+  /** Towns and stations on the network of the whole region, for place search. */
+  search(): Promise<SearchIndex>;
 }
 
 /** Loads JSON from a URL. The app passes a fetch wrapper. */

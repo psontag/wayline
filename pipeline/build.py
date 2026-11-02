@@ -3,8 +3,9 @@
 Usage: python build.py [--cache DIR] [--out DIR] [--states a,b]
 
 Reads the downloads from the cache (see download.py) and writes
-<out>/<version>/ with manifest.json, places.json, tiles/<x>_<y>.json and
-the route lines (lines.py), plus <out>/latest.json that names the newest version.
+<out>/<version>/ with manifest.json, search.json, tiles/<x>_<y>.json,
+places/<x>_<y>.json and the route lines (lines.py), plus <out>/latest.json
+that names the newest version.
 """
 
 import argparse
@@ -67,7 +68,7 @@ def load_extract(cache, state):
         return json.load(f), src
 
 
-def load_scenery(cache, state):
+def scenery_file(cache, state):
     """Scenery of one state (see scenery.extract). Cached like load_extract."""
     src = os.path.join(cache, "osm", f"{state}-latest.osm.pbf")
     dst = os.path.join(cache, "work", f"{state}-scenery.npz")
@@ -76,7 +77,7 @@ def load_scenery(cache, state):
         # In a child process, so its memory is free again afterwards.
         with ProcessPoolExecutor(1) as pool:
             pool.submit(S.extract_to, src, dst).result()
-    return S.load(dst)
+    return dst
 
 
 def tile_key(lon, lat):
@@ -121,11 +122,12 @@ def main():
     args = ap.parse_args()
     states = args.states.split(",")
     t = Timer()
-    download.main(args.cache)
+    download.main(args.cache, states)
     t.step("download")
 
-    # Before the route extracts, so the scenery extract's peak memory doesn't add to theirs.
-    scenery = S.Scenery(*S.merge(load_scenery(args.cache, s) for s in states))
+    # Extracted before the route extracts and loaded after the graph, so the
+    # peaks of the three steps don't add up.
+    scenery_files = [scenery_file(args.cache, s) for s in states]
     t.step("scenery")
 
     parts, srcs = [], []
@@ -136,14 +138,16 @@ def main():
         print(f"{s}: {E.summary(data)}")
         t.step(f"extract {s}")
     data = E.merge(parts) if len(parts) > 1 else parts[0]
+    del parts
     print(f"merged: {E.summary(data)}")
 
     g = G.build(data)
     print("graph:", {k: round(v, 3) if isinstance(v, float) else v for k, v in g["stats"].items()})
     t.step("graph")
+    scenery = S.Scenery(*S.merge(S.load(f) for f in scenery_files))
 
     osm_date = datetime.date.fromtimestamp(max(os.path.getmtime(p) for p in srcs)).isoformat()
-    name = "south" if states == region.STATES else "-".join(states)
+    name = region.ID if states == region.STATES else "-".join(states)
     version = f"{name}-{osm_date}-{pipeline_hash()}"
     dem = Dem(os.path.join(args.cache, "dem"))
     network, index = X.export_network(g, dem, version, scenery)
@@ -155,18 +159,28 @@ def main():
     tiles = split_tiles(network)
     out = os.path.join(args.out, version)
     sizes = {k: write(os.path.join(out, "tiles", f"{k}.json"), tile) for k, tile in tiles.items()}
-    places_size = write(os.path.join(out, "places.json"), places)
+    place_tiles = X.split_places(places, network["nodes"], tile_key)
+    place_sizes = [write(os.path.join(out, "places", f"{k}.json"), p) for k, p in place_tiles.items()]
+    search_size = write(os.path.join(out, "search.json"), X.search_index(places))
     lons = [n["lon"] for n in network["nodes"]]
     lats = [n["lat"] for n in network["nodes"]]
     manifest = {
         "version": version,
         "region": {"name": region.NAME, "bbox": [min(lons), min(lats), max(lons), max(lats)]},
-        "files": {"places": "places.json"},
-        "tiles": {"size": region.TILE_DEG, "path": "tiles/{key}.json", "keys": sorted(tiles)},
+        "files": {"search": "search.json"},
+        "tiles": {
+            "size": region.TILE_DEG,
+            "path": "tiles/{key}.json",
+            "keys": sorted(tiles),
+            "places": {"path": "places/{key}.json", "keys": sorted(place_tiles)},
+        },
         "createdAt": datetime.date.today().isoformat(),
     }
     write(os.path.join(out, "manifest.json"), manifest)
-    write(os.path.join(args.out, "latest.json"), {"version": version, "manifest": f"{version}/manifest.json"})
+    # Replaced, not written through: in a worktree it is a link to the main checkout.
+    latest = os.path.join(args.out, "latest.json")
+    write(latest + ".tmp", {"version": version, "manifest": f"{version}/manifest.json"})
+    os.replace(latest + ".tmp", latest)
     t.step("write")
     lines = L.build(out, L.route_networks(data["routes"]))
     t.step("lines")
@@ -174,7 +188,9 @@ def main():
     mb = 1024 * 1024
     s = sorted(sizes.values())
     print(f"out: {out}")
-    print(f"places.json: {places_size / mb:.1f} MiB (towns={len(places['towns'])} stations={len(places['stations'])} hotels={len(places['hotels'])})")
+    print(f"places: towns={len(places['towns'])} stations={len(places['stations'])} hotels={len(places['hotels'])}")
+    print(f"place tiles: {len(place_sizes)} files, {sum(place_sizes) / mb:.1f} MiB, max {max(place_sizes) / 1024:.0f} KiB")
+    print(f"search.json: {search_size / mb:.2f} MiB")
     print(f"tiles: {len(s)} files, {sum(s) / mb:.1f} MiB, median {s[len(s) // 2] / mb:.2f} MiB, max {s[-1] / mb:.2f} MiB")
     print(f"lines: {lines['routes']} routes, {lines['files']} files ({lines['empty']} empty), {lines['bytes'] / mb:.1f} MiB, max {lines['max'] / 1024:.0f} KiB")
     print("scenery:", S.stats(network["edges"]))

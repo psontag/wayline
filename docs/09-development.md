@@ -101,7 +101,7 @@ The response header `X-Cache` says `HIT` or `MISS`.
 
 ## Local BRouter
 
-A local BRouter covers Baden-Württemberg, Hessen and Bayern. It needs Docker. On macOS, `pnpm brouter` starts Docker Desktop if it is not running.
+A local BRouter covers Germany (5–15° E, 45–55° N). It needs Docker. On macOS, `pnpm brouter` starts Docker Desktop if it is not running.
 
 ```sh
 pnpm brouter    # BRouter on localhost:17777

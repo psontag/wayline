@@ -1,7 +1,14 @@
-"""Build the route network graph from the extracted OSM data (docs/05)."""
+"""Build the route network graph from the extracted OSM data (docs/05).
+
+The fine graph on OSM nodes lives in numpy arrays: Germany has millions of
+nodes, too many for Python dicts on the CI runner.
+"""
 
 import math
 from collections import defaultdict
+from itertools import chain
+
+import numpy as np
 
 SNAP_KM = 1.5  # towns and stations within this distance get a node
 HOTEL_KM = 2.0  # a hotel counts for the nearest town within this distance
@@ -10,6 +17,8 @@ CONNECTOR_DETOUR = 1.3  # connector length = straight line x this
 
 NETWORK_RANK = {"icn": 0, "ncn": 1, "rcn": 2, "lcn": 3, "other": 4, "connector": 5}
 NETWORK_SCORE = {"icn": 1.0, "ncn": 0.95, "rcn": 0.85, "lcn": 0.75, "other": 0.7, "connector": 0.4}
+NETWORKS = sorted(NETWORK_RANK, key=NETWORK_RANK.get)  # index = rank
+SURFACES = ["paved", "gravel", "rough", "unknown"]
 
 PAVED = {"asphalt", "paved", "concrete", "concrete:plates", "concrete:lanes", "paving_stones", "chipseal", "sett", "metal", "wood"}
 GOOD_UNPAVED = {"compacted", "fine_gravel"}
@@ -22,6 +31,13 @@ def dist_km(a, b):
     x = math.radians(b[0] - a[0]) * math.cos(math.radians((a[1] + b[1]) / 2))
     y = math.radians(b[1] - a[1])
     return 6371.0 * math.hypot(x, y)
+
+
+def dist_km_np(a, b):
+    """dist_km for arrays of [lon, lat] rows."""
+    x = np.radians(b[..., 0] - a[..., 0]) * np.cos(np.radians((a[..., 1] + b[..., 1]) / 2))
+    y = np.radians(b[..., 1] - a[..., 1])
+    return 6371.0 * np.hypot(x, y)
 
 
 def surface_class(way):
@@ -82,81 +98,148 @@ class Grid:
         return out
 
 
+class NodeGrid:
+    """Grid like Grid over an array of [lon, lat] rows. Keys are row numbers."""
+
+    CELL = 0.01
+
+    def __init__(self, xy):
+        self.xy = xy
+        cells = self.cell(xy[:, 0]) * 2**20 + self.cell(xy[:, 1])
+        self.order = np.argsort(cells, kind="stable")
+        self.cells = cells[self.order]
+
+    def cell(self, v):
+        return np.floor(np.asarray(v) / self.CELL).astype(np.int64)
+
+    def near(self, loc, radius_km):
+        """(km, rows) within radius_km, nearest first."""
+        r_lat = int(radius_km / 111 / self.CELL) + 1
+        r_lon = int(radius_km / (111 * math.cos(math.radians(loc[1]))) / self.CELL) + 1
+        cx, cy = int(self.cell(loc[0])), int(self.cell(loc[1]))
+        rows = []
+        for x in range(cx - r_lon, cx + r_lon + 1):
+            lo = np.searchsorted(self.cells, x * 2**20 + cy - r_lat)
+            hi = np.searchsorted(self.cells, x * 2**20 + cy + r_lat, side="right")
+            rows.append(self.order[lo:hi])
+        rows = np.concatenate(rows)
+        d = dist_km_np(np.asarray(loc, dtype=float), self.xy[rows])
+        keep = d <= radius_km
+        rows, d = rows[keep], d[keep]
+        by_km = np.argsort(d, kind="stable")
+        return d[by_km], rows[by_km]
+
+
+def csr(a, b, n):
+    """Adjacency of n nodes from segments a-b: offsets, the other node and the segment at each slot."""
+    ends = np.concatenate([a, b])
+    order = np.argsort(ends, kind="stable")
+    offsets = np.zeros(n + 1, dtype=np.int64)
+    np.cumsum(np.bincount(ends, minlength=n), out=offsets[1:])
+    other = np.concatenate([b, a])[order]
+    seg = np.tile(np.arange(len(a)), 2)[order]
+    return offsets, other, seg
+
+
+def components_csr(offsets, other):
+    """Component id (its first node) of each node."""
+    n = len(offsets) - 1
+    comp = np.full(n, -1, dtype=np.int64)
+    for start in range(n):
+        if comp[start] >= 0:
+            continue
+        comp[start] = start
+        stack = [start]
+        while stack:
+            x = stack.pop()
+            for y in other[offsets[x] : offsets[x + 1]]:
+                if comp[y] < 0:
+                    comp[y] = start
+                    stack.append(y)
+    return comp
+
+
 def build(data):
+    """Route graph from the extract. Takes data["ways"] out of data to free it early."""
+    ways = data.pop("ways")
     # Best network and names per way.
     way_net = {}
     way_routes = defaultdict(set)
     for r in data["routes"]:
         for wid in r["ways"]:
             w = str(wid)
-            if w not in data["ways"]:
+            if w not in ways:
                 continue
             if r["name"]:
                 way_routes[w].add(r["name"])
             if w not in way_net or NETWORK_RANK[r["network"]] < NETWORK_RANK[way_net[w]]:
                 way_net[w] = r["network"]
 
-    # Fine graph on OSM nodes.
-    coord = {}
-    seg = {}  # (a, b) with a < b -> attributes
-    adj = defaultdict(set)
-    for wid, w in data["ways"].items():
-        surf, tagged = surface_class(w)
+    # Attributes per way. The last row is for connectors.
+    way_ids = list(ways)
+    attrs = []
+    for wid in way_ids:
+        surf, tagged = surface_class(ways[wid])
         net = way_net[wid]
-        for i in range(len(w["nodes"]) - 1):
-            a, b = w["nodes"][i], w["nodes"][i + 1]
-            if a == b:
-                continue
-            coord[a], coord[b] = w["coords"][i], w["coords"][i + 1]
-            key = (min(a, b), max(a, b))
-            attrs = {
-                "len": dist_km(w["coords"][i], w["coords"][i + 1]),
-                "net": net,
-                "surface": surf,
-                "tagged": tagged,
-                "highway": w["highway"],
-                "way": wid,
-            }
-            old = seg.get(key)
-            if old is None or NETWORK_RANK[net] < NETWORK_RANK[old["net"]]:
-                seg[key] = attrs
-            adj[a].add(b)
-            adj[b].add(a)
+        attrs.append((NETWORK_RANK[net], SURFACES.index(surf), tagged, segment_score(net, surf, ways[wid]["highway"])))
+    attrs.append((NETWORK_RANK["connector"], SURFACES.index("unknown"), False, segment_score("connector", "unknown", None)))
+    w_net, w_surf, w_tagged, w_score = (np.array(c) for c in zip(*attrs))
+    connector = len(way_ids)
 
-    grid = Grid()
-    for n, c in coord.items():
-        grid.add(n, c)
+    # Segments between neighboring points of a way.
+    counts = np.fromiter((len(ways[w]["nodes"]) for w in way_ids), np.int64, len(way_ids))
+    total = int(counts.sum())
+    ids = np.fromiter(chain.from_iterable(ways[w]["nodes"] for w in way_ids), np.int64, total)
+    xy = np.fromiter(chain.from_iterable(chain.from_iterable(ways[w]["coords"] for w in way_ids)), float, 2 * total).reshape(-1, 2)
+    del ways
+    point_way = np.repeat(np.arange(len(way_ids)), counts)
+    inner = np.ones(total, dtype=bool)
+    inner[np.cumsum(counts) - 1] = False  # last point of each way
+    j = np.nonzero(inner)[0]
+    j = j[ids[j] != ids[j + 1]]
 
-    comp = components(adj)
-    stats = {"fine_nodes": len(coord), "components_before": len(set(comp.values()))}
+    # Dense node numbers. Each node pair keeps the segment of its best network.
+    nodes, inverse = np.unique(np.concatenate([ids[j], ids[j + 1]]), return_inverse=True)
+    n = len(nodes)
+    a, b = inverse[: len(j)], inverse[len(j) :]
+    node_xy = np.empty((n, 2))
+    node_xy[a], node_xy[b] = xy[j], xy[j + 1]
+    seg_way = point_way[j]
+    pair = np.minimum(a, b) * n + np.maximum(a, b)
+    order = np.lexsort((np.arange(len(j)), w_net[seg_way], pair))
+    first = np.r_[True, pair[order][1:] != pair[order][:-1]]
+    keep = order[first]
+    s_a, s_b, s_way = a[keep], b[keep], seg_way[keep]
+    s_km = dist_km_np(xy[j[keep]], xy[j[keep] + 1])
+    del ids, xy, point_way, inner, j, inverse, a, b, seg_way, pair, order, first, keep
+
+    grid = NodeGrid(node_xy)
+    offsets, other, _ = csr(s_a, s_b, n)
+    comp = components_csr(offsets, other)
+    stats = {"fine_nodes": n, "components_before": len(np.unique(comp))}
 
     # Unsigned connectors from dead ends to the nearest node of another component.
     connectors = 0
-    for n in [n for n in adj if len(adj[n]) == 1]:
-        for d, m, _ in grid.near(coord[n], GAP_KM):
-            if comp[m] != comp[n]:
-                key = (min(n, m), max(n, m))
-                seg[key] = {
-                    "len": d * CONNECTOR_DETOUR,
-                    "net": "connector",
-                    "surface": "unknown",
-                    "tagged": False,
-                    "highway": None,
-                    "way": None,
-                }
-                adj[n].add(m)
-                adj[m].add(n)
+    links = {}
+    for x in np.nonzero(np.diff(offsets) == 1)[0]:
+        for d, y in zip(*grid.near(node_xy[x], GAP_KM)):
+            if comp[y] != comp[x]:
+                links[(min(x, y), max(x, y))] = d * CONNECTOR_DETOUR  # two dead ends can find each other
                 connectors += 1
                 break
-    comp = components(adj)
-    sizes = defaultdict(int)
-    for c in comp.values():
-        sizes[c] += 1
-    main_comp = max(sizes, key=sizes.get)
+    if links:
+        s_a = np.concatenate([s_a, [k[0] for k in links]])
+        s_b = np.concatenate([s_b, [k[1] for k in links]])
+        s_way = np.concatenate([s_way, np.full(len(links), connector)])
+        s_km = np.concatenate([s_km, list(links.values())])
+    offsets, other, seg_at = csr(s_a, s_b, n)
+    comp = components_csr(offsets, other)
+    ids, sizes = np.unique(comp, return_counts=True)
+    main_comp = ids[np.argmax(sizes)]
     stats.update(
         connectors=connectors,
-        components_after=len(sizes),
-        main_component_share=sizes[main_comp] / len(comp),
+        components_after=len(ids),
+        main_component_share=sizes.max() / n,
     )
 
     # Towns and stations snap to the nearest route point.
@@ -169,34 +252,49 @@ def build(data):
         near = place_grid.near(h["loc"], HOTEL_KM)
         if near:
             hotels_at[near[0][1]] += 1
+    key = np.diff(offsets) != 2
+
+    def snap(p):
+        d, rows = grid.near(p["loc"], SNAP_KM)
+        if not len(rows):
+            return None
+        key[rows[0]] = True
+        return {"node": int(nodes[rows[0]]), "snap_km": float(d[0]), "main": bool(comp[rows[0]] == main_comp)}
+
     towns = []
     for p in data["places"]:
-        near = grid.near(p["loc"], SNAP_KM)
-        if not near:
-            continue
-        d, n, _ = near[0]
-        towns.append({**p, "node": n, "snap_km": d, "hotels": hotels_at[p["id"]], "main": comp[n] == main_comp})
+        s = snap(p)
+        if s:
+            towns.append({**p, **s, "hotels": hotels_at[p["id"]]})
     stations = []
-    for s in data["stations"]:
-        near = grid.near(s["loc"], SNAP_KM)
-        if near:
-            d, n, _ = near[0]
-            stations.append({**s, "node": n, "snap_km": d, "main": comp[n] == main_comp})
+    for p in data["stations"]:
+        s = snap(p)
+        if s:
+            stations.append({**p, **s})
 
-    key_nodes = {n for n in adj if len(adj[n]) != 2}
-    key_nodes |= {t["node"] for t in towns} | {s["node"] for s in stations}
-
-    edges = compress(adj, seg, coord, key_nodes)
-    for e in edges:
+    seg = {
+        "km": s_km,
+        "net": w_net[s_way],
+        "surface": w_surf[s_way],
+        "tagged": w_tagged[s_way],
+        "score": w_score[s_way],
+        "way": s_way,
+    }
+    edges = []
+    for chain_nodes, chain_segs in chains(offsets, other, seg_at, key):
+        e = make_edge(np.array(chain_segs), seg, way_ids, connector)
+        e.update(a=int(nodes[chain_nodes[0]]), b=int(nodes[chain_nodes[-1]]), coords=node_xy[chain_nodes].tolist())
         route_km = defaultdict(float)
         for wid, km in e.pop("way_km").items():
             for name in way_routes[wid]:
                 route_km[name] += km
         e["routes"] = dict(route_km)
+        edges.append(e)
     graph = defaultdict(list)
     for i, e in enumerate(edges):
         graph[e["a"]].append((e["b"], i))
         graph[e["b"]].append((e["a"], i))
+    coord = {int(nodes[i]): node_xy[i].tolist() for i in np.nonzero(key)[0]}
 
     stats.update(
         nodes=len(graph),
@@ -226,53 +324,41 @@ def components(adj):
     return comp
 
 
-def compress(adj, seg, coord, key_nodes):
-    """Turn chains of OSM nodes between key nodes into edges."""
-    edges = []
-    seen = set()
-    for a in key_nodes:
-        for first in adj[a]:
-            if (a, first) in seen:
+def chains(offsets, other, seg_at, key):
+    """Chains of nodes between key nodes, as (nodes, segments)."""
+    seen = np.zeros(int(seg_at.max()) + 1 if len(seg_at) else 0, dtype=bool)
+    for a in np.nonzero(key)[0]:
+        for slot in range(offsets[a], offsets[a + 1]):
+            if seen[seg_at[slot]]:
                 continue
-            nodes = [a, first]
-            while nodes[-1] not in key_nodes:
-                nxt = [m for m in adj[nodes[-1]] if m != nodes[-2]]
+            nodes, segs = [a, other[slot]], [seg_at[slot]]
+            while not key[nodes[-1]]:
+                x = nodes[-1]
+                nxt = [s for s in range(offsets[x], offsets[x + 1]) if other[s] != nodes[-2]]
                 if not nxt:
                     break
-                nodes.append(nxt[0])
-            for i in range(len(nodes) - 1):
-                seen.add((nodes[i], nodes[i + 1]))
-                seen.add((nodes[i + 1], nodes[i]))
-            edges.append(make_edge(nodes, seg, coord))
-    return edges
+                nodes.append(other[nxt[0]])
+                segs.append(seg_at[nxt[0]])
+            seen[segs] = True
+            yield nodes, segs
 
 
-def make_edge(nodes, seg, coord):
-    km = defaultdict(float)
-    length = 0.0
-    surface_km = defaultdict(float)
-    tagged_km = 0.0
-    weighted = 0.0
+def make_edge(segs, seg, way_ids, connector):
+    km = seg["km"][segs]
+    length = float(km.sum())
+    by_net = np.bincount(seg["net"][segs], km, len(NETWORKS))
+    surf = seg["surface"][segs]
+    by_surface = np.bincount(surf, km, len(SURFACES))
+    way = seg["way"][segs]
     way_km = defaultdict(float)
-    for i in range(len(nodes) - 1):
-        a, b = nodes[i], nodes[i + 1]
-        s = seg[(min(a, b), max(a, b))]
-        length += s["len"]
-        km[s["net"]] += s["len"]
-        surface_km[s["surface"]] += s["len"]
-        if s["tagged"]:
-            tagged_km += s["len"]
-        weighted += s["len"] * segment_score(s["net"], s["surface"], s["highway"])
-        if s["way"]:
-            way_km[s["way"]] += s["len"]
+    for w, d in zip(way.tolist(), km.tolist()):
+        if w != connector:
+            way_km[way_ids[w]] += d
     return {
-        "a": nodes[0],
-        "b": nodes[-1],
-        "coords": [coord[n] for n in nodes],
         "len": length,
-        "score": weighted / length if length else 1.0,
-        "km": {k: km.get(k, 0.0) for k in NETWORK_SCORE},
-        "surface_km": dict(surface_km),
-        "tagged_km": tagged_km,
+        "score": float((km * seg["score"][segs]).sum()) / length if length else 1.0,
+        "km": {k: float(by_net[i]) for i, k in enumerate(NETWORKS)},
+        "surface_km": {SURFACES[i]: float(by_surface[i]) for i in np.unique(surf)},
+        "tagged_km": float(km[seg["tagged"][segs]].sum()),
         "way_km": dict(way_km),
     }
