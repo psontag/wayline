@@ -8,6 +8,7 @@ import type {
   LonLat,
   Manifest,
   Places,
+  RouteInfo,
   SearchIndex,
   Profile,
   RouteNetwork,
@@ -84,6 +85,8 @@ export interface RouteNetworkSource {
    * region. Pass a bbox for tiled data.
    */
   places(bbox?: BBox): Promise<Places>;
+  /** Signed routes of the whole region. Sources without a table leave it out. */
+  routes?(): Promise<RouteInfo[]>;
   /** Towns and stations on the network of the whole region, for place search. */
   search(): Promise<SearchIndex>;
 }

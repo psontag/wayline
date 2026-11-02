@@ -84,6 +84,7 @@
     "paved": "Paved",
     "option": "Option {{number}}",
     "destination": "To {{place}}",
+    "routeTo": "{{route}} to {{place}}",
     "homeward": "Home from {{place}}",
     "via": "Via {{stops}}",
     "trainOutVia": "Train out · via {{stops}}",
@@ -153,7 +154,7 @@
       "headwindSpeed": "The wind is mostly against you, on average {{speed}}",
       "leastHeadwind": "Clearly the least wind against you of these proposals",
       "fewBeds": "Day {{day}} ends where few hotels fit your budget",
-      "followedRoute": "Rides most of this signed cycle route"
+      "followedRoute": "At least half of this trip follows this signed cycle route"
     },
     "beds_zero": "No place to sleep",
     "beds_one": "{{count}} place to sleep",

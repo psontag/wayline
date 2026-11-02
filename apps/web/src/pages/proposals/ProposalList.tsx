@@ -35,6 +35,7 @@ import {
   rainTag,
   relaxOptions,
   shownRouteTags,
+  titleRoutes,
   titleTowns,
   tripRidingHours,
   type Relaxed,
@@ -84,6 +85,7 @@ export function ProposalList({
   const tags = comparisonTags(proposals, headwind);
   const routeTags = shownRouteTags(proposals);
   const towns = titleTowns(proposals);
+  const titled = titleRoutes(proposals);
   const rain = proposals.map((_, i) => rainTag(weather[i] ?? undefined));
   // Dry on every route says nothing about the route.
   const allDry = rain.every((r) => r?.kind === "dry");
@@ -122,6 +124,7 @@ export function ProposalList({
             windDays={windDays[i]}
             toEnd={request.kind === "one-way" && !request.endStation}
             town={towns.get(p.id)}
+            route={titled.get(p.id)}
             tags={tags.get(p.id) ?? []}
             routeTags={routeTags.get(p.id) ?? []}
             rain={allDry ? undefined : rain[i]}
@@ -236,6 +239,7 @@ function ProposalItem({
   windDays,
   toEnd,
   town,
+  route,
   tags,
   routeTags,
   rain,
@@ -255,6 +259,8 @@ function ProposalItem({
   toEnd: boolean;
   /** Town to name the proposal after. */
   town: string | undefined;
+  /** Signed route to name the proposal after. Goes before the town. */
+  route: string | undefined;
   tags: ComparisonTag[];
   routeTags: RouteTag[];
   rain: RainTag | undefined;
@@ -291,13 +297,19 @@ function ProposalItem({
   const name =
     proposal.homeward && first
       ? t("card.homeward", { place: first.start.name })
-      : toEnd && last
-        ? t("card.destination", { place: last.end.name })
-        : proposal.character
-          ? t(`card.character.${proposal.character}`)
-          : town
-            ? t("card.via", { stops: town })
-            : t("card.option", { number });
+      : proposal.character === "direct"
+        ? t("card.character.direct")
+        : route
+          ? toEnd && last
+            ? t("card.routeTo", { route, place: last.end.name })
+            : route
+          : toEnd && last
+            ? t("card.destination", { place: last.end.name })
+            : proposal.character
+              ? t(`card.character.${proposal.character}`)
+              : town
+                ? t("card.via", { stops: town })
+                : t("card.option", { number });
   // One day: the wind speed says more than the day number.
   const speed =
     trip.stages.length === 1 && windDays?.[0]
@@ -321,7 +333,7 @@ function ProposalItem({
           },
         ]
       : []),
-    ...(proposal.followedRoute
+    ...(proposal.followedRoute && !route
       ? [
           {
             label: proposal.followedRoute,
