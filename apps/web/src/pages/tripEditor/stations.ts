@@ -8,7 +8,7 @@ import {
 } from "@wayline/domain";
 import { useMemo } from "react";
 import { useHomeStation } from "../../data/homeStation";
-import { usePlaceIndex } from "./stopChoices";
+import { useTripPlaces } from "./stopChoices";
 
 /** Stations this close to the route count as on the way. */
 export const STATION_NEAR_KM = 2;
@@ -72,7 +72,7 @@ export type MapStation = RouteStation & { href: string };
 
 /** Stations along the trip, each with a bahn.de link home. */
 export function useRouteStations(trip: Trip): MapStation[] {
-  const places = usePlaceIndex();
+  const places = useTripPlaces(trip);
   const [home] = useHomeStation();
   return useMemo(() => {
     if (!places) return [];

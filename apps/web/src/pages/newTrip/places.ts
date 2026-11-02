@@ -1,37 +1,29 @@
-import { distanceKm, type Place, type Places } from "@wayline/domain";
+import {
+  distanceKm,
+  type Place,
+  type SearchEntry,
+  type SearchIndex,
+} from "@wayline/domain";
 
 /** A trip starts or ends at a station this close to the chosen town. */
 export const STATION_KM = 2;
 
-const PLACE_RANK = { city: 0, town: 1, village: 2 };
+const PLACE_RANK = { city: 0, town: 1, village: 2, station: 3 };
 
 /**
- * Towns and stations on the route network. Towns first, bigger ones
- * first, so an empty search shows well-known towns.
+ * Towns and stations of the search index. Towns first, bigger ones first,
+ * so an empty search shows well-known towns.
  */
-export function placeOptions(places: Places): Place[] {
-  const stations = places.stations
-    .filter((s) => s.nodeId !== null)
-    .map((s): Place => ({
-      name: s.name,
-      kind: "station",
-      coord: [s.lon, s.lat],
-      osmId: s.id,
+export function placeOptions(index: SearchIndex): Place[] {
+  const rank = (e: SearchEntry) => PLACE_RANK[e.k];
+  return [...index.places]
+    .sort((a, b) => rank(a) - rank(b) || (b.h ?? 0) - (a.h ?? 0))
+    .map((e): Place => ({
+      name: e.n,
+      kind: e.k === "station" ? "station" : "town",
+      coord: [e.x, e.y],
+      osmId: e.i,
     }));
-  const towns = places.towns
-    .filter((t) => t.nodeId !== null)
-    .sort(
-      (a, b) =>
-        PLACE_RANK[a.place] - PLACE_RANK[b.place] ||
-        b.hotelCount - a.hotelCount,
-    )
-    .map((t): Place => ({
-      name: t.name,
-      kind: "town",
-      coord: [t.lon, t.lat],
-      osmId: t.id,
-    }));
-  return [...towns, ...stations];
 }
 
 /** The nearest station within STATION_KM of a town, and how far it is. */

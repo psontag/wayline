@@ -1,4 +1,5 @@
 import type { Places } from "@wayline/domain";
+import { searchIndex } from "@wayline/providers";
 import { describe, expect, it } from "vitest";
 import placesJson from "../../../public/data/mock/oberfranken/places.json";
 import {
@@ -14,7 +15,7 @@ import {
 } from "./form";
 import { nearbyStation, placeOptions, searchPlaces } from "./places";
 
-const places = placeOptions(placesJson as Places);
+const places = placeOptions(searchIndex(placesJson as Places));
 
 describe("searchPlaces", () => {
   it("puts names that start with the query first, towns before stations", () => {

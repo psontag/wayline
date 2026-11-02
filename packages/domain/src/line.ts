@@ -1,10 +1,27 @@
 import { decode, encode } from "@googlemaps/polyline-codec";
 import turfBearing from "@turf/bearing";
 import turfDistance from "@turf/distance";
-import type { Leg, LonLat } from "./schema";
+import type { BBox, Leg, LonLat } from "./schema";
 
 /** Point on a route: position, elevation in m, km from the start. */
 export type RoutePoint = { coord: LonLat; ele: number; km: number };
+
+const KM_PER_LAT = 110.57;
+
+/** Bbox around points, padded by km. */
+export function bboxAround(points: LonLat[], km: number): BBox {
+  const lons = points.map((p) => p[0]);
+  const lats = points.map((p) => p[1]);
+  const lat = (Math.min(...lats) + Math.max(...lats)) / 2;
+  const dLat = km / KM_PER_LAT;
+  const dLon = km / (KM_PER_LAT * Math.cos((lat * Math.PI) / 180));
+  return [
+    Math.min(...lons) - dLon,
+    Math.min(...lats) - dLat,
+    Math.max(...lons) + dLon,
+    Math.max(...lats) + dLat,
+  ];
+}
 
 /** Great-circle distance in km. */
 export function distanceKm(a: LonLat, b: LonLat): number {

@@ -4,7 +4,9 @@ Geometry is an encoded polyline (Google format, 5 decimals, lat before lon).
 Elevation is a separate list of whole meters, one per point.
 """
 
+import json
 import math
+import os
 from collections import defaultdict
 
 import graph as G
@@ -253,6 +255,53 @@ def export_places(data, g, index, version):
             hotel["website"] = h["website"]
         hotels.append(hotel)
     return {"version": version, "towns": towns, "stations": stations, "hotels": hotels}
+
+
+def read_places(data_dir):
+    """All places of a built dataset: places.json, or the place tiles merged."""
+    with open(os.path.join(data_dir, "manifest.json")) as f:
+        manifest = json.load(f)
+    if "places" in manifest["files"]:
+        with open(os.path.join(data_dir, manifest["files"]["places"])) as f:
+            return json.load(f)
+    index = manifest["tiles"]["places"]
+    out = {"version": manifest["version"], "towns": [], "stations": [], "hotels": []}
+    for k in index["keys"]:
+        with open(os.path.join(data_dir, index["path"].format(key=k))) as f:
+            tile = json.load(f)
+        for kind in ("towns", "stations", "hotels"):
+            out[kind] += tile[kind]
+    return out
+
+
+def search_index(places):
+    """Towns and stations on the network for place search. Short keys, no node ids."""
+    out = []
+    for t in places["towns"]:
+        if t["nodeId"] is not None:
+            entry = {"i": t["id"], "n": t["name"], "k": t["place"], "x": t["lon"], "y": t["lat"]}
+            if t["hotelCount"]:
+                entry["h"] = t["hotelCount"]
+            out.append(entry)
+    for s in places["stations"]:
+        if s["nodeId"] is not None:
+            out.append({"i": s["id"], "n": s["name"], "k": "station", "x": s["lon"], "y": s["lat"]})
+    return {"version": places["version"], "places": out}
+
+
+def split_places(places, nodes, tile_key):
+    """Places per network tile. Towns and stations go with their node, so the
+    planner finds them with it. The rest go by their position."""
+    tiles = {}
+
+    def tile(key):
+        return tiles.setdefault(key, {"version": places["version"], "tile": key, "towns": [], "stations": [], "hotels": []})
+
+    for kind in ("towns", "stations", "hotels"):
+        for p in places[kind]:
+            n = nodes[p["nodeId"]] if p.get("nodeId") is not None else p
+            tile(tile_key(n["lon"], n["lat"]))[kind].append(p)
+    return tiles
 
 
 def parse_stars(s):

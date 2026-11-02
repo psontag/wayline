@@ -6,8 +6,16 @@ import type { BBox } from "./schema";
 export type Manifest = {
   version: string;
   region: { name: string; bbox: BBox };
-  /** File names relative to the manifest. A tiled dataset has no network file. */
-  files: { network?: string; places: string; routes?: string };
+  /**
+   * File names relative to the manifest. A tiled dataset has no network
+   * file. Older and mock datasets have places in one file and no search index.
+   */
+  files: {
+    network?: string;
+    places?: string;
+    search?: string;
+    routes?: string;
+  };
   /** Only in tiled datasets. */
   tiles?: TileIndex;
   /** Vector tiles of the signed routes, for the map. Built by pipeline/lines.py. */
@@ -22,6 +30,34 @@ export type TileIndex = {
   path: string;
   /** Tiles that exist. Others have no network. */
   keys: string[];
+  /**
+   * Towns, stations and hotels per tile, with the same keys. Towns and
+   * stations are in the tile of their node.
+   */
+  places?: { path: string; keys: string[] };
+};
+
+/** Places of one tile. */
+export type PlaceTile = Places & { tile: string };
+
+/**
+ * Towns and stations on the route network, for place search. Short keys
+ * keep the file small.
+ */
+export type SearchIndex = {
+  version: string;
+  places: SearchEntry[];
+};
+
+export type SearchEntry = {
+  /** OSM id, e.g. "n240009". */
+  i: string;
+  n: string;
+  k: GeoTown["place"] | "station";
+  x: number;
+  y: number;
+  /** Hotels of a town, if any. */
+  h?: number;
 };
 
 export type LineTiles = {

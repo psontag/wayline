@@ -13,6 +13,7 @@ import os
 import sys
 from collections import Counter, defaultdict
 
+import export as X
 import graph as G
 
 K = 2  # cost = length / score^K, as the touring profile
@@ -66,11 +67,8 @@ def best_path(adj, src, dst):
 
 
 def main(data_dir, station_name, radius_km=80.0, towns_to=()):
-    with open(os.path.join(data_dir, "manifest.json")) as f:
-        places_file = json.load(f)["files"]["places"]
-    with open(os.path.join(data_dir, places_file)) as f:
-        places = json.load(f)
-    station = next((s for s in places["stations"] if s["name"] == station_name), None)
+    places = X.read_places(data_dir)
+    station =next((s for s in places["stations"] if s["name"] == station_name), None)
     if station is None or station["nodeId"] is None:
         sys.exit(f"{station_name}: not on the network")
     center = [station["lon"], station["lat"]]

@@ -3,8 +3,9 @@
 Usage: python build.py [--cache DIR] [--out DIR] [--states a,b]
 
 Reads the downloads from the cache (see download.py) and writes
-<out>/<version>/ with manifest.json, places.json, tiles/<x>_<y>.json and
-the route lines (lines.py), plus <out>/latest.json that names the newest version.
+<out>/<version>/ with manifest.json, search.json, tiles/<x>_<y>.json,
+places/<x>_<y>.json and the route lines (lines.py), plus <out>/latest.json
+that names the newest version.
 """
 
 import argparse
@@ -158,14 +159,21 @@ def main():
     tiles = split_tiles(network)
     out = os.path.join(args.out, version)
     sizes = {k: write(os.path.join(out, "tiles", f"{k}.json"), tile) for k, tile in tiles.items()}
-    places_size = write(os.path.join(out, "places.json"), places)
+    place_tiles = X.split_places(places, network["nodes"], tile_key)
+    place_sizes = [write(os.path.join(out, "places", f"{k}.json"), p) for k, p in place_tiles.items()]
+    search_size = write(os.path.join(out, "search.json"), X.search_index(places))
     lons = [n["lon"] for n in network["nodes"]]
     lats = [n["lat"] for n in network["nodes"]]
     manifest = {
         "version": version,
         "region": {"name": region.NAME, "bbox": [min(lons), min(lats), max(lons), max(lats)]},
-        "files": {"places": "places.json"},
-        "tiles": {"size": region.TILE_DEG, "path": "tiles/{key}.json", "keys": sorted(tiles)},
+        "files": {"search": "search.json"},
+        "tiles": {
+            "size": region.TILE_DEG,
+            "path": "tiles/{key}.json",
+            "keys": sorted(tiles),
+            "places": {"path": "places/{key}.json", "keys": sorted(place_tiles)},
+        },
         "createdAt": datetime.date.today().isoformat(),
     }
     write(os.path.join(out, "manifest.json"), manifest)
@@ -180,7 +188,9 @@ def main():
     mb = 1024 * 1024
     s = sorted(sizes.values())
     print(f"out: {out}")
-    print(f"places.json: {places_size / mb:.1f} MiB (towns={len(places['towns'])} stations={len(places['stations'])} hotels={len(places['hotels'])})")
+    print(f"places: towns={len(places['towns'])} stations={len(places['stations'])} hotels={len(places['hotels'])}")
+    print(f"place tiles: {len(place_sizes)} files, {sum(place_sizes) / mb:.1f} MiB, max {max(place_sizes) / 1024:.0f} KiB")
+    print(f"search.json: {search_size / mb:.2f} MiB")
     print(f"tiles: {len(s)} files, {sum(s) / mb:.1f} MiB, median {s[len(s) // 2] / mb:.2f} MiB, max {s[-1] / mb:.2f} MiB")
     print(f"lines: {lines['routes']} routes, {lines['files']} files ({lines['empty']} empty), {lines['bytes'] / mb:.1f} MiB, max {lines['max'] / 1024:.0f} KiB")
     print("scenery:", S.stats(network["edges"]))

@@ -20,7 +20,8 @@ Output (November 2026):
 |---|---|
 | Route network | 151,000 nodes, 203,000 edges, 212,000 km |
 | Tiles | 226 files of 0.5°, 89 MiB (15 MiB gzipped), median 0.26 MiB, largest 2.5 MiB |
-| `places.json` | 9.8 MiB (2.3 MiB gzipped): 39,300 towns, 5,900 stations, 38,000 hotels |
+| Place tiles | 229 files, 9.8 MiB (2.3 MiB gzipped), largest 143 KiB: 39,300 towns, 5,900 stations, 38,000 hotels |
+| `search.json` | 2.8 MiB (0.7 MiB gzipped): 31,800 towns and 5,900 stations on the network |
 | Route lines | 5,000 files (1,493 empty), 15 MiB, largest 206 KiB |
 | `routes.json` | 1.8 MiB: 16,300 routes |
 
