@@ -23,6 +23,39 @@ const hotel = {
 };
 
 describe("moveStop", () => {
+  it("ends the last stage at the new place and drops saved trains home", async () => {
+    const train = {
+      from: "Home",
+      to: "Away",
+      departure: "2026-06-03T17:00",
+      arrival: "2026-06-03T19:00",
+      changes: 0,
+      lines: ["RE 1"],
+    };
+    const withTrains: Trip = {
+      ...trip,
+      trains: [
+        { ...train, direction: "there" },
+        { ...train, direction: "back" },
+      ],
+    };
+    const last = trip.stages.length - 1;
+    const place = {
+      name: "Other Station",
+      kind: "station" as const,
+      coord: [11.6, 50.0] as LonLat,
+    };
+    const next = await moveStop(withTrains, last, place, {
+      route,
+      nearestHotel: async () => hotel,
+    });
+    expect(next.stages).toHaveLength(trip.stages.length);
+    expect(next.stages[last]!.end.name).toBe("Other Station");
+    expect(next.stages[last]!.end.kind).toBe("station");
+    expect(next.stages[last]!.legs.at(-1)!.to).toEqual(place.coord);
+    expect(next.trains.map((t) => t.direction)).toEqual(["there"]);
+  });
+
   it("moves the stop, locks it and routes the stages around it", async () => {
     const place = trip.stages[0]!.end.alternatives[0]!;
     const next = await moveStop(trip, 0, place, {

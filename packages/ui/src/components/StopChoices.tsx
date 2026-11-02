@@ -23,8 +23,11 @@ export type StopChoicesProps = {
   choices: StopChoice[];
   onSelect?: (id: string) => void;
   disabled?: boolean;
-  /** Radius for the hotel count, in meters. */
-  hotelsRadius: number;
+  /**
+   * Radius for the hotel count, in meters. Without it there is no next day
+   * and no hotel, e.g. at the end of a trip.
+   */
+  hotelsRadius?: number;
 };
 
 /** The stop and its alternatives, with what each changes. */
@@ -52,12 +55,16 @@ export function StopChoices({
             <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
               {t("stopChoices.ascent")}
             </th>
-            <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
-              {t("stopChoices.tomorrow")}
-            </th>
-            <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
-              {t("stopChoices.hotels")}
-            </th>
+            {hotelsRadius !== undefined && (
+              <>
+                <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
+                  {t("stopChoices.tomorrow")}
+                </th>
+                <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
+                  {t("stopChoices.hotels")}
+                </th>
+              </>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -116,22 +123,30 @@ export function StopChoices({
                 </td>
                 <td className={cell}>{format.distance(c.distance)}</td>
                 <td className={cell}>{format.elevation(c.ascent)}</td>
-                <td className={cell}>
-                  {c.nextDistance === undefined
-                    ? t("stopChoices.none")
-                    : format.distance(c.nextDistance)}
-                </td>
-                <td className={cell}>{c.hotels ?? t("stopChoices.none")}</td>
+                {hotelsRadius !== undefined && (
+                  <>
+                    <td className={cell}>
+                      {c.nextDistance === undefined
+                        ? t("stopChoices.none")
+                        : format.distance(c.nextDistance)}
+                    </td>
+                    <td className={cell}>
+                      {c.hotels ?? t("stopChoices.none")}
+                    </td>
+                  </>
+                )}
               </tr>
             );
           })}
         </tbody>
       </table>
-      <p className="px-1.5 text-2xs text-text-muted">
-        {t("stopChoices.hotelsNote", {
-          radius: format.distance(hotelsRadius),
-        })}
-      </p>
+      {hotelsRadius !== undefined && (
+        <p className="px-1.5 text-2xs text-text-muted">
+          {t("stopChoices.hotelsNote", {
+            radius: format.distance(hotelsRadius),
+          })}
+        </p>
+      )}
     </div>
   );
 }

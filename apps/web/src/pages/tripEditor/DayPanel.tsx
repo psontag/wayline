@@ -21,9 +21,11 @@ import { ChevronLeft, Lock, LockOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
+import { DestinationSection } from "./DestinationSection";
 import { HotelChoices } from "./HotelChoices";
 import { StageChange } from "./StageChange";
 import { stageWind } from "./stageWeather";
+import { hasMovableDestination } from "./stopChoices";
 import { StopPicker } from "./StopPicker";
 import { TrainOptions, useHasTrains } from "./TrainOptions";
 import type { TripEditorState } from "./useTripEditor";
@@ -38,6 +40,8 @@ export function DayPanel({
   onHoverClimb,
   highlightedClimb,
   onHighlightProposed,
+  findingDestination,
+  onFindingDestination,
 }: {
   trip: Trip;
   index: number;
@@ -50,6 +54,9 @@ export function DayPanel({
   highlightedClimb?: number;
   /** Called with true while the change notice is under the pointer. */
   onHighlightProposed?: (on: boolean) => void;
+  /** Other train stops to end the last day at show here and on the map. */
+  findingDestination: boolean;
+  onFindingDestination: (finding: boolean) => void;
 }) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -208,6 +215,15 @@ export function DayPanel({
           <HotelChoices trip={trip} index={index} editor={editor} />
           <BookingLink trip={trip} index={index} />
         </PanelSection>
+      )}
+      {isLast && !editor.readOnly && hasMovableDestination(trip) && (
+        <DestinationSection
+          trip={trip}
+          index={index}
+          editor={editor}
+          finding={findingDestination}
+          onFindingChange={onFindingDestination}
+        />
       )}
       {isLast && home && (
         <PanelSection

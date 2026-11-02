@@ -206,7 +206,7 @@ export function ProposalsMap({
           layout={lineLayout}
           paint={{
             "line-color": tokens.routeOutline,
-            "line-width": 9,
+            "line-width": 7,
             "line-opacity": dayOpacity(0.15),
           }}
         />
@@ -216,7 +216,7 @@ export function ProposalsMap({
           layout={lineLayout}
           paint={{
             "line-color": shownColor,
-            "line-width": 6,
+            "line-width": 4.5,
             "line-opacity": dayOpacity(0.4),
           }}
         />
