@@ -8,7 +8,7 @@ Builds the route network and places for Germany from OSM data and the Copernicus
 pnpm data:build
 ```
 
-- Needs [uv](https://docs.astral.sh/uv/), Python 3.12 and [tippecanoe](https://github.com/felt/tippecanoe) (`brew install tippecanoe`, `apt install tippecanoe`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
+- Needs [uv](https://docs.astral.sh/uv/), Python 3.12 and [tippecanoe](https://github.com/felt/tippecanoe) 2.79 or newer (`brew install tippecanoe`; the Ubuntu package is too old, so build it from source as in `.github/workflows/ci.yml`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
 - Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): Geofabrik extracts of the 16 states (4.7 GB) and Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB).
 - Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `de-<date of the extracts>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
 - Takes about 18 minutes and up to 5.5 GB of memory on a laptop: 3.5 for the download, 7 for scenery, 6 for routes and places. The extracts are cached, so the next build takes 2.5 minutes.

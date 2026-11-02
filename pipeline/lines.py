@@ -24,6 +24,15 @@ MAX_ZOOM = 11
 # Lowest zoom a line is in the tiles at, by network class. Matches NetworkLayer.
 CLASS_ZOOM = {"icn": 0, "ncn": 0, "rcn": 8, "lcn": 11, "connector": 11}
 CLASS_ORDER = ["icn", "ncn", "rcn", "lcn", "connector"]
+# 2.49 drops features that have their own minzoom.
+MIN_TIPPECANOE = (2, 79)
+
+
+def check_tippecanoe():
+    out = subprocess.run(["tippecanoe", "--version"], capture_output=True, text=True).stderr
+    version = tuple(int(x) for x in out.split("v")[-1].split(".")[:2])
+    if version < MIN_TIPPECANOE:
+        sys.exit(f"lines.py needs tippecanoe {'.'.join(map(str, MIN_TIPPECANOE))} or newer, found {out.strip()}")
 
 
 def decode(s):
@@ -137,6 +146,7 @@ def fill_empty(out, bounds):
 
 def build(data_dir, networks=None):
     """Writes the line tiles and routes.json. `networks` as route_networks returns."""
+    check_tippecanoe()
     with open(os.path.join(data_dir, "manifest.json")) as f:
         manifest = json.load(f)
     edges = load_edges(data_dir, manifest)
