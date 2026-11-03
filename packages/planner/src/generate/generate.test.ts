@@ -1,8 +1,14 @@
 import type { GenerateRequest, Proposal } from "@wayline/domain";
 import { MockNetworkSource } from "@wayline/providers";
 import { readMockFile } from "@wayline/providers/testing";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { loadPlanner, type Planner } from "./generate";
+
+// Frozen, so time limits never stop the search and results do not depend on
+// the speed of the machine. Try limits still end it.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+});
 
 const bamberg = {
   name: "Bamberg",

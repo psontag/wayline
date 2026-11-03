@@ -189,6 +189,18 @@ export function titleTowns(proposals: Proposal[]): Map<string, string> {
   return towns;
 }
 
+/** Route each proposal is named after. Each route names one proposal. */
+export function titleRoutes(proposals: Proposal[]): Map<string, string> {
+  const used = new Set<string>();
+  const routes = new Map<string, string>();
+  for (const p of proposals) {
+    if (!p.followedRoute || used.has(p.followedRoute)) continue;
+    used.add(p.followedRoute);
+    routes.set(p.id, p.followedRoute);
+  }
+  return routes;
+}
+
 export type WindTag = { kind: "tail" } | { kind: "head"; day: number };
 
 /**

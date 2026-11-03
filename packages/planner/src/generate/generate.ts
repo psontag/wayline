@@ -12,6 +12,7 @@ import {
   type Place,
   type Places,
   type Proposal,
+  type RouteInfo,
   Theme,
   timeToHours,
   type Trip,
@@ -46,12 +47,12 @@ import {
 } from "./stages";
 import { Stops } from "./stops";
 import { corridorShare } from "./corridor";
+import { NATIONAL, REGIONAL, RouteCatalog } from "./routeCatalog";
 import {
   followedRoute,
   kmOnRoute,
   routeCandidates,
   kmUnused,
-  routeLengths,
   routesInReach,
   type SignedRoute,
 } from "./signedRoutes";
@@ -107,23 +108,24 @@ const VIA_GAP_SHARE = 0.12;
  * fit before a size is given up.
  */
 const SIGNED = {
-  picks: 3,
-  share: 0.3,
+  picks: 4,
+  share: 0.5,
   sizes: [1, 1.2],
   corridor: 0.6,
-  cost: 0.3,
+  cost: 0.2,
   routes: 12,
   vias: 12,
   tries: 30,
   misses: 8,
-  timeMs: 2000,
+  nationalMisses: 3,
+  timeMs: 2500,
 };
 /** A signed route counts this far from the start and end, as a share of the trip. */
 const SIGNED_REACH = 1.45;
-/** A proposal follows a signed route when it rides more than this share of it. */
-const FOLLOW_SHARE = 0.5;
-/** Added to the rank of a route a trip can follow, to put it first. */
-const FOLLOWABLE = 1e6;
+/** The same without an end, from the start only. */
+const SIGNED_REACH_NO_END = 1.2;
+/** A route with more than this share of its km in reach can fit a trip. */
+const IN_REACH = 0.5;
 const NONE = new Set<number>();
 /** Climb-seeking proposals aim for this share of the max ascent. */
 const SEEK_TARGET = 0.85;
@@ -229,13 +231,16 @@ type Check = {
 /** Generates trip proposals on the route network. See docs/05. */
 export class Planner {
   private stops: Stops;
+  private catalog: RouteCatalog;
   private runs = 0;
 
   constructor(
     readonly graph: Graph,
     places: Places,
+    routes?: RouteInfo[],
   ) {
     this.stops = new Stops(graph, places);
+    this.catalog = new RouteCatalog(graph.edges, routes);
   }
 
   async generate(
@@ -320,6 +325,19 @@ export class Planner {
 
     // Riding with the wind or to the direct path matters more than climbs.
     const seek = !direct && !open && !ride && seeksClimbs(request);
+    // Trips of one day have no stops, so any node can turn them.
+    const fillVias = request.days === 1 ? dayVias(graph) : vias;
+    const end = request.kind === "one-way" ? endStation : start;
+    const follow = (taken: Pick[]) =>
+      this.followRoutes(
+        taken,
+        start,
+        end,
+        request,
+        totalKm,
+        fillVias,
+        progress,
+      );
     // One-day A to B keeps its characters. Other trips get one per flavour.
     let found: { picks: Pick[]; failedLimit: FailedLimit };
     let picks: Pick[];
@@ -331,6 +349,7 @@ export class Planner {
           (p) => sharedKm(graph, p, direct) < MAX_SHARED_DIRECT * p.km,
         ),
       ].slice(0, PROPOSALS);
+      follow(picks);
     } else if (open) {
       found = this.pickDestinations(
         candidates(costs),
@@ -341,22 +360,18 @@ export class Planner {
       );
       picks = found.picks;
     } else {
-      found = this.pickFlavours(candidates, request, totalKm, seek, progress);
-      picks = found.picks;
-    }
-    // Trips of one day have no stops, so any node can turn them.
-    const fillVias = request.days === 1 ? dayVias(graph) : vias;
-    const end = request.kind === "one-way" ? endStation : start;
-    if (end !== undefined && !ride) {
-      this.followRoutes(
-        picks,
-        start,
-        end,
+      // Signed routes first, so flavours do not take their corridors.
+      const themed: Pick[] = [];
+      if (!ride) follow(themed);
+      found = this.pickFlavours(
+        candidates,
         request,
         totalKm,
-        fillVias,
+        seek,
+        themed,
         progress,
       );
+      picks = [...themed, ...found.picks];
     }
     this.fill(
       picks,
@@ -369,6 +384,16 @@ export class Planner {
       progress,
     );
     if (!picks.length) return { ok: false, failedLimit: found.failedLimit };
+    const followed = new Map(
+      picks.map((p) => [
+        p,
+        followedRoute(graph, p.steps, this.catalog, SIGNED.share),
+      ]),
+    );
+    // The main proposal, then those that follow a route, then the rest.
+    const place = (p: Pick) =>
+      p === direct || p.flavour === "best" ? 0 : followed.get(p) ? 1 : 2;
+    picks.sort((a, b) => place(a) - place(b));
     // Rides with the wind first. Close factors keep the search order.
     if (open && ride) {
       const wind = (p: Pick) =>
@@ -417,7 +442,6 @@ export class Planner {
     });
 
     const urban = this.stops.urbanNodes();
-    const routeKm = routeLengths(graph);
     const proposals: Proposal[] = [];
     for (const [i, p] of picks.entries()) {
       check();
@@ -438,7 +462,7 @@ export class Planner {
           direct ? undefined : totalKm,
         ),
         signedShare: signedShare(graph, p.steps),
-        routeNames: routeNames(graph, p.steps),
+        routeNames: routeNames(graph, p.steps, this.catalog),
         via: viaNames(graph, this.stops, from, p.steps, [
           trip.stages[0]?.start.name ?? "",
           trip.stages.at(-1)?.end.name ?? "",
@@ -454,8 +478,8 @@ export class Planner {
       }
       if (p.flavour) proposal.flavour = p.flavour;
       if (p.homeward) proposal.homeward = true;
-      const followed = followedRoute(graph, p.steps, routeKm, SIGNED.share);
-      if (followed) proposal.followedRoute = followed;
+      const route = followed.get(p);
+      if (route) proposal.followedRoute = route;
       if (request.kind === "day-loop" && proposal.via[0]) {
         const home = trip.stages[0]?.start.name ?? "";
         trip.name = `${home} – ${proposal.via[0]} – ${home}`;
@@ -706,17 +730,20 @@ export class Planner {
    * One proposal per flavour, each searched with its own edge costs. A
    * flavour is dropped if its path shares too much with an earlier one or
    * adds nothing. Flat and hilly are searched last, so they can be held
-   * to the least and the most climbing of all.
+   * to the least and the most climbing of all. Flavours also differ from the
+   * taken proposals and share the slots with them.
    */
   private pickFlavours(
     candidates: (costs: Costs) => Candidate[],
     request: GenerateRequest,
     totalKm: number,
     seek: boolean,
+    taken: Pick[],
     progress: (tries: number) => void,
   ): { picks: Pick[]; failedLimit: FailedLimit } {
     const graph = this.graph;
     const picks: Pick[] = [];
+    const others = () => [...taken, ...picks];
     let best: Pick | undefined;
     let ck: Check | undefined;
     let tries = 0;
@@ -729,11 +756,12 @@ export class Planner {
     ];
     for (const flavour of search) {
       const startedAt = Date.now();
+      if (others().length >= MAX_PROPOSALS) break;
       if (picks.length && startedAt - flavoursStart > FLAVOURS_TIME_MS) break;
       const climbing = flavour === "hilly" || (seek && flavour !== "flat");
       const costs = new Costs(graph, request, flavour, climbing);
       // Once per edge: compounding pushes late flavours into detours.
-      for (const p of picks) {
+      for (const p of others()) {
         for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
       }
       const list = candidates(costs);
@@ -763,7 +791,10 @@ export class Planner {
         const p = this.fit(c, costs, ck);
         if (!p) continue;
         if (flavour === "best") best ??= p;
-        const shared = Math.max(0, ...picks.map((q) => sharedKm(graph, p, q)));
+        const shared = Math.max(
+          0,
+          ...others().map((q) => sharedKm(graph, p, q)),
+        );
         if (shared > MAX_SHARED * p.km) continue;
         if (!addsFlavour(graph, flavour, p, best, picks, seek)) continue;
         // Climbing: more climbing first. Others: fewer weak stops, else the first.
@@ -787,13 +818,13 @@ export class Planner {
   }
 
   /**
-   * Adds proposals that ride a signed route the others leave out, like a
-   * route through hills that flat routes rank above.
+   * Adds proposals that ride mostly on one signed route. Without an end, they
+   * stop at a station near the route.
    */
   private followRoutes(
     picks: Pick[],
     start: number,
-    end: number,
+    end: number | undefined,
     request: GenerateRequest,
     totalKm: number,
     vias: number[],
@@ -802,12 +833,12 @@ export class Planner {
     const graph = this.graph;
     const costs = new Costs(graph, request);
     const fromStart = costs.from(graph, start);
-    const fromEnd = end === start ? fromStart : costs.from(graph, end);
-    const routes = routesInReach(
-      graph,
-      (n) =>
-        (fromStart.km[n] ?? Infinity) + (fromEnd.km[n] ?? Infinity) <=
-        SIGNED_REACH * totalKm,
+    const fromEnd = end === undefined ? undefined : costs.from(graph, end);
+    const routes = routesInReach(graph, this.catalog, (n) =>
+      fromEnd
+        ? (fromStart.km[n] ?? Infinity) + (fromEnd.km[n] ?? Infinity) <=
+          SIGNED_REACH * totalKm
+        : (fromStart.km[n] ?? Infinity) <= SIGNED_REACH_NO_END * totalKm,
     );
     const sizes = SIGNED.sizes.map((size) => {
       const km = size * totalKm;
@@ -820,24 +851,33 @@ export class Planner {
     const startedAt = Date.now();
     const inTime = () => Date.now() - startedAt < SIGNED.timeMs;
     const used = new Set(picks.flatMap((p) => p.steps.map((s) => s.edge)));
-    const lengths = routeLengths(graph);
     let added = 0;
+    let nationalMisses = 0;
     for (let i = 0; i < SIGNED.routes; i++) {
       if (added === SIGNED.picks || !inTime()) break;
+      if (picks.length >= MAX_PROPOSALS) break;
       progress(MAX_TRIES);
-      // Routes a trip can follow most of first, the longest of them. Then the
-      // route with the most km no proposal rides yet.
+      // Local routes last. Then routes mostly in reach, since those fit a trip.
+      // Then the most important, then the most km no proposal rides yet.
       let on: SignedRoute | undefined;
-      let score = 0;
+      let best: number[] = [];
       for (const route of routes) {
+        // Long routes near a trip often don't fit it. Leaves time for the rest.
+        if (route.rank === NATIONAL && nationalMisses >= SIGNED.nationalMisses) {
+          continue;
+        }
         const km = kmUnused(graph, route, used);
         if (km < SIGNED.share * totalKm) continue;
-        const reach = kmUnused(graph, route, NONE);
-        const whole = lengths.get(route.name) ?? Infinity;
-        const s = reach > FOLLOW_SHARE * whole ? FOLLOWABLE + reach : km;
-        if (s >= score) {
+        const inReach = kmUnused(graph, route, NONE);
+        const order = [
+          route.rank > REGIONAL ? 1 : 0,
+          inReach > IN_REACH * this.catalog.km(route.name) ? 0 : 1,
+          route.rank,
+          -km,
+        ];
+        if (!on || isBefore(order, best)) {
           on = route;
-          score = s;
+          best = order;
         }
       }
       if (!on) break;
@@ -845,11 +885,7 @@ export class Planner {
       const route = on;
       const rides = (p: Pick) =>
         kmOnRoute(graph, p.steps, route) >= SIGNED.share * p.km;
-      // A pick that only touches the route leaves room for one that follows it.
-      const covered = FOLLOW_SHARE * (lengths.get(route.name) ?? Infinity);
-      const follows = (p: Pick) =>
-        rides(p) && kmOnRoute(graph, p.steps, route) > covered;
-      if (picks.some(follows)) continue;
+      if (picks.some(rides)) continue;
       costs.penalty.fill(1);
       for (const p of picks) {
         for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
@@ -866,7 +902,7 @@ export class Planner {
       );
       // Keeps the path with the most km on the route.
       let found: Pick | undefined;
-      let most = 0;
+      let longest = 0;
       for (const { km, ck } of sizes) {
         const fits = list.filter((c) => Math.abs(c.km - km) < 0.1 * km);
         let tried = 0;
@@ -878,7 +914,7 @@ export class Planner {
           fitted = true;
           if (!rides(p)) continue;
           const ridden = kmOnRoute(graph, p.steps, route);
-          if (ridden <= most) continue;
+          if (ridden <= longest) continue;
           const shared = Math.max(
             0,
             ...picks.map((q) => sharedKm(graph, p, q)),
@@ -886,9 +922,10 @@ export class Planner {
           if (shared > MAX_SHARED * p.km) continue;
           if (nearOther(p, picks, line, endsKm, SIGNED.corridor)) continue;
           found = { ...p, shared: shared / p.km };
-          most = ridden;
+          longest = ridden;
         }
       }
+      if (!found && route.rank === NATIONAL) nationalMisses++;
       if (found) {
         picks.push(found);
         for (const s of found.steps) used.add(s.edge);
@@ -996,6 +1033,15 @@ export class Planner {
       }
     }
   }
+}
+
+/** Compares two lists of numbers, first number first. */
+function isBefore(a: number[], b: number[]): boolean {
+  for (const [i, n] of a.entries()) {
+    const m = b[i] ?? 0;
+    if (n !== m) return n < m;
+  }
+  return false;
 }
 
 /** Line of a pick, kept per pick. */
@@ -1202,25 +1248,28 @@ export function doublesBack(
 export async function loadPlanner(
   source: RouteNetworkSource,
 ): Promise<Planner> {
-  const [network, places] = await Promise.all([
+  const [network, places, routes] = await Promise.all([
     source.network(),
     source.places(),
+    source.routes?.(),
   ]);
-  return new Planner(new Graph(network), places);
+  return new Planner(new Graph(network), places, routes);
 }
 
 /** Planners for the area of each request. Loads only the tiles it needs. */
 export class Planners {
   private areas: AreaCache<Planner>;
+  private routes?: RouteInfo[];
 
-  constructor(source: RouteNetworkSource) {
+  constructor(private source: RouteNetworkSource) {
     this.areas = new AreaCache(
       source,
-      (network, places) => new Planner(new Graph(network), places),
+      (network, places) => new Planner(new Graph(network), places, this.routes),
     );
   }
 
-  for(request: GenerateRequest): Promise<Planner> {
+  async for(request: GenerateRequest): Promise<Planner> {
+    this.routes ??= await this.source.routes?.();
     return this.areas.get(requestBBox(request));
   }
 }

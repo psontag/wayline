@@ -14,6 +14,7 @@ import {
   rainTag,
   relaxOptions,
   shownRouteTags,
+  titleRoutes,
   titleTowns,
   windTag,
 } from "./proposalView";
@@ -188,6 +189,21 @@ describe("titleTowns", () => {
     expect(towns.get("a")).toBe("Speyer");
     expect(towns.get("b")).toBe("Worms");
     expect(towns.has("c")).toBe(false);
+  });
+});
+
+describe("titleRoutes", () => {
+  it("names one proposal per route", () => {
+    const routes = titleRoutes([
+      { id: "a", followedRoute: "Main-Radweg" },
+      { id: "b", followedRoute: "Main-Radweg" },
+      { id: "c", followedRoute: "Altmühltal-Radweg" },
+      { id: "d" },
+    ] as unknown as Proposal[]);
+    expect(routes.get("a")).toBe("Main-Radweg");
+    expect(routes.has("b")).toBe(false);
+    expect(routes.get("c")).toBe("Altmühltal-Radweg");
+    expect(routes.has("d")).toBe(false);
   });
 });
 

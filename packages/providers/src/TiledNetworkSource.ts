@@ -6,7 +6,9 @@ import type {
   NetworkTile,
   PlaceTile,
   Places,
+  RouteInfo,
   RouteNetwork,
+  RouteTable,
   SearchEntry,
   SearchIndex,
   TileIndex,
@@ -46,6 +48,12 @@ export class TiledNetworkSource implements RouteNetworkSource {
         keys.map((k) => this.load(index.path.replace("{key}", k))),
       )) as PlaceTile[],
     );
+  }
+
+  async routes(): Promise<RouteInfo[]> {
+    const { files } = await this.manifest();
+    if (!files.routes) return [];
+    return ((await this.load(files.routes)) as RouteTable).routes;
   }
 
   async search(): Promise<SearchIndex> {

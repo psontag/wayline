@@ -12,6 +12,7 @@ import {
 import type { Graph, PathStep } from "../graph/Graph";
 import { pathToLeg } from "../graph/leg";
 import { endNode, legSteps } from "./route";
+import type { RouteCatalog } from "./routeCatalog";
 import { PLAN_PROFILE } from "./search";
 import { type Stop, STOP_KM } from "./stages";
 import type { Stops } from "./stops";
@@ -138,12 +139,15 @@ function tripName(
 export function routeNames(
   graph: Graph,
   steps: PathStep[],
+  catalog: RouteCatalog,
   limit = 3,
 ): string[] {
   const km = new Map<string, number>();
   for (const { edge } of steps) {
     const e = graph.edge(edge);
-    for (const name of e.routes) km.set(name, (km.get(name) ?? 0) + e.lengthKm);
+    for (const name of catalog.on(e)) {
+      km.set(name, (km.get(name) ?? 0) + e.lengthKm);
+    }
   }
   return [...km]
     .sort((a, b) => b[1] - a[1])

@@ -76,7 +76,7 @@ export type LineTiles = {
 export type RouteInfo = {
   id: number;
   name: string;
-  /** Lowest network class of its edges. */
+  /** Best network class of its OSM relations. */
   network: NetworkClass;
   /** Sum of its edges. */
   lengthKm: number;

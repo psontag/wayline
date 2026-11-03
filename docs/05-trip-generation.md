@@ -68,8 +68,8 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
    - Time limit of about 2 s.
 4. **Filter** by length (within 12 % of the target), ascent and surface, using edge data. Drop loops whose middle part (20–80 % of the length) comes within 4 % of the length, or 4 km, of the start. Drop paths that ride back along themselves: parts within 1.5 km of an earlier part more than 10 km back may add up to 4 % of the length (min 4 km). A short touch, like a river bend, is fine.
 5. **Cut into stages.** See below. Each stage becomes one leg per piece of about 10 km, so an edit routes only the legs it touches.
-6. **Pick** one proposal per flavour, or up to 5 diverse ones for one day from A to B.
-7. **Signed routes**, then **fill** up to 8 proposals. See below.
+6. **Signed routes**, then **pick** one proposal per flavour that differs from them. One day from A to B picks up to 5 diverse ones first, then signed routes. See below.
+7. **Fill** up to 8 proposals. See below. List order: the main proposal (best or direct), then proposals that follow a route, then the rest.
 8. **Route** the chosen proposals, all at once. The browser sends at most 3 requests at a time. Waypoints are graph nodes about every 10 km, so the router follows the graph path. Proposals share nodes, so legs hit the cache. If routing fails, the proposal keeps the graph path.
 9. **Find hotels** at each stop from the OSM hotel data.
 10. **Tag** each proposal. See below.
@@ -77,16 +77,27 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 
 ## Signed routes
 
-Adds up to 3 proposals that follow a named cycle route. Without this, a path only takes what is cheapest between its vias.
+Adds up to 4 proposals that follow a named cycle route. Without this, a path only takes what is cheapest between its vias.
 
-- Runs on trips with a known end or a loop, not on rides with the wind.
-- Routes count within 1.45 × the trip, there and back. Each needs at least 30 % of the trip unused by other proposals.
-- Routes with more than half their km in reach come first, the longest of them. Then the route with the most km no proposal rides yet.
-- A route's edges cost × 0.3. Vias are 2 of up to 12 towns on the route.
+A proposal **follows** a route when at least 50 % of its km are on that route. It then has `followedRoute`, and its card takes the route's name as title.
+
+Route names (`routeCatalog.ts`):
+
+- Sections of a route count as one route, under a clean name: "Main-Radweg, Abschnitte 3 bis 9" is "Main-Radweg". All EuroVelo routes are named "EuroVelo <number>".
+- These are no routes: junction-to-junction pieces, names of 4 characters or fewer, area networks, feeders and county routes.
+- Class and length come from `routes.json`. An edge's own class is that of the best route on it, so it says little about one route.
+
+Search:
+
+- Runs on all trips but open day rides and rides with the wind. Without an end, a route's path starts at one of the 2 vias nearest the start and stops at a station within 5 km of its last via.
+- Routes count within 1.45 × the trip, there and back. Without an end, within 1.2 × the trip from the start. Each needs at least 50 % of the trip unused by other proposals.
+- Order: local routes last. Then routes with more than half their km in reach. Then international and national, then regional. Then the most km no proposal rides yet.
+- National routes stop after 3 that find no path. They are long, and many only pass near a trip.
+- A route's edges cost × 0.2. Vias are 2 of up to 12 towns on the route.
 - Tries the km per day as asked and + 20 %. Estimated length within 10 % of that. A route can so come out about a third longer than asked.
-- Keeps the path with the most km on the route, with at least 30 % of its km on it, at most 40 % shared km and at most 60 % in the same corridor as another proposal. It must pass the same filters as all others.
-- Skips a route when a proposal already rides more than half of it, for at least 30 % of that proposal.
-- Limit: about 2 s, 12 routes, 30 candidates per route and length. A length is given up after 8 candidates in a row that don't fit.
+- Keeps the path with the most km on the route, with at most 40 % shared km and at most 60 % in the same corridor as another proposal. It must pass the same filters as all others.
+- Skips a route when a proposal already follows it.
+- Limit: about 2.5 s, 12 routes, 30 candidates per route and length. A length is given up after 8 candidates in a row that don't fit.
 
 ## Seeking climbs
 
@@ -198,7 +209,7 @@ The Web Worker reports phases:
 Ride in any direction and take the train home.
 
 - Proposals go to stations at least 45° apart, seen from the start, and at least 10 km apart. A second pass drops the angle when too few fit.
-- Each proposal is named after its destination: "To Schweinfurt".
+- Each proposal is named after its destination: "To Schweinfurt". One that follows a signed route also has the route: "Main-Radweg to Schweinfurt".
 - Up to 5 proposals before the fill, no flavours.
 
 ## Wind
