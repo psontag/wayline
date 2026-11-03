@@ -12,9 +12,15 @@ import {
   tileKeys,
 } from "@wayline/providers";
 import { readDataFile } from "@wayline/providers/testing";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { straightLeg } from "../graph/leg";
 import { Planners, requestBBox } from "./generate";
+
+// Frozen, so time limits never stop the search and results do not depend on
+// the speed of the machine. Try limits still end it.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+});
 
 // The owner's test: a loop from Heidelberg with two hotel nights.
 const request: GenerateRequest = {

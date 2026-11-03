@@ -1,9 +1,15 @@
 import type { GenerateRequest, Proposal } from "@wayline/domain";
 import { MockNetworkSource, TiledNetworkSource } from "@wayline/providers";
 import { readDataFile, readMockFile } from "@wayline/providers/testing";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { flavourOrder, loadPlanner, Planners } from "./generate";
 import { flavourClimb } from "./search";
+
+// Frozen, so time limits never stop the search and results do not depend on
+// the speed of the machine. Try limits still end it.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+});
 
 const heidelberg: GenerateRequest = {
   kind: "multi-day-loop",

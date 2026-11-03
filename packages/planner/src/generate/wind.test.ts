@@ -7,9 +7,15 @@ import {
 } from "@wayline/domain";
 import { TiledNetworkSource } from "@wayline/providers";
 import { readDataFile } from "@wayline/providers/testing";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Planners } from "./generate";
 import { windFactor } from "./wind";
+
+// Frozen, so time limits never stop the search and results do not depend on
+// the speed of the machine. Try limits still end it.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+});
 
 const home: LonLat = [8.67542, 49.40347];
 
@@ -97,8 +103,7 @@ describe("windFactor", () => {
   });
 });
 
-// The fill takes seconds on these, more on a slow CI machine.
-describe("open day ride", { timeout: 20_000 }, () => {
+describe("open day ride", () => {
   it("goes to ends in different directions", async () => {
     const proposals = await generate(open);
     expect(proposals.length).toBeGreaterThanOrEqual(3);
