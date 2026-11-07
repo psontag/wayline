@@ -251,6 +251,9 @@ importers:
       '@wayline/providers':
         specifier: workspace:*
         version: link:../../packages/providers
+      '@wayline/router':
+        specifier: workspace:*
+        version: link:../../packages/router
       '@wayline/ui':
         specifier: workspace:*
         version: link:../../packages/ui

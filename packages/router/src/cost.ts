@@ -1,4 +1,4 @@
-import type { Surface } from "@wayline/domain";
+import type { Profile, Surface } from "@wayline/domain";
 
 // Edge attributes, as pipeline/routing.py writes them.
 export const bitsOf = (b: number) => ({
@@ -12,10 +12,32 @@ export const bitsOf = (b: number) => ({
   backward: (b >> 13) & 1,
 });
 
-/** Cost per meter of descent beyond BRouter's downhill cutoff. */
-export const DOWNHILL_COST = 60;
-/** A full U-turn costs 2 × this. None on signed routes. */
+/** A full U-turn costs 2 × this. */
 export const TURN_COST = 90;
+
+/** The switches of the BRouter profiles in infra/brouter/profiles that change way costs. */
+export type CostProfile = {
+  /** Signed routes cost 1 per meter and have no turn cost. */
+  cycleRoutes: boolean;
+  /** Roads without a bike lane or bike access cost 2 more. */
+  avoidUnsafe: boolean;
+  /** Per meter of descent beyond BRouter's downhill cutoff. */
+  downhillCost: number;
+};
+
+export const TOURING: CostProfile = {
+  cycleRoutes: true,
+  avoidUnsafe: true,
+  downhillCost: 60,
+};
+
+export const COST_PROFILES: Record<Profile, CostProfile> = {
+  touring: TOURING,
+  fast: { cycleRoutes: false, avoidUnsafe: false, downhillCost: 0 },
+  // Touring plus scenery and traffic costs, which the tiles don't have yet.
+  scenic: TOURING,
+  quiet: TOURING,
+};
 
 const MAIN_ROADS: Record<string, [bike: number, noBike: number]> = {
   trunk: [1.5, 10],
@@ -34,12 +56,16 @@ const GOOD_MINOR = [1, 1, 1.1, 1.5, 2, 3];
 const POOR_MINOR = [5, 1.3, 2, 3, 5, 5];
 
 /**
- * Cost per meter of an edge, ported from the way costs of BRouter's touring
- * profile (infra/brouter/profiles/touring.brf). 1 is the best way.
+ * Cost per meter of an edge, ported from the way costs of BRouter's profiles
+ * (infra/brouter/profiles). 1 is the best way.
  */
-export function wayFactor(bits: number, highways: string[]): number {
+export function wayFactor(
+  bits: number,
+  highways: string[],
+  profile: CostProfile = TOURING,
+): number {
   const b = bitsOf(bits);
-  if (b.signed) return 1;
+  if (b.signed && profile.cycleRoutes) return 1;
   const hw = highways[b.highway];
   const goodSurface = b.paved && (b.bike || hw === "footway") && !b.unpaved;
   let f: number;
@@ -53,7 +79,9 @@ export function wayFactor(bits: number, highways: string[]): number {
     f = (goodSurface ? GOOD_MINOR : POOR_MINOR)[b.grade] ?? 5;
   else {
     const road = hw ? MAIN_ROADS[hw] : undefined;
-    f = (b.bike ? 0 : 2) + (road ? road[b.bike ? 0 : 1] : 2);
+    f =
+      (b.bike || !profile.avoidUnsafe ? 0 : 2) +
+      (road ? road[b.bike ? 0 : 1] : 2);
   }
   return f + 0.05;
 }

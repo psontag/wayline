@@ -21,9 +21,11 @@ import {
   type WeatherProvider,
 } from "@wayline/providers";
 import { ApiRouting } from "./ApiRouting";
+import { dataUrl, MOCK_DATA } from "./dataUrl";
 import { ApiTripStore, fetchMe, withMovedTrips } from "./ApiTripStore";
 import { indexedDbForecastCache } from "./forecastCache";
 import { createTripGenerator } from "./generator";
+import { LocalRouting } from "./LocalRouting";
 import { LocalTripStore } from "./LocalTripStore";
 import type { TripGenerator } from "./TripGenerator";
 import type { TripStore } from "./TripStore";
@@ -63,29 +65,10 @@ export type RouteLines = {
 /** A dragged via point moves to a network node this close. */
 const SNAP_KM = 0.5;
 
-const MOCK_DATA = "/data/mock/oberfranken";
-
 async function fetchJson(url: string): Promise<unknown> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${url}: ${res.status}`);
   return res.json();
-}
-
-/**
- * The region data named by /data/latest.json, if it is there.
- * Else, or with VITE_DATA=mock, the Oberfranken mock.
- */
-async function dataUrl(): Promise<string> {
-  if (import.meta.env.VITE_DATA === "mock") return MOCK_DATA;
-  try {
-    const latest = (await fetchJson("/data/latest.json")) as {
-      version?: unknown;
-    };
-    if (typeof latest.version === "string") return `/data/${latest.version}`;
-  } catch {
-    // Not built. The dev server answers with index.html, which is no JSON.
-  }
-  return MOCK_DATA;
 }
 
 export function createServices(): Services {
@@ -98,11 +81,14 @@ export function createServices(): Services {
     search: async () => (await source).search(),
   };
   const graphs = new AreaCache(network, (n) => new Graph(n));
-  // VITE_ROUTING=api routes through the Worker. Default: the route network.
+  // VITE_ROUTING=api routes through the Worker, VITE_ROUTING=local in the
+  // browser on the routing tiles. Default: the route network.
   const routing =
     import.meta.env.VITE_ROUTING === "api"
       ? new ApiRouting()
-      : new FakeRouting((bbox) => graphs.get(bbox));
+      : import.meta.env.VITE_ROUTING === "local"
+        ? new LocalRouting(url)
+        : new FakeRouting((bbox) => graphs.get(bbox));
   // VITE_TRIPS=api saves trips on the server. Default: browser storage.
   const onServer = import.meta.env.VITE_TRIPS === "api";
   const trips = onServer
