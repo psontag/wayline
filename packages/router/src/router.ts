@@ -531,10 +531,11 @@ export class Router {
       distance += length;
       surface[surfaceOf(at(tile.s.bits, e), this.index.highways)] += length;
     });
+    const smoothed = smooth(points, elevation);
     let ascent = 0;
     let descent = 0;
-    for (let j = 1; j < elevation.length; j++) {
-      const d = at(elevation, j) - at(elevation, j - 1);
+    for (let j = 1; j < smoothed.length; j++) {
+      const d = at(smoothed, j) - at(smoothed, j - 1);
       if (d > 0) ascent += d;
       else descent -= d;
     }
@@ -542,8 +543,60 @@ export class Router {
       for (const k of ["paved", "gravel", "unpaved"] as const)
         surface[k] /= distance;
     else surface.paved = 1;
-    return { points, elevation, distance, ascent, descent, surface };
+    return {
+      points,
+      elevation: smoothed.map(Math.round),
+      distance,
+      ascent,
+      descent,
+      surface,
+    };
   }
+}
+
+// As for the route network in pipeline/export.py.
+const SAMPLE_M = 50;
+const SMOOTH = 4;
+
+/**
+ * Elevation smoothed along the whole leg. The tiles smooth each OSM way on
+ * its own, so short ways keep DEM noise, which adds up to too much ascent.
+ */
+function smooth(points: LonLat[], elevation: number[]): number[] {
+  const along = [0];
+  for (let j = 1; j < points.length; j++) {
+    const [lon1, lat1] = points[j - 1] as LonLat;
+    const [lon2, lat2] = points[j] as LonLat;
+    along.push(at(along, j - 1) + meters(lon1, lat1, lon2, lat2));
+  }
+  const total = at(along, along.length - 1);
+  const valueAt = (values: ArrayLike<number>, step: number, d: number) => {
+    const i = Math.min(Math.floor(d / step), values.length - 2);
+    if (i < 0) return at(values, 0);
+    const t = Math.min(1, (d - i * step) / step);
+    return at(values, i) + t * (at(values, i + 1) - at(values, i));
+  };
+  const n = Math.floor(total / SAMPLE_M) + 2;
+  const samples = new Float64Array(n);
+  let j = 0;
+  for (let k = 0; k < n; k++) {
+    const d = Math.min(k * SAMPLE_M, total);
+    while (j < along.length - 2 && at(along, j + 1) < d) j++;
+    const d0 = at(along, j);
+    const d1 = at(along, j + 1);
+    const t = d1 > d0 ? Math.min(1, (d - d0) / (d1 - d0)) : 0;
+    samples[k] =
+      at(elevation, j) + t * (at(elevation, j + 1) - at(elevation, j));
+  }
+  const sums = new Float64Array(n + 1);
+  for (let k = 0; k < n; k++) sums[k + 1] = at(sums, k) + at(samples, k);
+  const averaged = new Float64Array(n);
+  for (let k = 0; k < n; k++) {
+    const lo = Math.max(0, k - SMOOTH);
+    const hi = Math.min(n - 1, k + SMOOTH);
+    averaged[k] = (at(sums, hi + 1) - at(sums, lo)) / (hi - lo + 1);
+  }
+  return along.map((d) => valueAt(averaged, SAMPLE_M, d));
 }
 
 /** Whether two points lie on the same edge. An edge is in the tiles of both its ends. */
