@@ -1,5 +1,5 @@
 import type { Trip } from "@wayline/domain";
-import { ChoiceCard, ChoiceGroup, SheetDialog, useFormat } from "@wayline/ui";
+import { ChoiceList, SheetDialog, useFormat } from "@wayline/ui";
 import { useTranslation } from "react-i18next";
 import { useStopOptions } from "./stopChoices";
 import type { TripEditorState } from "./useTripEditor";
@@ -32,33 +32,30 @@ export function PhoneDestinationSheet({
       {options.length < 2 ? (
         <p className="text-sm text-text-muted">{t("destination.none")}</p>
       ) : (
-        <ChoiceGroup legend={t("destination.title")}>
-          {options.map(({ place, distance, ascent, current }) => (
-            <ChoiceCard
-              key={place.name}
-              name="destination"
-              value={place.name}
-              checked={current}
-              disabled={!current && !editor.canEdit}
-              onChange={() => {
-                onClose();
-                void editor.moveStop(index, place);
-              }}
-              title={place.name}
-              meta={t("phone.townMeta", {
-                distance: format.distance(distance),
-                ascent: format.elevation(ascent),
-              })}
-              note={
-                current
-                  ? t("phone.current")
-                  : distance < stage.stats.distance
-                    ? t("phone.shorter")
-                    : t("phone.longer")
-              }
-            />
-          ))}
-        </ChoiceGroup>
+        <ChoiceList
+          aria-label={t("destination.title")}
+          value={options.find((o) => o.current)?.place.name}
+          disabled={!editor.canEdit}
+          onValueChange={(name) => {
+            const option = options.find((o) => o.place.name === name);
+            if (!option) return;
+            onClose();
+            void editor.moveStop(index, option.place);
+          }}
+          options={options.map(({ place, distance, ascent, current }) => ({
+            id: place.name,
+            title: place.name,
+            detail: t("phone.townMeta", {
+              distance: format.distance(distance),
+              ascent: format.elevation(ascent),
+            }),
+            tag: current
+              ? t("phone.current")
+              : distance < stage.stats.distance
+                ? t("phone.shorter")
+                : t("phone.longer"),
+          }))}
+        />
       )}
     </SheetDialog>
   );

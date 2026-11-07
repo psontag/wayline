@@ -5,13 +5,7 @@ import {
   type Trip,
 } from "@wayline/domain";
 import { detourKm } from "@wayline/providers";
-import {
-  Button,
-  ChoiceCard,
-  ChoiceGroup,
-  SheetDialog,
-  useFormat,
-} from "@wayline/ui";
+import { Button, ChoiceList, SheetDialog, useFormat } from "@wayline/ui";
 import { Lock, LockOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { BookingLink, hotelBookingUrl } from "./BookingLink";
@@ -79,34 +73,30 @@ export function PhoneStopSheet({
       footer={<BookingLink trip={trip} index={index} variant="footer" />}
     >
       <div className="flex flex-col gap-2">
-        <ChoiceGroup legend={t("phone.stopTowns")}>
-          {options.map(({ place, distance, current }) => (
-            <ChoiceCard
-              key={place.name}
-              name="stop"
-              value={place.name}
-              checked={current}
-              disabled={!current && !editor.canEdit}
-              onChange={() => void editor.moveStop(index, place)}
-              title={place.name}
-              meta={
-                current
-                  ? t("phone.townMeta", {
-                      distance: format.distance(distance),
-                      ascent: format.elevation(stage.stats.ascent),
-                    })
-                  : format.distance(distance)
-              }
-              note={
-                current
-                  ? t("phone.current")
-                  : distance < stage.stats.distance
-                    ? t("phone.shorter")
-                    : t("phone.longer")
-              }
-            />
-          ))}
-        </ChoiceGroup>
+        <ChoiceList
+          aria-label={t("phone.stopTowns")}
+          value={options.find((o) => o.current)?.place.name}
+          disabled={!editor.canEdit}
+          onValueChange={(name) => {
+            const option = options.find((o) => o.place.name === name);
+            if (option) void editor.moveStop(index, option.place);
+          }}
+          options={options.map(({ place, distance, current }) => ({
+            id: place.name,
+            title: place.name,
+            detail: current
+              ? t("phone.townMeta", {
+                  distance: format.distance(distance),
+                  ascent: format.elevation(stage.stats.ascent),
+                })
+              : format.distance(distance),
+            tag: current
+              ? t("phone.current")
+              : distance < stage.stats.distance
+                ? t("phone.shorter")
+                : t("phone.longer"),
+          }))}
+        />
         {!readOnly && (
           <div className="flex items-center gap-2 text-xs text-text-muted">
             {end.locked ? (

@@ -1,4 +1,5 @@
 import * as RadioGroup from "@radix-ui/react-radio-group";
+import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
 import { focusRing } from "./Button";
@@ -73,5 +74,34 @@ export function ChoiceList({
       ))}
       {footer}
     </RadioGroup.Root>
+  );
+}
+
+/** Last row of a ChoiceList that shows more or fewer rows. */
+export function MoreRow({
+  label,
+  expanded,
+  onClick,
+}: {
+  label: string;
+  expanded: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center gap-2 bg-bg px-3 py-2 text-left text-xs font-semibold text-text-muted hover:bg-hover",
+        focusRing,
+      )}
+    >
+      <span className="flex-1">{label}</span>
+      <ChevronDown
+        className={cn("size-4 transition-transform", expanded && "rotate-180")}
+        aria-hidden
+      />
+    </button>
   );
 }

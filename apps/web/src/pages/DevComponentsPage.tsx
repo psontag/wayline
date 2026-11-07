@@ -14,12 +14,9 @@ import {
   ChoiceList,
   DayCard,
   MoreRow,
-  NavRow,
   PanelHeader,
   PanelSection,
-  RowList,
   StatTile,
-  StatBlock,
   Stat,
   statIcons,
   type StatIcon,
@@ -46,7 +43,6 @@ import {
   MapLegend,
   Menu,
   NumberInput,
-  NumberStepper,
   PlaceMarker,
   RadioCards,
   TripCard,
@@ -78,8 +74,6 @@ import {
   ProposalCardSkeleton,
   RouteLabel,
   routeColors,
-  ChoiceCard,
-  ChoiceGroup,
   FloatingButton,
   FloatingTitle,
   DayWeather,
@@ -285,38 +279,6 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
 
       <Section title={t("section.stats")}>
         <Card className="flex flex-col gap-4">
-          <div className="grid grid-cols-4 gap-2">
-            <StatBlock
-              value={t("demo.stageCount", { count: 4 })}
-              label={t("demo.stages")}
-            />
-            <StatBlock
-              value={format.distance(252_000)}
-              label={t("demo.distance")}
-            />
-            <StatBlock
-              value={format.elevation(2340)}
-              label={t("demo.ascent")}
-            />
-            <StatBlock value={format.percent(0.84)} label={t("demo.paved")} />
-          </div>
-          <div className="flex flex-wrap gap-5">
-            <StatBlock
-              size="lg"
-              value={format.distance(78_000)}
-              label={t("demo.distance")}
-            />
-            <StatBlock
-              size="lg"
-              value={format.elevation(650)}
-              label={t("demo.ascent")}
-            />
-            <StatBlock
-              size="lg"
-              value={format.percent(0.86)}
-              label={t("demo.paved")}
-            />
-          </div>
           <SurfaceBar shares={{ paved: 70, gravel: 18, unpaved: 12 }} />
           <SurfaceBar
             caption
@@ -434,13 +396,12 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
             defaultOpen={false}
             summary={t("demo.trainsSummary")}
           >
-            <RowList>
-              <NavRow
-                title={t("demo.gettingThere")}
-                detail={t("demo.trainTo")}
-                onClick={() => setSelectedDay(1)}
-              />
-            </RowList>
+            <LinkRow
+              icon={<TrainFront aria-hidden />}
+              title={t("demo.gettingThere")}
+              subtitle={t("demo.trainTo")}
+              onClick={() => setSelectedDay(1)}
+            />
           </PanelSection>
         </div>
       </Section>
@@ -788,7 +749,6 @@ function PhoneParts() {
   const [day, setDay] = useState(2);
   const [stop, setStop] = useState("Kronach");
   const [open, setOpen] = useState(false);
-  const radioName = useId();
   return (
     <Section title={t("section.phone")}>
       <div className="flex items-center gap-2 rounded-md bg-hover p-3">
@@ -827,20 +787,17 @@ function PhoneParts() {
         subtitle="Hotel Bauerngirgl · 3 stars"
         onClick={() => setOpen(true)}
       />
-      <ChoiceGroup legend={t("demo.stopTown")}>
-        {alternatives.map(({ name, distance }) => (
-          <ChoiceCard
-            key={name}
-            name={radioName}
-            value={name}
-            checked={stop === name}
-            onChange={() => setStop(name)}
-            title={name}
-            meta={format(distance)}
-            note={stop === name ? t("demo.current") : undefined}
-          />
-        ))}
-      </ChoiceGroup>
+      <ChoiceList
+        aria-label={t("demo.stopTown")}
+        value={stop}
+        onValueChange={setStop}
+        options={alternatives.map(({ name, distance }) => ({
+          id: name,
+          title: name,
+          detail: format(distance),
+          ...(stop === name && { tag: t("demo.current") }),
+        }))}
+      />
       <HotelRow
         variant="card"
         selected
@@ -998,10 +955,8 @@ function FormDemos() {
             />
           </FormField>
           <FormField label={t("demo.days")} htmlFor={`${id}-days`}>
-            <NumberStepper
+            <NumberInput
               id={`${id}-days`}
-              min={1}
-              max={14}
               value={days}
               onValueChange={setDays}
             />
