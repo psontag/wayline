@@ -39,6 +39,8 @@ export type ProposalsMapProps = {
   highlighted?: string;
   /** Day of the highlighted proposal to show at full strength. */
   highlightedDay?: number;
+  /** Proposal the user picked. The map zooms to it. */
+  focused?: string;
   onSelect: (id: string) => void;
   /** Small map on phones: less padding, no zoom buttons. */
   compact?: boolean;
@@ -55,6 +57,7 @@ export function ProposalsMap({
   places,
   highlighted,
   highlightedDay,
+  focused,
   onSelect,
   compact = false,
   wind,
@@ -139,12 +142,20 @@ export function ProposalsMap({
     [routes, stopCoords],
   );
 
-  // Show everything whenever a proposal comes in.
+  // Zoom to the picked proposal. Otherwise show everything whenever a
+  // proposal comes in.
+  const focusedIndex = proposals.findIndex((p) => p.id === focused);
   const fit = useMemo(
-    () => [...routes.flat().map((p) => p.coord), ...ends.map((p) => p.coord)],
-    [routes, ends],
+    () =>
+      focusedIndex >= 0
+        ? (routes[focusedIndex] ?? []).map((p) => p.coord)
+        : [...routes.flat().map((p) => p.coord), ...ends.map((p) => p.coord)],
+    [routes, ends, focusedIndex],
   );
-  const fitKey = [proposals.map((p) => p.id), ends.map((p) => p.name)];
+  const fitKey =
+    focusedIndex >= 0
+      ? focused
+      : [proposals.map((p) => p.id), ends.map((p) => p.name)];
 
   const onClick = (event: MapLayerMouseEvent) => {
     const id = event.features?.[0]?.properties?.id;

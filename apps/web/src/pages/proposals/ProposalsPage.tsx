@@ -72,11 +72,27 @@ function Proposals({ request }: { request: GenerateRequest }) {
   const isPhone = useIsPhone();
   const { proposals } = generation;
 
-  const select = (id: string) =>
+  // The map zooms only to a proposal the user picked, not to the first one
+  // selected on load.
+  const [focused, setFocused] = useState<string>();
+  const select = (id: string) => {
+    setFocused(id);
     void navigate({
       search: (s) => ({ ...s, selected: id }),
       replace: true,
     });
+  };
+
+  useEffect(() => {
+    if (!focused) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        setFocused(undefined);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focused]);
 
   // Select the first proposal as soon as it is there.
   const first = proposals[0]?.id;
@@ -112,6 +128,7 @@ function Proposals({ request }: { request: GenerateRequest }) {
             places={places}
             highlighted={hovered ?? selected}
             highlightedDay={hoveredDay}
+            focused={focused === selected ? focused : undefined}
             onSelect={select}
             compact={isPhone}
             {...(middle && home && { wind: { ...middle, at: home } })}
