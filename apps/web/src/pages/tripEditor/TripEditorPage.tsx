@@ -132,8 +132,7 @@ function TripEditor({
   };
 
   const stage = trip.stages[selected];
-  // The phone has no trip level, so it always charts a day.
-  const overview = !dayOpen && !isPhone;
+  const overview = !dayOpen;
   const chartLegs = useMemo(
     () => (overview ? trip.stages.flatMap((s) => s.legs) : (stage?.legs ?? [])),
     [overview, trip.stages, stage],
@@ -373,6 +372,31 @@ function TripEditor({
     },
   };
 
+  // The side panel on desktop, the sheet on phones.
+  const panel = dayOpen ? (
+    <DayPanel
+      key={selected}
+      trip={trip}
+      index={selected}
+      editor={editor}
+      onSelect={select}
+      onBack={showTrip}
+      onHoverClimb={setHoveredClimb}
+      highlightedClimb={activeClimb}
+      onHighlightProposed={setProposedHighlighted}
+      findingDestination={findingDestination}
+      onFindingDestination={setFindingDestination}
+    />
+  ) : (
+    <TripPanel
+      trip={trip}
+      editor={editor}
+      hovered={hoveredDay}
+      onHover={setHoveredDay}
+      onOpenDay={select}
+    />
+  );
+
   if (isPhone) {
     return (
       <ToastProvider>
@@ -383,13 +407,15 @@ function TripEditor({
           editor={editor}
           onShare={canShare ? () => setSharing(true) : undefined}
           selected={selected}
+          overview={overview}
           onSelect={select}
-          alternatives={alternatives}
+          alternatives={dayOpen ? alternatives : []}
           onPickAlternative={pickAlternative}
           hover={hover}
+          panel={panel}
           chart={chart}
           mapLayers={mapLayers}
-          route={routeEditing(true)}
+          route={dayOpen ? routeEditing(true) : undefined}
           toast={<ToastViewport placement="inline" />}
         />
       </ToastProvider>
@@ -446,29 +472,7 @@ function TripEditor({
           {chart}
         </div>
         <aside className="flex shrink-0 flex-col border-border bg-surface lg:w-panel lg:overflow-auto lg:border-l">
-          {dayOpen ? (
-            <DayPanel
-              key={selected}
-              trip={trip}
-              index={selected}
-              editor={editor}
-              onSelect={select}
-              onBack={showTrip}
-              onHoverClimb={setHoveredClimb}
-              highlightedClimb={activeClimb}
-              onHighlightProposed={setProposedHighlighted}
-              findingDestination={findingDestination}
-              onFindingDestination={setFindingDestination}
-            />
-          ) : (
-            <TripPanel
-              trip={trip}
-              editor={editor}
-              hovered={hoveredDay}
-              onHover={setHoveredDay}
-              onOpenDay={select}
-            />
-          )}
+          {panel}
         </aside>
       </div>
     </div>

@@ -78,11 +78,9 @@ import {
   FloatingTitle,
   DayWeather,
   LinkRow,
-  SheetDialog,
 } from "@wayline/ui";
 import {
   Mountain,
-  BedDouble,
   ChevronLeft,
   Copy,
   Download,
@@ -746,9 +744,6 @@ function TripEditorParts() {
 
 function PhoneParts() {
   const { t } = useTranslation("devComponents");
-  const [day, setDay] = useState(2);
-  const [stop, setStop] = useState("Kronach");
-  const [open, setOpen] = useState(false);
   return (
     <Section title={t("section.phone")}>
       <div className="flex items-center gap-2 rounded-md bg-hover p-3">
@@ -759,81 +754,18 @@ function PhoneParts() {
           title={t("demo.tripName")}
           subtitle="Sat 12 Jun – Tue 15 Jun · 252 km"
         />
-        <FloatingButton label={t("demo.exportGpx")}>
-          <Download aria-hidden />
+        <FloatingButton label={t("demo.undo")}>
+          <Undo2 aria-hidden />
+        </FloatingButton>
+        <FloatingButton label={t("demo.redo")} disabled>
+          <Redo2 aria-hidden />
+        </FloatingButton>
+        <FloatingButton label={t("demo.more")}>
+          <Ellipsis aria-hidden />
         </FloatingButton>
       </div>
-      <div className="flex gap-2">
-        {[1, 2, 3, 4].map((n) => (
-          <Chip
-            key={n}
-            size="md"
-            selected={n === day}
-            onClick={() => setDay(n)}
-          >
-            {t("demo.day", { day: n })}
-          </Chip>
-        ))}
-      </div>
-      <DayWeather
-        temperature={{ min: 17, max: 23 }}
-        feelsLike={14}
-        rain={0}
-        wind={{ kind: "head", share: 0.45, speedKmh: 16 }}
-      />
-      <LinkRow
-        icon={<BedDouble aria-hidden />}
-        title={t("demo.stop")}
-        subtitle="Hotel Bauerngirgl · 3 stars"
-        onClick={() => setOpen(true)}
-      />
-      <ChoiceList
-        aria-label={t("demo.stopTown")}
-        value={stop}
-        onValueChange={setStop}
-        options={alternatives.map(({ name, distance }) => ({
-          id: name,
-          title: name,
-          detail: format(distance),
-          ...(stop === name && { tag: t("demo.current") }),
-        }))}
-      />
-      <HotelRow
-        variant="card"
-        selected
-        name="Hotel Bauerngirgl"
-        stars={3}
-        distance={400}
-        action={<Button size="sm">{t("demo.picked")}</Button>}
-      />
-      <HotelRow
-        variant="card"
-        name="Hotel Sonne"
-        stars={3}
-        distance={900}
-        action={<Button size="sm">{t("demo.pick")}</Button>}
-      />
-      <Button variant="primary" size="lg">
-        {t("demo.bookHotels", { place: "Kronach" })}
-      </Button>
-      <SheetDialog
-        open={open}
-        onOpenChange={setOpen}
-        title={t("demo.whereToStop")}
-        subtitle="Day 2 · Sun 13 Jun · from Coburg"
-      >
-        <DayWeather
-          temperature={{ min: 17, max: 23 }}
-          rain={0}
-          wind={{ kind: "head", share: 0.45, speedKmh: 16 }}
-        />
-      </SheetDialog>
     </Section>
   );
-}
-
-function format(meters: number) {
-  return `${meters / 1000} km`;
 }
 
 function ratingOptions(any: string) {

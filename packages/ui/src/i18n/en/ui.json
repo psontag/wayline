@@ -145,8 +145,7 @@
   },
   "sheet": {
     "expand": "Expand sheet",
-    "collapse": "Collapse sheet",
-    "close": "Close"
+    "collapse": "Collapse sheet"
   },
   "mapLayers": {
     "label": "Map layers",
