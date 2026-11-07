@@ -1,6 +1,6 @@
 # Architecture
 
-Wayline runs on Cloudflare and in the browser. The only server is BRouter on the owner's machine, reached through a tunnel. Everything is written in TypeScript.
+Wayline runs on Cloudflare and in the browser. Everything is written in TypeScript.
 
 ## Overview
 
@@ -8,12 +8,12 @@ Wayline runs on Cloudflare and in the browser. The only server is BRouter on the
 Browser (React SPA)
  ├─ UI: map, stage editor, elevation, weather
  ├─ Web Worker: planner (generation, stages, scoring, GPX)
+ ├─ routing on the routing tiles (packages/router)
  ├─ weather → Open-Meteo
  └─ calls → Cloudflare Worker (one hostname, behind Access)
               ├─ static assets: the SPA and geodata (/data/*)
-              ├─ /api: routing, trips
-              ├─ storage: trips and route legs in D1
-              └─ routing → VPC binding → tunnel → BRouter (owner's machine)
+              ├─ /api: trips
+              └─ storage: trips in D1
 
 GitHub Action (push to main) → Cloudflare setup, geodata (monthly) → deploy
 ```
@@ -32,29 +32,19 @@ Preview URLs are off. Deploy and setup: `docs/12-deploy.md`.
 
 | | Browser | Worker |
 |---|---|---|
-| Role | UI and planner | Gateway, cache, storage |
-| Calls external APIs | Never | Always |
+| Role | UI, planner and routing | Gateway, storage |
 | CPU work | Heavy (in a Web Worker) | Light |
-| Cache | Per user (IndexedDB) | Shared (D1) |
+| Cache | Per user (IndexedDB) | none |
 
-Rules:
-
-- All external API calls go through the Worker.
-- Heavy computation runs in the browser. The free Workers plan allows only about 10 ms CPU time per request.
-- The Worker returns raw provider responses. The browser parses them.
+Heavy computation runs in the browser. The free Workers plan allows only about 10 ms CPU time per request.
 
 ## Providers
 
-Each provider adapter has two halves. Both live in `packages/providers`.
-
-| Half | Runs in | Does |
-|---|---|---|
-| fetch | Worker | Calls the provider. Returns `{ provider, profileHash, raw }`. |
-| parse | Browser | Turns `raw` into our domain types. |
+Adapters live in `packages/providers`.
 
 | Data | Provider |
 |---|---|
-| Routing | BRouter |
+| Routing | Our router on the routing tiles (`packages/router`) |
 | Weather | Open-Meteo |
 | Hotels | OSM hotels in the static geodata |
 | Route network | Preprocessed OSM data in the static geodata |
@@ -65,23 +55,12 @@ The planner only depends on interfaces from `packages/providers`.
 
 | Data | Shared cache | Browser cache | Key |
 |---|---|---|---|
-| Route leg | D1 table `legs` with `expires_at`. A daily Cron Trigger deletes expired rows. | IndexedDB | see below |
 | Weather | none, the browser calls Open-Meteo | IndexedDB, 2 h | 0.1° cell |
 | Geodata | Static assets, cached at the edge | IndexedDB per dataset version | dataset version |
 
-Leg keys:
-
-- network legs: dataset version + node ids
-- custom points: coordinates at 5 decimals
-- all legs also carry the provider and a profile content hash
-
 Weather: fetch the full 16-day forecast once per 0.1° cell. The cells of a stage go out as one request.
 
-Routes are built from legs between fixed points: stations, towns and junctions. Proposals share many legs, so most requests hit the cache.
-
-## Request limits
-
-The browser sends at most 3 routing requests at once.
+Legs are stored in the trip. Each carries the provider and a profile hash with the router version.
 
 ## Errors
 
@@ -114,7 +93,6 @@ All API errors have one shape:
 | `PUT /api/trips/:id` | Save a trip. Fails with `CONFLICT` if `updatedAt` doesn't match. |
 | `DELETE /api/trips/:id` | Delete a trip |
 | `GET/PUT /api/trips/:id/shares` | Emails a trip is shared with. Owner only. |
-| `POST /api/route` | Route a leg |
 | `GET /data/*` | Geodata (static assets) |
 
 ## Geodata

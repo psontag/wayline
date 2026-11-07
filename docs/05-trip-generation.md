@@ -70,7 +70,7 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 5. **Cut into stages.** See below. Each stage becomes one leg per piece of about 10 km, so an edit routes only the legs it touches.
 6. **Signed routes**, then **pick** one proposal per flavour that differs from them. One day from A to B picks up to 5 diverse ones first, then signed routes. See below.
 7. **Fill** up to 8 proposals. See below. List order: the main proposal (best or direct), then proposals that follow a route, then the rest.
-8. **Route** the chosen proposals, all at once. The browser sends at most 3 requests at a time. Waypoints are graph nodes about every 10 km, so the router follows the graph path. Proposals share nodes, so legs hit the cache. If routing fails, the proposal keeps the graph path.
+8. **Route** the chosen proposals on the routing tiles. Waypoints are graph nodes about every 10 km, so the router follows the graph path. If routing fails, the proposal keeps the graph path.
 9. **Find hotels** at each stop from the OSM hotel data.
 10. **Tag** each proposal. See below.
 11. **Add weather** if the start date is within the forecast range.
@@ -240,7 +240,7 @@ Each candidate gets a wind factor. Its parts are straight lines through its node
 | `scenic` | Higher weight on edge score. Detours allowed. |
 | `quiet` | Strong penalty on roads with traffic. |
 
-Presets map to custom BRouter profiles. Proposals use `touring`. Imported trips can use any preset.
+Presets map to the cost profiles in `packages/router/src/cost.ts`, ported from BRouter. Proposals use `touring`. Imported trips can use any preset.
 
 In the graph search, k = 2 in cost = length / score^k.
 

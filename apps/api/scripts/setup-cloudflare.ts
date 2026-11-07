@@ -2,13 +2,12 @@
 // KEY=value lines. In GitHub Actions it also writes them to $GITHUB_ENV, so
 // the build picks them up (see cloudflare.config.ts).
 //
-//   node scripts/setup-cloudflare.ts                 # setup
-//   node scripts/setup-cloudflare.ts --tunnel-token  # token for cloudflared
+//   node scripts/setup-cloudflare.ts
 //
 // Env: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, ACCESS_EMAILS (comma
-// separated, setup only).
+// separated).
 import { appendFileSync } from "node:fs";
-import { setup, tunnelToken } from "../src/setup/cloudflare.ts";
+import { setup } from "../src/setup/cloudflare.ts";
 
 const token = process.env.CLOUDFLARE_API_TOKEN;
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -18,20 +17,16 @@ if (!token || !accountId) {
 }
 
 try {
-  if (process.argv.includes("--tunnel-token")) {
-    process.stdout.write(await tunnelToken({ token, accountId }));
-  } else {
-    const result = await setup({
-      token,
-      accountId,
-      emails: (process.env.ACCESS_EMAILS ?? "").split(","),
-      log: (message) => console.error(message),
-    });
-    const lines = Object.entries(result).map(([k, v]) => `${k}=${v}`);
-    console.log(lines.join("\n"));
-    if (process.env.GITHUB_ENV) {
-      appendFileSync(process.env.GITHUB_ENV, lines.join("\n") + "\n");
-    }
+  const result = await setup({
+    token,
+    accountId,
+    emails: (process.env.ACCESS_EMAILS ?? "").split(","),
+    log: (message) => console.error(message),
+  });
+  const lines = Object.entries(result).map(([k, v]) => `${k}=${v}`);
+  console.log(lines.join("\n"));
+  if (process.env.GITHUB_ENV) {
+    appendFileSync(process.env.GITHUB_ENV, lines.join("\n") + "\n");
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);

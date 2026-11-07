@@ -1,7 +1,11 @@
 import { type TrainQuery, WaylineError } from "@wayline/domain";
 import { z } from "zod";
-import type { AbortSignalLike, TrainOption, TrainProvider } from "../types";
-import type { HttpFetch } from "../brouter/fetch";
+import type {
+  AbortSignalLike,
+  HttpFetch,
+  TrainOption,
+  TrainProvider,
+} from "../types";
 
 const BASE_URL = "https://api.transitous.org/api/v1";
 const RESULTS = 3;

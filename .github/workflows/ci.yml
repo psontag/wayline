@@ -82,8 +82,8 @@ jobs:
             apps/web/public/data/de-*
           key: ${{ steps.data.outputs.cache-primary-key }}
 
-      # Creates or updates D1, the tunnel, the VPC service and Access, and
-      # writes their ids to $GITHUB_ENV for the build.
+      # Creates or updates D1 and Access, and writes their ids to
+      # $GITHUB_ENV for the build.
       - name: Set up Cloudflare
         run: node apps/api/scripts/setup-cloudflare.ts
         env:
@@ -96,8 +96,8 @@ jobs:
 
       - run: pnpm build
         env:
-          # Route and save trips through the Worker, not in the browser.
-          VITE_ROUTING: api
+          # Route in the browser on the routing tiles. Save trips on the Worker.
+          VITE_ROUTING: local
           VITE_TRIPS: api
           VITE_WEATHER: open-meteo
           VITE_TRAINS: transitous

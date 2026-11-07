@@ -5,9 +5,8 @@ import {
   type WeatherSample,
 } from "@wayline/domain";
 import { z } from "zod";
-import type { HttpFetch } from "../brouter/fetch";
 import { cellOf } from "../mock/FakeWeather";
-import type { Forecast, WeatherProvider } from "../types";
+import type { Forecast, HttpFetch, WeatherProvider } from "../types";
 
 const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 const FORECAST_DAYS = 16;

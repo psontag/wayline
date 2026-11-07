@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { NAMES, setup, tunnelToken } from "./cloudflare";
+import { setup } from "./cloudflare";
 
 type Call = { method: string; path: string; body?: unknown };
 
@@ -8,8 +8,6 @@ type Call = { method: string; path: string; body?: unknown };
 function fakeCloudflare({ zeroTrust = true, subdomain = "psontag" } = {}) {
   const state = {
     databases: [] as { uuid: string; name: string }[],
-    tunnels: [] as { id: string; name: string }[],
-    services: [] as Record<string, unknown>[],
     apps: [] as Record<string, unknown>[],
     idps: [] as { id: string; type: string }[],
     subdomain: subdomain as string | undefined,
@@ -46,23 +44,6 @@ function fakeCloudflare({ zeroTrust = true, subdomain = "psontag" } = {}) {
       state.databases.push(db);
       return ok(db);
     }
-    if (route === "GET /cfd_tunnel") return ok(state.tunnels);
-    if (route === "POST /cfd_tunnel") {
-      const t = { id: id(), name: body.name };
-      state.tunnels.push(t);
-      return ok(t);
-    }
-    if (route.startsWith("GET /cfd_tunnel/") && path.endsWith("/token"))
-      return ok("tunnel-token");
-    if (route === "GET /connectivity/directory/services")
-      return ok(state.services);
-    if (route === "POST /connectivity/directory/services") {
-      const s = { ...body, service_id: id() };
-      state.services.push(s);
-      return ok(s);
-    }
-    if (route.startsWith("PUT /connectivity/directory/services/"))
-      return ok({});
     if (route === "GET /workers/subdomain")
       return state.subdomain ? ok({ subdomain: state.subdomain }) : fail(404);
     if (route === "PUT /workers/subdomain") {
@@ -104,22 +85,14 @@ describe("Cloudflare setup", () => {
     });
     expect(result).toEqual({
       WAYLINE_D1_ID: "id-1",
-      WAYLINE_TUNNEL_ID: "id-2",
-      WAYLINE_BROUTER_SERVICE_ID: "id-3",
       WAYLINE_ACCESS_TEAM_DOMAIN: "https://wayline.cloudflareaccess.com",
       WAYLINE_ACCESS_AUD: "aud-1",
       WAYLINE_URL: "https://wayline-api.psontag.workers.dev",
     });
-    const service = cf.state.services[0];
-    expect(service).toMatchObject({
-      type: "http",
-      http_port: 17777,
-      host: { hostname: "brouter", resolver_network: { tunnel_id: "id-2" } },
-    });
-    expect(cf.state.idps).toEqual([{ id: "id-4", type: "onetimepin" }]);
+    expect(cf.state.idps).toEqual([{ id: "id-2", type: "onetimepin" }]);
     expect(cf.state.apps[0]).toMatchObject({
       domain: "wayline-api.psontag.workers.dev",
-      allowed_idps: ["id-4"],
+      allowed_idps: ["id-2"],
       auto_redirect_to_identity: true,
       policies: [
         { decision: "allow", include: [{ email: { email: "a@x.de" } }] },
@@ -151,9 +124,9 @@ describe("Cloudflare setup", () => {
     cf.calls.length = 0;
     await setup({ ...base, emails: ["a@x.de"], fetch: cf.fetch });
     expect(writes(cf.calls).map((c) => c.method + " " + c.path)).toEqual([
-      "PUT /access/apps/id-5",
+      "PUT /access/apps/id-3",
     ]);
-    expect(cf.state.apps[0]).toMatchObject({ allowed_idps: ["id-4"] });
+    expect(cf.state.apps[0]).toMatchObject({ allowed_idps: ["id-2"] });
   });
 
   it("updates the allowed emails", async () => {
@@ -162,7 +135,7 @@ describe("Cloudflare setup", () => {
     cf.calls.length = 0;
     await setup({ ...base, emails: ["a@x.de", " b@x.de "], fetch: cf.fetch });
     expect(writes(cf.calls).map((c) => c.method + " " + c.path)).toEqual([
-      "PUT /access/apps/id-5",
+      "PUT /access/apps/id-3",
     ]);
     expect(JSON.stringify(cf.state.apps[0])).toContain("b@x.de");
   });
@@ -192,17 +165,6 @@ describe("Cloudflare setup", () => {
     await expect(
       setup({ ...base, emails: [" "], fetch: cf.fetch }),
     ).rejects.toThrow(/ACCESS_EMAILS/);
-  });
-
-  it("gets the tunnel token for cloudflared", async () => {
-    const cf = fakeCloudflare();
-    await expect(tunnelToken({ ...base, fetch: cf.fetch })).rejects.toThrow(
-      new RegExp(NAMES.tunnel),
-    );
-    await setup({ ...base, emails: ["a@x.de"], fetch: cf.fetch });
-    expect(await tunnelToken({ ...base, fetch: cf.fetch })).toBe(
-      "tunnel-token",
-    );
   });
 });
 

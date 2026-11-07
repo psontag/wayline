@@ -1,9 +1,8 @@
 // Downloads the BRouter segments for Germany (5–15° E, 45–55° N) if missing, then
 // starts BRouter in Docker on localhost:17777. On macOS it starts Docker
-// Desktop if needed. With a Cloudflare token in .cloudflare.env it also
-// starts cloudflared, so the deployed app can route.
+// Desktop if needed. Only to compare our router with BRouter.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, renameSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -38,46 +37,7 @@ if (!dockerRunning() && !startDocker()) {
   );
   process.exit(1);
 }
-const tunnelToken = loadTunnelToken();
-run(
-  "docker",
-  [
-    "compose",
-    "-f",
-    compose,
-    ...(tunnelToken ? ["--profile", "tunnel"] : []),
-    "up",
-    "--build",
-  ],
-  { ...process.env, TUNNEL_TOKEN: tunnelToken ?? "" },
-);
-
-/** Tunnel token from Cloudflare, or undefined to run without the tunnel. */
-function loadTunnelToken() {
-  const file = join(root, ".cloudflare.env");
-  if (!existsSync(file)) return undefined;
-  const env = Object.fromEntries(
-    readFileSync(file, "utf8")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith("#"))
-      .map((line) => {
-        const i = line.indexOf("=");
-        return [line.slice(0, i), line.slice(i + 1)];
-      }),
-  );
-  const { status, stdout, stderr } = spawnSync(
-    "node",
-    [join(root, "apps/api/scripts/setup-cloudflare.ts"), "--tunnel-token"],
-    { env: { ...process.env, ...env }, encoding: "utf8" },
-  );
-  if (status !== 0) {
-    console.warn(`Starting without the tunnel: ${stderr.trim()}`);
-    return undefined;
-  }
-  console.log("Starting cloudflared for the tunnel");
-  return stdout.trim();
-}
+run("docker", ["compose", "-f", compose, "up", "--build"]);
 
 function dockerRunning() {
   return spawnSync("docker", ["info"], { stdio: "ignore" }).status === 0;
