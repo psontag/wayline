@@ -2,7 +2,7 @@ import type { HotelBudget, LonLat, Trip } from "./schema";
 import {
   addDays,
   addHours,
-  ridingHours,
+  dayHours,
   stageStartTime,
   timeToHours,
 } from "./time";
@@ -129,7 +129,7 @@ export function trainQueries(
   const lastDate = date(lastIndex);
   const arrival = addHours(
     stageStartTime(trip.settings, lastIndex),
-    ridingHours(last.stats, trip.settings.avgSpeed),
+    dayHours(last.stats, trip.settings.avgSpeed),
   );
   return {
     there: {

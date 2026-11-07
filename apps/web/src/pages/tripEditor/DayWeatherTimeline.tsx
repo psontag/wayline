@@ -2,7 +2,7 @@ import {
   addDays,
   addHours,
   localTimeToDate,
-  ridingHours,
+  dayHours,
   stageStartTime,
   timeToHours,
   type Trip,
@@ -124,7 +124,7 @@ function DayTimeline({
       sunrise={daylight && hoursOf(daylight.sunrise)}
       sunset={daylight && hoursOf(daylight.sunset)}
       start={timeToHours(startTime)}
-      duration={ridingHours(stats, avgSpeed)}
+      duration={dayHours(stats, avgSpeed)}
       onStartChange={onRideStartChange && ((h) => onRideStartChange(clock(h)))}
       time={time}
       onTimeChange={onTimeChange}

@@ -11,7 +11,7 @@ import {
   findClimbs,
   type Place,
   pointAtKm,
-  ridingHours,
+  dayHours,
   routePoints,
   stageSpeed,
   stageStartTime,
@@ -153,8 +153,7 @@ function TripEditor({
   const ride = {
     start: rideStart,
     end:
-      rideStart +
-      (stage ? ridingHours(stage.stats, trip.settings.avgSpeed) : 0),
+      rideStart + (stage ? dayHours(stage.stats, trip.settings.avgSpeed) : 0),
   };
   const time = mapTime ?? rideStart;
   // The whole trip, so the weather does not end at the selected day.

@@ -4,6 +4,7 @@ import {
   trainLinks,
   bookingHotelUrl,
   bookingUrl,
+  dayHours,
   dayShares,
   decodeLine,
   encodeLine,
@@ -12,6 +13,7 @@ import {
   type Leg,
   pointAtKm,
   relativeWind,
+  ridingHours,
   routePoints,
   SCHEMA_VERSION,
   sampleAt,
@@ -82,13 +84,22 @@ describe("stageDates", () => {
 });
 
 describe("expectedTimeAtKm", () => {
-  it("uses start time and average speed", () => {
+  it("uses start time and average speed, with breaks", () => {
     expect(expectedTimeAtKm("2027-06-12", "09:00", 18, 0)).toBe(
       "2027-06-12T09:00",
     );
+    // 2 h 30 riding and about 19 minutes of breaks.
     expect(expectedTimeAtKm("2027-06-12", "09:00", 18, 45)).toBe(
-      "2027-06-12T11:30",
+      "2027-06-12T11:48",
     );
+  });
+});
+
+describe("dayHours", () => {
+  it("adds 15 minutes of breaks per 2 hours of riding", () => {
+    const stats = { distance: 36_000, ascent: 0 };
+    expect(ridingHours(stats, 18)).toBe(2);
+    expect(dayHours(stats, 18)).toBe(2.25);
   });
 });
 
@@ -275,8 +286,8 @@ describe("trainLinks", () => {
     expect(there).toContain("so=Karlsruhe%20Hbf&zo=Bamberg");
     expect(there).toContain("hd=2027-06-12T09%3A00%3A00&hza=A");
     expect(back).toContain("so=W%C3%BCrzburg%20Hbf&zo=Karlsruhe%20Hbf");
-    // 09:00 + 4 h riding + 18 min climbing → 13:30.
-    expect(back).toContain("hd=2027-06-13T13%3A30%3A00&hza=D");
+    // 09:00 + 4 h riding + 18 min climbing + 32 min breaks → 14:00.
+    expect(back).toContain("hd=2027-06-13T14%3A00%3A00&hza=D");
   });
 
   it("leaves time and home out when unknown", () => {

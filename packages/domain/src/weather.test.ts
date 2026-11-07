@@ -173,7 +173,7 @@ describe("bestStart", () => {
   });
 
   it("ends before sunset", () => {
-    // Dry only late, but a 4 h ride from 12:00 still ends in daylight.
+    // Dry only late. A 4 h ride takes 4 h 30 with breaks.
     const f = forecast((h) => ({ precipitation: h < 12 ? 2 : 0 }));
     const best = bestStart(ride(f), {
       stats,
@@ -181,8 +181,8 @@ describe("bestStart", () => {
       preferred: "09:00",
       daylight: { ...daylight, sunset: `${date}T15:30` },
     });
-    // 12:00 would end at 16:00, after sunset. 11:30 is the latest start.
-    expect(best?.start).toBe("11:30");
+    // 11:30 would end at 16:00, after sunset. 11:00 is the latest start.
+    expect(best?.start).toBe("11:00");
   });
 
   it("is undefined without a forecast", () => {
