@@ -2,8 +2,8 @@
 
 Usage: python extract.py <input.osm.pbf> <output.json>
 
-Reads the file three times (relations, ways, nodes) and keeps only the
-node locations it needs, so large extracts fit in memory.
+Reads the file three times: relations, ways with their node locations, and
+tagged nodes. Osmium filters in C++, so Python sees only the objects it needs.
 """
 
 import json
@@ -92,32 +92,35 @@ class Ways(osmium.SimpleHandler):
 
     def way(self, w):
         t = w.tags
-        if w.id in self.route_way_ids:
-            self.ways[w.id] = {
-                "nodes": [n.ref for n in w.nodes],
+        route = w.id in self.route_way_ids
+        hotel = t.get("tourism") in HOTELS
+        if not (route or hotel):
+            return
+        # Nodes outside the extract have no location.
+        nodes = [(n.ref, [round(n.lon, 6), round(n.lat, 6)]) for n in w.nodes if n.location.valid()]
+        if route and len(nodes) >= 2:
+            self.ways[str(w.id)] = {
+                "nodes": [i for i, _ in nodes],
                 "highway": t.get("highway"),
                 "surface": t.get("surface"),
                 "tracktype": t.get("tracktype"),
+                "coords": [c for _, c in nodes],
             }
-        if t.get("tourism") in HOTELS:
-            self.hotel_ways[w.id] = {**hotel_tags(t), "nodes": [n.ref for n in w.nodes]}
+        if hotel and nodes:
+            lon = sum(c[0] for _, c in nodes) / len(nodes)
+            lat = sum(c[1] for _, c in nodes) / len(nodes)
+            self.hotel_ways[w.id] = {**hotel_tags(t), "loc": [round(lon, 6), round(lat, 6)]}
 
 
 class Nodes(osmium.SimpleHandler):
-    def __init__(self, wanted):
+    def __init__(self):
         super().__init__()
-        self.wanted = wanted
-        self.loc = {}
         self.places = []
         self.stations = []
         self.hotels = []
 
     def node(self, n):
-        if n.id in self.wanted:
-            self.loc[n.id] = [round(n.location.lon, 6), round(n.location.lat, 6)]
         t = n.tags
-        if not t:
-            return
         loc = [round(n.location.lon, 6), round(n.location.lat, 6)]
         if t.get("place") in PLACES and "name" in t:
             place = {"id": n.id, "name": t["name"], "place": t["place"], "loc": loc}
@@ -137,31 +140,16 @@ def extract(src):
     routes = rel.resolve()
     route_way_ids = {w for r in routes for w in r["ways"]}
 
+    # Osmium keeps the node locations in C++. Python only sees ways.
     ways = Ways(route_way_ids)
-    ways.apply_file(src)
-    wanted = {n for w in ways.ways.values() for n in w["nodes"]}
-    wanted |= {n for h in ways.hotel_ways.values() for n in h["nodes"]}
+    ways.apply_file(src, locations=True, idx="flex_mem")
 
-    nodes = Nodes(wanted)
-    nodes.apply_file(src)
-    loc = nodes.loc
+    # Only tagged nodes reach Python.
+    nodes = Nodes()
+    nodes.apply_file(src, filters=[osmium.filter.EntityFilter(osmium.osm.NODE), osmium.filter.KeyFilter("place", "railway", "tourism")])
 
-    out_ways = {}
-    for wid, w in ways.ways.items():
-        ids = [n for n in w["nodes"] if n in loc]
-        if len(ids) < 2:
-            continue
-        out_ways[str(wid)] = {**w, "nodes": ids, "coords": [loc[n] for n in ids]}
-
-    hotels = nodes.hotels
-    for wid, h in ways.hotel_ways.items():
-        pts = [loc[n] for n in h.pop("nodes") if n in loc]
-        if pts:
-            lon = sum(p[0] for p in pts) / len(pts)
-            lat = sum(p[1] for p in pts) / len(pts)
-            hotels.append({"id": f"w{wid}", **h, "loc": [round(lon, 6), round(lat, 6)]})
-
-    return {"routes": routes, "ways": out_ways, "places": nodes.places, "stations": nodes.stations, "hotels": hotels}
+    hotels = nodes.hotels + [{"id": f"w{wid}", **h} for wid, h in ways.hotel_ways.items()]
+    return {"routes": routes, "ways": ways.ways, "places": nodes.places, "stations": nodes.stations, "hotels": hotels}
 
 
 def merge(parts):

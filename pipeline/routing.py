@@ -148,7 +148,8 @@ def extract(src, dem):
     rel.apply_file(src)
     signed = {w for r in rel.resolve() for w in r["ways"]}
     h = Ways(signed)
-    h.apply_file(src, locations=True, idx="flex_mem")
+    # Bikeable ways all have a highway tag. The filter keeps others out of Python, and node locations still work.
+    h.apply_file(src, locations=True, idx="flex_mem", filters=[osmium.filter.KeyFilter("highway")])
     out = {
         "ids": np.frombuffer(h.ids, dtype=np.int64).copy(),
         "bits": np.frombuffer(h.bits, dtype=np.uint32).copy(),
