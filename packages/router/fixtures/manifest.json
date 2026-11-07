@@ -1,6 +1,6 @@
 {
   "routing": {
-    "format": 1,
+    "format": 2,
     "size": 0.25,
     "path": "route/{key}.bin",
     "geometry": "route/{key}.geo.bin",
@@ -24,7 +24,8 @@
       "primary",
       "primary_link",
       "trunk",
-      "trunk_link"
+      "trunk_link",
+      "ferry"
     ]
   }
 }

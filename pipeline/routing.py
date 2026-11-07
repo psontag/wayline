@@ -19,8 +19,8 @@ import osmium
 import extract as E
 
 TILE_DEG = 0.25
-FORMAT = 1
-SEARCH_MAGIC = b"WRT1"
+FORMAT = 2
+SEARCH_MAGIC = b"WRT2"
 GEOMETRY_MAGIC = b"WRG1"
 COORD = 1e6  # coordinates as int degrees x 1e6
 
@@ -28,7 +28,7 @@ COORD = 1e6  # coordinates as int degrees x 1e6
 HIGHWAYS = [
     "cycleway", "living_street", "residential", "unclassified", "service", "road", "track", "path", "footway",
     "pedestrian", "bridleway", "tertiary", "tertiary_link", "secondary", "secondary_link", "primary",
-    "primary_link", "trunk", "trunk_link",
+    "primary_link", "trunk", "trunk_link", "ferry",
 ]  # fmt: skip
 OTHER_HIGHWAY = 31
 BIKE_ROADS = {
@@ -36,6 +36,18 @@ BIKE_ROADS = {
     "unclassified", "residential", "living_street", "service", "road", "cycleway", "track", "path",
 }  # fmt: skip
 PAVED = {"paved", "asphalt", "concrete", "paving_stones", "sett"}
+# Roads that make noise around them.
+BIG_ROADS = {"motorway", "motorway_link", "trunk", "trunk_link", "primary", "primary_link"}
+NOISE_CELLS = 2  # buffer of the big roads, in 50 m cells
+# Streets that make a town: their km per km² within about 1.5 km.
+TOWN_ROADS = {"residential", "living_street"}
+TOWN_CELLS = 10  # 500 m cells for the street density
+TOWN_KM = [1, 2, 4, 6, 8, 10]  # lower bounds of town classes 1-6
+# Traffic class by way type. One more in towns (town class 3 and up).
+TRAFFIC = {
+    "unclassified": 1, "tertiary_link": 2, "tertiary": 3, "secondary_link": 3, "secondary": 4,
+    "primary_link": 4, "primary": 5, "trunk_link": 5, "trunk": 6,
+}  # fmt: skip
 
 SAMPLE_M = 50  # DEM sample spacing
 SMOOTH = 4  # samples on each side, to damp DSM noise
@@ -47,7 +59,9 @@ CHUNK_POINTS = 2_000_000  # points per profile() call
 
 def bikeable(t):
     hw = t.get("highway")
-    if not hw or t.get("area") == "yes" or hw == "steps":
+    if not hw:
+        return t.get("route") == "ferry" and t.get("bicycle") != "no"
+    if t.get("area") == "yes" or hw == "steps":
         return False
     bike = t.get("bicycle")
     if bike in ("no", "private", "use_sidepath"):
@@ -83,7 +97,7 @@ def way_bits(t, signed):
     11 signed cycle route, 12 forward allowed, 13 backward allowed.
     Paved, unpaved and bike follow BRouter's trekking profile.
     """
-    hw = t.get("highway")
+    hw = t.get("highway") or t.get("route")
     s, sm = t.get("surface"), t.get("smoothness")
     paved = s in PAVED or sm in ("excellent", "good")
     unpaved = not (paved or (not s and not sm) or s in ("fine_gravel", "cobblestone") or sm in ("intermediate", "bad"))
@@ -106,9 +120,16 @@ class Ways(osmium.SimpleHandler):
         self.signed = signed
         self.ids, self.bits, self.counts = array("q"), array("I"), array("q")
         self.refs, self.lon, self.lat = array("q"), array("i"), array("i")
+        self.big_counts, self.big_lon, self.big_lat = array("q"), array("i"), array("i")
 
     def way(self, w):
         t = w.tags
+        if t.get("highway") in BIG_ROADS:
+            pts = [n.location for n in w.nodes if n.location.valid()]
+            self.big_counts.append(len(pts))
+            for loc in pts:
+                self.big_lon.append(round(loc.lon * COORD))
+                self.big_lat.append(round(loc.lat * COORD))
         if not bikeable(t):
             return
         pts = [(n.ref, n.location.lon, n.location.lat) for n in w.nodes if n.location.valid()]
@@ -149,8 +170,8 @@ def extract(src, dem):
     rel.apply_file(src)
     signed = {w for r in rel.resolve() for w in r["ways"]}
     h = Ways(signed)
-    # Bikeable ways all have a highway tag. The filter keeps others out of Python, and node locations still work.
-    h.apply_file(src, locations=True, idx="flex_mem", filters=[osmium.filter.KeyFilter("highway")])
+    # Bikeable ways have a highway tag or are ferries. The filter keeps others out of Python, and node locations still work.
+    h.apply_file(src, locations=True, idx="flex_mem", filters=[osmium.filter.KeyFilter("highway", "route")])
     out = {
         "ids": np.frombuffer(h.ids, dtype=np.int64).copy(),
         "bits": np.frombuffer(h.bits, dtype=np.uint32).copy(),
@@ -158,6 +179,9 @@ def extract(src, dem):
         "refs": np.frombuffer(h.refs, dtype=np.int64).copy(),
         "lon": np.frombuffer(h.lon, dtype=np.int32).copy(),
         "lat": np.frombuffer(h.lat, dtype=np.int32).copy(),
+        "big_counts": np.frombuffer(h.big_counts, dtype=np.int64).copy(),
+        "big_lon": np.frombuffer(h.big_lon, dtype=np.int32).copy(),
+        "big_lat": np.frombuffer(h.big_lat, dtype=np.int32).copy(),
     }
     del h
 
@@ -243,7 +267,7 @@ def junction_refs(path):
     return np.union1d(twice, refs[ends])
 
 
-def edges(path, junctions):
+def edges(path, junctions, grids):
     """Edges of all ways. Ends are OSM node ids."""
     d = load(path)
     counts, bits = d["counts"], d["bits"]
@@ -255,7 +279,7 @@ def edges(path, junctions):
     while w < len(counts):
         w_end = max(w + 1, int(np.searchsorted(ends, p + CHUNK_POINTS, side="right")))
         p_end = int(ends[w_end - 1])
-        parts.append(chunk_edges(counts[w:w_end], bits[w:w_end], *(a[p:p_end] for a in points), junctions))
+        parts.append(chunk_edges(counts[w:w_end], bits[w:w_end], *(a[p:p_end] for a in points), junctions, grids))
         w, p = w_end, p_end
     shape_offset = np.cumsum([0] + [len(c["shape_lon"]) for c in parts])
     for c, off in zip(parts, shape_offset):
@@ -266,7 +290,7 @@ def edges(path, junctions):
     return out
 
 
-def chunk_edges(counts, bits, refs, lon, lat, ele, ele_raw, junctions):
+def chunk_edges(counts, bits, refs, lon, lat, ele, ele_raw, junctions, grids):
     n = len(refs)
     first, last = np.cumsum(counts) - counts, np.cumsum(counts) - 1
     way_of_point = np.repeat(np.arange(len(counts)), counts)
@@ -285,6 +309,8 @@ def chunk_edges(counts, bits, refs, lon, lat, ele, ele_raw, junctions):
     length = cum_m[e] - cum_m[s]
     down_f = np.maximum(0, descent(ele_raw, s, e) - DOWNHILL_CUTOFF * length)
     down_b = np.maximum(0, descent(ele_raw, e, s) - DOWNHILL_CUTOFF * length)
+    edge_bits = bits[way_of_point[s]]
+    est = grids.estimates(x, y, seg_m, s, e, edge_bits & 31)
 
     # Shape points: inner points off the line of their neighbors.
     inner = ~junction
@@ -303,7 +329,8 @@ def chunk_edges(counts, bits, refs, lon, lat, ele, ele_raw, junctions):
         "from": refs[s],
         "to": refs[e],
         "len": np.maximum(1, np.round(length)).astype(np.uint32),
-        "bits": bits[way_of_point[s]].astype(np.uint16),
+        "bits": edge_bits.astype(np.uint16),
+        "est": est,
         "down_f": np.minimum(np.round(down_f * 10), 65535).astype(np.uint16),
         "down_b": np.minimum(np.round(down_b * 10), 65535).astype(np.uint16),
         "ele_from": ele[s],
@@ -340,6 +367,101 @@ def descent(z, start, end):
     return total
 
 
+def share_class(v):
+    """0 for none, 1-6 by sixths."""
+    return np.ceil(np.clip(v, 0, 1) * 6).astype(np.uint16)
+
+
+class Grids:
+    """Forest, water, noise and town around the ways, for the estimates per edge.
+
+    Forest and water come from the scenery layers, with their buffers. Noise is
+    the big roads plus NOISE_CELLS. Town is the km of town streets per km²."""
+
+    def __init__(self, d, scenery_path):
+        import scenery as S
+
+        self.S = S
+        layers = S.Scenery(*S.merge([S.load(scenery_path)])).layers
+        self.layers = {"forest": layers["forest"], "water": layers["water"]}
+        noise = np.zeros((S.HEIGHT, S.WIDTH), dtype=bool)
+        counts, lon, lat = d["big_counts"], (d["big_lon"] / COORD).tolist(), (d["big_lat"] / COORD).tolist()
+        ends = np.cumsum(counts).tolist()
+        for a, b in zip((np.cumsum(counts) - counts).tolist(), ends):
+            S.draw(noise, [list(zip(lon[a:b], lat[a:b]))], line=True)
+        for i in range(NOISE_CELLS):
+            noise = S.dilate(noise, square=i % 2 == 1)
+        self.layers["noise"] = S.pack(noise)
+        del noise
+        self.town = self.town_density(d)
+
+    def town_density(self, d):
+        S = self.S
+        counts, kind = d["counts"], d["bits"] & 31
+        town = np.isin(kind, [HIGHWAYS.index(h) for h in TOWN_ROADS])
+        pts = ranges((np.cumsum(counts) - counts)[town], counts[town])
+        x, y = d["lon"][pts] / COORD, d["lat"][pts] / COORD
+        last = np.zeros(len(pts), dtype=bool)
+        last[np.cumsum(counts[town]) - 1] = True
+        seg_m = np.where(last[:-1], 0, meters(x[:-1], y[:-1], x[1:], y[1:]))
+        cx, cy = self.cells((x[:-1] + x[1:]) / 2, (y[:-1] + y[1:]) / 2, TOWN_CELLS)
+        h, w = -(-S.HEIGHT // TOWN_CELLS), -(-S.WIDTH // TOWN_CELLS)
+        ok = (cx >= 0) & (cx < w) & (cy >= 0) & (cy < h)
+        km = np.bincount(cy[ok] * w + cx[ok], weights=seg_m[ok] / 1000, minlength=h * w).reshape(h, w)
+        p = np.pad(km, 1)
+        around = sum(p[1 + dy : h + 1 + dy, 1 + dx : w + 1 + dx] for dy in (-1, 0, 1) for dx in (-1, 0, 1))
+        cell_km2 = TOWN_CELLS * S.CELL_LON * 111.32 * np.cos(np.radians(51)) * TOWN_CELLS * S.CELL_LAT * 110.54
+        return around / (9 * cell_km2)
+
+    def cells(self, lon, lat, size=1):
+        S = self.S
+        return (
+            np.floor((lon - S.WEST) / (S.CELL_LON * size)).astype(np.int64),
+            np.floor((S.NORTH - lat) / (S.CELL_LAT * size)).astype(np.int64),
+        )
+
+    def sample(self, lon, lat):
+        """Value of each grid at each point: 1 or 0 on the layers, km per km² for town."""
+        S = self.S
+        x, y = self.cells(lon, lat)
+        ok = (x >= 0) & (x < S.WIDTH) & (y >= 0) & (y < S.HEIGHT)
+        x, y = np.where(ok, x, 0), np.where(ok, y, 0)
+        out = {k: ((a[y, x >> 3] >> (7 - (x & 7))) & 1) * ok for k, a in self.layers.items()}
+        tx, ty = x // TOWN_CELLS, y // TOWN_CELLS
+        out["town"] = self.town[ty, tx] * ok
+        return out
+
+    def estimates(self, x, y, seg_m, s, e, kind):
+        """Estimate classes per edge, packed: forest bits 0-2, water 3-5, town 6-8,
+        traffic 9-11, noise 12-14. Averaged over samples every SAMPLE_M."""
+        n = len(x)
+        per = np.where(seg_m > 0, np.maximum(1, np.ceil(seg_m / SAMPLE_M)), 0).astype(np.int64)
+        point = np.repeat(np.arange(n), per)
+        first = np.cumsum(per) - per
+        frac = (np.arange(len(point)) - first[point] + 0.5) / per[point]
+        nxt = np.minimum(point + 1, n - 1)
+        values = self.sample(x[point] + (x[nxt] - x[point]) * frac, y[point] + (y[nxt] - y[point]) * frac)
+        before = np.r_[0, np.cumsum(per)]
+        samples = np.maximum(before[e] - before[s], 1)
+        mean = {}
+        for k, v in values.items():
+            total = np.r_[0.0, np.cumsum(np.bincount(point, weights=v, minlength=n))]
+            mean[k] = (total[e] - total[s]) / samples
+        town = np.searchsorted(TOWN_KM, mean["town"], side="right").astype(np.uint16)
+        base = np.zeros(32, dtype=np.uint16)
+        for h, c in TRAFFIC.items():
+            base[HIGHWAYS.index(h)] = c
+        traffic = base[kind]
+        traffic = np.minimum(6, traffic + ((traffic > 0) & (town >= 3))).astype(np.uint16)
+        return (
+            share_class(mean["forest"])
+            | share_class(mean["water"]) << 3
+            | town << 6
+            | traffic << 9
+            | share_class(mean["noise"]) << 12
+        ).astype(np.uint16)
+
+
 def main_component(a, b, n):
     """Mask of the nodes in the largest connected part.
 
@@ -369,9 +491,11 @@ def tile_of(lon, lat):
     return np.floor(lon / COORD / TILE_DEG).astype(np.int64), np.floor(lat / COORD / TILE_DEG).astype(np.int64)
 
 
-def build(path, out):
+def build(path, scenery_path, out):
     """Write <out>/route/<key>.bin and <key>.geo.bin. Returns the manifest entry and stats."""
-    e = edges(path, junction_refs(path))
+    grids = Grids(load(path), scenery_path)
+    e = edges(path, junction_refs(path), grids)
+    del grids
 
     # Dense node numbers. Loops are dropped, and so is everything off the largest connected part.
     # Edge ends are all in node_ref, which is sorted.
@@ -383,7 +507,7 @@ def build(path, out):
     keep = e_from != e_to
     main = main_component(e_from[keep], e_to[keep], len(node_lon))
     keep &= main[e_from]
-    edge_keys = ("len", "bits", "down_f", "down_b", "ele_from", "ele_to", "shape_start", "shape_count")
+    edge_keys = ("len", "bits", "est", "down_f", "down_b", "ele_from", "ele_to", "shape_start", "shape_count")
     edge = {k: e[k][keep] for k in edge_keys}
     shape = {k: e[k] for k in ("shape_lon", "shape_lat", "shape_ele")}
     e_from, e_to = e_from[keep], e_to[keep]
@@ -432,6 +556,7 @@ def build(path, out):
             edge["bits"][idx].astype("<u2").tobytes(),
             edge["down_f"][idx].astype("<u2").tobytes(),
             edge["down_b"][idx].astype("<u2").tobytes(),
+            edge["est"][idx].astype("<u2").tobytes(),
         ])  # fmt: skip
         geometry = geometry_part(idx, edge, shape, node_lon[e_from[idx]], node_lat[e_from[idx]])
         keys.append(name)
@@ -460,6 +585,11 @@ def build(path, out):
         "search_mib": round(sum(s for s, _ in sizes) / 2**20, 1),
         "geometry_mib": round(sum(g for _, g in sizes) / 2**20, 1),
         "max_tile_mib": round(max(s + g for s, g in sizes) / 2**20, 2),
+        # Share of km in each class 0-6.
+        **{
+            k: np.round(np.bincount((edge["est"] >> shift) & 7, weights=edge["len"], minlength=7) / edge["len"].sum(), 3).tolist()
+            for k, shift in (("forest", 0), ("water", 3), ("town", 6), ("traffic", 9), ("noise", 12))
+        },
     }
     return manifest, stats
 

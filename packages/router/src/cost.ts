@@ -1,4 +1,5 @@
 import type { Profile, Surface } from "@wayline/domain";
+import { at } from "./tiles";
 
 // Edge attributes, as pipeline/routing.py writes them.
 export const bitsOf = (b: number) => ({
@@ -12,6 +13,28 @@ export const bitsOf = (b: number) => ({
   backward: (b >> 13) & 1,
 });
 
+/** Classes 0 (none) to 6, as pipeline/routing.py writes them. */
+export const estimatesOf = (e: number) => ({
+  forest: e & 7,
+  water: (e >> 3) & 7,
+  town: (e >> 6) & 7,
+  traffic: (e >> 9) & 7,
+  noise: (e >> 12) & 7,
+});
+
+/** Added cost per meter by class 0-6, from the BRouter profiles. */
+const PENALTY = {
+  forest: [1, 0.5, 0.4, 0.25, 0.15, 0.1, 0],
+  water: [2, 1.3, 1, 0.7, 0.4, 0.1, 0],
+  town: [0, 0.5, 0.9, 1.2, 1.3, 1.4, 1.6],
+  traffic: [0, 0.2, 0.2, 0.4, 0.6, 0.8, 1],
+  noise: [0, 0.3, 0.5, 0.8, 1.4, 1.7, 2],
+};
+
+/** Cost of getting on a ferry, in meters. */
+export const FERRY_COST = 10_000;
+const FERRY_FACTOR = 5.67;
+
 /** A full U-turn costs 2 × this. */
 export const TURN_COST = 90;
 
@@ -23,20 +46,25 @@ export type CostProfile = {
   avoidUnsafe: boolean;
   /** Per meter of descent beyond BRouter's downhill cutoff. */
   downhillCost: number;
+  /** Prefers forest and water, avoids towns. */
+  scenery: boolean;
+  /** Avoids traffic and noise. */
+  quiet: boolean;
 };
 
 export const TOURING: CostProfile = {
   cycleRoutes: true,
   avoidUnsafe: true,
   downhillCost: 60,
+  scenery: false,
+  quiet: false,
 };
 
 export const COST_PROFILES: Record<Profile, CostProfile> = {
   touring: TOURING,
-  fast: { cycleRoutes: false, avoidUnsafe: false, downhillCost: 0 },
-  // Touring plus scenery and traffic costs, which the tiles don't have yet.
-  scenic: TOURING,
-  quiet: TOURING,
+  fast: { ...TOURING, cycleRoutes: false, avoidUnsafe: false, downhillCost: 0 },
+  scenic: { ...TOURING, scenery: true },
+  quiet: { ...TOURING, quiet: true },
 };
 
 const MAIN_ROADS: Record<string, [bike: number, noBike: number]> = {
@@ -63,10 +91,29 @@ export function wayFactor(
   bits: number,
   highways: string[],
   profile: CostProfile = TOURING,
+  estimates = 0,
 ): number {
+  return baseFactor(bits, highways, profile) + penalty(estimates, profile);
+}
+
+function penalty(estimates: number, profile: CostProfile) {
+  const c = estimatesOf(estimates);
+  let p = 0;
+  if (profile.scenery)
+    p +=
+      at(PENALTY.forest, c.forest) +
+      at(PENALTY.water, c.water) +
+      at(PENALTY.town, c.town);
+  if (profile.quiet)
+    p += at(PENALTY.traffic, c.traffic) + at(PENALTY.noise, c.noise);
+  return p;
+}
+
+function baseFactor(bits: number, highways: string[], profile: CostProfile) {
   const b = bitsOf(bits);
-  if (b.signed && profile.cycleRoutes) return 1;
   const hw = highways[b.highway];
+  if (hw === "ferry") return FERRY_FACTOR;
+  if (b.signed && profile.cycleRoutes) return 1;
   const goodSurface = b.paved && (b.bike || hw === "footway") && !b.unpaved;
   let f: number;
   if (hw === "pedestrian") f = b.bike ? 2.2 : 3;

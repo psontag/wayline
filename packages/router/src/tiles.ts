@@ -21,6 +21,8 @@ export type SearchTile = {
   /** Decimeters, from → to and to → from. */
   downF: Uint16Array;
   downB: Uint16Array;
+  /** Forest, water, town, traffic and noise classes (see estimatesOf). */
+  estimates: Uint16Array;
 };
 
 /** Geometry part of one tile, edges in the order of the search part. */
@@ -69,7 +71,7 @@ function undelta(a: Int32Array) {
 }
 
 export function decodeSearch(key: string, bytes: Uint8Array): SearchTile {
-  const r = new Reader(bytes, "WRT1");
+  const r = new Reader(bytes, "WRT2");
   const counts = r.u32(2);
   const n = at(counts, 0);
   const m = at(counts, 1);
@@ -84,6 +86,7 @@ export function decodeSearch(key: string, bytes: Uint8Array): SearchTile {
     bits: r.u16(m),
     downF: r.u16(m),
     downB: r.u16(m),
+    estimates: r.u16(m),
   };
   r.end();
   return tile;

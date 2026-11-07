@@ -192,16 +192,6 @@ export function destinationStations(
   return out;
 }
 
-/** Alternatives closer than this to the day's start are no real choice. */
-const START_GAP_KM = 10;
-
-/** Alternatives that are not just back where the day starts. */
-export function awayFromStart(stage: Stage, places: Place[]): Place[] {
-  return places.filter(
-    (p) => distanceKm(p.coord, stage.start.coord) >= START_GAP_KM,
-  );
-}
-
 /** The stop and its alternatives with km, ascent, beds and town size. */
 export function stopChoices(
   trip: Trip,
@@ -265,12 +255,8 @@ export function useStopOptions(
   const alternatives = useMemo(() => {
     const stage = trip.stages[index];
     if (!stage) return [];
-    if (index < trip.stages.length - 1) {
-      return awayFromStart(stage, stage.end.alternatives);
-    }
-    return findStations && places
-      ? awayFromStart(stage, destinationStations(stage, places))
-      : [];
+    if (index < trip.stages.length - 1) return stage.end.alternatives;
+    return findStations && places ? destinationStations(stage, places) : [];
   }, [trip, index, findStations, places]);
   const routed = useQueries({
     queries: alternatives.map((place) => ({
