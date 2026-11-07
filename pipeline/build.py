@@ -1,6 +1,6 @@
 """Build the route network and places for the region.
 
-Usage: python build.py [--cache DIR] [--out DIR] [--states a,b]
+Usage: python build.py [--cache DIR] [--out DIR] [--area germany|<state>]
 
 Reads the downloads from the cache (see download.py) and writes
 <out>/<version>/ with manifest.json, search.json, tiles/<x>_<y>.json,
@@ -15,6 +15,7 @@ import hashlib
 import json
 import math
 import os
+import subprocess
 import time
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
@@ -55,40 +56,63 @@ class Timer:
         self.last = now
 
 
-def load_extract(cache, state):
-    """Extract one state. The result is cached next to the download."""
-    src = os.path.join(cache, "osm", f"{state}-latest.osm.pbf")
-    dst = os.path.join(cache, "work", f"{state}.json")
-    newest_input = max(os.path.getmtime(src), os.path.getmtime(E.__file__))
-    if not os.path.exists(dst) or os.path.getmtime(dst) < newest_input:
+# What extract.py, scenery.py and routing.py read, with the nodes of the ways
+# and the members of the relations. The rest of the OSM file is dropped.
+OSM_FILTER = [
+    "r/route=bicycle",
+    "w/highway",
+    "nwr/tourism=hotel,guest_house,motel,attraction,viewpoint,museum",
+    "nwr/historic=castle,ruins,monastery,city_gate",
+    "n/place=city,town,village",
+    "n/railway=station,halt",
+    "nwr/landuse=forest,vineyard",
+    "nwr/natural=wood,water",
+    "nwr/leisure=nature_reserve",
+    "nwr/boundary=national_park,protected_area",
+    "w/waterway=river,canal",
+]
+
+
+def stale(dst, *inputs):
+    return not os.path.exists(dst) or os.path.getmtime(dst) < max(os.path.getmtime(p) for p in inputs)
+
+
+def osm_file(cache, area):
+    """The OSM file of the area, filtered by osmium-tool. Cached next to the download."""
+    src = os.path.join(cache, "osm", f"{area}-latest.osm.pbf")
+    dst = os.path.join(cache, "work", f"{area}-filtered.osm.pbf")
+    if stale(dst, src, __file__):
         os.makedirs(os.path.dirname(dst), exist_ok=True)
+        subprocess.run(["osmium", "tags-filter", "--overwrite", "-o", dst, src, *OSM_FILTER], check=True)
+    return dst
+
+
+def load_extract(cache, area, src):
+    """Routes, places, stations and hotels (see extract.extract). Cached like osm_file."""
+    dst = os.path.join(cache, "work", f"{area}.json")
+    if stale(dst, src, E.__file__):
         data = E.extract(src)
         with open(dst, "w") as f:
             json.dump(data, f)
-        return data, src
+        return data
     with open(dst) as f:
-        return json.load(f), src
+        return json.load(f)
 
 
-def scenery_file(cache, state):
-    """Scenery of one state (see scenery.extract). Cached like load_extract."""
-    src = os.path.join(cache, "osm", f"{state}-latest.osm.pbf")
-    dst = os.path.join(cache, "work", f"{state}-scenery.npz")
-    if not os.path.exists(dst) or os.path.getmtime(dst) < max(os.path.getmtime(src), os.path.getmtime(S.__file__)):
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
+def scenery_file(cache, area, src):
+    """Scenery (see scenery.extract). Cached like osm_file."""
+    dst = os.path.join(cache, "work", f"{area}-scenery.npz")
+    if stale(dst, src, S.__file__):
         # In a child process, so its memory is free again afterwards.
         with ProcessPoolExecutor(1) as pool:
             pool.submit(S.extract_to, src, dst).result()
     return dst
 
 
-def routing_file(cache, state):
-    """Ways of one state for the routing tiles (see routing.extract). Cached like load_extract."""
-    src = os.path.join(cache, "osm", f"{state}-latest.osm.pbf")
-    dst = os.path.join(cache, "work", f"{state}-routing.npz")
-    newest_input = max(os.path.getmtime(p) for p in (src, R.__file__, E.__file__, os.path.join(HERE, "dem.py")))
-    if not os.path.exists(dst) or os.path.getmtime(dst) < newest_input:
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
+def routing_file(cache, area, src):
+    """Ways for the routing tiles (see routing.extract). Cached like osm_file."""
+    dst = os.path.join(cache, "work", f"{area}-routing")
+    if stale(dst, src, R.__file__, E.__file__, os.path.join(HERE, "dem.py")):
         with ProcessPoolExecutor(1) as pool:
             pool.submit(R.extract_to, src, os.path.join(cache, "dem"), dst).result()
     return dst
@@ -132,46 +156,42 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache", default=os.path.join(HERE, "cache"))
     ap.add_argument("--out", default=os.path.join(HERE, "..", "apps", "web", "public", "data"))
-    ap.add_argument("--states", default=",".join(region.STATES))
+    ap.add_argument("--area", default=region.AREA, help="germany, or one state such as hessen")
     args = ap.parse_args()
-    states = args.states.split(",")
+    area = args.area
     t = Timer()
-    download.main(args.cache, states)
+    download.main(args.cache, area)
     t.step("download")
 
-    srcs = [os.path.join(args.cache, "osm", f"{s}-latest.osm.pbf") for s in states]
-    osm_date = datetime.date.fromtimestamp(max(os.path.getmtime(p) for p in srcs)).isoformat()
-    name = region.ID if states == region.STATES else "-".join(states)
+    raw = os.path.join(args.cache, "osm", f"{area}-latest.osm.pbf")
+    osm_date = datetime.date.fromtimestamp(os.path.getmtime(raw)).isoformat()
+    name = region.ID if area == region.AREA else area
     version = f"{name}-{osm_date}-{pipeline_hash()}"
     out = os.path.join(args.out, version)
+    src = osm_file(args.cache, area)
+    t.step("filter")
 
     # Routing tiles first, each step in a child process, so their memory is
     # free again before the route graph.
-    routing_files = [routing_file(args.cache, s) for s in states]
+    routing_dir = routing_file(args.cache, area, src)
     t.step("routing extract")
     with ProcessPoolExecutor(1) as pool:
-        routing, routing_stats = pool.submit(R.build, routing_files, out).result()
+        routing, routing_stats = pool.submit(R.build, routing_dir, out).result()
     t.step("routing tiles")
 
-    # Extracted before the route extracts and loaded after the graph, so the
+    # Extracted before the route extract and loaded after the graph, so the
     # peaks of the three steps don't add up.
-    scenery_files = [scenery_file(args.cache, s) for s in states]
+    scenery_npz = scenery_file(args.cache, area, src)
     t.step("scenery")
 
-    parts = []
-    for s in states:
-        data, _ = load_extract(args.cache, s)
-        parts.append(data)
-        print(f"{s}: {E.summary(data)}")
-        t.step(f"extract {s}")
-    data = E.merge(parts) if len(parts) > 1 else parts[0]
-    del parts
-    print(f"merged: {E.summary(data)}")
+    data = load_extract(args.cache, area, src)
+    print(f"extract: {E.summary(data)}")
+    t.step("extract")
 
     g = G.build(data)
     print("graph:", {k: round(v, 3) if isinstance(v, float) else v for k, v in g["stats"].items()})
     t.step("graph")
-    scenery = S.Scenery(*S.merge(S.load(f) for f in scenery_files))
+    scenery = S.Scenery(*S.merge([S.load(scenery_npz)]))
 
     dem = Dem(os.path.join(args.cache, "dem"))
     network, index = X.export_network(g, dem, version, scenery)

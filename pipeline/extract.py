@@ -152,22 +152,6 @@ def extract(src):
     return {"routes": routes, "ways": ways.ways, "places": nodes.places, "stations": nodes.stations, "hotels": hotels}
 
 
-def merge(parts):
-    """Merge extracts of neighboring areas. Features on both sides of a border count once."""
-    out = {"routes": {}, "ways": {}, "places": {}, "stations": {}, "hotels": {}}
-    for p in parts:
-        for r in p["routes"]:
-            cur = out["routes"].get(r["id"])
-            if cur:
-                cur["ways"] = list(dict.fromkeys(cur["ways"] + r["ways"]))
-            else:
-                out["routes"][r["id"]] = r
-        out["ways"].update(p["ways"])
-        for k in ("places", "stations", "hotels"):
-            out[k].update({x["id"]: x for x in p[k]})
-    return {"ways": out["ways"], **{k: list(v.values()) for k, v in out.items() if k != "ways"}}
-
-
 def summary(data):
     return " ".join(f"{k}={len(v)}" for k, v in data.items())
 

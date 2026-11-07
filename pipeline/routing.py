@@ -1,6 +1,6 @@
 """Routing tiles: all bikeable ways, for the router in the browser.
 
-extract() reads one state: the ways and the elevation of each point. build() merges the states, splits the ways at
+extract() reads the ways and the elevation of each point. build() splits the ways at
 junctions, keeps the largest connected part and writes two gzipped files per
 tile: the search part (nodes and edges) and the geometry part (shape points
 and elevation). The format is in the README.
@@ -8,6 +8,7 @@ and elevation). The format is in the README.
 
 import gzip
 import os
+import shutil
 from array import array
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
@@ -212,27 +213,42 @@ def profile(counts, lon, lat, dem):
 def extract_to(src, dem_dir, path):
     from dem import Dem
 
-    np.savez(path, **extract(src, Dem(dem_dir)))
+    save(path, extract(src, Dem(dem_dir)))
+
+
+def save(path, arrays):
+    """One .npy file per array in the folder path, so load() can map them."""
+    tmp = path + ".tmp"
+    shutil.rmtree(tmp, ignore_errors=True)
+    os.makedirs(tmp)
+    for k, v in arrays.items():
+        np.save(os.path.join(tmp, f"{k}.npy"), v)
+    shutil.rmtree(path, ignore_errors=True)
+    os.replace(tmp, path)
+
+
+def load(path):
+    """The arrays of save(), mapped from disk: the OS reads them as needed and can drop them again."""
+    return {f[:-4]: np.load(os.path.join(path, f), mmap_mode="r") for f in os.listdir(path) if f.endswith(".npy")}
 
 
 def junction_refs(path):
-    """Nodes used twice or at the end of a way. Every way through a node is in
-    the extract of the node's state, so the union over the states is exact."""
-    d = np.load(path)
+    """Nodes used twice or at the end of a way."""
+    d = load(path)
     refs, counts = d["refs"], d["counts"]
     ends = np.r_[np.cumsum(counts) - counts, np.cumsum(counts) - 1]
-    uniq, uses = np.unique(refs, return_counts=True)
-    return np.union1d(uniq[uses > 1], refs[ends])
+    s = np.sort(refs)
+    twice = np.unique(s[1:][s[1:] == s[:-1]])
+    del s
+    return np.union1d(twice, refs[ends])
 
 
-def state_edges(path, keep, junctions):
-    """Edges of the kept ways of one state. Ends are OSM node ids."""
-    d = np.load(path)
-    counts = d["counts"]
-    keep_points = np.repeat(keep, counts)
-    counts, bits = counts[keep], d["bits"][keep]
-    points = [d[k][keep_points] for k in ("refs", "lon", "lat", "ele", "ele_raw")]
-    del d, keep_points
+def edges(path, junctions):
+    """Edges of all ways. Ends are OSM node ids."""
+    d = load(path)
+    counts, bits = d["counts"], d["bits"]
+    points = [d[k] for k in ("refs", "lon", "lat", "ele", "ele_raw")]
+    del d
     # In chunks of whole ways, to keep the temporary arrays small. Edges never span ways.
     parts, w, p = [], 0, 0
     ends = np.cumsum(counts)
@@ -353,36 +369,17 @@ def tile_of(lon, lat):
     return np.floor(lon / COORD / TILE_DEG).astype(np.int64), np.floor(lat / COORD / TILE_DEG).astype(np.int64)
 
 
-def build(paths, out):
+def build(path, out):
     """Write <out>/route/<key>.bin and <key>.geo.bin. Returns the manifest entry and stats."""
-    # A way in two state extracts belongs to the first.
-    ids = [np.load(p)["ids"] for p in paths]
-    _, first = np.unique(np.concatenate(ids), return_index=True)
-    owned = np.zeros(sum(len(i) for i in ids), dtype=bool)
-    owned[first] = True
-    bounds = np.cumsum([0] + [len(i) for i in ids])
-    del ids, first
-
-    junctions = np.unique(np.concatenate([junction_refs(p) for p in paths]))
-    parts = [state_edges(p, owned[bounds[i] : bounds[i + 1]], junctions) for i, p in enumerate(paths)]
-    del junctions, owned
-    shape_offset = np.cumsum([0] + [len(p["shape_lon"]) for p in parts])
-    for p, off in zip(parts, shape_offset):
-        p["shape_start"] = p["shape_start"] + off
-    # Key by key, so the parts and the result are never all in memory.
-    e = {k: np.concatenate([p.pop(k) for p in parts]) for k in list(parts[0])}
-    del parts
+    e = edges(path, junction_refs(path))
 
     # Dense node numbers. Loops are dropped, and so is everything off the largest connected part.
-    n_edges = len(e["from"])
-    refs, inverse = np.unique(np.concatenate([e.pop("from"), e.pop("to")]), return_inverse=True)
-    inverse = inverse.astype(np.int32)
-    e_from, e_to = inverse[:n_edges], inverse[n_edges:]
-    at = np.searchsorted(refs, e.pop("node_ref"))
-    node_lon = np.zeros(len(refs), dtype=np.int32)
-    node_lat = np.zeros(len(refs), dtype=np.int32)
-    node_lon[at], node_lat[at] = e.pop("node_lon"), e.pop("node_lat")
-    del inverse, at, refs
+    # Edge ends are all in node_ref, which is sorted.
+    refs = e.pop("node_ref")
+    e_from = np.searchsorted(refs, e.pop("from")).astype(np.int32)
+    e_to = np.searchsorted(refs, e.pop("to")).astype(np.int32)
+    node_lon, node_lat = e.pop("node_lon"), e.pop("node_lat")
+    del refs
     keep = e_from != e_to
     main = main_component(e_from[keep], e_to[keep], len(node_lon))
     keep &= main[e_from]
