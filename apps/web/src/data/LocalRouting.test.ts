@@ -1,6 +1,6 @@
 import { decodeLine, type LonLat } from "@wayline/domain";
 import { fetchFixture } from "@wayline/router/testing";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { LocalRouting } from "./LocalRouting";
 
 // The fixture holds two tiles around Marburg.
@@ -32,6 +32,35 @@ describe("LocalRouting", () => {
     await expect(
       routing().route([marburg, [7, 50]], { profile: "touring" }),
     ).rejects.toThrow(/No route/);
+  });
+
+  it("shares tiles between calls until it was idle for a while", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetched: string[] = [];
+      const counting = (input: string | URL | Request) => {
+        fetched.push(String(input));
+        return fetchFixture(input);
+      };
+      const shared = new LocalRouting(
+        Promise.resolve("/fixture"),
+        counting as typeof fetch,
+      );
+      const tiles = () => fetched.filter((f) => f.endsWith(".bin")).length;
+      const options = { profile: "touring" } as const;
+      await Promise.all([
+        shared.route([marburg, cappel], options),
+        shared.route([marburg, kirchhain], options),
+      ]);
+      const first = tiles();
+      await shared.route([cappel, kirchhain], options);
+      expect(tiles()).toBe(first);
+      vi.advanceTimersByTime(60_000);
+      await shared.route([cappel, kirchhain], options);
+      expect(tiles()).toBeGreaterThan(first);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("stops when aborted", async () => {
