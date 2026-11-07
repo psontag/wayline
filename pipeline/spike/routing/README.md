@@ -11,6 +11,13 @@ uv run spike/routing/build.py cache/osm/hessen-latest.osm.pbf spike/routing/out
 node spike/routing/route.mjs spike/routing/out brouter
 ```
 
+To check the real routing tiles (`pipeline/routing.py`) the same way:
+
+```sh
+uv run spike/routing/from_tiles.py <data dir> spike/routing/out/places.json spike/routing/out-tiles
+node spike/routing/route.mjs spike/routing/out-tiles brouter
+```
+
 ## How it works
 
 - `build.py` reads all bikeable ways and splits them at junctions. It writes the graph as Int32 arrays and the gzipped size of each 0.25° tile.

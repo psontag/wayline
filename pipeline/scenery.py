@@ -148,16 +148,6 @@ def relations(src):
     return out
 
 
-class WayFilter:
-    """Filter that drops all ways except rivers, canals and the given ways (True means drop)."""
-
-    def __init__(self, ids):
-        self.ids = ids
-
-    def way(self, w):
-        return not (w.id in self.ids or w.tags.get("waterway") in WATERWAYS)
-
-
 def extract(src):
     """Layers (bool arrays), sights {id: (lon, lat)} and parts of one PBF file.
 
@@ -170,13 +160,18 @@ def extract(src):
     seen = {w.id for w in osmium.FileProcessor(src, osmium.osm.WAY).with_filter(osmium.filter.IdFilter(members))}
     partial = {rid for rid, (_, ms) in rels.items() if any(w not in seen for w, _ in ms)}
     partial_ways = {w for rid in partial for w, _ in rels[rid][1] if w in seen}
+    rivers = osmium.filter.TagFilter(*(("waterway", v) for v in WATERWAYS))
+    river_ways = {w.id for w in osmium.FileProcessor(src, osmium.osm.WAY).with_filter(rivers)}
 
     canvas = Canvas()
     ways = {}
     tags = osmium.filter.TagFilter(*TAGS)
     tags.enable_for(osmium.osm.NODE | osmium.osm.RELATION | osmium.osm.AREA)
+    # Of the ways, only rivers, canals and parts of cut relations reach Python. Areas are built before the filters.
+    wanted_ways = osmium.filter.IdFilter(partial_ways | river_ways)
+    wanted_ways.enable_for(osmium.osm.WAY)
     complete = osmium.filter.IdFilter(set(rels) - partial)
-    fp = osmium.FileProcessor(src).with_areas(complete).with_filter(tags).with_filter(WayFilter(partial_ways))
+    fp = osmium.FileProcessor(src).with_areas(complete).with_filter(tags).with_filter(wanted_ways)
     for obj in fp:
         try:
             if obj.is_area():

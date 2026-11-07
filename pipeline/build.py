@@ -4,7 +4,8 @@ Usage: python build.py [--cache DIR] [--out DIR] [--states a,b]
 
 Reads the downloads from the cache (see download.py) and writes
 <out>/<version>/ with manifest.json, search.json, tiles/<x>_<y>.json,
-places/<x>_<y>.json and the route lines (lines.py), plus <out>/latest.json
+places/<x>_<y>.json, the route lines (lines.py) and the routing tiles
+route/<x>_<y>.bin (routing.py), plus <out>/latest.json
 that names the newest version.
 """
 
@@ -24,6 +25,7 @@ import extract as E
 import graph as G
 import lines as L
 import region
+import routing as R
 import scenery as S
 from dem import Dem
 
@@ -80,6 +82,18 @@ def scenery_file(cache, state):
     return dst
 
 
+def routing_file(cache, state):
+    """Ways of one state for the routing tiles (see routing.extract). Cached like load_extract."""
+    src = os.path.join(cache, "osm", f"{state}-latest.osm.pbf")
+    dst = os.path.join(cache, "work", f"{state}-routing.npz")
+    newest_input = max(os.path.getmtime(p) for p in (src, R.__file__, E.__file__, os.path.join(HERE, "dem.py")))
+    if not os.path.exists(dst) or os.path.getmtime(dst) < newest_input:
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with ProcessPoolExecutor(1) as pool:
+            pool.submit(R.extract_to, src, os.path.join(cache, "dem"), dst).result()
+    return dst
+
+
 def tile_key(lon, lat):
     return f"{math.floor(lon / region.TILE_DEG)}_{math.floor(lat / region.TILE_DEG)}"
 
@@ -125,16 +139,29 @@ def main():
     download.main(args.cache, states)
     t.step("download")
 
+    srcs = [os.path.join(args.cache, "osm", f"{s}-latest.osm.pbf") for s in states]
+    osm_date = datetime.date.fromtimestamp(max(os.path.getmtime(p) for p in srcs)).isoformat()
+    name = region.ID if states == region.STATES else "-".join(states)
+    version = f"{name}-{osm_date}-{pipeline_hash()}"
+    out = os.path.join(args.out, version)
+
+    # Routing tiles first, each step in a child process, so their memory is
+    # free again before the route graph.
+    routing_files = [routing_file(args.cache, s) for s in states]
+    t.step("routing extract")
+    with ProcessPoolExecutor(1) as pool:
+        routing, routing_stats = pool.submit(R.build, routing_files, out).result()
+    t.step("routing tiles")
+
     # Extracted before the route extracts and loaded after the graph, so the
     # peaks of the three steps don't add up.
     scenery_files = [scenery_file(args.cache, s) for s in states]
     t.step("scenery")
 
-    parts, srcs = [], []
+    parts = []
     for s in states:
-        data, src = load_extract(args.cache, s)
+        data, _ = load_extract(args.cache, s)
         parts.append(data)
-        srcs.append(src)
         print(f"{s}: {E.summary(data)}")
         t.step(f"extract {s}")
     data = E.merge(parts) if len(parts) > 1 else parts[0]
@@ -146,9 +173,6 @@ def main():
     t.step("graph")
     scenery = S.Scenery(*S.merge(S.load(f) for f in scenery_files))
 
-    osm_date = datetime.date.fromtimestamp(max(os.path.getmtime(p) for p in srcs)).isoformat()
-    name = region.ID if states == region.STATES else "-".join(states)
-    version = f"{name}-{osm_date}-{pipeline_hash()}"
     dem = Dem(os.path.join(args.cache, "dem"))
     network, index = X.export_network(g, dem, version, scenery)
     print(f"network: nodes={len(network['nodes'])} edges={len(network['edges'])}")
@@ -157,7 +181,6 @@ def main():
 
     places = X.export_places(data, g, index, version)
     tiles = split_tiles(network)
-    out = os.path.join(args.out, version)
     sizes = {k: write(os.path.join(out, "tiles", f"{k}.json"), tile) for k, tile in tiles.items()}
     place_tiles = X.split_places(places, network["nodes"], tile_key)
     place_sizes = [write(os.path.join(out, "places", f"{k}.json"), p) for k, p in place_tiles.items()]
@@ -174,6 +197,7 @@ def main():
             "keys": sorted(tiles),
             "places": {"path": "places/{key}.json", "keys": sorted(place_tiles)},
         },
+        "routing": routing,
         "createdAt": datetime.date.today().isoformat(),
     }
     write(os.path.join(out, "manifest.json"), manifest)
@@ -194,6 +218,7 @@ def main():
     print(f"tiles: {len(s)} files, {sum(s) / mb:.1f} MiB, median {s[len(s) // 2] / mb:.2f} MiB, max {s[-1] / mb:.2f} MiB")
     print(f"lines: {lines['routes']} routes, {lines['files']} files ({lines['empty']} empty), {lines['bytes'] / mb:.1f} MiB, max {lines['max'] / 1024:.0f} KiB")
     print("scenery:", S.stats(network["edges"]))
+    print("routing:", routing_stats)
     print(f"total: {time.time() - t.start:.0f} s")
 
 

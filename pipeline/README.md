@@ -11,7 +11,15 @@ pnpm data:build
 - Needs [uv](https://docs.astral.sh/uv/), Python 3.12 and [tippecanoe](https://github.com/felt/tippecanoe) 2.79 or newer (`brew install tippecanoe`; the Ubuntu package is too old, so build it from source as in `.github/workflows/ci.yml`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
 - Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): Geofabrik extracts of the 16 states (4.7 GB) and Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB).
 - Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `de-<date of the extracts>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
-- Takes about 18 minutes and up to 5.5 GB of memory on a laptop: 3.5 for the download, 7 for scenery, 6 for routes and places. The extracts are cached, so the next build takes 2.5 minutes.
+- Takes about 23 minutes plus the download, and up to 6.2 GB of memory on a laptop. The extracts are cached, so the next build takes about 4.5 minutes.
+
+| Step | Minutes |
+|---|---|
+| Routing extracts | 6.5 |
+| Routing tiles | 2.3 |
+| Scenery extracts | 7.6 |
+| Route extracts | 4.3 |
+| Graph, export and lines | 2 |
 - `pnpm data:build --states hessen` builds one state.
 
 Output (November 2026):
@@ -74,6 +82,68 @@ Sights within 500 m, share of edges:
 |---|---|---|---|---|
 | 63% | 18% | 13% | 4% | 2% |
 
+## Routing tiles
+
+`route/<x>_<y>.bin` and `route/<x>_<y>.geo.bin` hold all bikeable ways for the router in the browser (#81). `routing.py` builds them, the manifest lists them under `routing`.
+
+- Bikeable: `highway` of a road, track, path or cycleway, or any way with `bicycle=yes|designated|permissive|dismount`. Not `bicycle=no|private|use_sidepath`, `access=no|private`, steps or areas.
+- Ways split at junctions into edges. Only the largest connected part is kept.
+- An edge is in the tile of each of its ends. Tiles are 0.25°.
+- Elevation: the DEM at each point, and smoothed over 50 m samples (±4) for the profile.
+- Descent per edge and direction: the DEM at each point with a 10 m dead band, minus 1.5 % of the length (like BRouter's `downhillcutoff`).
+- Shape points: inner points of a way more than 1.5 m off the line of their neighbors.
+
+Germany (November 2026): 17.0 M nodes, 21.2 M edges, 2.3 M km, 835 tiles. Search parts 163 MiB, geometry parts 125 MiB gzipped, largest tile 1.4 MiB. A 230 km trip routed in 10 km legs loads about 6 MiB.
+
+| Step | Time | Memory |
+|---|---|---|
+| Extract, per state | 2–88 s, 7 min in all | up to 3.9 GB (Nordrhein-Westfalen) |
+| Tiles | 2 min | 5.7 GB |
+
+Both files are gzipped. All numbers are little-endian. Coordinates are degrees × 10⁶. "Delta" means each value minus the one before, the first as is.
+
+Search part (`.bin`):
+
+| Field | Type | Count |
+|---|---|---|
+| `WRT1` | 4 bytes | |
+| Nodes n, edges m | u32 | 2 |
+| Node ids, ascending, delta | i32 | n |
+| Lon, delta | i32 | n |
+| Lat, delta | i32 | n |
+| From node (index in this tile), delta | i32 | m |
+| To node (index in this tile) | i32 | m |
+| Length in m | u32 | m |
+| Attributes | u16 | m |
+| Descent from → to in dm | u16 | m |
+| Descent to → from in dm | u16 | m |
+
+Node ids are the same in all tiles, so tiles join at shared nodes. Ids follow the tiles, so ids in a tile are close.
+
+Attributes:
+
+| Bits | Value |
+|---|---|
+| 0–4 | Way type: index in `routing.highways` of the manifest, 31 for others |
+| 5–7 | `tracktype` grade 1–5, 0 for none |
+| 8 | Paved (`surface=paved\|asphalt\|concrete\|paving_stones\|sett` or `smoothness=excellent\|good`) |
+| 9 | Unpaved, as BRouter's trekking profile |
+| 10 | Bike: bike lane, `bicycle=yes\|permissive\|designated`, bicycle road or `lcn=yes` |
+| 11 | On a signed cycle route |
+| 12 | Allowed from → to |
+| 13 | Allowed to → from |
+
+Geometry part (`.geo.bin`), edges in the same order:
+
+| Field | Type | Count |
+|---|---|---|
+| `WRG1` | 4 bytes | |
+| Edges m, shape points p | u32 | 2 |
+| Lon of each shape point, delta (first of an edge: to its from node) | i32 | p |
+| Lat, same | i32 | p |
+| Shape points per edge | u16 | m |
+| Elevation in m: from node, shape points, to node of each edge | i16 | p + 2m |
+
 ## Files
 
 | File | Does |
@@ -87,6 +157,7 @@ Sights within 500 m, share of edges:
 | `dem.py` | Reads elevation from the DEM tiles |
 | `export.py` | Writes nodes, edges and places in the format of `packages/domain/src/geodata.ts` |
 | `lines.py` | Writes the vector tiles of the signed routes and `routes.json` |
+| `routing.py` | Writes the routing tiles |
 | `region.py` | States, DEM tiles and tile size |
 | `check_area.py` | Checks the data around a station |
 | `subset.py` | Copies the tiles of a bbox into a small dataset |
