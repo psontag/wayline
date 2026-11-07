@@ -14,6 +14,8 @@ import {
   FormField,
   IconButton,
   Input,
+  PanelHeader,
+  PanelSection,
   SegmentedControl,
   Select,
   SortableList,
@@ -175,193 +177,203 @@ export function ImportTripPage() {
         }}
         className="flex w-full flex-col bg-surface md:min-h-0 md:max-w-panel md:border-l md:border-border"
       >
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-5">
-          <h1 className="text-xl font-extrabold tracking-tight">
-            {t("title")}
-          </h1>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <PanelHeader title={t("title")} />
 
-          {files.length === 0 ? (
-            <FileDrop
-              size="lg"
-              accept={GPX_TYPES}
-              multiple
-              label={t("drop.label")}
-              hint={t("drop.hint")}
-              onFiles={(picked) => void addFiles(picked)}
-            />
-          ) : (
-            <section className="flex flex-col gap-2">
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-sm font-bold">{t("days.title")}</h2>
-                <span className="text-xs text-text-muted tabular-nums">
-                  {t("days.total", {
-                    count: files.length,
-                    distance: format.distance(total),
-                  })}
-                </span>
-              </div>
-              <p className="text-xs text-text-muted">{t("days.hint")}</p>
-              <SortableList
-                items={files}
-                getKey={(f) => f.id}
-                onMove={move}
-                handleLabel={(_, i) => t("days.move", { day: i + 1 })}
-                renderItem={(file, i) => {
-                  const gap = gapBefore(files, i);
-                  const notes = [
-                    gap > GAP_KM &&
-                      t("days.gap", {
-                        distance: format.distance(gap * 1000),
-                        day: i,
-                      }),
-                    elevationNote(file),
-                  ].filter((n): n is string => !!n);
-                  const date = dayDate(i);
-                  return (
-                    <div
-                      onMouseEnter={() => setHovered(i)}
-                      onMouseLeave={() => setHovered(undefined)}
-                      className="flex flex-col gap-2 py-2 pr-2"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <span className="font-bold">
-                            {date
-                              ? t("days.dayDate", { day: i + 1, date })
-                              : t("days.day", { day: i + 1 })}
-                          </span>
-                          <span className="truncate text-xs text-text-muted">
-                            {file.fileName}
-                          </span>
-                        </div>
-                        <span className="text-sm whitespace-nowrap tabular-nums">
-                          {format.distance(file.distance)}
-                          {hasClimb(file) &&
-                            ` · ${format.elevation(file.ascent)}`}
-                        </span>
-                        <IconButton
-                          size="sm"
-                          label={t("days.remove", { day: i + 1 })}
-                          icon={<X aria-hidden />}
-                          onClick={() =>
-                            setFiles((c) => c.filter((f) => f.id !== file.id))
-                          }
-                        />
-                      </div>
-                      {notes.map((note) => (
-                        <p
-                          key={note}
-                          className="flex items-start gap-2 rounded-sm bg-hover px-2.5 py-2 text-xs leading-normal"
-                        >
-                          <TriangleAlert
-                            aria-hidden
-                            className="mt-0.5 size-3.5 shrink-0 text-warning"
-                          />
-                          {note}
-                        </p>
-                      ))}
-                    </div>
-                  );
-                }}
-              />
+          <PanelSection
+            icon="days"
+            title={t("days.title")}
+            summary={
+              files.length > 0 &&
+              t("days.total", {
+                count: files.length,
+                distance: format.distance(total),
+              })
+            }
+          >
+            {files.length === 0 ? (
               <FileDrop
+                size="lg"
                 accept={GPX_TYPES}
                 multiple
-                label={t("drop.add")}
+                label={t("drop.label")}
+                hint={t("drop.hint")}
                 onFiles={(picked) => void addFiles(picked)}
               />
-            </section>
-          )}
+            ) : (
+              <>
+                <p className="text-xs text-text-muted">{t("days.hint")}</p>
+                <SortableList
+                  items={files}
+                  getKey={(f) => f.id}
+                  onMove={move}
+                  handleLabel={(_, i) => t("days.move", { day: i + 1 })}
+                  renderItem={(file, i) => {
+                    const gap = gapBefore(files, i);
+                    const notes = [
+                      gap > GAP_KM &&
+                        t("days.gap", {
+                          distance: format.distance(gap * 1000),
+                          day: i,
+                        }),
+                      elevationNote(file),
+                    ].filter((n): n is string => !!n);
+                    const date = dayDate(i);
+                    return (
+                      <div
+                        onMouseEnter={() => setHovered(i)}
+                        onMouseLeave={() => setHovered(undefined)}
+                        className="flex flex-col gap-2 py-2 pr-2"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex min-w-0 flex-1 flex-col">
+                            <span className="font-bold">
+                              {date
+                                ? t("days.dayDate", { day: i + 1, date })
+                                : t("days.day", { day: i + 1 })}
+                            </span>
+                            <span className="truncate text-xs text-text-muted">
+                              {file.fileName}
+                            </span>
+                          </div>
+                          <span className="text-sm whitespace-nowrap tabular-nums">
+                            {format.distance(file.distance)}
+                            {hasClimb(file) &&
+                              ` · ${format.elevation(file.ascent)}`}
+                          </span>
+                          <IconButton
+                            size="sm"
+                            label={t("days.remove", { day: i + 1 })}
+                            icon={<X aria-hidden />}
+                            onClick={() =>
+                              setFiles((c) => c.filter((f) => f.id !== file.id))
+                            }
+                          />
+                        </div>
+                        {notes.map((note) => (
+                          <p
+                            key={note}
+                            className="flex items-start gap-2 rounded-sm bg-hover px-2.5 py-2 text-xs leading-normal"
+                          >
+                            <TriangleAlert
+                              aria-hidden
+                              className="mt-0.5 size-3.5 shrink-0 text-warning"
+                            />
+                            {note}
+                          </p>
+                        ))}
+                      </div>
+                    );
+                  }}
+                />
+                <FileDrop
+                  accept={GPX_TYPES}
+                  multiple
+                  label={t("drop.add")}
+                  onFiles={(picked) => void addFiles(picked)}
+                />
+              </>
+            )}
 
-          {reading && (
-            <p role="status" className="text-sm text-text-muted">
-              {t("reading")}
-            </p>
-          )}
+            {reading && (
+              <p role="status" className="text-sm text-text-muted">
+                {t("reading")}
+              </p>
+            )}
 
-          {failed.length > 0 && (
-            <p role="alert" className="text-sm text-danger">
-              {t("failed", { files: failed.join(", "), count: failed.length })}
-            </p>
-          )}
+            {failed.length > 0 && (
+              <p role="alert" className="text-sm text-danger">
+                {t("failed", {
+                  files: failed.join(", "),
+                  count: failed.length,
+                })}
+              </p>
+            )}
+          </PanelSection>
 
           {files.length > 0 && (
             <>
-              <FormField label={t("name")} htmlFor={`${id}-name`}>
-                <Input
-                  id={`${id}-name`}
-                  value={tripName}
-                  placeholder={t("defaultName")}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </FormField>
-
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  label={t("startDate")}
-                  note={t("optional")}
-                  htmlFor={`${id}-date`}
-                >
-                  <DateField
-                    id={`${id}-date`}
-                    clearable
-                    value={startDate}
-                    onValueChange={setStartDate}
+              <PanelSection icon="trip" title={t("section.trip")}>
+                <FormField label={t("name")} htmlFor={`${id}-name`}>
+                  <Input
+                    id={`${id}-name`}
+                    value={tripName}
+                    placeholder={t("defaultName")}
+                    onChange={(e) => setName(e.target.value)}
                   />
                 </FormField>
-                <FormField label={t("startTime")} htmlFor={`${id}-time`}>
-                  <Select
-                    id={`${id}-time`}
-                    value={startTime}
-                    onValueChange={setStartTime}
-                    options={startTimes.map((time) => ({
-                      value: time,
-                      label: format.time(new Date(`2000-01-01T${time}`)),
+
+                <FormField
+                  label={t("profile.label")}
+                  labelId={`${id}-profile`}
+                  hint={t("profile.hint")}
+                >
+                  <SegmentedControl
+                    stretch
+                    aria-labelledby={`${id}-profile`}
+                    value={profile}
+                    onValueChange={(v) => setProfile(v as Profile)}
+                    options={profiles.map((p) => ({
+                      value: p,
+                      label: t(`profile.${p}`),
                     }))}
                   />
                 </FormField>
-              </div>
+              </PanelSection>
+
+              <PanelSection icon="dates" title={t("section.dates")}>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    label={t("startDate")}
+                    note={t("optional")}
+                    htmlFor={`${id}-date`}
+                  >
+                    <DateField
+                      id={`${id}-date`}
+                      clearable
+                      value={startDate}
+                      onValueChange={setStartDate}
+                    />
+                  </FormField>
+                  <FormField label={t("startTime")} htmlFor={`${id}-time`}>
+                    <Select
+                      id={`${id}-time`}
+                      value={startTime}
+                      onValueChange={setStartTime}
+                      options={startTimes.map((time) => ({
+                        value: time,
+                        label: format.time(new Date(`2000-01-01T${time}`)),
+                      }))}
+                    />
+                  </FormField>
+                </div>
+              </PanelSection>
 
               {files.length > 1 && (
-                <FormField
-                  label={t("hotelBudget")}
-                  icon="budget"
-                  htmlFor={`${id}-budget`}
-                  hint={t("hotelHint")}
-                >
-                  <Select
-                    id={`${id}-budget`}
-                    value={budget}
-                    onValueChange={(v) => setBudget(v as HotelBudget)}
-                    options={budgets.map((b) => ({
-                      value: b,
-                      label: t(`budget.${b}`),
-                    }))}
-                  />
-                </FormField>
+                <PanelSection icon="hotel" title={t("section.hotel")}>
+                  <FormField
+                    label={t("hotelBudget")}
+                    icon="budget"
+                    htmlFor={`${id}-budget`}
+                    hint={t("hotelHint")}
+                  >
+                    <Select
+                      id={`${id}-budget`}
+                      value={budget}
+                      onValueChange={(v) => setBudget(v as HotelBudget)}
+                      options={budgets.map((b) => ({
+                        value: b,
+                        label: t(`budget.${b}`),
+                      }))}
+                    />
+                  </FormField>
+                </PanelSection>
               )}
-
-              <FormField
-                label={t("profile.label")}
-                labelId={`${id}-profile`}
-                hint={t("profile.hint")}
-              >
-                <SegmentedControl
-                  stretch
-                  aria-labelledby={`${id}-profile`}
-                  value={profile}
-                  onValueChange={(v) => setProfile(v as Profile)}
-                  options={profiles.map((p) => ({
-                    value: p,
-                    label: t(`profile.${p}`),
-                  }))}
-                />
-              </FormField>
             </>
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border bg-surface px-5 py-4 max-md:sticky max-md:bottom-0">
+        <div className="flex items-center justify-between gap-3 border-t border-border bg-surface px-4 py-4 max-md:sticky max-md:bottom-0">
           {create.isError ? (
             <span role="alert" className="text-sm text-danger">
               {t("createFailed")}

@@ -2,6 +2,13 @@
   "title": "New trip",
   "loading": "Loading places",
   "loadFailed": "Could not load the places.",
+  "section": {
+    "trip": "Trip",
+    "places": "Start and end",
+    "place": "Start",
+    "ride": "Ride",
+    "hotel": "Hotel"
+  },
   "length": {
     "label": "Length",
     "one": "One day",

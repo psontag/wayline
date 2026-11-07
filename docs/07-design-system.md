@@ -252,6 +252,8 @@ Every side panel follows these rules: the trip editor, proposals, new trip, impo
 - A panel shows one level at a time. A list of items is one level, one item is the next.
 - The panel header names the level. On the top level: title and its menu. On a detail level: back button and switches to the items next to it (day chips, prev and next).
 - Below the header the panel is a stack of sections. Nothing else.
+- Forms are panels too (new trip, import). Their sections hold form fields and don't fold. The submit button sits in a footer under the sections.
+- Proposals: the header names the search (places and dates). One Proposals section holds the cards. Search progress is its notice.
 - Actions for the whole screen (save state, undo, share, export) sit in the top bar, not in the panel.
 - The map and the panel stay in sync: hovering an item highlights it on the map, clicking it on the map opens it in the panel.
 
@@ -264,7 +266,7 @@ Every side panel follows these rules: the trip editor, proposals, new trip, impo
 | Body | Content, 16 px padding, 8–12 px gap |
 
 - Sections are split by a border. No cards around sections, no headings inside a section.
-- Every section has an icon, a title and a summary. The summary shows the current choice or the key numbers, so a folded section still says what matters.
+- Every section has an icon, a title and a summary. Form sections may leave out the summary. The summary shows the current choice or the key numbers, so a folded section still says what matters.
 - A section folds when its body is a choice or details. A section that gives an overview stays open.
 - Order: what the user decides first comes first. Getting there before the ride, the ride before the stop.
 
@@ -277,7 +279,8 @@ Sections hold only these patterns:
 | Stat tiles | `StatTile` | Totals: icon and label, value, optional second line |
 | Choice list | `ChoiceList` | Pick one of several: radio, name, muted second line, optional tag, actions at the end. The current row is `selected`. `MoreRow` shows the rest of a long list. |
 | Choice table | `StopChoices` | Pick one of several when the options are compared by numbers in columns |
-| Item rows | `DayCard`, `LinkRow` | Rows that open the next level. End in a right chevron. |
+| Item rows | `DayCard`, `LinkRow`, `ProposalCard` | Rows that open the next level. End in a right chevron. A proposal card opens in place. |
+| Form fields | `FormField` with an input | Only in form panels |
 | Detail rows | `Stat`, `SurfaceBar`, short text | Facts about the item |
 | Buttons | `Button`, `TextLink` | Actions on this section, at the end of the body |
 
@@ -315,6 +318,14 @@ Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of
 | Day | All days, day chips | Getting there (first day), Ride, Stop, Hotel, Getting home (last day) |
 
 Click a day card, a route on the map or a day chip to open a day.
+
+### Other panels
+
+| Panel | Header | Sections |
+|---|---|---|
+| Proposals | Places, dates | Proposals |
+| New trip | New trip | Trip, Start and end, When, Ride, Hotel (several days) |
+| Import | Import GPX | Days, then once files are added: Trip, Dates, Hotel (several days) |
 
 ## Enforcement
 

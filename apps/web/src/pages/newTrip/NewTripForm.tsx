@@ -14,6 +14,8 @@ import {
   DayStrip,
   FormField,
   NumberInput,
+  PanelHeader,
+  PanelSection,
   RadioCards,
   SegmentedControl,
   Select,
@@ -107,117 +109,121 @@ export function NewTripForm({
         }}
         className="flex min-h-0 w-full flex-col border-border bg-surface max-md:flex-1 max-md:border-t md:max-w-panel md:border-l"
       >
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-5">
-          <h1 className="text-xl font-extrabold tracking-tight">
-            {t("title")}
-          </h1>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <PanelHeader title={t("title")} />
 
-          <form.Field name="length">
-            {(field) => (
-              <FormField label={t("length.label")} labelId={`${id}-length`}>
-                <SegmentedControl
-                  stretch
-                  aria-labelledby={`${id}-length`}
-                  value={field.state.value}
-                  onValueChange={(v) => {
-                    field.handleChange(v as TripLength);
-                    // An open ride is one day only.
-                    if (v === "multi" && form.state.values.shape === "open") {
-                      form.setFieldValue("shape", "ab");
-                    }
-                  }}
-                  options={lengths.map((l) => ({
-                    value: l,
-                    label: t(`length.${l}`),
-                  }))}
-                />
-              </FormField>
-            )}
-          </form.Field>
+          <PanelSection icon="trip" title={t("section.trip")}>
+            <form.Field name="length">
+              {(field) => (
+                <FormField label={t("length.label")} labelId={`${id}-length`}>
+                  <SegmentedControl
+                    stretch
+                    aria-labelledby={`${id}-length`}
+                    value={field.state.value}
+                    onValueChange={(v) => {
+                      field.handleChange(v as TripLength);
+                      // An open ride is one day only.
+                      if (v === "multi" && form.state.values.shape === "open") {
+                        form.setFieldValue("shape", "ab");
+                      }
+                    }}
+                    options={lengths.map((l) => ({
+                      value: l,
+                      label: t(`length.${l}`),
+                    }))}
+                  />
+                </FormField>
+              )}
+            </form.Field>
 
-          <form.Subscribe selector={(s) => s.values.length}>
-            {(length) => (
-              <form.Field name="shape">
-                {(field) => (
-                  <FormField label={t("shape.label")} labelId={`${id}-shape`}>
-                    <RadioCards
-                      aria-labelledby={`${id}-shape`}
-                      value={field.state.value}
-                      onValueChange={(v) => field.handleChange(v as TripShape)}
-                      options={shapes
-                        .filter((k) => k !== "open" || length === "one")
-                        .map((k) => ({
-                          value: k,
-                          label: t(`shape.${k}.label`),
-                          hint: t(`shape.${k}.hint`),
-                        }))}
-                    />
-                  </FormField>
-                )}
-              </form.Field>
-            )}
-          </form.Subscribe>
+            <form.Subscribe selector={(s) => s.values.length}>
+              {(length) => (
+                <form.Field name="shape">
+                  {(field) => (
+                    <FormField label={t("shape.label")} labelId={`${id}-shape`}>
+                      <RadioCards
+                        aria-labelledby={`${id}-shape`}
+                        value={field.state.value}
+                        onValueChange={(v) =>
+                          field.handleChange(v as TripShape)
+                        }
+                        options={shapes
+                          .filter((k) => k !== "open" || length === "one")
+                          .map((k) => ({
+                            value: k,
+                            label: t(`shape.${k}.label`),
+                            hint: t(`shape.${k}.hint`),
+                          }))}
+                      />
+                    </FormField>
+                  )}
+                </form.Field>
+              )}
+            </form.Subscribe>
+          </PanelSection>
 
           <form.Subscribe selector={(s) => s.values.shape}>
             {(shape) => (
-              <div className="grid grid-cols-2 gap-3">
-                <form.Field name="start">
-                  {(field) => {
-                    const error = errorOf(field.state.meta);
-                    return (
-                      <FormField
-                        label={t("start")}
-                        htmlFor={`${id}-start`}
-                        error={error}
-                        errorId={`${id}-start-error`}
-                        className={shape === "ab" ? "" : "col-span-2"}
-                      >
-                        <PlaceField
-                          id={`${id}-start`}
-                          places={places}
-                          value={field.state.value}
-                          onChange={field.handleChange}
-                          invalid={!!error}
-                          describedBy={error && `${id}-start-error`}
-                        />
-                      </FormField>
-                    );
-                  }}
-                </form.Field>
-                {shape === "ab" && (
-                  <form.Field name="end">
+              <PanelSection
+                icon="stop"
+                title={t(shape === "ab" ? "section.places" : "section.place")}
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <form.Field name="start">
                     {(field) => {
                       const error = errorOf(field.state.meta);
                       return (
                         <FormField
-                          label={t("end")}
-                          htmlFor={`${id}-end`}
+                          label={t("start")}
+                          htmlFor={`${id}-start`}
                           error={error}
-                          errorId={`${id}-end-error`}
+                          errorId={`${id}-start-error`}
+                          className={shape === "ab" ? "" : "col-span-2"}
                         >
                           <PlaceField
-                            id={`${id}-end`}
+                            id={`${id}-start`}
                             places={places}
                             value={field.state.value}
                             onChange={field.handleChange}
                             invalid={!!error}
-                            describedBy={error && `${id}-end-error`}
+                            describedBy={error && `${id}-start-error`}
                           />
                         </FormField>
                       );
                     }}
                   </form.Field>
-                )}
-              </div>
+                  {shape === "ab" && (
+                    <form.Field name="end">
+                      {(field) => {
+                        const error = errorOf(field.state.meta);
+                        return (
+                          <FormField
+                            label={t("end")}
+                            htmlFor={`${id}-end`}
+                            error={error}
+                            errorId={`${id}-end-error`}
+                          >
+                            <PlaceField
+                              id={`${id}-end`}
+                              places={places}
+                              value={field.state.value}
+                              onChange={field.handleChange}
+                              invalid={!!error}
+                              describedBy={error && `${id}-end-error`}
+                            />
+                          </FormField>
+                        );
+                      }}
+                    </form.Field>
+                  )}
+                </div>
+              </PanelSection>
             )}
           </form.Subscribe>
 
           <form.Subscribe selector={(s) => s.values.length}>
             {(length) => (
-              <fieldset className="flex flex-col gap-3">
-                <legend className="mb-2 text-sm font-bold">
-                  {t("when.label")}
-                </legend>
+              <PanelSection icon="dates" title={t("when.label")}>
                 <div className="grid grid-cols-2 gap-3">
                   <form.Field name="startDate">
                     {(field) => (
@@ -315,85 +321,102 @@ export function NewTripForm({
                     {(values) => <Days values={values} />}
                   </form.Subscribe>
                 )}
-              </fieldset>
+              </PanelSection>
             )}
           </form.Subscribe>
 
-          <form.Subscribe
-            selector={(s) =>
-              s.values.length === "one" && s.values.shape !== "ab"
-            }
-          >
-            {(dayTrip) =>
-              dayTrip && (
-                <form.Field name="withWind">
-                  {(field) => (
-                    <Switch
-                      checked={field.state.value}
-                      onCheckedChange={field.handleChange}
-                      label={t("wind.label")}
-                      hint={t("wind.hint")}
-                    />
-                  )}
-                </form.Field>
-              )
-            }
-          </form.Subscribe>
+          <PanelSection icon="ride" title={t("section.ride")}>
+            <form.Subscribe
+              selector={(s) =>
+                s.values.length === "one" && s.values.shape !== "ab"
+              }
+            >
+              {(dayTrip) =>
+                dayTrip && (
+                  <form.Field name="withWind">
+                    {(field) => (
+                      <Switch
+                        checked={field.state.value}
+                        onCheckedChange={field.handleChange}
+                        label={t("wind.label")}
+                        hint={t("wind.hint")}
+                      />
+                    )}
+                  </form.Field>
+                )
+              }
+            </form.Subscribe>
+
+            <form.Subscribe selector={(s) => s.values.length}>
+              {(length) => (
+                <div className="grid grid-cols-2 gap-3">
+                  <form.Field name="kmPerDay">
+                    {(field) => {
+                      const error = errorOf(field.state.meta);
+                      return (
+                        <FormField
+                          label={t(length === "one" ? "distance" : "kmPerDay")}
+                          icon="distance"
+                          htmlFor={`${id}-km`}
+                          error={error}
+                          errorId={`${id}-km-error`}
+                        >
+                          <NumberInput
+                            id={`${id}-km`}
+                            unit={t("unit.km")}
+                            value={field.state.value}
+                            onValueChange={field.handleChange}
+                            onBlur={field.handleBlur}
+                            aria-invalid={!!error}
+                            aria-describedby={error && `${id}-km-error`}
+                          />
+                        </FormField>
+                      );
+                    }}
+                  </form.Field>
+                  <form.Field name="maxAscentPerDay">
+                    {(field) => {
+                      const error = errorOf(field.state.meta);
+                      return (
+                        <FormField
+                          label={t(
+                            length === "one" ? "maxAscent" : "maxAscentPerDay",
+                          )}
+                          icon="ascent"
+                          htmlFor={`${id}-ascent`}
+                          error={error}
+                          errorId={`${id}-ascent-error`}
+                        >
+                          <NumberInput
+                            id={`${id}-ascent`}
+                            unit={t("unit.m")}
+                            value={field.state.value}
+                            onValueChange={field.handleChange}
+                            onBlur={field.handleBlur}
+                            aria-invalid={!!error}
+                            aria-describedby={error && `${id}-ascent-error`}
+                          />
+                        </FormField>
+                      );
+                    }}
+                  </form.Field>
+                </div>
+              )}
+            </form.Subscribe>
+            <form.Subscribe selector={(s) => s.values}>
+              {(values) => (
+                <DetourHint
+                  values={values}
+                  onFit={(km) => form.setFieldValue("kmPerDay", km)}
+                />
+              )}
+            </form.Subscribe>
+          </PanelSection>
 
           <form.Subscribe selector={(s) => s.values.length}>
-            {(length) => (
-              <div className="grid grid-cols-2 gap-3">
-                <form.Field name="kmPerDay">
-                  {(field) => {
-                    const error = errorOf(field.state.meta);
-                    return (
-                      <FormField
-                        label={t(length === "one" ? "distance" : "kmPerDay")}
-                        icon="distance"
-                        htmlFor={`${id}-km`}
-                        error={error}
-                        errorId={`${id}-km-error`}
-                      >
-                        <NumberInput
-                          id={`${id}-km`}
-                          unit={t("unit.km")}
-                          value={field.state.value}
-                          onValueChange={field.handleChange}
-                          onBlur={field.handleBlur}
-                          aria-invalid={!!error}
-                          aria-describedby={error && `${id}-km-error`}
-                        />
-                      </FormField>
-                    );
-                  }}
-                </form.Field>
-                <form.Field name="maxAscentPerDay">
-                  {(field) => {
-                    const error = errorOf(field.state.meta);
-                    return (
-                      <FormField
-                        label={t(
-                          length === "one" ? "maxAscent" : "maxAscentPerDay",
-                        )}
-                        icon="ascent"
-                        htmlFor={`${id}-ascent`}
-                        error={error}
-                        errorId={`${id}-ascent-error`}
-                      >
-                        <NumberInput
-                          id={`${id}-ascent`}
-                          unit={t("unit.m")}
-                          value={field.state.value}
-                          onValueChange={field.handleChange}
-                          onBlur={field.handleBlur}
-                          aria-invalid={!!error}
-                          aria-describedby={error && `${id}-ascent-error`}
-                        />
-                      </FormField>
-                    );
-                  }}
-                </form.Field>
-                {length === "multi" && (
+            {(length) =>
+              length === "multi" && (
+                <PanelSection icon="hotel" title={t("section.hotel")}>
                   <form.Field name="hotelBudget">
                     {(field) => (
                       <FormField
@@ -415,21 +438,13 @@ export function NewTripForm({
                       </FormField>
                     )}
                   </form.Field>
-                )}
-              </div>
-            )}
-          </form.Subscribe>
-          <form.Subscribe selector={(s) => s.values}>
-            {(values) => (
-              <DetourHint
-                values={values}
-                onFit={(km) => form.setFieldValue("kmPerDay", km)}
-              />
-            )}
+                </PanelSection>
+              )
+            }
           </form.Subscribe>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-4">
           <form.Subscribe selector={(s) => s.values}>
             {(values) => {
               const missing = missingPlaces(values);
