@@ -5,14 +5,14 @@ import {
   type Manifest,
 } from "@wayline/domain";
 import type { RouteOptions, RoutingProvider } from "@wayline/providers";
-import { type FetchFile, Router } from "@wayline/router";
+import { COST_PROFILES, type FetchFile, Router } from "@wayline/router";
 
 /** Bump when the router or its costs change, so cached legs are routed again. */
 const ROUTER_VERSION = 1;
 
 /**
- * Routes in the browser on the routing tiles of the dataset. Every profile
- * uses the touring costs for now.
+ * Routes in the browser on the routing tiles of the dataset. Scenic and quiet
+ * use the touring costs for now.
  */
 export class LocalRouting implements RoutingProvider {
   private tiles: Promise<{ manifest: Manifest; fetchFile: FetchFile }>;
@@ -34,7 +34,11 @@ export class LocalRouting implements RoutingProvider {
     const { manifest, fetchFile } = await this.tiles;
     if (!manifest.routing) throw new Error("The dataset has no routing tiles");
     // One router per call: legs of a trip share tiles, and memory is free again after.
-    const router = new Router(manifest.routing, fetchFile);
+    const router = new Router(
+      manifest.routing,
+      fetchFile,
+      COST_PROFILES[options.profile],
+    );
     const legs: Leg[] = [];
     for (let i = 1; i < points.length; i++) {
       const from = points[i - 1] as LonLat;
@@ -52,7 +56,7 @@ export class LocalRouting implements RoutingProvider {
         descent: leg.descent,
         surface: leg.surface,
         provider: "local",
-        profileHash: `touring-${ROUTER_VERSION}`,
+        profileHash: `${options.profile}-${ROUTER_VERSION}`,
       });
     }
     return legs;

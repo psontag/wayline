@@ -1,6 +1,13 @@
 import type { LonLat, RoutingTiles, Surface } from "@wayline/domain";
 import FlatQueue from "flatqueue";
-import { DOWNHILL_COST, TURN_COST, bitsOf, surfaceOf, wayFactor } from "./cost";
+import {
+  type CostProfile,
+  TOURING,
+  TURN_COST,
+  bitsOf,
+  surfaceOf,
+  wayFactor,
+} from "./cost";
 import {
   at,
   COORD,
@@ -71,6 +78,7 @@ export class Router {
   constructor(
     private index: RoutingTiles,
     private fetchFile: FetchFile,
+    private profile: CostProfile = TOURING,
   ) {
     this.keys = new Set(index.keys);
   }
@@ -142,8 +150,9 @@ export class Router {
     const fill = adjStart.slice(0, n);
     for (let e = 0; e < m; e++) {
       const bits = at(s.bits, e);
-      const factor = wayFactor(bits, this.index.highways);
-      const signed = bitsOf(bits).signed;
+      const factor = wayFactor(bits, this.index.highways, this.profile);
+      // No turn cost on signed routes makes them a bit more magnetic, as in BRouter.
+      const signed = this.profile.cycleRoutes ? bitsOf(bits).signed : 0;
       for (const forward of [true, false]) {
         if (!usable(e, forward)) continue;
         const a = forward ? at(s.from, e) : at(s.to, e);
@@ -156,7 +165,7 @@ export class Router {
         tile.adjForward[i] = forward ? 1 : 0;
         tile.adjCost[i] = Math.max(
           1,
-          at(s.length, e) * factor + DOWNHILL_COST * down,
+          at(s.length, e) * factor + this.profile.downhillCost * down,
         );
         tile.adjBearing[i] = Math.atan2(
           at(s.lat, b) - at(s.lat, a),

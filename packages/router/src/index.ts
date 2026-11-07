@@ -4,5 +4,5 @@ export {
   type RoutedLeg,
   type RouteOptions,
 } from "./router";
-export { wayFactor, surfaceOf } from "./cost";
+export { COST_PROFILES, type CostProfile, surfaceOf, wayFactor } from "./cost";
 export { decodeGeometry, decodeSearch } from "./tiles";

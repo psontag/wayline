@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import type { RoutingTiles } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
+import { COST_PROFILES } from "./cost";
 import { Router } from "./router";
 import { decodeSearch, gunzip } from "./tiles";
 
@@ -76,5 +77,21 @@ describe("Router", () => {
     expect(
       await router.route(marburg, kirchhain, { signal: { aborted: true } }),
     ).toBeUndefined();
+  });
+
+  it("rides shorter with fast, which ignores signed routes", async () => {
+    const touring = await new Router(await index(), read).route(
+      marburg,
+      kirchhain,
+    );
+    const fast = await new Router(
+      await index(),
+      read,
+      COST_PROFILES.fast,
+    ).route(marburg, kirchhain);
+    // BRouter fast: 21.2 km.
+    expect(fast!.distance).toBeLessThan(touring!.distance);
+    expect(fast!.distance / 21_185).toBeGreaterThan(0.9);
+    expect(fast!.distance / 21_185).toBeLessThan(1.15);
   });
 });
