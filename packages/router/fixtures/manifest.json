@@ -1,0 +1,30 @@
+{
+  "routing": {
+    "format": 1,
+    "size": 0.25,
+    "path": "route/{key}.bin",
+    "geometry": "route/{key}.geo.bin",
+    "keys": ["35_203", "36_203"],
+    "highways": [
+      "cycleway",
+      "living_street",
+      "residential",
+      "unclassified",
+      "service",
+      "road",
+      "track",
+      "path",
+      "footway",
+      "pedestrian",
+      "bridleway",
+      "tertiary",
+      "tertiary_link",
+      "secondary",
+      "secondary_link",
+      "primary",
+      "primary_link",
+      "trunk",
+      "trunk_link"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.base.json",
+  // The router reads typed arrays in hot loops. Checked access there only adds noise.
+  "compilerOptions": { "noUncheckedIndexedAccess": false, "types": ["node"] },
+  "include": ["src"]
+}
