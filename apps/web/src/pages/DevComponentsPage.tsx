@@ -575,7 +575,7 @@ const profile: ProfilePoint[] = Array.from({ length: 61 }, (_, i) => ({
 
 const profileClimbs = [
   { startKm: 3, endKm: 17 },
-  { startKm: 41, endKm: 60 },
+  { startKm: 41, endKm: 60, maxGrade: 9.5, steepKm: 0.6 },
 ];
 
 // A proposed route that stayed in the valley between km 26 and 38.
