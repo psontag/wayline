@@ -111,7 +111,7 @@ def scenery_file(cache, area, src):
 
 def routing_file(cache, area, src):
     """Ways for the routing tiles (see routing.extract). Cached like osm_file."""
-    dst = os.path.join(cache, "work", f"{area}-routing.npz")
+    dst = os.path.join(cache, "work", f"{area}-routing")
     if stale(dst, src, R.__file__, E.__file__, os.path.join(HERE, "dem.py")):
         with ProcessPoolExecutor(1) as pool:
             pool.submit(R.extract_to, src, os.path.join(cache, "dem"), dst).result()
@@ -173,10 +173,10 @@ def main():
 
     # Routing tiles first, each step in a child process, so their memory is
     # free again before the route graph.
-    routing_npz = routing_file(args.cache, area, src)
+    routing_dir = routing_file(args.cache, area, src)
     t.step("routing extract")
     with ProcessPoolExecutor(1) as pool:
-        routing, routing_stats = pool.submit(R.build, routing_npz, out).result()
+        routing, routing_stats = pool.submit(R.build, routing_dir, out).result()
     t.step("routing tiles")
 
     # Extracted before the route extract and loaded after the graph, so the

@@ -8,20 +8,21 @@ Builds the route network and places for Germany from OSM data and the Copernicus
 pnpm data:build
 ```
 
-- Needs [uv](https://docs.astral.sh/uv/), Python 3.12 and [tippecanoe](https://github.com/felt/tippecanoe) 2.79 or newer (`brew install tippecanoe`; the Ubuntu package is too old, so build it from source as in `.github/workflows/ci.yml`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
+- Needs [uv](https://docs.astral.sh/uv/), Python 3.12, [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`, `apt install osmium-tool`) and [tippecanoe](https://github.com/felt/tippecanoe) 2.79 or newer (`brew install tippecanoe`; the Ubuntu package is too old, so build it from source as in `.github/workflows/ci.yml`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
 - Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): the Geofabrik extract of Germany (4.5 GB) and Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB).
 - Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `de-<date of the extracts>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
-- Takes about 23 minutes plus the download, and up to 6.2 GB of memory on a laptop. The extracts are cached, so the next build takes about 4.5 minutes.
-
-| Step | Minutes |
-|---|---|
-| Routing extracts | 6.5 |
-| Routing tiles | 2.3 |
-| Scenery extracts | 7.6 |
-| Route extracts | 4.3 |
-| Graph, export and lines | 2 |
-- Filters the OSM file with [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`, `apt install osmium-tool`) to what the pipeline reads (`OSM_FILTER` in `build.py`): 4.5 to 1.5 GB in about a minute.
+- First filters the OSM file with osmium-tool to what the pipeline reads (`OSM_FILTER` in `build.py`): 4.5 to 1.5 GB.
+- Takes about 20 minutes plus the download, and up to 6 GB of memory on a laptop. The filtered file and the extracts are cached, so the next build takes about 4.5 minutes.
 - `pnpm data:build --area hessen` builds one state.
+
+| Step | Minutes | Memory |
+|---|---|---|
+| Filter | 1 | 2.5 GB |
+| Routing extract | 7.9 | 6.0 GB |
+| Routing tiles | 2.3 | 4.4 GB |
+| Scenery extract | 4.4 | 5.4 GB |
+| Route extract | 2 | 5.5 GB |
+| Graph, export and lines | 2.3 | 4.6 GB |
 
 Output (November 2026):
 
@@ -95,11 +96,6 @@ Sights within 500 m, share of edges:
 - Shape points: inner points of a way more than 1.5 m off the line of their neighbors.
 
 Germany (November 2026): 17.0 M nodes, 21.2 M edges, 2.3 M km, 835 tiles. Search parts 163 MiB, geometry parts 125 MiB gzipped, largest tile 1.4 MiB. A 230 km trip routed in 10 km legs loads about 6 MiB.
-
-| Step | Time | Memory |
-|---|---|---|
-| Extract, per state | 2–88 s, 7 min in all | up to 3.9 GB (Nordrhein-Westfalen) |
-| Tiles | 2 min | 5.7 GB |
 
 Both files are gzipped. All numbers are little-endian. Coordinates are degrees × 10⁶. "Delta" means each value minus the one before, the first as is.
 
