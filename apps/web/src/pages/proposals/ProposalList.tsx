@@ -11,6 +11,8 @@ import {
   Button,
   ElevationProfile,
   MessagePanel,
+  PanelHeader,
+  PanelSection,
   ProgressBar,
   ProposalCard,
   ProposalCardSkeleton,
@@ -41,6 +43,7 @@ import {
   type Relaxed,
   windTag,
 } from "./proposalView";
+import { useRequestSummary } from "./ProposalsHeader";
 import type { Generation } from "./useGeneration";
 
 export type ProposalListProps = {
@@ -70,6 +73,8 @@ export function ProposalList({
   openFailed,
   onRelax,
 }: ProposalListProps) {
+  const { t } = useTranslation("proposals");
+  const { places, dates } = useRequestSummary(request);
   const { status, proposals } = generation;
   const weather = useTripsWeather(proposals.map((p) => p.trip));
   const windDays = proposals.map((p, i) => {
@@ -105,17 +110,26 @@ export function ProposalList({
   }
 
   return (
-    <>
-      {status === "running" ? (
-        <Progress generation={generation} />
-      ) : (
-        <ResultLine
-          count={proposals.length}
-          cancelled={status === "cancelled"}
-          retry={generation.retry}
-        />
-      )}
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3">
+    <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+      <PanelHeader eyebrow={dates} title={places ?? t("title")} />
+      <PanelSection
+        icon="days"
+        title={t("title")}
+        summary={
+          proposals.length === 0
+            ? undefined
+            : status === "cancelled"
+              ? t("cancelled.count", { count: proposals.length })
+              : t("done.count", { count: proposals.length })
+        }
+        notice={
+          status === "running" ? (
+            <Progress generation={generation} />
+          ) : status === "cancelled" ? (
+            <CancelledNotice retry={generation.retry} />
+          ) : undefined
+        }
+      >
         {proposals.map((p, i) => (
           <ProposalItem
             key={p.id}
@@ -138,8 +152,8 @@ export function ProposalList({
           />
         ))}
         {status === "running" && <ProposalCardSkeleton />}
-      </div>
-    </>
+      </PanelSection>
+    </div>
   );
 }
 
@@ -165,11 +179,7 @@ function Progress({
   ].filter(Boolean);
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="flex flex-col gap-2 border-b border-border px-4 py-3.5"
-    >
+    <div role="status" aria-live="polite" className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-3">
         <span className="font-bold">{title}</span>
         <Button variant="ghost" size="sm" onClick={generation.cancel}>
@@ -187,36 +197,15 @@ function Progress({
   );
 }
 
-function ResultLine({
-  count,
-  cancelled,
-  retry,
-}: {
-  count: number;
-  cancelled: boolean;
-  retry: () => void;
-}) {
+function CancelledNotice({ retry }: { retry: () => void }) {
   const { t } = useTranslation("proposals");
   return (
-    <div
-      role="status"
-      className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-4 py-2"
-    >
-      <span className="font-bold">
-        {cancelled
-          ? t("cancelled.count", { count })
-          : t("done.count", { count })}
-      </span>
-      {cancelled ? (
-        <Button variant="ghost" size="sm" onClick={retry}>
-          <RotateCcw aria-hidden />
-          {t("cancelled.again")}
-        </Button>
-      ) : (
-        <span className="hidden text-right text-xs text-text-muted sm:inline">
-          {t("done.hint")}
-        </span>
-      )}
+    <div role="status" className="flex items-center justify-between gap-3">
+      <span className="text-sm text-text-muted">{t("cancelled.title")}</span>
+      <Button variant="ghost" size="sm" onClick={retry}>
+        <RotateCcw aria-hidden />
+        {t("cancelled.again")}
+      </Button>
     </div>
   );
 }

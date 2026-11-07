@@ -19,39 +19,47 @@ import {
 import { ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-/** Bar with the search inputs and a way back to change them. */
-export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
+/** Places and dates of the search, e.g. "Würzburg → Bamberg". */
+export function useRequestSummary(request: GenerateRequest | undefined) {
   const { t } = useTranslation("proposals");
   const format = useFormat();
-  const from = request?.startStation?.name;
-  const to = request?.endStation?.name;
+  if (!request) return {};
+  const from = request.startStation?.name;
+  const to = request.endStation?.name;
   const places =
-    request && request.kind !== "one-way"
+    request.kind !== "one-way"
       ? from && t("request.loopFrom", { from })
-      : request && isOpenRide(request)
+      : isOpenRide(request)
         ? from && t("request.anywhereFrom", { from })
         : from && to && t("request.places", { from, to });
 
   const date = (iso: string) => localTimeToDate(`${iso}T00:00`);
-  const start = request?.startDate;
+  const start = request.startDate;
+  const dates = start
+    ? request.days > 1
+      ? t("request.dates", {
+          dates: format.dateRange(
+            date(start),
+            date(addDays(start, request.days - 1)),
+          ),
+          count: request.days,
+        })
+      : t("request.date", { date: format.date(date(start)) })
+    : t("request.days", { count: request.days });
+  return { places: places || undefined, dates };
+}
+
+/** Bar with the search inputs and a way back to change them. */
+export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
+  const { t } = useTranslation("proposals");
+  const format = useFormat();
+  const { places, dates } = useRequestSummary(request);
+
   const chips: { text: string; icon?: StatIcon }[] = request
     ? [
         { text: t(`request.kind.${request.kind}`) },
         ...(places ? [{ text: places }] : []),
-        {
-          icon: "dates" as const,
-          text: start
-            ? request.days > 1
-              ? t("request.dates", {
-                  dates: format.dateRange(
-                    date(start),
-                    date(addDays(start, request.days - 1)),
-                  ),
-                  count: request.days,
-                })
-              : t("request.date", { date: format.date(date(start)) })
-            : t("request.days", { count: request.days }),
-        },
+        ...(dates ? [{ icon: "dates" as const, text: dates }] : []),
         ...(request.dayShares?.some((share) => share < 1)
           ? [{ text: t("request.shortDays") }]
           : []),

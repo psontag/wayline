@@ -20,6 +20,11 @@
     "noElevation": "No elevation in this file.",
     "offNetwork": "No elevation in this file. {{distance}} are off the cycle network, so the climbing there is a guess."
   },
+  "section": {
+    "trip": "Trip",
+    "dates": "Dates",
+    "hotel": "Hotel"
+  },
   "name": "Name",
   "nameFromTo": "{{from}} to {{to}}",
   "defaultName": "Imported trip",

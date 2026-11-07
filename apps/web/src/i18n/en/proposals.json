@@ -38,8 +38,7 @@
   },
   "done": {
     "count_one": "{{count}} proposal",
-    "count_other": "{{count}} proposals",
-    "hint": "Hover to compare on the map, select to open"
+    "count_other": "{{count}} proposals"
   },
   "cancelled": {
     "title": "Search cancelled",
