@@ -12,7 +12,7 @@ Vertical slices. Look and feel first. Each slice ends with a working, deployed a
 
 ## 2. Routing end to end
 
-- BRouter through the Worker, legs cached in D1
+- Routing in the browser on the routing tiles
 - Route on the map with elevation profile
 - Via points
 - GPX export
@@ -60,7 +60,6 @@ Current focus. Small fixes, look and feel.
 
 ## Later
 
-- Router in a Cloudflare Worker instead of the tunnel to a local BRouter
 - Open items of slices 5–7: bahn.de links with date, time and home station; climbing and hotel stops
 - Route data for all of Germany
 - Custom domain

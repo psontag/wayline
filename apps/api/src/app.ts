@@ -2,7 +2,6 @@ import { zValidator } from "@hono/zod-validator";
 import {
   type ApiErrorBody,
   type ErrorCode,
-  RouteRequest,
   SCHEMA_VERSION,
   Shares,
   Trip,
@@ -13,7 +12,6 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { ZodType } from "zod";
 import { auth, type AuthBindings, type AuthVariables } from "./auth";
 import type { Db } from "./db";
-import { cachedLeg, legRouter, roundCoord, type TunnelFetcher } from "./legs";
 import { cachedSiteInfo } from "./site";
 import {
   deleteTrip,
@@ -26,10 +24,6 @@ import {
 
 export type Bindings = AuthBindings & {
   DB: Db;
-  /** e.g. http://localhost:17777. Without it, the fake router answers. */
-  BROUTER_URL?: string;
-  /** Workers VPC binding to BRouter through the tunnel. Only when deployed. */
-  BROUTER?: TunnelFetcher;
 };
 
 const status: Record<ErrorCode, ContentfulStatusCode> = {
@@ -102,18 +96,6 @@ const app = new Hono<{ Bindings: Bindings; Variables: AuthVariables }>()
     }
     c.header("Cache-Control", "private, max-age=86400");
     return c.json(await cachedSiteInfo(url));
-  })
-  .post("/api/route", json(RouteRequest), async (c) => {
-    const { from, to, profile } = c.req.valid("json");
-    const { envelope, cached } = await cachedLeg(
-      c.env.DB,
-      legRouter(c.env.BROUTER_URL, c.env.BROUTER),
-      roundCoord(from),
-      roundCoord(to),
-      profile,
-    );
-    c.header("X-Cache", cached ? "HIT" : "MISS");
-    return c.json(envelope);
   });
 
 app.onError((error, c) => {

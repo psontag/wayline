@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { isErrorCode, type LonLat } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
-import type { HttpFetch } from "../brouter/fetch";
+import type { HttpFetch } from "../types";
 import {
   type CachedForecast,
   OpenMeteoWeather,

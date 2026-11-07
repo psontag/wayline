@@ -7,7 +7,7 @@ All limits are for free plans. Check them again before relying on them. They cha
 | Data | Source | Cost | Called from |
 |---|---|---|---|
 | Cycling routes, towns, stations | OpenStreetMap (Geofabrik extracts) | Free | Pipeline |
-| Routing | BRouter | Free | Worker |
+| Routing | Our router on OpenStreetMap ways | Free | Browser |
 | Weather | Open-Meteo | Free | Browser |
 | Hotels | OpenStreetMap | Free | Pipeline |
 | Ratings, prices, booking | Booking.com search link | Free | Browser (link only) |
@@ -31,27 +31,10 @@ License: ODbL. The map must show OSM attribution.
 
 ## Routing
 
-### BRouter
+The browser routes on the routing tiles of the dataset (`packages/router`, tiles in `pipeline/README.md`). No server and no request limits.
 
-Main router. Best cycling profiles. Supports custom profiles, so we can write one for "paved preferred, some gravel OK".
-
-- Public server: `brouter.de`. Run by one person.
-- No published usage policy or rate limit. No guarantee.
-- Sends `Access-Control-Allow-Origin: *`. We still call it from the Worker.
-- We must keep request volume low: cache every leg.
-- Custom profiles may get temporary ids on the public server. If a profile is not found, the adapter uploads it again and retries once.
-- MIT license. Development uses a local BRouter in Docker (`09-development.md`). Self-hosting in production is possible later if the public server is not enough.
-- Our presets are BRouter profiles in `infra/brouter/profiles/`. The adapter asks for the profile with the preset's name.
-- No route (e.g. a point outside the segments) is a 400 with a plain text reason. The adapter maps it to `INVALID`.
-
-Open: email the operator about custom profiles and our request volume.
-
-### OpenRouteService
-
-Later, as a fallback router only.
-
-- Free plan with API key: 2,000 directions per day, 40 per minute.
-- No custom profiles. Only predefined options.
+- Costs follow BRouter's trekking profile. Our presets are BRouter profiles in `infra/brouter/profiles/`, ported to `packages/router/src/cost.ts`.
+- A local BRouter in Docker (`09-development.md`) is only for comparing routes.
 
 ## Weather: Open-Meteo
 

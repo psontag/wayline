@@ -104,3 +104,9 @@ export interface TrainProvider {
     options?: { signal?: AbortSignalLike },
   ): Promise<TrainOption[]>;
 }
+
+/** The part of fetch we use. Works without DOM or Worker types. */
+export type HttpFetch = (
+  url: string,
+  init?: { signal?: AbortSignalLike },
+) => Promise<{ ok: boolean; status: number; text(): Promise<string> }>;

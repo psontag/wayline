@@ -8,8 +8,6 @@ Every push to `main` deploys the app to `https://wayline-api.<subdomain>.workers
 2. Builds the route data with `pnpm data:build`. The result is cached per month and pipeline version, so most deploys skip it.
 3. Runs `apps/api/scripts/setup-cloudflare.ts`. It finds or creates, by name:
    - the D1 database `wayline`
-   - the tunnel `wayline-brouter`
-   - the Workers VPC service `wayline-brouter`: the Worker's way through the tunnel to `brouter:17777`
    - the workers.dev subdomain, if the account has none
    - the one-time PIN login method (a code by email)
    - the Access app on the workers.dev address, with the emails from `ACCESS_EMAILS`, straight to the one-time PIN login, 30-day sessions
@@ -42,8 +40,6 @@ These steps need a login, a card or a secret, so they can't be automated.
    | Workers Scripts | Edit |
    | D1 | Edit |
    | Account Settings | Read |
-   | Cloudflare Tunnel | Edit |
-   | Connectivity Directory | Admin |
    | Access: Apps and Policies | Edit |
    | Access: Organizations, Identity Providers, and Groups | Edit |
    | Workers Tail | Read |
@@ -60,7 +56,6 @@ These steps need a login, a card or a secret, so they can't be automated.
    | D1 | Read |
    | Account Analytics | Read |
    | Account Settings | Read |
-   | Cloudflare Tunnel | Read |
 
    Save it in `.cloudflare.env` in the repo root (git-ignored):
 
@@ -71,17 +66,9 @@ These steps need a login, a card or a secret, so they can't be automated.
 
 Then run the workflow once.
 
-## Routing online
+## Routing
 
-The Worker can't run BRouter. It reaches the BRouter on the owner's machine through the tunnel:
-
-```
-Worker → VPC service binding (BROUTER) → tunnel → cloudflared → brouter:17777
-```
-
-- `pnpm brouter` starts BRouter and, with `.cloudflare.env`, cloudflared. It fetches the tunnel token with the debug token.
-- The tunnel has no public hostname. Only the Worker can reach BRouter.
-- When the machine is off, new routes fail with `PROVIDER_UNAVAILABLE`. Saved trips and cached legs still work.
+The app routes in the browser on the routing tiles of the dataset (`VITE_ROUTING=local`). No server is involved.
 
 ## Users
 
@@ -91,7 +78,7 @@ Worker → VPC service binding (BROUTER) → tunnel → cloudflared → brouter:
 
 ## Free tier
 
-Only products that stop at their free limit: Workers, static assets, D1, Access, Tunnel, Workers VPC (free in beta). Never enable the Workers Paid plan, R2, Containers, Images, Stream or Argo. The deploy token can't change billing.
+Only products that stop at their free limit: Workers, static assets, D1, Access. Never enable the Workers Paid plan, R2, Containers, Images, Stream or Argo. The deploy token can't change billing.
 
 ## Debugging
 

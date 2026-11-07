@@ -1,7 +1,6 @@
 // Creates or updates the Cloudflare resources Wayline needs: the D1
-// database, the tunnel to BRouter, its Workers VPC service and the Access
-// app on the workers.dev address. Safe to run again: it finds each resource
-// by name and only creates or updates what differs.
+// database and the Access app on the workers.dev address. Safe to run again:
+// it finds each resource by name and only creates or updates what differs.
 // Run by scripts/setup-cloudflare.ts in CI before the deploy.
 
 const API = "https://api.cloudflare.com/client/v4";
@@ -9,14 +8,10 @@ const API = "https://api.cloudflare.com/client/v4";
 export const NAMES = {
   database: "wayline",
   worker: "wayline-api",
-  tunnel: "wayline-brouter",
-  service: "wayline-brouter",
   app: "Wayline",
   policy: "Allowed emails",
 };
 
-/** BRouter as seen from cloudflared: the container name and port in compose.yaml. */
-export const BROUTER_HOST = { hostname: "brouter", port: 17777 };
 /** Users stay logged in for 30 days. */
 const SESSION_DURATION = "720h";
 
@@ -32,8 +27,6 @@ export type SetupOptions = {
 /** Values the build needs, as env names for cloudflare.config.ts. */
 export type SetupResult = {
   WAYLINE_D1_ID: string;
-  WAYLINE_TUNNEL_ID: string;
-  WAYLINE_BROUTER_SERVICE_ID: string;
   WAYLINE_ACCESS_TEAM_DOMAIN: string;
   WAYLINE_ACCESS_AUD: string;
   WAYLINE_URL: string;
@@ -101,16 +94,12 @@ export async function setup(options: SetupOptions): Promise<SetupResult> {
 
   const teamDomain = await accessTeamDomain(api);
   const database = await ensureDatabase(api, log);
-  const tunnel = await ensureTunnel(api, log);
-  const service = await ensureService(api, tunnel, log);
   const host = `${NAMES.worker}.${await ensureSubdomain(api, options.accountId, log)}.workers.dev`;
   const otp = await ensureOneTimePin(api, log);
   const aud = await ensureAccessApp(api, host, emails, otp, log);
 
   return {
     WAYLINE_D1_ID: database,
-    WAYLINE_TUNNEL_ID: tunnel,
-    WAYLINE_BROUTER_SERVICE_ID: service,
     WAYLINE_ACCESS_TEAM_DOMAIN: `https://${teamDomain}`,
     WAYLINE_ACCESS_AUD: aud,
     WAYLINE_URL: `https://${host}`,
@@ -146,69 +135,6 @@ async function ensureDatabase(api: Api, log: (m: string) => void) {
     name: NAMES.database,
   });
   return created.uuid;
-}
-
-async function ensureTunnel(api: Api, log: (m: string) => void) {
-  const found = await api<{ id: string; name: string }[]>(
-    "GET",
-    `/cfd_tunnel?name=${NAMES.tunnel}&is_deleted=false`,
-  );
-  const tunnel = found.find((t) => t.name === NAMES.tunnel);
-  if (tunnel) return tunnel.id;
-  log(`Creating tunnel ${NAMES.tunnel}`);
-  const created = await api<{ id: string }>("POST", "/cfd_tunnel", {
-    name: NAMES.tunnel,
-    config_src: "cloudflare",
-  });
-  return created.id;
-}
-
-type Service = {
-  service_id: string;
-  name: string;
-  type: string;
-  http_port?: number;
-  host?: { hostname?: string; resolver_network?: { tunnel_id?: string } };
-};
-
-async function ensureService(
-  api: Api,
-  tunnelId: string,
-  log: (m: string) => void,
-) {
-  const wanted = {
-    name: NAMES.service,
-    type: "http",
-    http_port: BROUTER_HOST.port,
-    host: {
-      hostname: BROUTER_HOST.hostname,
-      resolver_network: { tunnel_id: tunnelId },
-    },
-  };
-  const found = await api<Service[]>("GET", "/connectivity/directory/services");
-  const service = found.find((s) => s.name === NAMES.service);
-  if (!service) {
-    log(`Creating VPC service ${NAMES.service}`);
-    const created = await api<Service>(
-      "POST",
-      "/connectivity/directory/services",
-      wanted,
-    );
-    return created.service_id;
-  }
-  const same =
-    service.http_port === wanted.http_port &&
-    service.host?.hostname === wanted.host.hostname &&
-    service.host?.resolver_network?.tunnel_id === tunnelId;
-  if (!same) {
-    log(`Updating VPC service ${NAMES.service}`);
-    await api(
-      "PUT",
-      `/connectivity/directory/services/${service.service_id}`,
-      wanted,
-    );
-  }
-  return service.service_id;
 }
 
 /** The account's workers.dev subdomain. New accounts get one. */
@@ -313,22 +239,4 @@ async function ensureAccessApp(
     await api("PUT", `/access/apps/${app.id}`, wanted);
   }
   return app.aud;
-}
-
-/** Token for cloudflared on the machine that runs BRouter. */
-export async function tunnelToken(
-  options: Pick<SetupOptions, "token" | "accountId" | "fetch">,
-): Promise<string> {
-  const api = client(options);
-  const found = await api<{ id: string; name: string }[]>(
-    "GET",
-    `/cfd_tunnel?name=${NAMES.tunnel}&is_deleted=false`,
-  );
-  const tunnel = found.find((t) => t.name === NAMES.tunnel);
-  if (!tunnel) {
-    throw new Error(
-      `No tunnel ${NAMES.tunnel} yet. It is created by the first deploy.`,
-    );
-  }
-  return api<string>("GET", `/cfd_tunnel/${tunnel.id}/token`);
 }

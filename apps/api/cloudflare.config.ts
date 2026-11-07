@@ -1,8 +1,8 @@
-import { bindings, defineConfig, triggers } from "cf/config";
+import { bindings, defineConfig } from "cf/config";
 
-// Ids of the deployed resources come from infra/cloudflare/setup.ts, which
-// CI runs before the build. Locally they are missing: D1 is local, BRouter
-// is at BROUTER_URL from .dev.vars, and there is no Access.
+// Ids of the deployed resources come from scripts/setup-cloudflare.ts, which
+// CI runs before the build. Locally they are missing: D1 is local and there
+// is no Access.
 const env = process.env;
 const LOCAL_D1_ID = "00000000-0000-4000-8000-000000000000";
 
@@ -24,16 +24,11 @@ export default defineConfig({
         name: "wayline",
         id: env.WAYLINE_D1_ID ?? LOCAL_D1_ID,
       }),
-      ...(env.WAYLINE_BROUTER_SERVICE_ID && {
-        BROUTER: bindings.vpcService({ id: env.WAYLINE_BROUTER_SERVICE_ID }),
-      }),
       ...(env.WAYLINE_ACCESS_TEAM_DOMAIN &&
         env.WAYLINE_ACCESS_AUD && {
           ACCESS_TEAM_DOMAIN: bindings.text(env.WAYLINE_ACCESS_TEAM_DOMAIN),
           ACCESS_AUD: bindings.text(env.WAYLINE_ACCESS_AUD),
         }),
     },
-    // Deletes expired legs.
-    triggers: [triggers.scheduled({ schedule: "0 3 * * *" })],
   },
 });

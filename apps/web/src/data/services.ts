@@ -20,7 +20,6 @@ import {
   TransitousTrains,
   type WeatherProvider,
 } from "@wayline/providers";
-import { ApiRouting } from "./ApiRouting";
 import { dataUrl, MOCK_DATA } from "./dataUrl";
 import { ApiTripStore, fetchMe, withMovedTrips } from "./ApiTripStore";
 import { indexedDbForecastCache } from "./forecastCache";
@@ -81,14 +80,11 @@ export function createServices(): Services {
     search: async () => (await source).search(),
   };
   const graphs = new AreaCache(network, (n) => new Graph(n));
-  // VITE_ROUTING=api routes through the Worker, VITE_ROUTING=local in the
-  // browser on the routing tiles. Default: the route network.
+  // VITE_ROUTING=local routes on the routing tiles. Default: the route network.
   const routing =
-    import.meta.env.VITE_ROUTING === "api"
-      ? new ApiRouting()
-      : import.meta.env.VITE_ROUTING === "local"
-        ? new LocalRouting(url)
-        : new FakeRouting((bbox) => graphs.get(bbox));
+    import.meta.env.VITE_ROUTING === "local"
+      ? new LocalRouting(url)
+      : new FakeRouting((bbox) => graphs.get(bbox));
   // VITE_TRIPS=api saves trips on the server. Default: browser storage.
   const onServer = import.meta.env.VITE_TRIPS === "api";
   const trips = onServer
