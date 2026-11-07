@@ -1,0 +1,19 @@
+{
+  "name": "@wayline/router",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@wayline/domain": "workspace:*",
+    "flatqueue": "3.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1"
+  }
+}

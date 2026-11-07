@@ -378,6 +378,19 @@ importers:
         specifier: 24.19.1
         version: 24.19.1
 
+  packages/router:
+    dependencies:
+      '@wayline/domain':
+        specifier: workspace:*
+        version: link:../domain
+      flatqueue:
+        specifier: 3.1.0
+        version: 3.1.0
+    devDependencies:
+      '@types/node':
+        specifier: 24.19.1
+        version: 24.19.1
+
   packages/ui:
     dependencies:
       '@fontsource-variable/manrope':
