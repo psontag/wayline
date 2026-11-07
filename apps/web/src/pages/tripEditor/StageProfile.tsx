@@ -6,6 +6,7 @@ import {
   ridingHours,
   type RouteNetwork,
   stageSpeed,
+  type Stage,
   stageStartTime,
   type Trip,
 } from "@wayline/domain";
@@ -24,6 +25,7 @@ import {
 } from "@wayline/ui";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { dayBreaks } from "../proposals/proposalView";
 import { isChanged } from "./routeEdits";
 import { proposedSection } from "./proposedSection";
 import { profilePoints } from "./surfaceProfile";
@@ -31,6 +33,8 @@ import { profilePoints } from "./surfaceProfile";
 export type StageProfileProps = {
   trip: Trip;
   index: number;
+  /** The whole trip instead of the day at index. */
+  overview?: boolean;
   network?: RouteNetwork;
   /** km of the crosshair. */
   hoverKm?: number;
@@ -51,6 +55,7 @@ export type StageProfileProps = {
 export function StageProfile({
   trip,
   index,
+  overview = false,
   network,
   hoverKm,
   onHoverKm,
@@ -64,12 +69,16 @@ export function StageProfile({
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
   const stage = trip.stages[index];
-  const legs = stage?.legs;
+  const legs = useMemo(
+    () => (overview ? trip.stages.flatMap((s) => s.legs) : stage?.legs),
+    [overview, trip.stages, stage],
+  );
   const points = useMemo(
     () => (legs ? profilePoints(legs, network) : []),
     [legs, network],
   );
-  const proposed = isChanged(trip, index) ? trip.proposed?.[index] : undefined;
+  const proposed =
+    !overview && isChanged(trip, index) ? trip.proposed?.[index] : undefined;
   const section = useMemo(
     () => (legs && proposed ? proposedSection(legs, proposed.legs) : undefined),
     [legs, proposed],
@@ -94,21 +103,23 @@ export function StageProfile({
       distance: format.distance(hoverKm * 1000),
       elevation: format.elevation(hovered.ele),
     };
-    readout = date
-      ? t("profile.atWithTime", {
-          ...values,
-          time: format.time(
-            localTimeToDate(
-              expectedTimeAtKm(
-                date,
-                startTime,
-                stageSpeed(stage.stats, trip.settings.avgSpeed),
-                hoverKm,
+    // A time needs the day, so the trip overview shows none.
+    readout =
+      date && !overview
+        ? t("profile.atWithTime", {
+            ...values,
+            time: format.time(
+              localTimeToDate(
+                expectedTimeAtKm(
+                  date,
+                  startTime,
+                  stageSpeed(stage.stats, trip.settings.avgSpeed),
+                  hoverKm,
+                ),
               ),
             ),
-          ),
-        })
-      : t("profile.at", values);
+          })
+        : t("profile.at", values);
     const other =
       section && hoverKm >= section.startKm && hoverKm <= section.endKm
         ? eleAt(section.points, hoverKm)
@@ -122,38 +133,39 @@ export function StageProfile({
       ascent: format.elevation(proposed.stats.ascent),
     });
   } else {
-    const values = {
-      distance: format.distance(stage.stats.distance),
-      ascent: format.elevation(stage.stats.ascent),
-    };
+    const shown = overview ? trip.stages : [stage];
+    const sum = (f: (s: Stage) => number) =>
+      shown.reduce((total, s) => total + f(s), 0);
     readout = t("profile.totalsWithRiding", {
-      ...values,
+      distance: format.distance(sum((s) => s.stats.distance)),
+      ascent: format.elevation(sum((s) => s.stats.ascent)),
       duration: format.duration(
-        ridingHours(stage.stats, trip.settings.avgSpeed),
+        sum((s) => ridingHours(s.stats, trip.settings.avgSpeed)),
       ),
     });
   }
 
-  const label = t("profile.label", {
-    day: index + 1,
+  const highestAt = {
     elevation: format.elevation(highest?.ele ?? 0),
     distance: format.distance((highest?.km ?? 0) * 1000),
-  });
+  };
+  const label = overview
+    ? t("profile.tripLabel", highestAt)
+    : t("profile.label", { day: index + 1, ...highestAt });
+  const last = trip.stages.at(-1) ?? stage;
+  const title = overview
+    ? t("profile.tripTitle", {
+        from: trip.stages[0]?.start.name ?? stage.start.name,
+        to: last.end.name,
+      })
+    : t("profile.title", {
+        day: index + 1,
+        from: stage.start.name,
+        to: stage.end.name,
+      });
 
   return (
-    <ChartPanel
-      title={
-        plain
-          ? undefined
-          : t("profile.title", {
-              day: index + 1,
-              from: stage.start.name,
-              to: stage.end.name,
-            })
-      }
-      tabs={actions}
-      plain={plain}
-    >
+    <ChartPanel title={plain ? undefined : title} tabs={actions} plain={plain}>
       <ChartToolbar
         start={<ClimbLegend />}
         end={
@@ -181,6 +193,7 @@ export function StageProfile({
           climbs={climbs}
           highlightedClimb={highlightedClimb}
           points={points}
+          dayBreaks={overview ? dayBreaks(trip) : undefined}
           compare={section?.points}
           compareHighlighted={proposedHighlighted}
           hoverKm={hoverKm}

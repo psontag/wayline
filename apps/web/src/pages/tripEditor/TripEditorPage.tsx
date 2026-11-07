@@ -132,7 +132,13 @@ function TripEditor({
   };
 
   const stage = trip.stages[selected];
-  const points = useMemo(() => routePoints(stage?.legs ?? []), [stage]);
+  // The phone has no trip level, so it always charts a day.
+  const overview = !dayOpen && !isPhone;
+  const chartLegs = useMemo(
+    () => (overview ? trip.stages.flatMap((s) => s.legs) : (stage?.legs ?? [])),
+    [overview, trip.stages, stage],
+  );
+  const points = useMemo(() => routePoints(chartLegs), [chartLegs]);
   const climbs = useMemo(() => findClimbs(points), [points]);
   // A climb hovered in the list, or the one under the chart crosshair.
   const crosshairClimb =
@@ -338,9 +344,10 @@ function TripEditor({
     />
   ) : (
     <StageProfile
-      key={stage?.id}
+      key={overview ? "trip" : stage?.id}
       trip={trip}
       index={selected}
+      overview={overview}
       network={network}
       hoverKm={hoverKm}
       onHoverKm={setHoverKm}
