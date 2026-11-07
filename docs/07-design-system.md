@@ -163,6 +163,21 @@ Rules:
 - Panel section headings have an icon from `sectionIcons` (see [Side panels](#side-panels)). Other headings, route labels and plain buttons have none. Only known actions (zoom, close, more) are icon-only.
 - The paved share is shown as the surface bar (`SurfaceBar`), not as a number.
 
+## Buttons
+
+A screen has at most one primary button (`variant="primary"`, accent fill). Everything else is secondary or ghost.
+
+| Screen | Primary button |
+|---|---|
+| Trip list | New trip |
+| New trip | Find routes |
+| Proposals | Open trip |
+| Import | Create trip |
+| Trip editor | None. Export GPX and Booking.com are secondary. |
+
+- A message panel that replaces the screen (empty, error) may have one primary button for its main action.
+- `FloatingButton` has no accent variant.
+
 ## Dark mode
 
 - Default follows the system setting. The user can override it in Settings.

@@ -78,7 +78,7 @@ export function TripActions({
           </Button>
         </>
       )}
-      <Button variant="primary" size="sm" onClick={() => downloadTripGpx(trip)}>
+      <Button size="sm" onClick={() => downloadTripGpx(trip)}>
         <Download aria-hidden />
         {t("header.exportGpx")}
       </Button>

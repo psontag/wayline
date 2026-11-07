@@ -175,7 +175,6 @@ function PhoneHeader({
         </FloatingButton>
       )}
       <FloatingButton
-        variant="accent"
         label={t("header.exportGpx")}
         onClick={() => downloadTripGpx(trip)}
       >

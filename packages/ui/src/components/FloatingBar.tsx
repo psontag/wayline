@@ -9,7 +9,6 @@ export type FloatingButtonProps = Omit<
 > & {
   /** Accessible name. */
   label: string;
-  variant?: "surface" | "accent";
   /** Render the child element, e.g. a link, with these styles. */
   asChild?: boolean;
   ref?: Ref<HTMLButtonElement>;
@@ -18,7 +17,6 @@ export type FloatingButtonProps = Omit<
 /** Round button that floats over a map, e.g. on phones. */
 export function FloatingButton({
   label,
-  variant = "surface",
   asChild = false,
   className,
   type,
@@ -32,9 +30,7 @@ export function FloatingButton({
       className={cn(
         "flex size-11 shrink-0 items-center justify-center rounded-full shadow-md transition-colors",
         "[&_svg]:size-4 [&_svg]:shrink-0",
-        variant === "surface"
-          ? "border border-border bg-surface text-text hover:bg-hover"
-          : "bg-accent text-on-accent hover:brightness-95",
+        "border border-border bg-surface text-text hover:bg-hover",
         focusRing,
         className,
       )}
