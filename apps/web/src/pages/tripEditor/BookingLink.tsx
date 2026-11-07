@@ -49,7 +49,6 @@ export function BookingLink({
     <div className="flex w-full">
       <Button
         asChild
-        variant="primary"
         size={variant === "row" ? "sm" : "lg"}
         className="min-w-0 flex-1"
       >

@@ -799,7 +799,7 @@ function PhoneParts() {
           title={t("demo.tripName")}
           subtitle="Sat 12 Jun – Tue 15 Jun · 252 km"
         />
-        <FloatingButton variant="accent" label={t("demo.exportGpx")}>
+        <FloatingButton label={t("demo.exportGpx")}>
           <Download aria-hidden />
         </FloatingButton>
       </div>
