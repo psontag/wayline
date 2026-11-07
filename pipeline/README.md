@@ -9,7 +9,7 @@ pnpm data:build
 ```
 
 - Needs [uv](https://docs.astral.sh/uv/), Python 3.12 and [tippecanoe](https://github.com/felt/tippecanoe) 2.79 or newer (`brew install tippecanoe`; the Ubuntu package is too old, so build it from source as in `.github/workflows/ci.yml`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
-- Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): Geofabrik extracts of the 16 states (4.7 GB) and Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB).
+- Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): the Geofabrik extract of Germany (4.5 GB) and Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB).
 - Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `de-<date of the extracts>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
 - Takes about 23 minutes plus the download, and up to 6.2 GB of memory on a laptop. The extracts are cached, so the next build takes about 4.5 minutes.
 
@@ -20,7 +20,8 @@ pnpm data:build
 | Scenery extracts | 7.6 |
 | Route extracts | 4.3 |
 | Graph, export and lines | 2 |
-- `pnpm data:build --states hessen` builds one state.
+- Filters the OSM file with [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`, `apt install osmium-tool`) to what the pipeline reads (`OSM_FILTER` in `build.py`): 4.5 to 1.5 GB in about a minute.
+- `pnpm data:build --area hessen` builds one state.
 
 Output (November 2026):
 
@@ -68,7 +69,7 @@ Each edge has `scenery`: how much of it runs through forest, along water, throug
 - Pillow draws areas about 25 m too large. The buffers above come on top.
 - Landscape protection areas (`protect_class=5` without `Naturpark`) don't count. They cover about a third of the land.
 - Nature parks are large and include towns, e.g. Heidelberg is in Geo-Naturpark Bergstraße-Odenwald.
-- A state extract holds only the part of a relation inside the state. `scenery.py` joins the ways of such relations across the states. Areas that reach outside the region are dropped, except water: its open outline is closed with a straight line. So the Bodensee covers its German side.
+- The extract holds only the part of a relation inside Germany. Areas that reach outside are dropped, except water: its open outline is closed with a straight line. So the Bodensee covers its German side.
 
 Mean share per edge km, October 2026:
 

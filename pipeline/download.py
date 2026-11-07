@@ -8,9 +8,9 @@ import sys
 import urllib.error
 import urllib.request
 
-from region import DEM_TILES, STATES
+from region import AREA, DEM_TILES
 
-GEOFABRIK = "https://download.geofabrik.de/europe/germany/{}-latest.osm.pbf"
+GEOFABRIK = "https://download.geofabrik.de/europe/{}-latest.osm.pbf"
 DEM = "https://copernicus-dem-30m.s3.amazonaws.com/{0}/{0}.tif"
 
 
@@ -32,11 +32,11 @@ def fetch(url, path):
     os.replace(tmp, path)
 
 
-def main(cache, states=STATES):
+def main(cache, area=AREA):
     os.makedirs(os.path.join(cache, "osm"), exist_ok=True)
     os.makedirs(os.path.join(cache, "dem"), exist_ok=True)
-    for state in states:
-        fetch(GEOFABRIK.format(state), os.path.join(cache, "osm", f"{state}-latest.osm.pbf"))
+    path = area if area == AREA else f"germany/{area}"
+    fetch(GEOFABRIK.format(path), os.path.join(cache, "osm", f"{area}-latest.osm.pbf"))
     for lat, lon in DEM_TILES:
         name = dem_name(lat, lon)
         fetch(DEM.format(name), os.path.join(cache, "dem", f"{name}.tif"))
