@@ -61,6 +61,7 @@ class Timer:
 OSM_FILTER = [
     "r/route=bicycle",
     "w/highway",
+    "w/route=ferry",
     "nwr/tourism=hotel,guest_house,motel,attraction,viewpoint,museum",
     "nwr/historic=castle,ruins,monastery,city_gate",
     "n/place=city,town,village",
@@ -171,18 +172,15 @@ def main():
     src = osm_file(args.cache, area)
     t.step("filter")
 
-    # Routing tiles first, each step in a child process, so their memory is
-    # free again before the route graph.
+    # Scenery and routing tiles first, each step in a child process, so their
+    # memory is free again before the route graph.
+    scenery_npz = scenery_file(args.cache, area, src)
+    t.step("scenery")
     routing_dir = routing_file(args.cache, area, src)
     t.step("routing extract")
     with ProcessPoolExecutor(1) as pool:
-        routing, routing_stats = pool.submit(R.build, routing_dir, out).result()
+        routing, routing_stats = pool.submit(R.build, routing_dir, scenery_npz, out).result()
     t.step("routing tiles")
-
-    # Extracted before the route extract and loaded after the graph, so the
-    # peaks of the three steps don't add up.
-    scenery_npz = scenery_file(args.cache, area, src)
-    t.step("scenery")
 
     data = load_extract(args.cache, area, src)
     print(f"extract: {E.summary(data)}")

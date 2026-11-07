@@ -8,7 +8,7 @@ import type { RouteOptions, RoutingProvider } from "@wayline/providers";
 import { COST_PROFILES, type FetchFile, Router } from "@wayline/router";
 
 /** Bump when the router or its costs change, so cached legs are routed again. */
-const ROUTER_VERSION = 1;
+const ROUTER_VERSION = 2;
 
 /**
  * Routes in the browser on the routing tiles of the dataset. Scenic and quiet

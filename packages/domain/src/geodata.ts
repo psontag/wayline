@@ -27,7 +27,7 @@ export type Manifest = {
 
 /** Binary tiles, gzipped. The format is in pipeline/README.md. */
 export type RoutingTiles = {
-  format: 1;
+  format: 2;
   /** Tile edge in degrees. Key "x_y" as in TileIndex. */
   size: number;
   /** Search part: nodes and edges. "{key}" for the tile key. */

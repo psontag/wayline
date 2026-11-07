@@ -88,12 +88,21 @@ Sights within 500 m, share of edges:
 
 `route/<x>_<y>.bin` and `route/<x>_<y>.geo.bin` hold all bikeable ways for the router in the browser (#81). `routing.py` builds them, the manifest lists them under `routing`.
 
-- Bikeable: `highway` of a road, track, path or cycleway, or any way with `bicycle=yes|designated|permissive|dismount`. Not `bicycle=no|private|use_sidepath`, `access=no|private`, steps or areas.
+- Bikeable: `highway` of a road, track, path or cycleway, or any way with `bicycle=yes|designated|permissive|dismount`. Not `bicycle=no|private|use_sidepath`, `access=no|private`, steps or areas. Ferries (`route=ferry`) unless `bicycle=no`.
 - Ways split at junctions into edges. Only the largest connected part is kept.
 - An edge is in the tile of each of its ends. Tiles are 0.25°.
 - Elevation: the DEM at each point, and smoothed over 50 m samples (±4) for the profile.
 - Descent per edge and direction: the DEM at each point with a 10 m dead band, minus 1.5 % of the length (like BRouter's `downhillcutoff`).
 - Shape points: inner points of a way more than 1.5 m off the line of their neighbors.
+- Estimates for the scenic and quiet profiles, like BRouter's `estimated_*_class` tags. Class 0 is none, 1–6 is low to high.
+
+| Class | From |
+|---|---|
+| Forest | Share of the edge on the `forest` scenery layer, in sixths |
+| Water | Same with the `water` layer |
+| Town | km of `residential` and `living_street` per km² within about 1.5 km: 1, 2, 4, 6, 8, 10 km start classes 1–6 |
+| Traffic | Way type: `unclassified` 1, `tertiary` 3, `secondary` 4, `primary` 5, `trunk` 6, links one less. One more at town class 3 and up |
+| Noise | Share of the edge within 100 m of a motorway, trunk or primary road, in sixths |
 
 Germany (November 2026): 17.0 M nodes, 21.2 M edges, 2.3 M km, 835 tiles. Search parts 163 MiB, geometry parts 125 MiB gzipped, largest tile 1.4 MiB. A 230 km trip routed in 10 km legs loads about 6 MiB.
 
@@ -103,7 +112,7 @@ Search part (`.bin`):
 
 | Field | Type | Count |
 |---|---|---|
-| `WRT1` | 4 bytes | |
+| `WRT2` | 4 bytes | |
 | Nodes n, edges m | u32 | 2 |
 | Node ids, ascending, delta | i32 | n |
 | Lon, delta | i32 | n |
@@ -114,6 +123,7 @@ Search part (`.bin`):
 | Attributes | u16 | m |
 | Descent from → to in dm | u16 | m |
 | Descent to → from in dm | u16 | m |
+| Estimates: forest bits 0–2, water 3–5, town 6–8, traffic 9–11, noise 12–14 | u16 | m |
 
 Node ids are the same in all tiles, so tiles join at shared nodes. Ids follow the tiles, so ids in a tile are close.
 
@@ -121,7 +131,7 @@ Attributes:
 
 | Bits | Value |
 |---|---|
-| 0–4 | Way type: index in `routing.highways` of the manifest, 31 for others |
+| 0–4 | Way type: index in `routing.highways` of the manifest (`ferry` for ferries), 31 for others |
 | 5–7 | `tracktype` grade 1–5, 0 for none |
 | 8 | Paved (`surface=paved\|asphalt\|concrete\|paving_stones\|sett` or `smoothness=excellent\|good`) |
 | 9 | Unpaved, as BRouter's trekking profile |

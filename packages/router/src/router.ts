@@ -2,6 +2,7 @@ import type { LonLat, RoutingTiles, Surface } from "@wayline/domain";
 import FlatQueue from "flatqueue";
 import {
   type CostProfile,
+  FERRY_COST,
   TOURING,
   TURN_COST,
   bitsOf,
@@ -52,6 +53,7 @@ type Tile = {
   /** Of the straight line from → to. Shape points don't change routes much. */
   adjBearing: Float64Array;
   adjSigned: Uint8Array;
+  adjFerry: Uint8Array;
   geometry?: Promise<GeometryTile | undefined>;
 };
 
@@ -146,11 +148,19 @@ export class Router {
       adjCost: new Float64Array(size),
       adjBearing: new Float64Array(size),
       adjSigned: new Uint8Array(size),
+      adjFerry: new Uint8Array(size),
     };
+    const ferry = this.index.highways.indexOf("ferry");
     const fill = adjStart.slice(0, n);
     for (let e = 0; e < m; e++) {
       const bits = at(s.bits, e);
-      const factor = wayFactor(bits, this.index.highways, this.profile);
+      const factor = wayFactor(
+        bits,
+        this.index.highways,
+        this.profile,
+        at(s.estimates, e),
+      );
+      const isFerry = bitsOf(bits).highway === ferry ? 1 : 0;
       // No turn cost on signed routes makes them a bit more magnetic, as in BRouter.
       const signed = this.profile.cycleRoutes ? bitsOf(bits).signed : 0;
       for (const forward of [true, false]) {
@@ -173,6 +183,7 @@ export class Router {
             Math.cos((at(s.lat, a) / COORD) * (Math.PI / 180)),
         );
         tile.adjSigned[i] = signed;
+        tile.adjFerry[i] = isFerry;
       }
     }
     this.slots.push(tile);
@@ -264,6 +275,8 @@ export class Router {
         prev === undefined
           ? undefined
           : at(this.slot(prev).adjBearing, prev % SLOT);
+      const onFerry =
+        prev !== undefined && this.slot(prev).adjFerry[prev % SLOT] === 1;
       const end = at(tile.adjStart, local + 1);
       for (let i = at(tile.adjStart, local); i < end; i++) {
         const b = at(tile.adjTo, i);
@@ -272,6 +285,7 @@ export class Router {
         let c = cu + at(tile.adjCost, i);
         if (inBearing !== undefined && !tile.adjSigned[i])
           c += TURN_COST * (1 - Math.cos(at(tile.adjBearing, i) - inBearing));
+        if (tile.adjFerry[i] && !onFerry) c += FERRY_COST;
         if (c < (cost.get(v) ?? Infinity)) {
           cost.set(v, c);
           where.set(v, tile.slot * SLOT + b);
