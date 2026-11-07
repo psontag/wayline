@@ -50,7 +50,7 @@ export function wayFactor(bits: number, highways: string[]): number {
     f = b.unpaved ? 1.5 : 1.1;
   else if (hw === "service") f = b.unpaved ? 1.6 : 1.3;
   else if (hw && MINOR_WAYS.has(hw))
-    f = (goodSurface ? GOOD_MINOR : POOR_MINOR)[b.grade];
+    f = (goodSurface ? GOOD_MINOR : POOR_MINOR)[b.grade] ?? 5;
   else {
     const road = hw ? MAIN_ROADS[hw] : undefined;
     f = (b.bike ? 0 : 2) + (road ? road[b.bike ? 0 : 1] : 2);

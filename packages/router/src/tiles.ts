@@ -2,6 +2,9 @@
 
 export const COORD = 1e6;
 
+/** Typed array read. Reads past the end give 0. */
+export const at = (a: ArrayLike<number>, i: number): number => a[i] ?? 0;
+
 /** Search part of one tile. Node indexes are local to the tile. */
 export type SearchTile = {
   key: string;
@@ -61,13 +64,15 @@ class Reader {
 }
 
 function undelta(a: Int32Array) {
-  for (let i = 1; i < a.length; i++) a[i] += a[i - 1];
+  for (let i = 1; i < a.length; i++) a[i] = at(a, i) + at(a, i - 1);
   return a;
 }
 
 export function decodeSearch(key: string, bytes: Uint8Array): SearchTile {
   const r = new Reader(bytes, "WRT1");
-  const [n, m] = r.u32(2);
+  const counts = r.u32(2);
+  const n = at(counts, 0);
+  const m = at(counts, 1);
   const tile = {
     key,
     ids: undelta(r.i32(n)),
@@ -86,14 +91,16 @@ export function decodeSearch(key: string, bytes: Uint8Array): SearchTile {
 
 export function decodeGeometry(bytes: Uint8Array): GeometryTile {
   const r = new Reader(bytes, "WRG1");
-  const [m, p] = r.u32(2);
+  const counts = r.u32(2);
+  const m = at(counts, 0);
+  const p = at(counts, 1);
   const dlon = r.i32(p);
   const dlat = r.i32(p);
   const count = r.u16(m);
   const elevation = r.i16(p + 2 * m);
   r.end();
   const start = new Uint32Array(m + 1);
-  for (let e = 0; e < m; e++) start[e + 1] = start[e] + count[e];
+  for (let e = 0; e < m; e++) start[e + 1] = at(start, e) + at(count, e);
   return { dlon, dlat, start, elevation };
 }
 

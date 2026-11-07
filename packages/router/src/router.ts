@@ -2,6 +2,7 @@ import type { LonLat, RoutingTiles, Surface } from "@wayline/domain";
 import FlatQueue from "flatqueue";
 import { DOWNHILL_COST, TURN_COST, bitsOf, surfaceOf, wayFactor } from "./cost";
 import {
+  at,
   COORD,
   decodeGeometry,
   decodeSearch,
@@ -47,6 +48,9 @@ type Tile = {
   geometry?: Promise<GeometryTile | undefined>;
 };
 
+type NodeAt = { tile: Tile; local: number };
+type Step = { tile: Tile; entry: number };
+
 // Node and entry references: slot × SLOT + local index.
 const SLOT = 2 ** 24;
 const SNAP_M = 2000;
@@ -77,6 +81,12 @@ export class Router {
     return `${Math.floor(lon / COORD / size)}_${Math.floor(lat / COORD / size)}`;
   }
 
+  private slot(ref: number): Tile {
+    const tile = this.slots[Math.floor(ref / SLOT)];
+    if (!tile) throw new Error("Unknown tile slot");
+    return tile;
+  }
+
   private async bytes(path: string) {
     const raw = await this.fetchFile(path);
     if (!raw) return undefined;
@@ -99,22 +109,24 @@ export class Router {
 
   private adjacency(s: SearchTile): Tile {
     const n = s.ids.length;
+    const m = s.from.length;
     const owned = new Uint8Array(n);
     for (let i = 0; i < n; i++)
-      owned[i] = this.keyOf(s.lon[i], s.lat[i]) === s.key ? 1 : 0;
-    const adjStart = new Int32Array(n + 1);
+      owned[i] = this.keyOf(at(s.lon, i), at(s.lat, i)) === s.key ? 1 : 0;
     const usable = (e: number, forward: boolean) => {
-      const b = bitsOf(s.bits[e]);
-      const at = forward ? s.from[e] : s.to[e];
-      return owned[at] === 1 && (forward ? b.forward : b.backward) === 1;
+      const b = bitsOf(at(s.bits, e));
+      const node = forward ? at(s.from, e) : at(s.to, e);
+      return owned[node] === 1 && (forward ? b.forward : b.backward) === 1;
     };
-    const m = s.from.length;
+    const adjStart = new Int32Array(n + 1);
+    const bump = (i: number) => (adjStart[i] = at(adjStart, i) + 1);
     for (let e = 0; e < m; e++) {
-      if (usable(e, true)) adjStart[s.from[e] + 1]++;
-      if (usable(e, false)) adjStart[s.to[e] + 1]++;
+      if (usable(e, true)) bump(at(s.from, e) + 1);
+      if (usable(e, false)) bump(at(s.to, e) + 1);
     }
-    for (let i = 0; i < n; i++) adjStart[i + 1] += adjStart[i];
-    const size = adjStart[n];
+    for (let i = 0; i < n; i++)
+      adjStart[i + 1] = at(adjStart, i + 1) + at(adjStart, i);
+    const size = at(adjStart, n);
     const tile: Tile = {
       slot: this.slots.length,
       s,
@@ -129,24 +141,27 @@ export class Router {
     };
     const fill = adjStart.slice(0, n);
     for (let e = 0; e < m; e++) {
-      const factor = wayFactor(s.bits[e], this.index.highways);
-      const signed = bitsOf(s.bits[e]).signed;
+      const bits = at(s.bits, e);
+      const factor = wayFactor(bits, this.index.highways);
+      const signed = bitsOf(bits).signed;
       for (const forward of [true, false]) {
         if (!usable(e, forward)) continue;
-        const [a, b] = forward ? [s.from[e], s.to[e]] : [s.to[e], s.from[e]];
-        const down = (forward ? s.downF[e] : s.downB[e]) / 10;
-        const i = fill[a]++;
+        const a = forward ? at(s.from, e) : at(s.to, e);
+        const b = forward ? at(s.to, e) : at(s.from, e);
+        const down = (forward ? at(s.downF, e) : at(s.downB, e)) / 10;
+        const i = at(fill, a);
+        fill[a] = i + 1;
         tile.adjTo[i] = b;
         tile.adjEdge[i] = e;
         tile.adjForward[i] = forward ? 1 : 0;
         tile.adjCost[i] = Math.max(
           1,
-          s.length[e] * factor + DOWNHILL_COST * down,
+          at(s.length, e) * factor + DOWNHILL_COST * down,
         );
         tile.adjBearing[i] = Math.atan2(
-          s.lat[b] - s.lat[a],
-          (s.lon[b] - s.lon[a]) *
-            Math.cos((s.lat[a] / COORD) * (Math.PI / 180)),
+          at(s.lat, b) - at(s.lat, a),
+          (at(s.lon, b) - at(s.lon, a)) *
+            Math.cos((at(s.lat, a) / COORD) * (Math.PI / 180)),
         );
         tile.adjSigned[i] = signed;
       }
@@ -155,21 +170,21 @@ export class Router {
     return tile;
   }
 
-  /** The tile that owns node id, and its index there. */
-  private async owner(tile: Tile, local: number) {
+  /** The tile that owns a node, and its index there. */
+  private async owner({ tile, local }: NodeAt): Promise<NodeAt | undefined> {
     if (tile.owned[local]) return { tile, local };
     const s = tile.s;
-    const other = await this.load(this.keyOf(s.lon[local], s.lat[local]));
+    const other = await this.load(
+      this.keyOf(at(s.lon, local), at(s.lat, local)),
+    );
     if (!other) return undefined;
-    const i = binarySearch(other.s.ids, s.ids[local]);
+    const i = binarySearch(other.s.ids, at(s.ids, local));
     return i < 0 ? undefined : { tile: other, local: i };
   }
 
   /** Nearest node to a point, within SNAP_M. */
-  private async snap([lon, lat]: LonLat) {
-    const x = lon * COORD;
-    const y = lat * COORD;
-    let best: { tile: Tile; local: number } | undefined;
+  private async snap([lon, lat]: LonLat): Promise<NodeAt | undefined> {
+    let best: NodeAt | undefined;
     let bestM = SNAP_M;
     const dLat = SNAP_M / M_PER_DEG;
     const dLon = dLat / Math.cos((lat * Math.PI) / 180);
@@ -186,12 +201,7 @@ export class Router {
       const s = tile.s;
       for (let i = 0; i < s.ids.length; i++) {
         if (!tile.owned[i]) continue;
-        const d = meters(
-          x / COORD,
-          y / COORD,
-          s.lon[i] / COORD,
-          s.lat[i] / COORD,
-        );
+        const d = meters(lon, lat, at(s.lon, i) / COORD, at(s.lat, i) / COORD);
         if (d < bestM) {
           bestM = d;
           best = { tile, local: i };
@@ -209,10 +219,10 @@ export class Router {
   ): Promise<RoutedLeg | undefined> {
     const [start, target] = await Promise.all([this.snap(from), this.snap(to)]);
     if (!start || !target) return undefined;
-    const sId = start.tile.s.ids[start.local];
-    const tId = target.tile.s.ids[target.local];
-    const tLon = target.tile.s.lon[target.local] / COORD;
-    const tLat = target.tile.s.lat[target.local] / COORD;
+    const sId = at(start.tile.s.ids, start.local);
+    const tId = at(target.tile.s.ids, target.local);
+    const tLon = at(target.tile.s.lon, target.local) / COORD;
+    const tLat = at(target.tile.s.lat, target.local) / COORD;
 
     const cost = new Map<number, number>([[sId, 0]]);
     /** Where a node was seen: slot × SLOT + local index. */
@@ -232,10 +242,10 @@ export class Router {
       done.add(u);
       if (u === tId) break;
       const ref = where.get(u) ?? 0;
-      const found = await this.owner(
-        this.slots[Math.floor(ref / SLOT)],
-        ref % SLOT,
-      );
+      const found = await this.owner({
+        tile: this.slot(ref),
+        local: ref % SLOT,
+      });
       if (!found) continue;
       const { tile, local } = found;
       const s = tile.s;
@@ -244,34 +254,43 @@ export class Router {
       const inBearing =
         prev === undefined
           ? undefined
-          : this.slots[Math.floor(prev / SLOT)].adjBearing[prev % SLOT];
-      for (let i = tile.adjStart[local]; i < tile.adjStart[local + 1]; i++) {
-        const b = tile.adjTo[i];
-        const v = s.ids[b];
+          : at(this.slot(prev).adjBearing, prev % SLOT);
+      const end = at(tile.adjStart, local + 1);
+      for (let i = at(tile.adjStart, local); i < end; i++) {
+        const b = at(tile.adjTo, i);
+        const v = at(s.ids, b);
         if (done.has(v)) continue;
-        let c = cu + tile.adjCost[i];
+        let c = cu + at(tile.adjCost, i);
         if (inBearing !== undefined && !tile.adjSigned[i])
-          c += TURN_COST * (1 - Math.cos(tile.adjBearing[i] - inBearing));
+          c += TURN_COST * (1 - Math.cos(at(tile.adjBearing, i) - inBearing));
         if (c < (cost.get(v) ?? Infinity)) {
           cost.set(v, c);
           where.set(v, tile.slot * SLOT + b);
           via.set(v, tile.slot * SLOT + i);
-          const h = meters(s.lon[b] / COORD, s.lat[b] / COORD, tLon, tLat);
+          const h = meters(
+            at(s.lon, b) / COORD,
+            at(s.lat, b) / COORD,
+            tLon,
+            tLat,
+          );
           queue.push(v, c + h);
         }
       }
     }
     if (!done.has(tId)) return undefined;
 
-    const steps: { tile: Tile; entry: number }[] = [];
+    const steps: Step[] = [];
     for (let v = tId; v !== sId;) {
       const ref = via.get(v);
       if (ref === undefined) return undefined;
-      const tile = this.slots[Math.floor(ref / SLOT)];
+      const tile = this.slot(ref);
       const entry = ref % SLOT;
       steps.push({ tile, entry });
-      const e = tile.adjEdge[entry];
-      v = tile.s.ids[tile.adjForward[entry] ? tile.s.from[e] : tile.s.to[e]];
+      const e = at(tile.adjEdge, entry);
+      const prevNode = tile.adjForward[entry]
+        ? at(tile.s.from, e)
+        : at(tile.s.to, e);
+      v = at(tile.s.ids, prevNode);
     }
     steps.reverse();
     return this.leg(steps, start);
@@ -284,40 +303,39 @@ export class Router {
     return tile.geometry;
   }
 
-  private async leg(
-    steps: { tile: Tile; entry: number }[],
-    start: { tile: Tile; local: number },
-  ): Promise<RoutedLeg> {
+  private async leg(steps: Step[], start: NodeAt): Promise<RoutedLeg> {
     const geometries = await Promise.all(
       steps.map((st) => this.geometry(st.tile)),
     );
     const s0 = start.tile.s;
     const points: LonLat[] = [
-      [s0.lon[start.local] / COORD, s0.lat[start.local] / COORD],
+      [at(s0.lon, start.local) / COORD, at(s0.lat, start.local) / COORD],
     ];
     const elevation: number[] = [];
     const surface: Surface = { paved: 0, gravel: 0, unpaved: 0 };
     let distance = 0;
     steps.forEach(({ tile, entry }, k) => {
       const s = tile.s;
-      const e = tile.adjEdge[entry];
+      const e = at(tile.adjEdge, entry);
       const g = geometries[k];
       const edgePoints: LonLat[] = [];
       const edgeEle: number[] = [];
-      let x = s.lon[s.from[e]];
-      let y = s.lat[s.from[e]];
+      let x = at(s.lon, at(s.from, e));
+      let y = at(s.lat, at(s.from, e));
       edgePoints.push([x / COORD, y / COORD]);
       if (g) {
-        for (let j = g.start[e]; j < g.start[e + 1]; j++) {
-          x += g.dlon[j];
-          y += g.dlat[j];
+        const first = at(g.start, e);
+        const last = at(g.start, e + 1);
+        for (let j = first; j < last; j++) {
+          x += at(g.dlon, j);
+          y += at(g.dlat, j);
           edgePoints.push([x / COORD, y / COORD]);
         }
-        const first = g.start[e] + 2 * e;
-        for (let j = first; j < g.start[e + 1] + 2 * e + 2; j++)
-          edgeEle.push(g.elevation[j]);
+        for (let j = first + 2 * e; j < last + 2 * e + 2; j++)
+          edgeEle.push(at(g.elevation, j));
       }
-      edgePoints.push([s.lon[s.to[e]] / COORD, s.lat[s.to[e]] / COORD]);
+      const to = at(s.to, e);
+      edgePoints.push([at(s.lon, to) / COORD, at(s.lat, to) / COORD]);
       if (!tile.adjForward[entry]) {
         edgePoints.reverse();
         edgeEle.reverse();
@@ -326,14 +344,15 @@ export class Router {
       points.push(...edgePoints.slice(1));
       for (let j = 1; j < edgePoints.length; j++)
         elevation.push(edgeEle[j] ?? elevation.at(-1) ?? 0);
-      distance += s.length[e];
-      surface[surfaceOf(s.bits[e], this.index.highways)] += s.length[e];
+      const length = at(s.length, e);
+      distance += length;
+      surface[surfaceOf(at(s.bits, e), this.index.highways)] += length;
     });
     if (!steps.length) elevation.push(0);
     let ascent = 0;
     let descent = 0;
     for (let j = 1; j < elevation.length; j++) {
-      const d = elevation[j] - elevation[j - 1];
+      const d = at(elevation, j) - at(elevation, j - 1);
       if (d > 0) ascent += d;
       else descent -= d;
     }
@@ -350,8 +369,9 @@ function binarySearch(a: Int32Array, v: number) {
   let hi = a.length - 1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    if (a[mid] < v) lo = mid + 1;
-    else if (a[mid] > v) hi = mid - 1;
+    const x = at(a, mid);
+    if (x < v) lo = mid + 1;
+    else if (x > v) hi = mid - 1;
     else return mid;
   }
   return -1;
