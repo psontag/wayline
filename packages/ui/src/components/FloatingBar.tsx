@@ -31,6 +31,7 @@ export function FloatingButton({
         "flex size-11 shrink-0 items-center justify-center rounded-full shadow-md transition-colors",
         "[&_svg]:size-4 [&_svg]:shrink-0",
         "border border-border bg-surface text-text hover:bg-hover",
+        "disabled:pointer-events-none disabled:text-text-muted",
         focusRing,
         className,
       )}

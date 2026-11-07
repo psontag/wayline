@@ -11,17 +11,23 @@ import {
   BottomSheet,
   FloatingButton,
   FloatingTitle,
+  Menu,
+  MenuItem,
   SHEET_PEEK,
   type SheetSnap,
   useFormat,
 } from "@wayline/ui";
-import { ChevronLeft, Download, Share2 } from "lucide-react";
+import {
+  ChevronLeft,
+  Download,
+  Ellipsis,
+  Redo2,
+  Share2,
+  Undo2,
+} from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { downloadTripGpx } from "../../data/gpx";
-import { PhoneDestinationSheet } from "./PhoneDestinationSheet";
-import { PhoneStageSheet } from "./PhoneStageSheet";
-import { PhoneStopSheet } from "./PhoneStopSheet";
 import {
   type MapAlternative,
   type MapPadding,
@@ -38,10 +44,14 @@ export type PhoneTripEditorProps = {
   trip: Trip;
   editor: TripEditorState;
   selected: number;
+  /** The map shows the whole trip, not the selected day. */
+  overview: boolean;
   onSelect: (index: number) => void;
   alternatives: MapAlternative[];
   onPickAlternative: (place: Place) => void;
   hover?: LonLat;
+  /** Trip or day level, the same as the desktop side panel. */
+  panel: ReactNode;
   /** Elevation or weather, in the sheet. */
   chart: ReactNode;
   /** Layers the user can turn on and off, and the weather. */
@@ -59,10 +69,12 @@ export function PhoneTripEditor({
   trip,
   editor,
   selected,
+  overview,
   onSelect,
   alternatives,
   onPickAlternative,
   hover,
+  panel,
   chart,
   mapLayers,
   route,
@@ -71,13 +83,19 @@ export function PhoneTripEditor({
 }: PhoneTripEditorProps) {
   const { t } = useTranslation("tripEditor");
   const [snap, setSnap] = useState<SheetSnap>("half");
-  const [stopOpen, setStopOpen] = useState(false);
-  const [destinationOpen, setDestinationOpen] = useState(false);
+  // Opening a day or the trip shows it on the map above the sheet.
+  const level = overview ? -1 : selected;
+  const [shownLevel, setShownLevel] = useState(level);
+  if (level !== shownLevel) {
+    setShownLevel(level);
+    setSnap("half");
+  }
 
-  // Fit the trip into the part of the map above the half-open sheet.
+  // Fit the trip or the day into the part of the map above the half-open
+  // sheet.
   const padding = useMemo<MapPadding>(() => {
     const half = Math.round(innerHeight * 0.56) - SHEET_PEEK + SHEET_RADIUS;
-    return { top: 80, right: 112, bottom: half + 24, left: 48 };
+    return { top: 80, right: 48, bottom: half + 24, left: 48 };
   }, []);
 
   return (
@@ -89,6 +107,7 @@ export function PhoneTripEditor({
         <TripMap
           trip={trip}
           selected={selected}
+          overview={overview}
           onSelect={onSelect}
           {...mapLayers}
           alternatives={alternatives}
@@ -103,44 +122,26 @@ export function PhoneTripEditor({
           </div>
         </TripMap>
       </div>
-      <PhoneHeader trip={trip} readOnly={editor.readOnly} onShare={onShare} />
+      <PhoneHeader trip={trip} editor={editor} onShare={onShare} />
       <BottomSheet snap={snap} onSnapChange={setSnap} label={t("phone.sheet")}>
-        <PhoneStageSheet
-          trip={trip}
-          editor={editor}
-          selected={selected}
-          onSelect={onSelect}
-          chart={chart}
-          onOpenStop={() => setStopOpen(true)}
-          onOpenDestination={() => setDestinationOpen(true)}
-        />
+        {/* Bottom padding: at full height the lowest part of the sheet is
+            off screen. */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-auto pb-24">
+          {panel}
+          <div className="p-4">{chart}</div>
+        </div>
       </BottomSheet>
-      {destinationOpen && (
-        <PhoneDestinationSheet
-          trip={trip}
-          index={selected}
-          editor={editor}
-          onClose={() => setDestinationOpen(false)}
-        />
-      )}
-      <PhoneStopSheet
-        trip={trip}
-        index={selected}
-        editor={editor}
-        open={stopOpen}
-        onOpenChange={setStopOpen}
-      />
     </div>
   );
 }
 
 function PhoneHeader({
   trip,
-  readOnly,
+  editor,
   onShare,
 }: {
   trip: Trip;
-  readOnly: boolean;
+  editor: TripEditorState;
   onShare?: () => void;
 }) {
   const { t } = useTranslation("tripEditor");
@@ -164,22 +165,48 @@ function PhoneHeader({
       <FloatingTitle
         title={trip.name}
         subtitle={
-          readOnly
+          editor.readOnly
             ? t("phone.sharedSubtitle", { owner: trip.owner })
             : t("phone.subtitle", { dates, distance })
         }
       />
-      {onShare && (
-        <FloatingButton label={t("header.share")} onClick={onShare}>
-          <Share2 aria-hidden />
-        </FloatingButton>
+      {!editor.readOnly && (
+        <>
+          <FloatingButton
+            label={t("header.undo")}
+            disabled={!editor.canUndo}
+            onClick={editor.undo}
+          >
+            <Undo2 aria-hidden />
+          </FloatingButton>
+          <FloatingButton
+            label={t("header.redo")}
+            disabled={!editor.canRedo}
+            onClick={editor.redo}
+          >
+            <Redo2 aria-hidden />
+          </FloatingButton>
+        </>
       )}
-      <FloatingButton
-        label={t("header.exportGpx")}
-        onClick={() => downloadTripGpx(trip)}
+      <Menu
+        trigger={
+          <FloatingButton label={t("phone.more")}>
+            <Ellipsis aria-hidden />
+          </FloatingButton>
+        }
       >
-        <Download aria-hidden />
-      </FloatingButton>
+        {onShare && (
+          <MenuItem icon={<Share2 aria-hidden />} onSelect={onShare}>
+            {t("header.share")}
+          </MenuItem>
+        )}
+        <MenuItem
+          icon={<Download aria-hidden />}
+          onSelect={() => downloadTripGpx(trip)}
+        >
+          {t("header.exportGpx")}
+        </MenuItem>
+      </Menu>
     </div>
   );
 }

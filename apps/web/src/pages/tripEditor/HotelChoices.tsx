@@ -5,12 +5,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSiteInfo } from "../../data/queries";
 import { hotelBookingUrl } from "./BookingLink";
-import { SITE_CHECKS } from "./SiteHotelRow";
 import { useStopHotels } from "./stopChoices";
 import { toHotel, type TripEditorState } from "./useTripEditor";
 
 /** Rows shown before "more hotels". */
 const FIRST = 3;
+/** Website checks per hotel list. Each one is a request to the server. */
+const SITE_CHECKS = 8;
 
 /** Hotels at the stop to pick from. The chosen and saved ones come first. */
 export function HotelChoices({

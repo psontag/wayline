@@ -22,19 +22,8 @@ export function hotelBookingUrl(
   });
 }
 
-/**
- * Booking.com search for the stop, with dates and budget.
- * row: card on desktop. button: only the button. footer: phone stop sheet.
- */
-export function BookingLink({
-  trip,
-  index,
-  variant = "row",
-}: {
-  trip: Trip;
-  index: number;
-  variant?: "row" | "button" | "footer";
-}) {
+/** Booking.com search for the stop, with dates and budget. */
+export function BookingLink({ trip, index }: { trip: Trip; index: number }) {
   const { t } = useTranslation("tripEditor");
   const stage = trip.stages[index];
   if (!stage) return null;
@@ -47,16 +36,10 @@ export function BookingLink({
 
   return (
     <div className="flex w-full">
-      <Button
-        asChild
-        size={variant === "row" ? "sm" : "lg"}
-        className="min-w-0 flex-1"
-      >
+      <Button asChild size="sm" className="min-w-0 flex-1">
         <a href={href} target="_blank" rel="noreferrer">
           <span className="truncate">
-            {variant === "footer"
-              ? t("phone.checkPrices")
-              : t("stage.bookHotels", { place: stage.end.name })}
+            {t("stage.bookHotels", { place: stage.end.name })}
           </span>
           <ExternalLink aria-hidden />
         </a>

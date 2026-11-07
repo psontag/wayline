@@ -1,4 +1,3 @@
-import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Drawer } from "vaul";
@@ -78,74 +77,6 @@ export function BottomSheet({
             <span className="h-1.5 w-10 rounded-full bg-border" />
           </button>
           {children}
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
-  );
-}
-
-export type SheetDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  /** Small line above the title. */
-  subtitle?: string;
-  /** Stays at the bottom, e.g. the main action. */
-  footer?: ReactNode;
-  children: ReactNode;
-};
-
-/** Tall modal sheet for a focused task on a phone, e.g. picking a stop. */
-export function SheetDialog({
-  open,
-  onOpenChange,
-  title,
-  subtitle,
-  footer,
-  children,
-}: SheetDialogProps) {
-  const { t } = useTranslation("ui");
-  const container = usePortalContainer();
-  return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange}>
-      <Drawer.Portal container={container}>
-        <Drawer.Overlay className="fixed inset-0 z-dialog bg-scrim" />
-        <Drawer.Content
-          aria-describedby={undefined}
-          className="fixed inset-x-0 top-16 bottom-0 z-dialog flex flex-col rounded-t-xl bg-surface text-base text-text outline-none"
-        >
-          <div className="flex h-7 shrink-0 items-center justify-center">
-            <span className="h-1.5 w-10 rounded-full bg-border" />
-          </div>
-          <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 pb-3">
-            <div className="flex min-w-0 flex-1 flex-col">
-              {subtitle && (
-                <span className="truncate text-xs text-text-muted">
-                  {subtitle}
-                </span>
-              )}
-              <Drawer.Title className="text-lg font-extrabold">
-                {title}
-              </Drawer.Title>
-            </div>
-            <Drawer.Close
-              aria-label={t("sheet.close")}
-              className={cn(
-                "flex size-11 shrink-0 items-center justify-center rounded-full bg-bg text-text hover:bg-hover",
-                focusRing,
-              )}
-            >
-              <X className="size-4" aria-hidden />
-            </Drawer.Close>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto p-4">
-            {children}
-          </div>
-          {footer && (
-            <div className="flex shrink-0 items-center gap-2 border-t border-border px-4 pt-3 pb-6">
-              {footer}
-            </div>
-          )}
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>

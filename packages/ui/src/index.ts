@@ -211,10 +211,8 @@ export {
 } from "./components/MessagePanel";
 export {
   BottomSheet,
-  SheetDialog,
   SHEET_PEEK,
   type BottomSheetProps,
-  type SheetDialogProps,
   type SheetSnap,
 } from "./components/BottomSheet";
 export {
