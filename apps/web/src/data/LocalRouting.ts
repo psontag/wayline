@@ -71,6 +71,13 @@ export class LocalRouting implements RoutingProvider {
     }
   }
 
+  /** Nearest point on a bikeable way within maxKm, or undefined. */
+  snap(point: LonLat, maxKm: number): Promise<LonLat | undefined> {
+    return this.withRouter("touring", (router) =>
+      router.snap(point, maxKm * 1000),
+    );
+  }
+
   route(points: LonLat[], options: RouteOptions): Promise<Leg[]> {
     return this.withRouter(options.profile, async (router) => {
       const legs: Leg[] = [];

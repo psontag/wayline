@@ -79,6 +79,34 @@ describe("Router", () => {
     ).toBeUndefined();
   });
 
+  it("snaps to the nearest point on a way, and routes from there", async () => {
+    const router = new Router(await index(), read);
+    const off: [number, number] = [8.8, 50.8];
+    const on = await router.snap(off);
+    expect(on).toBeDefined();
+    expect(on).not.toEqual(off);
+    // Snapping a point on a way keeps it.
+    const again = await router.snap(on!);
+    expect(again![0]).toBeCloseTo(on![0], 6);
+    expect(again![1]).toBeCloseTo(on![1], 6);
+    const leg = await router.route(on!, kirchhain);
+    expect(leg!.points[0]![0]).toBeCloseTo(on![0], 6);
+    expect(leg!.points[0]![1]).toBeCloseTo(on![1], 6);
+    expect(await router.snap(off, 0.001)).toBeUndefined();
+  });
+
+  it("routes between two points of one edge", async () => {
+    const router = new Router(await index(), read);
+    const a = (await router.snap(marburg))!;
+    const there = await router.route(a, a);
+    expect(there!.distance).toBe(0);
+    const b: [number, number] = [a[0] + 0.0002, a[1]];
+    const leg = await router.route(a, b);
+    expect(leg!.distance).toBeGreaterThan(0);
+    expect(leg!.distance).toBeLessThan(500);
+    expect(leg!.elevation).toHaveLength(leg!.points.length);
+  });
+
   it("rides shorter with fast, which ignores signed routes", async () => {
     const touring = await new Router(await index(), read).route(
       marburg,

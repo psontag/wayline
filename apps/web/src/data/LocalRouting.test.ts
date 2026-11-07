@@ -63,6 +63,13 @@ describe("LocalRouting", () => {
     }
   });
 
+  it("snaps a point to a way close by", async () => {
+    const near = await routing().snap([8.8, 50.8], 0.5);
+    expect(near).toBeDefined();
+    expect(near).not.toEqual([8.8, 50.8]);
+    expect(await routing().snap([7, 50], 0.5)).toBeUndefined();
+  });
+
   it("stops when aborted", async () => {
     await expect(
       routing().route([marburg, kirchhain], {
