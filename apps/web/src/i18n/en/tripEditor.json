@@ -60,6 +60,8 @@
   },
   "profile": {
     "title": "Day {{day}} · {{from}} → {{to}}",
+    "tripTitle": "Whole trip · {{from}} → {{to}}",
+    "tripLabel": "Elevation of the whole trip. Highest point {{elevation}} at {{distance}}.",
     "totals": "{{distance}} · {{ascent}}",
     "at": "{{distance}} · {{elevation}}",
     "atWithTime": "{{distance}} · {{elevation}} · {{time}}",
