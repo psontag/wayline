@@ -1,9 +1,15 @@
-import { distanceKm, parseTrip, type Places } from "@wayline/domain";
+import {
+  distanceKm,
+  parseTrip,
+  type Place,
+  type Places,
+} from "@wayline/domain";
 import { fitsBudget } from "@wayline/providers";
 import { describe, expect, it } from "vitest";
 import places from "../../../public/data/mock/oberfranken/places.json";
 import sample from "../../../public/data/mock/oberfranken/sample-trip.json";
 import {
+  awayFromStart,
   bedsNear,
   destinationStations,
   hasMovableDestination,
@@ -65,6 +71,20 @@ describe("stopChoices", () => {
     const [choice] = stopChoices(trip, 0);
     expect(choice!.beds).toBeUndefined();
     expect(choice!.size).toBeUndefined();
+  });
+});
+
+describe("awayFromStart", () => {
+  it("drops alternatives close to where the day starts", () => {
+    const s = stage!;
+    const [lon, lat] = s.start.coord;
+    const near: Place = {
+      name: "Near",
+      kind: "town",
+      coord: [lon + 0.01, lat],
+    };
+    const far: Place = { name: "Far", kind: "town", coord: [lon + 0.5, lat] };
+    expect(awayFromStart(s, [near, far]).map((p) => p.name)).toEqual(["Far"]);
   });
 });
 
