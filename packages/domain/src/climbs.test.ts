@@ -61,6 +61,62 @@ describe("findClimbs", () => {
     expect(climbs).toHaveLength(2);
   });
 
+  it("groups climbs with a short, shallow gap", () => {
+    const climbs = findClimbs(
+      profile([
+        [0, 200],
+        [1, 240],
+        // 1 km flat with a 15 m dip.
+        [1.5, 225],
+        [2, 240],
+        [3, 290],
+        [4, 290],
+      ]),
+    );
+    expect(climbs).toHaveLength(1);
+    expect(climbs[0]!.gain).toBeGreaterThan(80);
+  });
+
+  it("keeps climbs apart after a long gap", () => {
+    const climbs = findClimbs(
+      profile([
+        [0, 200],
+        [1, 260],
+        [4, 260],
+        [5, 320],
+        [6, 320],
+      ]),
+    );
+    expect(climbs).toHaveLength(2);
+  });
+
+  it("drops climbs under 50 m", () => {
+    expect(
+      findClimbs(
+        profile([
+          [0, 200],
+          [1, 240],
+          [3, 240],
+        ]),
+      ),
+    ).toEqual([]);
+  });
+
+  it("measures the steep part", () => {
+    const [c] = findClimbs(
+      profile([
+        [0, 200],
+        [1, 230],
+        // 500 m at 10 %.
+        [1.5, 280],
+        [2, 290],
+        [3, 290],
+      ]),
+    );
+    expect(c!.steepKm).toBeGreaterThan(0.3);
+    expect(c!.steepKm).toBeLessThan(0.7);
+  });
+
   it("ignores rollers and flat ground", () => {
     expect(
       findClimbs(

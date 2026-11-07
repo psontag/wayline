@@ -33,8 +33,18 @@ export type ElevationProfileProps = {
   axes?: boolean;
   /** km where a new day starts. Drawn as lines with the stop number. */
   dayBreaks?: number[];
-  /** Climbs, filled under the line by grade. */
-  climbs?: { startKm: number; endKm: number; gain?: number }[];
+  /**
+   * Climbs, filled under the line by average grade in %. `steepKm` is the
+   * length over 7 %; the label names `maxGrade` when it is long enough.
+   */
+  climbs?: {
+    startKm: number;
+    endKm: number;
+    gain?: number;
+    grade?: number;
+    maxGrade?: number;
+    steepKm?: number;
+  }[];
   /** Index of the climb to show stronger. */
   highlightedClimb?: number;
   /** Describes the chart for screen readers. */
@@ -68,6 +78,8 @@ const gradeFill = ["fill-grade-1", "fill-grade-2", "fill-grade-3"] as const;
 const gradeBg = ["bg-grade-1", "bg-grade-2", "bg-grade-3"] as const;
 // Climbs narrower than this share of the chart get no gain label.
 const LABEL_MIN_WIDTH = 0.06;
+// A climb with this many km over 7 % names its steepest grade.
+const STEEP_LABEL_KM = 0.2;
 
 /** Grade class of a grade given as a share: 0, 1 or 2. */
 export function gradeClass(grade: number): number {
@@ -282,9 +294,9 @@ export function ElevationProfile({
               "opacity-40",
           )}
         >
-          {climb.runs.map((run) => (
-            <path key={run.d} d={run.d} className={gradeFill[run.grade]} />
-          ))}
+          {climb.d && (
+            <path d={climb.d} className={gradeFill[climb.gradeClass]} />
+          )}
         </g>
       ))}
       {compareLine && (
@@ -394,7 +406,13 @@ export function ElevationProfile({
                   className="absolute bottom-0.5 -translate-x-1/2 text-2xs leading-none font-bold whitespace-nowrap text-text"
                   style={{ left: left((c.startKm + c.endKm) / 2) }}
                 >
-                  {t("climbs.gain", { gain: format.elevation(c.gain) })}
+                  {c.maxGrade !== undefined &&
+                  (c.steepKm ?? 0) >= STEEP_LABEL_KM
+                    ? t("climbs.gainMax", {
+                        gain: format.elevation(c.gain),
+                        max: format.percent(c.maxGrade / 100),
+                      })
+                    : t("climbs.gain", { gain: format.elevation(c.gain) })}
                 </span>
               ))}
             {highest && (
@@ -573,41 +591,24 @@ function geometry(
     }
   }
 
-  // Each climb is split into runs of one grade class.
-  const half = Math.max(0.1, length / 300);
+  // One fill per climb, by its average grade.
   const shownClimbs = climbs.map((c) => {
-    const inside = shown.flatMap((p, i) =>
-      p.km >= c.startKm && p.km <= c.endKm ? [i] : [],
-    );
-    const runs: { grade: number; d: string }[] = [];
-    let from = inside[0];
-    let grade: number | undefined;
-    for (const i of inside) {
-      const next = shown[i + 1];
-      const p = shown[i];
-      if (!p) continue;
-      const g = gradeClass(
-        gradeAt(shown, next ? (p.km + next.km) / 2 : p.km, half) ?? 0,
-      );
-      if (grade !== undefined && g !== grade && from !== undefined) {
-        const d = areaOf(from, i);
-        if (d) runs.push({ grade, d });
-        from = i;
-      }
-      grade = g;
-    }
-    const last = inside.at(-1);
-    if (from !== undefined && last !== undefined && grade !== undefined) {
-      const d = areaOf(from, last);
-      if (d) runs.push({ grade, d });
-    }
+    const from = shown.findIndex((p) => p.km >= c.startKm);
+    const to = shown.findLastIndex((p) => p.km <= c.endKm);
     const gain =
       c.gain ??
       Math.max(
         0,
         (eleAt(points, c.endKm) ?? 0) - (eleAt(points, c.startKm) ?? 0),
       );
-    return { startKm: c.startKm, endKm: c.endKm, gain, runs };
+    const km = c.endKm - c.startKm;
+    const grade = c.grade ?? (km > 0 ? gain / (km * 10) : 0);
+    return {
+      ...c,
+      gain,
+      gradeClass: gradeClass(grade / 100),
+      d: from >= 0 ? areaOf(from, to) : undefined,
+    };
   });
 
   const compareStart = shownCompare[0];
