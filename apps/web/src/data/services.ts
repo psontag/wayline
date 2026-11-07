@@ -40,7 +40,7 @@ export type Services = {
   trains: TrainProvider;
   lodging: LodgingProvider;
   network: RouteNetworkSource;
-  /** Nearest node of the route network, or the point itself if none is close. */
+  /** Nearest point on a way (with local routing) or network node, or the point itself if none is close. */
   snap: (coord: LonLat) => Promise<LonLat>;
   /** The route network around a bbox. */
   graph: (bbox: BBox) => Promise<Graph>;
@@ -61,7 +61,7 @@ export type RouteLines = {
   routes: Map<number, RouteInfo>;
 };
 
-/** A dragged via point moves to a network node this close. */
+/** A dragged via point moves to a way or network node this close. */
 const SNAP_KM = 0.5;
 
 async function fetchJson(url: string): Promise<unknown> {
@@ -81,10 +81,9 @@ export function createServices(): Services {
   };
   const graphs = new AreaCache(network, (n) => new Graph(n));
   // VITE_ROUTING=local routes on the routing tiles. Default: the route network.
-  const routing =
-    import.meta.env.VITE_ROUTING === "local"
-      ? new LocalRouting(url)
-      : new FakeRouting((bbox) => graphs.get(bbox));
+  const local =
+    import.meta.env.VITE_ROUTING === "local" ? new LocalRouting(url) : null;
+  const routing = local ?? new FakeRouting((bbox) => graphs.get(bbox));
   // VITE_TRIPS=api saves trips on the server. Default: browser storage.
   const onServer = import.meta.env.VITE_TRIPS === "api";
   const trips = onServer
@@ -102,6 +101,7 @@ export function createServices(): Services {
     lodging: new OsmLodging(network),
     network,
     async snap(coord) {
+      if (local) return (await local.snap(coord, SNAP_KM)) ?? coord;
       const graph = await graphs.get(bboxAround([coord], 2));
       const node = graph.nearestNode(coord, { maxKm: SNAP_KM });
       return node === undefined ? coord : graph.coord(node);
