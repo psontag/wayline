@@ -9,6 +9,8 @@ and elevation). The format is in the README.
 import gzip
 import os
 from array import array
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 import osmium
@@ -228,7 +230,26 @@ def state_edges(path, keep, junctions):
     counts = d["counts"]
     keep_points = np.repeat(keep, counts)
     counts, bits = counts[keep], d["bits"][keep]
-    refs, lon, lat, ele, ele_raw = (d[k][keep_points] for k in ("refs", "lon", "lat", "ele", "ele_raw"))
+    points = [d[k][keep_points] for k in ("refs", "lon", "lat", "ele", "ele_raw")]
+    del d, keep_points
+    # In chunks of whole ways, to keep the temporary arrays small. Edges never span ways.
+    parts, w, p = [], 0, 0
+    ends = np.cumsum(counts)
+    while w < len(counts):
+        w_end = max(w + 1, int(np.searchsorted(ends, p + CHUNK_POINTS, side="right")))
+        p_end = int(ends[w_end - 1])
+        parts.append(chunk_edges(counts[w:w_end], bits[w:w_end], *(a[p:p_end] for a in points), junctions))
+        w, p = w_end, p_end
+    shape_offset = np.cumsum([0] + [len(c["shape_lon"]) for c in parts])
+    for c, off in zip(parts, shape_offset):
+        c["shape_start"] = c["shape_start"] + off
+    out = {k: np.concatenate([c.pop(k) for c in parts]) for k in list(parts[0])}
+    out["node_ref"], once = np.unique(out["node_ref"], return_index=True)
+    out["node_lon"], out["node_lat"] = out["node_lon"][once], out["node_lat"][once]
+    return out
+
+
+def chunk_edges(counts, bits, refs, lon, lat, ele, ele_raw, junctions):
     n = len(refs)
     first, last = np.cumsum(counts) - counts, np.cumsum(counts) - 1
     way_of_point = np.repeat(np.arange(len(counts)), counts)
@@ -259,6 +280,7 @@ def state_edges(path, keep, junctions):
     shape = inner & (offset >= SIMPLIFY_M)
     shape_before = np.r_[0, np.cumsum(shape)]
     kept = np.nonzero(shape)[0]
+    node_ref, once = np.unique(refs[j], return_index=True)
 
     return {
         "from": refs[s],
@@ -270,13 +292,13 @@ def state_edges(path, keep, junctions):
         "ele_from": ele[s],
         "ele_to": ele[e],
         "shape_start": shape_before[s + 1],
-        "shape_count": (shape_before[e] - shape_before[s + 1]).astype(np.int64),
+        "shape_count": (shape_before[e] - shape_before[s + 1]).astype(np.int32),
         "shape_lon": lon[kept],
         "shape_lat": lat[kept],
         "shape_ele": ele[kept],
-        "node_ref": refs[j],
-        "node_lon": lon[j],
-        "node_lat": lat[j],
+        "node_ref": node_ref,
+        "node_lon": lon[j][once],
+        "node_lat": lat[j][once],
     }
 
 
@@ -302,17 +324,26 @@ def descent(z, start, end):
 
 
 def main_component(a, b, n):
-    """Mask of the nodes in the largest connected part. Min-label propagation with pointer jumping."""
-    label = np.arange(n)
+    """Mask of the nodes in the largest connected part.
+
+    Each round hangs the larger label of each edge under the smaller one, then
+    follows the labels to their roots. A handful of rounds is enough."""
+    label = np.arange(n, dtype=np.int32)
     while True:
-        m = np.minimum(label[a], label[b])
-        new = label.copy()
-        np.minimum.at(new, a, m)
-        np.minimum.at(new, b, m)
-        new = new[new]
-        if np.array_equal(new, label):
+        la, lb = label[a], label[b]
+        differ = la != lb
+        if not differ.any():
             break
-        label = new
+        hi, lo = np.maximum(la, lb)[differ], np.minimum(la, lb)[differ]
+        order = np.lexsort((lo, hi))
+        hi, lo = hi[order], lo[order]
+        first = np.r_[True, hi[1:] != hi[:-1]]
+        label[hi[first]] = np.minimum(label[hi[first]], lo[first])
+        while True:
+            root = label[label]
+            if np.array_equal(root, label):
+                break
+            label = root
     ids, sizes = np.unique(label, return_counts=True)
     return label == ids[np.argmax(sizes)]
 
@@ -337,17 +368,19 @@ def build(paths, out):
     shape_offset = np.cumsum([0] + [len(p["shape_lon"]) for p in parts])
     for p, off in zip(parts, shape_offset):
         p["shape_start"] = p["shape_start"] + off
-    e = {k: np.concatenate([p[k] for p in parts]) for k in parts[0]}
+    # Key by key, so the parts and the result are never all in memory.
+    e = {k: np.concatenate([p.pop(k) for p in parts]) for k in list(parts[0])}
     del parts
 
     # Dense node numbers. Loops are dropped, and so is everything off the largest connected part.
-    refs, inverse = np.unique(np.concatenate([e["from"], e["to"]]), return_inverse=True)
     n_edges = len(e["from"])
+    refs, inverse = np.unique(np.concatenate([e.pop("from"), e.pop("to")]), return_inverse=True)
+    inverse = inverse.astype(np.int32)
     e_from, e_to = inverse[:n_edges], inverse[n_edges:]
-    at = np.searchsorted(refs, e["node_ref"])
+    at = np.searchsorted(refs, e.pop("node_ref"))
     node_lon = np.zeros(len(refs), dtype=np.int32)
     node_lat = np.zeros(len(refs), dtype=np.int32)
-    node_lon[at], node_lat[at] = e["node_lon"], e["node_lat"]
+    node_lon[at], node_lat[at] = e.pop("node_lon"), e.pop("node_lat")
     del inverse, at, refs
     keep = e_from != e_to
     main = main_component(e_from[keep], e_to[keep], len(node_lon))
@@ -364,8 +397,8 @@ def build(paths, out):
     tx, ty = tile_of(node_lon, node_lat)
     order = np.lexsort((node_lat, node_lon, ty, tx))
     order = order[used[order]]
-    new_id = np.full(len(node_lon), -1, dtype=np.int64)
-    new_id[order] = np.arange(len(order))
+    new_id = np.full(len(node_lon), -1, dtype=np.int32)
+    new_id[order] = np.arange(len(order), dtype=np.int32)
     e_from, e_to = new_id[e_from], new_id[e_to]
     node_lon, node_lat, tx, ty = node_lon[order], node_lat[order], tx[order], ty[order]
     del used, order, new_id
@@ -383,6 +416,9 @@ def build(paths, out):
     folder = os.path.join(out, "route")
     os.makedirs(folder, exist_ok=True)
     keys, sizes = [], []
+    # zlib frees the GIL, so threads compress in parallel. Few pending tiles keep memory low.
+    pool = ThreadPoolExecutor()
+    pending = deque()
     for k, idx in zip(tiles.tolist(), np.split(e_index, starts[1:])):
         name = f"{k // 100_000}_{k % 100_000}"
         nodes = np.unique(np.concatenate([e_from[idx], e_to[idx]]))
@@ -401,7 +437,14 @@ def build(paths, out):
         ])  # fmt: skip
         geometry = geometry_part(idx, edge, shape, node_lon[e_from[idx]], node_lat[e_from[idx]])
         keys.append(name)
-        sizes.append((write_gz(os.path.join(folder, f"{name}.bin"), search), write_gz(os.path.join(folder, f"{name}.geo.bin"), geometry)))
+        pending.append((
+            pool.submit(write_gz, os.path.join(folder, f"{name}.bin"), search),
+            pool.submit(write_gz, os.path.join(folder, f"{name}.geo.bin"), geometry),
+        ))  # fmt: skip
+        while len(pending) > 32:
+            sizes.append(tuple(f.result() for f in pending.popleft()))
+    sizes += [tuple(f.result() for f in p) for p in pending]
+    pool.shutdown()
 
     manifest = {
         "format": FORMAT,
