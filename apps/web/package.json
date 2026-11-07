@@ -16,6 +16,7 @@
     "@wayline/domain": "workspace:*",
     "@wayline/planner": "workspace:*",
     "@wayline/providers": "workspace:*",
+    "@wayline/router": "workspace:*",
     "@wayline/ui": "workspace:*",
     "comlink": "4.4.2",
     "hono": "4.13.12",
