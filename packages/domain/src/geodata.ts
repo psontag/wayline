@@ -20,7 +20,23 @@ export type Manifest = {
   tiles?: TileIndex;
   /** Vector tiles of the signed routes, for the map. Built by pipeline/lines.py. */
   lines?: LineTiles;
+  /** All bikeable ways, for the router. Built by pipeline/routing.py. */
+  routing?: RoutingTiles;
   createdAt: string;
+};
+
+/** Binary tiles, gzipped. The format is in pipeline/README.md. */
+export type RoutingTiles = {
+  format: 1;
+  /** Tile edge in degrees. Key "x_y" as in TileIndex. */
+  size: number;
+  /** Search part: nodes and edges. "{key}" for the tile key. */
+  path: string;
+  /** Geometry part: shape points and elevation. */
+  geometry: string;
+  keys: string[];
+  /** Way types by their index in the edge attributes. */
+  highways: string[];
 };
 
 export type TileIndex = {

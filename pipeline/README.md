@@ -74,6 +74,61 @@ Sights within 500 m, share of edges:
 |---|---|---|---|---|
 | 63% | 18% | 13% | 4% | 2% |
 
+## Routing tiles
+
+`route/<x>_<y>.bin` and `route/<x>_<y>.geo.bin` hold all bikeable ways for the router in the browser (#81). `routing.py` builds them, the manifest lists them under `routing`.
+
+- Bikeable: `highway` of a road, track, path or cycleway, or any way with `bicycle=yes|designated|permissive|dismount`. Not `bicycle=no|private|use_sidepath`, `access=no|private`, steps or areas.
+- Ways split at junctions into edges. Only the largest connected part is kept.
+- An edge is in the tile of each of its ends. Tiles are 0.25°.
+- Elevation: the DEM at each point, and smoothed over 50 m samples (±4) for the profile.
+- Descent per edge and direction: the DEM at each point with a 10 m dead band, minus 1.5 % of the length (like BRouter's `downhillcutoff`).
+- Shape points: inner points of a way more than 1.5 m off the line of their neighbors.
+
+Both files are gzipped. All numbers are little-endian. Coordinates are degrees × 10⁶. "Delta" means each value minus the one before, the first as is.
+
+Search part (`.bin`):
+
+| Field | Type | Count |
+|---|---|---|
+| `WRT1` | 4 bytes | |
+| Nodes n, edges m | u32 | 2 |
+| Node ids, ascending, delta | i32 | n |
+| Lon, delta | i32 | n |
+| Lat, delta | i32 | n |
+| From node (index in this tile), delta | i32 | m |
+| To node (index in this tile) | i32 | m |
+| Length in m | u32 | m |
+| Attributes | u16 | m |
+| Descent from → to in dm | u16 | m |
+| Descent to → from in dm | u16 | m |
+
+Node ids are the same in all tiles, so tiles join at shared nodes. Ids follow the tiles, so ids in a tile are close.
+
+Attributes:
+
+| Bits | Value |
+|---|---|
+| 0–4 | Way type: index in `routing.highways` of the manifest, 31 for others |
+| 5–7 | `tracktype` grade 1–5, 0 for none |
+| 8 | Paved (`surface=paved\|asphalt\|concrete\|paving_stones\|sett` or `smoothness=excellent\|good`) |
+| 9 | Unpaved, as BRouter's trekking profile |
+| 10 | Bike: bike lane, `bicycle=yes\|permissive\|designated`, bicycle road or `lcn=yes` |
+| 11 | On a signed cycle route |
+| 12 | Allowed from → to |
+| 13 | Allowed to → from |
+
+Geometry part (`.geo.bin`), edges in the same order:
+
+| Field | Type | Count |
+|---|---|---|
+| `WRG1` | 4 bytes | |
+| Edges m, shape points p | u32 | 2 |
+| Lon of each shape point, delta (first of an edge: to its from node) | i32 | p |
+| Lat, same | i32 | p |
+| Shape points per edge | u16 | m |
+| Elevation in m: from node, shape points, to node of each edge | i16 | p + 2m |
+
 ## Files
 
 | File | Does |
@@ -87,6 +142,7 @@ Sights within 500 m, share of edges:
 | `dem.py` | Reads elevation from the DEM tiles |
 | `export.py` | Writes nodes, edges and places in the format of `packages/domain/src/geodata.ts` |
 | `lines.py` | Writes the vector tiles of the signed routes and `routes.json` |
+| `routing.py` | Writes the routing tiles |
 | `region.py` | States, DEM tiles and tile size |
 | `check_area.py` | Checks the data around a station |
 | `subset.py` | Copies the tiles of a bbox into a small dataset |
