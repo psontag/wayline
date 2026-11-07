@@ -9,7 +9,7 @@ import type { RouteOptions, RoutingProvider } from "@wayline/providers";
 import { COST_PROFILES, type FetchFile, Router } from "@wayline/router";
 
 /** Saved with each leg. Bump when the router or its costs change. */
-const ROUTER_VERSION = 2;
+const ROUTER_VERSION = 3;
 
 /**
  * A router and its tiles stay this long after the last route ends. The
