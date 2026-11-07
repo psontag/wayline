@@ -1,6 +1,6 @@
 import { bearing, pointAtKm, type RoutePoint } from "./line";
 import type { Daylight, LonLat, WeatherSample } from "./schema";
-import { addHours, expectedTimeAtKm, ridingHours, timeToHours } from "./time";
+import { addHours, dayHours, expectedTimeAtKm, timeToHours } from "./time";
 
 export type WindKind = "head" | "tail" | "cross";
 
@@ -338,7 +338,7 @@ function pickStart(
   options: Parameters<typeof bestStart>[1],
   inDaylight: boolean,
 ): BestStart | undefined {
-  const duration = ridingHours(options.stats, options.avgSpeed);
+  const duration = dayHours(options.stats, options.avgSpeed);
   const from = timeToHours(BEST_START_FROM);
   const to = timeToHours(BEST_START_TO);
   const light = inDaylight &&

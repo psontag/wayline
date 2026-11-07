@@ -13,9 +13,12 @@ export function stageDates(startDate: string, stageCount: number): string[] {
   return Array.from({ length: stageCount }, (_, i) => addDays(startDate, i));
 }
 
+/** Breaks as a share of riding time: 15 minutes per 2 hours. */
+export const BREAK_SHARE = 0.125;
+
 /**
- * Expected local time ("YYYY-MM-DDTHH:MM") at a km of a stage.
- * Breaks are not modeled.
+ * Expected local time ("YYYY-MM-DDTHH:MM") at a km of a stage, with
+ * breaks spread over the ride.
  */
 export function expectedTimeAtKm(
   date: string,
@@ -24,7 +27,8 @@ export function expectedTimeAtKm(
   km: number,
 ): string {
   const start = new Date(`${date}T${startTime}:00Z`).getTime();
-  const t = new Date(start + (km / avgSpeed) * 3_600_000);
+  const h = (km / avgSpeed) * (1 + BREAK_SHARE);
+  const t = new Date(start + h * 3_600_000);
   return t.toISOString().slice(0, 16);
 }
 
@@ -91,6 +95,14 @@ export function ridingHours(
     stats.distance / 1000 / avgSpeed +
     (stats.ascent / 100) * (CLIMB_MINUTES_PER_100M / 60)
   );
+}
+
+/** Hours from the start of a stage to the arrival: riding plus breaks. */
+export function dayHours(
+  stats: { distance: number; ascent: number },
+  avgSpeed: number,
+): number {
+  return ridingHours(stats, avgSpeed) * (1 + BREAK_SHARE);
 }
 
 /** km/h over the whole stage, with time for climbing included. */
