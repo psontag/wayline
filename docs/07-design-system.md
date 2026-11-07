@@ -277,11 +277,12 @@ Sections hold only these patterns:
 | Stat tiles | `StatTile` | Totals: icon and label, value, optional second line |
 | Choice list | `ChoiceList` | Pick one of several: radio, name, muted second line, optional tag, actions at the end. The current row is `selected`. `MoreRow` shows the rest of a long list. |
 | Choice table | `StopChoices` | Pick one of several when the options are compared by numbers in columns |
-| Item rows | `NavRow` in a `RowList`, `DayCard` | Rows that open the next level. End in a right chevron. |
+| Item rows | `DayCard`, `LinkRow` | Rows that open the next level. End in a right chevron. |
 | Detail rows | `Stat`, `SurfaceBar`, short text | Facts about the item |
 | Buttons | `Button`, `TextLink` | Actions on this section, at the end of the body |
 
-- Choices use `ChoiceList`, also in forms. Use `StopChoices` only when the columns matter.
+- Choices use `ChoiceList`, on desktop and phone. Use `StopChoices` only when the columns matter.
+- `RadioCards` is only for two or three options side by side in a form, each with a short hint (kind of trip).
 - A right chevron opens another level. A down chevron folds.
 
 ### Section icons
@@ -304,7 +305,7 @@ Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of
 |---|---|
 | `PanelHeader` | Top of the panel. Title with menu, or a sticky row with back and sibling switch above the title. Optional line above the title, stats and a notice. |
 | `PanelSection` | Header, notice and body. `icon` is required. |
-| `StatTile`, `ChoiceList`, `StopChoices`, `NavRow`, `DayCard` | Content patterns above |
+| `StatTile`, `ChoiceList`, `StopChoices`, `DayCard`, `LinkRow` | Content patterns above |
 
 ### Example: trip editor
 

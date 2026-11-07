@@ -1,5 +1,9 @@
 import { cn } from "../lib/cn";
-import { parseWhole } from "./NumberStepper";
+
+function parseWhole(text: string): number | undefined {
+  const digits = text.replace(/\D/g, "");
+  return digits === "" ? undefined : Number(digits);
+}
 
 export type NumberInputProps = {
   value: number | undefined;

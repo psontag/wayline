@@ -44,7 +44,6 @@ export {
   SortableList,
   type SortableListProps,
 } from "./components/SortableList";
-export { StatBlock, type StatBlockProps } from "./components/StatBlock";
 export { Stat, type StatProps } from "./components/Stat";
 export {
   DayList,
@@ -97,10 +96,6 @@ export { DateField, type DateFieldProps } from "./components/DateField";
 export { DayStrip, type DayStripItem } from "./components/DayStrip";
 export { EmptyState, type EmptyStateProps } from "./components/EmptyState";
 export { NumberInput, type NumberInputProps } from "./components/NumberInput";
-export {
-  NumberStepper,
-  type NumberStepperProps,
-} from "./components/NumberStepper";
 export {
   RadioCards,
   type RadioCardOption,
@@ -229,22 +224,12 @@ export {
 } from "./components/FloatingBar";
 export { LinkRow, type LinkRowProps } from "./components/LinkRow";
 export {
-  ChoiceCard,
-  ChoiceGroup,
-  type ChoiceCardProps,
-} from "./components/ChoiceCard";
-export {
   ChoiceList,
+  MoreRow,
   type ChoiceListProps,
   type ChoiceOption,
 } from "./components/ChoiceList";
 export { DayCard, type DayCardProps } from "./components/DayCard";
-export {
-  MoreRow,
-  NavRow,
-  RowList,
-  type NavRowProps,
-} from "./components/NavRow";
 export { PanelHeader, type PanelHeaderProps } from "./components/PanelHeader";
 export {
   PanelSection,
