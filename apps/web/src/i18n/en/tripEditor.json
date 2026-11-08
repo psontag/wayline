@@ -115,6 +115,7 @@
     "dateMoved": "The trip now starts on {{date}}.",
     "sameRoute": "The best way through that point is the same route.",
     "routingFailed": "Could not reach the router, so nothing changed. Try again in a moment.",
+    "routingBroken": "Could not route this change: the route data has no routing. Nothing changed.",
     "saveFailed": "Could not save the last change",
     "undo": "Undo"
   },

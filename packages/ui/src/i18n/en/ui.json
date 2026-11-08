@@ -37,7 +37,8 @@
     "wind": {
       "head": "{{share}} headwind",
       "tail": "{{share}} tailwind",
-      "cross": "{{share}} crosswind"
+      "cross": "{{share}} crosswind",
+      "calm": "Calm"
     },
     "feelsLike": "{{range}}, feels like {{feelsLike}}",
     "temperature": "Temperature",
@@ -92,7 +93,7 @@
     },
     "booking": "Booking.com",
     "fromRouteLabel": "Distance from the route",
-    "detourValue": "+{{distance}}",
+    "offRoute": "{{distance}} off route",
     "detourLabel": "Detour from the route",
     "save": "Save hotel",
     "unsave": "Remove saved hotel",

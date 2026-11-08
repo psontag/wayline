@@ -40,6 +40,7 @@ import {
 import { isTyping, useLastPointer } from "../../components/useLastPointer";
 import { nearestOnLine, useRouteDrag } from "../../components/useRouteDrag";
 import type { MapHotel } from "./mapTypes";
+import { useTapHintSeen } from "./mapView";
 import { nearestLeg, type ViaPreview, type ViaTarget } from "./routeEdits";
 import { type SpotAnchor, usePointMenu } from "./usePointMenu";
 import type { MapStation } from "./stations";
@@ -274,9 +275,14 @@ export function TripMap({
   });
 
   const isPlacing = !!placing;
+  const [tapHintSeen, setTapHintSeen] = useTapHintSeen();
   useEffect(() => {
     routeRef.current?.onPlacingChange?.(isPlacing);
   }, [isPlacing]);
+  // Once a via point was placed by touch, the hint has done its job.
+  useEffect(() => {
+    if (isPlacing && !tapHintSeen) setTapHintSeen();
+  }, [isPlacing, tapHintSeen, setTapHintSeen]);
   const stopPlacing = placer.stop;
   useEffect(() => {
     if (!isPlacing) return;
@@ -372,7 +378,8 @@ export function TripMap({
       fit={fit}
       // Also when options show up or go, e.g. train stops for the last day.
       fitKey={[fitDay, alternatives.length > 0]}
-      initialFit={lines.flat()}
+      // A link with ?stage=n opens on that day, not on the whole trip.
+      initialFit={overview ? lines.flat() : (lines[selected] ?? [])}
       padding={padding}
       hiddenLabels={hiddenLabels}
       legend={
@@ -386,7 +393,8 @@ export function TripMap({
       events={spotMenu.events}
       hint={
         route &&
-        pointerKind === "touch" && (
+        pointerKind === "touch" &&
+        (placing || !tapHintSeen) && (
           <MapHint icon={<Route aria-hidden />}>
             {placing ? t("place.hint") : t("map.tapHint")}
           </MapHint>

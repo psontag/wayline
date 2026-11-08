@@ -9,10 +9,14 @@ type PlaceFieldProps = {
   id: string;
   places: Place[];
   value: Place | null;
-  onChange: (place: Place) => void;
+  onChange: (place: Place | null) => void;
+  /** The field may stay empty. Its first option clears it. */
+  optional?: boolean;
   invalid?: boolean;
   describedBy?: string;
 };
+
+const ANY = "any";
 
 /** Search and pick a town or station. Towns show their station, if close. */
 export function PlaceField({
@@ -20,6 +24,7 @@ export function PlaceField({
   places,
   value,
   onChange,
+  optional = false,
   invalid,
   describedBy,
 }: PlaceFieldProps) {
@@ -57,18 +62,29 @@ export function PlaceField({
       ),
   });
 
+  const any: ComboboxOption = {
+    value: ANY,
+    label: t("anyStation"),
+    description: t("anyStationHint"),
+    icon: <TrainFront aria-hidden />,
+  };
+
   return (
     <Combobox
       id={id}
-      options={results.map(option)}
+      options={[...(optional && !search ? [any] : []), ...results.map(option)]}
       onSearchChange={setSearch}
       value={value ? placeKey(value) : undefined}
       selected={value ? option(value) : undefined}
       onValueChange={(key) => {
+        if (key === ANY) {
+          onChange(null);
+          return;
+        }
         const place = byKey.get(key);
         if (place) onChange(place);
       }}
-      placeholder={t("placePlaceholder")}
+      placeholder={t(optional ? "anyStation" : "placePlaceholder")}
       searchPlaceholder={t("placeSearch")}
       aria-invalid={invalid}
       aria-describedby={describedBy}

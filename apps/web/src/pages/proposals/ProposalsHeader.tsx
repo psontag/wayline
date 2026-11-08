@@ -31,7 +31,10 @@ export function useRequestSummary(request: GenerateRequest | undefined) {
       ? from && t("request.loopFrom", { from })
       : isOpenRide(request)
         ? from && t("request.anywhereFrom", { from })
-        : from && to && t("request.places", { from, to });
+        : from &&
+          (to
+            ? t("request.places", { from, to })
+            : t("request.anyEnd", { from }));
 
   const date = (iso: string) => localTimeToDate(`${iso}T00:00`);
   const start = request.startDate;

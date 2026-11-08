@@ -21,6 +21,7 @@ import {
   ViaRow,
 } from "@wayline/ui";
 import { ChevronLeft, Lock, LockOpen } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { BookingLink } from "./BookingLink";
@@ -47,7 +48,10 @@ export function DayPanel({
   onFindingDestination,
   selectedVia,
   onSelectVia,
+  chart,
 }: {
+  /** Phones: elevation and weather, right under the header. */
+  chart?: ReactNode;
   trip: Trip;
   index: number;
   editor: TripEditorState;
@@ -150,6 +154,7 @@ export function DayPanel({
           />
         }
       />
+      {chart && <div className="border-b border-border p-4">{chart}</div>}
       {isFirst && there && (
         <PanelSection
           icon="trains"
@@ -177,7 +182,7 @@ export function DayPanel({
             }}
           />
         )}
-        <SurfaceBar shares={surface} caption />
+        <SurfaceBar shares={surface} caption="rest" />
         {weather && (
           <DayWeather
             temperature={weather.temperature}

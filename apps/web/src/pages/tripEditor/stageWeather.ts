@@ -2,6 +2,7 @@ import {
   addDays,
   bearing,
   bestStart,
+  CALM_KMH,
   hourlyAlongStage,
   RAIN_MM,
   relativeWind,
@@ -42,7 +43,7 @@ export function forecastFrom(date: string): string {
 export function stageWind(weather: StageWeather): Wind {
   const { wind } = weather;
   return {
-    kind: wind.dominant,
+    kind: wind.avgSpeed < CALM_KMH ? "calm" : wind.dominant,
     share: wind[wind.dominant],
     speedKmh: wind.avgSpeed,
   };

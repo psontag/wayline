@@ -89,7 +89,7 @@ export function HotelRow({
           {name}
         </span>
         <span className="flex flex-wrap items-center gap-x-3 text-xs text-text-muted tabular-nums">
-          {kind && <span>{t(`hotel.kind.${kind}`)}</span>}
+          {kind && kind !== "hotel" && <span>{t(`hotel.kind.${kind}`)}</span>}
           {!!stars && (
             <Stat
               size="sm"
@@ -100,24 +100,14 @@ export function HotelRow({
             />
           )}
           {distance !== undefined && (
-            <Stat
-              size="sm"
-              icon="distance"
-              value={format.distance(distance)}
-              label={t("hotel.fromRouteLabel")}
-              muted
-            />
+            <span title={t("hotel.fromRouteLabel")}>
+              {t("hotel.offRoute", { distance: format.distance(distance) })}
+            </span>
           )}
           {detour !== undefined && (
-            <Stat
-              size="sm"
-              icon="distance"
-              value={t("hotel.detourValue", {
-                distance: format.distance(detour),
-              })}
-              label={t("hotel.detourLabel")}
-              muted
-            />
+            <span title={t("hotel.detourLabel")}>
+              {t("hotel.offRoute", { distance: format.distance(detour) })}
+            </span>
           )}
           {links.map(({ href, label }) => (
             <a

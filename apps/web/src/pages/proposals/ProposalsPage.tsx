@@ -70,10 +70,21 @@ function Proposals({ request }: { request: GenerateRequest }) {
     );
   const open = useOpenProposal();
   const failedText = useFailedText();
-  const [hovered, setHovered] = useDebouncedHover<string>(HOVER_MS);
+  const [hovered, setHovered, clearHovered] =
+    useDebouncedHover<string>(HOVER_MS);
   const [hoveredDay, setHoveredDay] = useState<number>();
   const isPhone = useIsPhone();
   const { proposals } = generation;
+
+  // New cards move the list under a still pointer, and no pointer event says
+  // so. The hover would stay on a card that is no longer there.
+  const order = proposals.map((p) => p.id).join();
+  const [shownOrder, setShownOrder] = useState(order);
+  if (order !== shownOrder) {
+    setShownOrder(order);
+    clearHovered();
+    setHoveredDay(undefined);
+  }
 
   // The map zooms only to a proposal the user picked, not to the first one
   // selected on load.

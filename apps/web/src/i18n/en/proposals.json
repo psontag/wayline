@@ -11,6 +11,7 @@
       "day-loop": "Day loop"
     },
     "places": "{{from}} → {{to}}",
+    "anyEnd": "{{from}} → any station",
     "loopFrom": "From {{from}}",
     "anywhereFrom": "From {{from}}, any direction",
     "days_one": "{{count}} day",

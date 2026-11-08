@@ -633,7 +633,8 @@ function geometry(
   const kmTicks: number[] = [];
   if (axes) {
     for (let e = min; e <= max; e += eleStep) eleTicks.push(e);
-    const kmStep = niceStep(length, 5, [1, 2, 5, 10]);
+    // Aim for up to 8 ticks, so a 100 km day gets 20 km steps, not one tick.
+    const kmStep = niceStep(length, 8, [1, 2, 5, 10]);
     for (
       let k = Math.ceil(first / kmStep) * kmStep || kmStep;
       k < first + length - kmStep / 3;

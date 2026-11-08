@@ -7,7 +7,7 @@ import { rainImage, type WeatherField, windArrows } from "./weatherGrid";
 const ARROW = "wind-arrow";
 const ARROW_PX = 40;
 /** Screen distance between wind arrows. */
-const ARROW_SPACING_PX = 34;
+const ARROW_SPACING_PX = 56;
 
 /** Arrow pointing north, as a signed distance field so it can be tinted. */
 function arrowImage(): ImageData | undefined {
@@ -133,7 +133,7 @@ export function WeatherLayers({
             "icon-image": ARROW,
             "icon-rotate": ["get", "windTo"],
             "icon-rotation-alignment": "map",
-            "icon-size": 0.85,
+            "icon-size": 0.75,
             // Spaced evenly already. Labels and the route don't hide them.
             "icon-allow-overlap": true,
             "icon-ignore-placement": true,
@@ -152,6 +152,8 @@ export function WeatherLayers({
             ],
             "icon-halo-color": tokens.surface,
             "icon-halo-width": 1,
+            // Background context: the route stays the strongest line.
+            "icon-opacity": 0.7,
           }}
         />
       </Source>

@@ -65,7 +65,9 @@ export const newTripSchema = z
     }
     if (v.shape !== "ab") return;
     if (!v.end) {
-      ctx.addIssue({ code: "custom", path: ["end"], message: "endRequired" });
+      if (endRequired(v)) {
+        ctx.addIssue({ code: "custom", path: ["end"], message: "endRequired" });
+      }
     } else if (v.start && sameCoord(v.start, v.end)) {
       ctx.addIssue({
         code: "custom",
@@ -202,7 +204,7 @@ export function toRequest(values: NewTripValues): GenerateRequest {
   return GenerateRequest.parse({
     kind: toKind(v.length, v.shape),
     startStation: v.start,
-    endStation: v.shape === "ab" ? v.end : undefined,
+    endStation: (v.shape === "ab" && v.end) || undefined,
     days,
     kmPerDay: v.kmPerDay,
     maxAscentPerDay: v.maxAscentPerDay,
@@ -219,11 +221,19 @@ export function toRequest(values: NewTripValues): GenerateRequest {
   });
 }
 
+/**
+ * A to B needs an end on one day: without one, it is Anywhere. Several days
+ * may leave it open, and the trip ends at a station.
+ */
+export function endRequired(v: Pick<NewTripValues, "length" | "shape">) {
+  return v.shape === "ab" && v.length === "one";
+}
+
 /** Places still missing before routes can be found. */
 export function missingPlaces(
-  v: Pick<NewTripValues, "shape" | "start" | "end">,
+  v: Pick<NewTripValues, "length" | "shape" | "start" | "end">,
 ): "start" | "end" | "startAndEnd" | undefined {
-  const end = v.shape === "ab" && !v.end;
+  const end = endRequired(v) && !v.end;
   if (!v.start) return end ? "startAndEnd" : "start";
   return end ? "end" : undefined;
 }

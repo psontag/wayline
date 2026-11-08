@@ -20,7 +20,8 @@ export function HotelDetail({ kind, stars, detour }: HotelDetailProps) {
   const format = useFormat();
   return (
     <>
-      {kind && <span>{t(`hotel.kind.${kind}`)}</span>}
+      {/* Most places are hotels. Name only the others. */}
+      {kind && kind !== "hotel" && <span>{t(`hotel.kind.${kind}`)}</span>}
       {!!stars && (
         <Stat
           size="sm"
@@ -31,13 +32,9 @@ export function HotelDetail({ kind, stars, detour }: HotelDetailProps) {
         />
       )}
       {detour !== undefined && (
-        <Stat
-          size="sm"
-          icon="distance"
-          value={t("hotel.detourValue", { distance: format.distance(detour) })}
-          label={t("hotel.detourLabel")}
-          muted
-        />
+        <span title={t("hotel.detourLabel")}>
+          {t("hotel.offRoute", { distance: format.distance(detour) })}
+        </span>
       )}
     </>
   );

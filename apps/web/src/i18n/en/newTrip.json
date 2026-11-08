@@ -32,6 +32,8 @@
   "start": "Start",
   "end": "End",
   "placePlaceholder": "Choose a place",
+  "anyStation": "Any station",
+  "anyStationHint": "Wayline picks where the trip ends",
   "placeSearch": "Search a town or station",
   "placeKind": {
     "station": "Train station",

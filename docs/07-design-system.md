@@ -75,9 +75,13 @@ Color values:
 | `on-inverse` | `#EDEFF3` | `#15181D` |
 | `inverse-accent` | `#FFB088` | `#B4532A` |
 | `terrain-paved` | `#7E8BA3` | `#AEB9CC` |
-| `terrain-gravel` | `#E8B850` | `#F2CF7E` |
+| `terrain-gravel` | `#93AD7F` | `#B3C9A1` |
 | `terrain-unpaved` | `#B98E73` | `#D9B49C` |
 | `terrain-unknown` | `#C3C8D0` | `#4B5260` |
+| `grade-1` | `#F6D38A` | `#8A6A2C` |
+| `grade-2` | `#F2A35E` | `#C47A3C` |
+| `grade-3` | `#D9573B` | `#F0745A` |
+| `proposed` | `#5A616C` | `#A0A7B3` |
 | `rain` | `#3D84D6` | `#6AB0F5` |
 | `wind-head` | `#C2412D` | `#FF8F7D` |
 | `wind-cross` | `#B7791F` | `#F2CF7E` |
@@ -95,7 +99,7 @@ Color values:
 | `marker` | `#15181D` | `#EDEFF3` |
 | `via-point` | `#B4532A` | `#FFB088` |
 | `route-highlight` | `#15181D` | `#FFFFFF` |
-| `network` | `#9DB7A0` | `#4E6B57` |
+| `network` | `#6F9B79` | `#4E6B57` |
 | `route-1` | `#FF9A73` | `#FFA67F` |
 | `route-2` | `#3FB37A` | `#62D197` |
 | `route-3` | `#4F9FF0` | `#6DB4FF` |

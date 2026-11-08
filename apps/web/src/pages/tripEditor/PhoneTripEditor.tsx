@@ -110,7 +110,9 @@ export function PhoneTripEditor({
   // sheet.
   const padding = useMemo<MapPadding>(() => {
     const half = Math.round(innerHeight * 0.56) - SHEET_PEEK + SHEET_RADIUS;
-    return { top: 80, right: 48, bottom: half + 24, left: 48 };
+    // Top: below the floating header and the edit hint. Right: clear of the
+    // map buttons.
+    return { top: 112, right: 64, bottom: half + 24, left: 48 };
   }, []);
 
   return (
@@ -143,7 +145,7 @@ export function PhoneTripEditor({
             off screen. */}
         <div className="flex min-h-0 flex-1 flex-col overflow-auto pb-24">
           {panel}
-          <div className="p-4">{chart}</div>
+          {chart && <div className="p-4">{chart}</div>}
         </div>
       </BottomSheet>
     </div>
@@ -185,23 +187,11 @@ function PhoneHeader({
             : t("phone.subtitle", { dates, distance })
         }
       />
-      {!editor.readOnly && (
-        <>
-          <FloatingButton
-            label={t("header.undo")}
-            disabled={!editor.canUndo}
-            onClick={editor.undo}
-          >
-            <Undo2 aria-hidden />
-          </FloatingButton>
-          <FloatingButton
-            label={t("header.redo")}
-            disabled={!editor.canRedo}
-            onClick={editor.redo}
-          >
-            <Redo2 aria-hidden />
-          </FloatingButton>
-        </>
+      {/* Only Undo floats, and only after an edit, so the name has room. */}
+      {!editor.readOnly && editor.canUndo && (
+        <FloatingButton label={t("header.undo")} onClick={editor.undo}>
+          <Undo2 aria-hidden />
+        </FloatingButton>
       )}
       <Menu
         trigger={
@@ -210,6 +200,15 @@ function PhoneHeader({
           </FloatingButton>
         }
       >
+        {!editor.readOnly && (
+          <MenuItem
+            icon={<Redo2 aria-hidden />}
+            disabled={!editor.canRedo}
+            onSelect={editor.redo}
+          >
+            {t("header.redo")}
+          </MenuItem>
+        )}
         {onShare && (
           <MenuItem icon={<Share2 aria-hidden />} onSelect={onShare}>
             {t("header.share")}

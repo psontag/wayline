@@ -50,6 +50,12 @@ export function usePanelView() {
   return [stored.view, (view: PanelView) => set({ view })] as const;
 }
 
+/** Whether the touch hint for adding a via point was used once. */
+export function useTapHintSeen() {
+  const [stored, set] = useStored("wayline.tapHint", { seen: false });
+  return [stored.seen, () => set({ seen: true })] as const;
+}
+
 export function useMapLayers() {
   return useStored("wayline.mapLayers", allOn);
 }

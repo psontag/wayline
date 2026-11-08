@@ -4,9 +4,13 @@ import { cn } from "../lib/cn";
 import { Stat } from "./Stat";
 import { WarningText } from "./WarningText";
 
+/** mm per hour from which an hour counts as wet. Below, a day is "Dry". */
+export const WET_MM = 0.1;
+
 export type Wind = {
-  kind: "head" | "tail" | "cross";
-  /** Share of the distance with this wind, 0 to 1. */
+  /** calm: too little wind for head, tail or cross to matter. */
+  kind: "head" | "tail" | "cross" | "calm";
+  /** Share of the distance with this wind, 0 to 1. Unused when calm. */
   share: number;
   speedKmh: number;
 };
@@ -56,10 +60,10 @@ export function DayWeather({
       />
       <Stat
         size="sm"
-        icon={rain >= 0.1 ? "rain" : "dry"}
+        icon={rain >= WET_MM ? "rain" : "dry"}
         label={t("stage.rain")}
         value={
-          rain >= 0.1
+          rain >= WET_MM
             ? t("stage.rainUpTo", { amount: format.rain(rain) })
             : t("stage.dry")
         }

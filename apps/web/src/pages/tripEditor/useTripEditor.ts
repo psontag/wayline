@@ -1,6 +1,7 @@
 import {
   type Connection,
   type Hotel,
+  isErrorCode,
   type LonLat,
   type Place,
   reverseTrip,
@@ -137,8 +138,18 @@ export function useTripEditor(trip: Trip, readOnly = false) {
 
   /** Runs an edit that routes, then saves it with a note. */
   // Routing can fail, e.g. when the router is down. Nothing changes then.
-  const failed = () =>
-    setNote({ id: Date.now(), message: t("note.routingFailed") });
+  // INTERNAL is a setup problem or a bug, such as route data without
+  // routing tiles: trying again won't help.
+  const failed = (error: unknown) => {
+    // Only a thrown INTERNAL. A plain Error may be a lost tile fetch.
+    const broken = isErrorCode(error, "INTERNAL");
+    if (broken) console.error(error);
+    else console.warn(error);
+    setNote({
+      id: Date.now(),
+      message: t(broken ? "note.routingBroken" : "note.routingFailed"),
+    });
+  };
 
   const run = async (edit: () => Promise<Trip>, note: (t: Trip) => string) => {
     if (!canEdit) return;
@@ -149,8 +160,8 @@ export function useTripEditor(trip: Trip, readOnly = false) {
       else {
         setNote({ id: Date.now(), message: t("note.sameRoute") });
       }
-    } catch {
-      failed();
+    } catch (error) {
+      failed(error);
     } finally {
       setBusy(false);
     }
@@ -271,8 +282,8 @@ export function useTripEditor(trip: Trip, readOnly = false) {
               })
             : t("note.lastStage", { day: index + 1, place: place.name }),
         );
-      } catch {
-        failed();
+      } catch (error) {
+        failed(error);
       } finally {
         setBusy(false);
       }

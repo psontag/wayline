@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { Button } from "./Button";
+import { WET_MM } from "./DayWeather";
 import { ChartBody, ChartInfo, ChartToolbar } from "./ChartPanel";
 
 export type WindKind = "head" | "tail" | "cross";
@@ -174,7 +175,8 @@ export function WeatherTimeline({
     lastHour ? windPct(lastHour.wind.gusts) : 0,
     speedEnd - WIND_LABEL_GAP,
   );
-  const hasRain = shown.some((h) => h.rain > 0);
+  // Same limit as "Dry", so a dry day shows no rain scale.
+  const hasRain = shown.some((h) => h.rain >= WET_MM);
 
   const clampTime = (v: number) =>
     Math.min(to, Math.max(from, Math.round(v / TIME_STEP) * TIME_STEP));
@@ -386,7 +388,7 @@ export function WeatherTimeline({
                 />
               )}
               {shown.map((h) =>
-                h.rain > 0 ? (
+                hasRain && h.rain > 0 ? (
                   <rect
                     key={h.hour}
                     x={x(h.hour) + 10}
