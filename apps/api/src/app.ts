@@ -33,6 +33,8 @@ const status: Record<ErrorCode, ContentfulStatusCode> = {
   CONFLICT: 409,
   RATE_LIMITED: 429,
   PROVIDER_UNAVAILABLE: 502,
+  OFFLINE: 503,
+  INTERNAL: 500,
 };
 
 /** Validates the JSON body. Errors come in our error shape. */
@@ -108,10 +110,7 @@ app.onError((error, c) => {
     return c.json(body, status[error.code]);
   }
   console.error(error);
-  const body: ApiErrorBody = {
-    code: "PROVIDER_UNAVAILABLE",
-    message: "Internal error",
-  };
+  const body: ApiErrorBody = { code: "INTERNAL", message: "Internal error" };
   return c.json(body, 500);
 });
 

@@ -5,12 +5,29 @@ import { hc } from "hono/client";
 /** Typed client for the Worker API. */
 export function createApiClient(
   baseUrl = "/",
-  fetch?: typeof globalThis.fetch,
+  fetch: typeof globalThis.fetch = globalThis.fetch,
 ) {
-  return hc<AppType>(baseUrl, { fetch });
+  return hc<AppType>(baseUrl, { fetch: offlineAware(fetch) });
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>;
+
+/** A fetch that throws WaylineError OFFLINE when there is no connection. */
+export function offlineAware(
+  fetch: typeof globalThis.fetch,
+): typeof globalThis.fetch {
+  return async (input, init) => {
+    try {
+      return await fetch(input, init);
+    } catch (error) {
+      // fetch rejects with a TypeError when the network fails.
+      if (error instanceof TypeError) {
+        throw new WaylineError("OFFLINE", error.message);
+      }
+      throw error;
+    }
+  };
+}
 
 /** The JSON body of an answer. API errors become WaylineErrors. */
 export async function readJson(res: Response): Promise<unknown> {
