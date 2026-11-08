@@ -6,7 +6,6 @@ Usage: python subset.py <data_dir> <out_dir> <west> <south> <east> <north> <regi
 import json
 import math
 import os
-import shutil
 import sys
 
 import export as X
@@ -24,12 +23,14 @@ def main(src, dst, west, south, east, north, name):
         if f"{x}_{y}" in tiles["keys"]
     ]
     node_ids = set()
+    # JSON tiles, which tests read as they are.
     for k in keys:
-        path = tiles["path"].format(key=k)
-        os.makedirs(os.path.dirname(os.path.join(dst, path)), exist_ok=True)
-        shutil.copy(os.path.join(src, path), os.path.join(dst, path))
-        with open(os.path.join(src, path)) as f:
-            node_ids |= {n["id"] for n in json.load(f)["nodes"]}
+        tile = X.load_tile(os.path.join(src, tiles["path"].format(key=k)))
+        tile = {"version": manifest["version"], "tile": k, **tile}
+        os.makedirs(os.path.join(dst, "tiles"), exist_ok=True)
+        with open(os.path.join(dst, "tiles", f"{k}.json"), "w") as f:
+            json.dump(tile, f, ensure_ascii=False, separators=(",", ":"))
+        node_ids |= {n["id"] for n in tile["nodes"]}
 
     def inside(p):
         return west <= p["lon"] <= east and south <= p["lat"] <= north
@@ -48,6 +49,8 @@ def main(src, dst, west, south, east, north, name):
     manifest["region"] = {"name": name, "bbox": [west, south, east, north]}
     manifest["files"] = {"places": "places.json"}
     manifest["tiles"].pop("places", None)
+    manifest["tiles"].pop("format", None)
+    manifest["tiles"]["path"] = "tiles/{key}.json"
     manifest["tiles"]["keys"] = keys
     with open(os.path.join(dst, "manifest.json"), "w") as f:
         json.dump(manifest, f, ensure_ascii=False, separators=(",", ":"))

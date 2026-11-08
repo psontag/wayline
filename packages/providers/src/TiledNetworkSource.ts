@@ -13,7 +13,14 @@ import type {
   SearchIndex,
   TileIndex,
 } from "@wayline/domain";
-import type { FetchJson, RouteNetworkSource } from "./types";
+import { decodeNetworkTile, gunzip } from "./networkTile";
+import type { FetchBytes, FetchJson, RouteNetworkSource } from "./types";
+
+async function fetchBytes(url: string): Promise<Uint8Array> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url}: ${res.status}`);
+  return new Uint8Array(await res.arrayBuffer());
+}
 
 /**
  * Geodata built by pipeline/build.py, e.g. /data/de-2026-11-02-a8986415/.
@@ -26,6 +33,8 @@ export class TiledNetworkSource implements RouteNetworkSource {
   constructor(
     private fetchJson: FetchJson,
     private baseUrl: string,
+    /** For packed network tiles. */
+    private fetchFile: FetchBytes = fetchBytes,
   ) {}
 
   manifest(): Promise<Manifest> {
@@ -74,15 +83,22 @@ export class TiledNetworkSource implements RouteNetworkSource {
 
   /** One tile by key. */
   async tile(key: string): Promise<NetworkTile> {
-    const { tiles } = await this.manifest();
+    const { version, tiles } = await this.manifest();
     if (!tiles) throw new Error(`${this.baseUrl} is not a tiled dataset`);
-    return this.load(tiles.path.replace("{key}", key)) as Promise<NetworkTile>;
+    const path = tiles.path.replace("{key}", key);
+    if (tiles.format !== 1) return this.load(path) as Promise<NetworkTile>;
+    return this.load(path, async (url) =>
+      decodeNetworkTile(key, version, await gunzip(await this.fetchFile(url))),
+    ) as Promise<NetworkTile>;
   }
 
-  private load(file: string): Promise<unknown> {
+  private load(
+    file: string,
+    read: (url: string) => Promise<unknown> = this.fetchJson,
+  ): Promise<unknown> {
     let p = this.cache.get(file);
     if (!p) {
-      p = this.fetchJson(`${this.baseUrl}/${file}`);
+      p = read(`${this.baseUrl}/${file}`);
       // A failed load is retried on the next call.
       p.catch(() => this.cache.delete(file));
       this.cache.set(file, p);

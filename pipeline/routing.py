@@ -7,6 +7,8 @@ and elevation). The format is in the README.
 """
 
 import gzip
+import heapq
+import math
 import os
 import shutil
 from array import array
@@ -491,8 +493,10 @@ def tile_of(lon, lat):
     return np.floor(lon / COORD / TILE_DEG).astype(np.int64), np.floor(lat / COORD / TILE_DEG).astype(np.int64)
 
 
-def build(path, scenery_path, out):
-    """Write <out>/route/<key>.bin and <key>.geo.bin. Returns the manifest entry and stats."""
+def build(path, scenery_path, out, graph_path):
+    """Write <out>/route/<key>.bin and <key>.geo.bin. Returns the manifest entry and stats.
+
+    Also saves the graph to graph_path, for route_pairs()."""
     grids = Grids(load(path), scenery_path)
     e = edges(path, junction_refs(path), grids)
     del grids
@@ -568,6 +572,11 @@ def build(path, scenery_path, out):
             sizes.append(tuple(f.result() for f in pending.popleft()))
     sizes += [tuple(f.result() for f in p) for p in pending]
     pool.shutdown()
+    save(graph_path, {
+        "node_lon": node_lon, "node_lat": node_lat, "from": e_from, "to": e_to,
+        "len": edge["len"], "bits": edge["bits"], "shape_start": edge["shape_start"], "shape_count": edge["shape_count"],
+        "shape_lon": shape["shape_lon"], "shape_lat": shape["shape_lat"],
+    })  # fmt: skip
 
     manifest = {
         "format": FORMAT,
@@ -628,3 +637,158 @@ def write_gz(path, data):
     with open(path, "wb") as f:
         f.write(gzip.compress(data, 9, mtime=0))
     return os.path.getsize(path)
+
+
+# --- connectors of the route network (graph.py) ------------------------------
+
+CONNECTOR_SNAP_KM = 0.3  # a connector end moves to a routing node this close
+CONNECTOR_REACH = 4  # gives up beyond this × the straight line, at least 2 km of cost
+MAIN_ROADS = {
+    "trunk": (1.5, 10), "trunk_link": (1.5, 10), "primary": (1.2, 3), "primary_link": (1.2, 3),
+    "secondary": (1.1, 1.6), "secondary_link": (1.1, 1.6), "tertiary": (1, 1.4), "tertiary_link": (1, 1.4),
+    "unclassified": (1, 1.3),
+}  # fmt: skip
+GOOD_MINOR = [1, 1, 1.1, 1.5, 2, 3]
+POOR_MINOR = [5, 1.3, 2, 3, 5, 5]
+
+
+def touring_factor(bits):
+    """Cost per meter with the touring costs of packages/router/src/cost.ts, without downhill and turns."""
+    hw = HIGHWAYS[bits & 31] if (bits & 31) < len(HIGHWAYS) else None
+    grade, paved, unpaved, bike, signed = (bits >> 5) & 7, (bits >> 8) & 1, (bits >> 9) & 1, (bits >> 10) & 1, (bits >> 11) & 1
+    if hw == "ferry":
+        return 5.67
+    if signed:
+        return 1
+    if hw == "pedestrian":
+        f = 2.2 if bike else 3
+    elif hw == "bridleway":
+        f = 5
+    elif hw == "cycleway":
+        f = 1
+    elif hw in ("residential", "living_street"):
+        f = 1.5 if unpaved else 1.1
+    elif hw == "service":
+        f = 1.6 if unpaved else 1.3
+    elif hw in ("track", "road", "path", "footway"):
+        good = paved and (bike or hw == "footway") and not unpaved
+        f = (GOOD_MINOR if good else POOR_MINOR)[min(grade, 5)]
+    else:
+        road = MAIN_ROADS.get(hw)
+        f = (0 if bike else 2) + (road[0 if bike else 1] if road else 2)
+    return f + 0.05
+
+
+def surface_of(bits):
+    """Surface class of graph.py for an edge."""
+    hw = HIGHWAYS[bits & 31] if (bits & 31) < len(HIGHWAYS) else None
+    grade, paved, unpaved = (bits >> 5) & 7, (bits >> 8) & 1, (bits >> 9) & 1
+    if paved or grade == 1:
+        return "paved"
+    if unpaved or grade >= 4:
+        return "rough"
+    if grade:
+        return "gravel"
+    if hw == "track":
+        return "gravel"
+    if hw in BIKE_ROADS:
+        return "paved"
+    return "unknown"
+
+
+def route_pairs(graph_path, pairs):
+    """Cheapest way between each pair of [lon, lat] points on the graph of build().
+
+    Returns per pair {"km", "coords", "surface"}, or None if there is no way close enough."""
+    import graph as G
+
+    g = load(graph_path)
+    # Kept small for Germany: coordinates stay on disk, costs are float32, adjacency int32.
+    node_lon, node_lat = g["node_lon"], g["node_lat"]
+    n = len(node_lon)
+    length, bits, e_from, e_to = g["len"], g["bits"], g["from"], g["to"]
+    m = len(e_from)
+    kinds, inverse = np.unique(bits, return_inverse=True)
+    cost = (np.array([touring_factor(int(b)) for b in kinds], dtype=np.float32)[inverse] * length).astype(np.float32)
+    del inverse
+    order = np.argsort(np.concatenate([e_from, e_to]), kind="stable")
+    other = np.concatenate([e_to, e_from])[order].astype(np.int32)
+    seg = (order % m).astype(np.int32)
+    del order
+    offsets = np.zeros(n + 1, dtype=np.int64)
+    np.cumsum(np.bincount(e_from, minlength=n) + np.bincount(e_to, minlength=n), out=offsets[1:])
+    s_start, s_count, s_lon, s_lat = g["shape_start"], g["shape_count"], g["shape_lon"], g["shape_lat"]
+
+    def xy(v):
+        return [int(node_lon[v]) / COORD, int(node_lat[v]) / COORD]
+
+    # Only nodes near a connector end can be snapped to.
+    cell = G.NodeGrid.CELL
+    reach = int(CONNECTOR_SNAP_KM / 111 / cell * 2) + 1
+    wanted = set()
+    for p in (x for pair in pairs for x in pair):
+        cx, cy = math.floor(p[0] / cell), math.floor(p[1] / cell)
+        wanted.update((cx + dx) * 2**20 + cy + dy for dx in range(-reach, reach + 1) for dy in range(-reach, reach + 1))
+    cells = np.floor(node_lon / COORD / cell).astype(np.int64) * 2**20 + np.floor(node_lat / COORD / cell).astype(np.int64)
+    near_rows = np.nonzero(np.isin(cells, np.fromiter(wanted, np.int64, len(wanted))))[0]
+    del cells
+    grid = G.NodeGrid(np.column_stack([node_lon[near_rows] / COORD, node_lat[near_rows] / COORD]))
+
+    def nearest(p):
+        d, rows = grid.near(p, CONNECTOR_SNAP_KM)
+        return (float(d[0]), int(near_rows[rows[0]])) if len(rows) else None
+
+    def search(s, t, limit):
+        target = xy(t)
+        h = lambda v: G.dist_km(xy(v), target) * 1000  # noqa: E731
+        best, via = {s: 0.0}, {}
+        heap = [(h(s), s)]
+        done = set()
+        while heap:
+            _, u = heapq.heappop(heap)
+            if u in done:
+                continue
+            if u == t:
+                break
+            done.add(u)
+            for slot in range(int(offsets[u]), int(offsets[u + 1])):
+                v, e = int(other[slot]), int(seg[slot])
+                c = best[u] + float(cost[e])
+                if c <= limit and c < best.get(v, math.inf):
+                    best[v], via[v] = c, (u, e)
+                    heapq.heappush(heap, (c + h(v), v))
+        if t not in best:
+            return None
+        steps = []
+        while t != s:
+            u, e = via[t]
+            steps.append((u, e))
+            t = u
+        return steps[::-1]
+
+    out = []
+    for p, q in pairs:
+        a, b = nearest(p), nearest(q)
+        if not a or not b:
+            out.append(None)
+            continue
+        straight = G.dist_km(p, q) * 1000
+        steps = search(a[1], b[1], max(2000, CONNECTOR_REACH * straight))
+        if steps is None:
+            out.append(None)
+            continue
+        coords, dist = [list(p)], (a[0] + b[0]) * 1000
+        by_surface = {}
+        for u, e in steps:
+            i, k = int(s_start[e]), int(s_count[e])
+            pts = list(zip((s_lon[i : i + k] / COORD).tolist(), (s_lat[i : i + k] / COORD).tolist()))
+            if int(e_from[e]) != u:
+                pts.reverse()
+            coords += [xy(u), *map(list, pts)]
+            dist += float(length[e])
+            s = surface_of(int(bits[e]))
+            by_surface[s] = by_surface.get(s, 0) + float(length[e])
+        coords += [xy(b[1]), list(q)]
+        coords = [c for i, c in enumerate(coords) if i == 0 or c != coords[i - 1]]
+        out.append({"km": dist / 1000, "coords": coords, "surface": max(by_surface, key=by_surface.get, default="unknown")})
+    return out

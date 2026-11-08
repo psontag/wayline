@@ -33,8 +33,7 @@ def load(data_dir, center, radius_km):
             if key not in tiles["keys"]:
                 continue
             keys.append(key)
-            with open(os.path.join(data_dir, tiles["path"].format(key=key))) as f:
-                tile = json.load(f)
+            tile = X.load_tile(os.path.join(data_dir, tiles["path"].format(key=key)))
             nodes.update({n["id"]: n for n in tile["nodes"]})
             edges.update({e["id"]: e for e in tile["edges"]})
     print(f"version {manifest['version']}, {len(keys)} tiles, {len(nodes)} nodes, {len(edges)} edges")

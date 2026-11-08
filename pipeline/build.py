@@ -178,15 +178,21 @@ def main():
     t.step("scenery")
     routing_dir = routing_file(args.cache, area, src)
     t.step("routing extract")
+    routing_graph = routing_dir + "-graph"
     with ProcessPoolExecutor(1) as pool:
-        routing, routing_stats = pool.submit(R.build, routing_dir, scenery_npz, out).result()
+        routing, routing_stats = pool.submit(R.build, routing_dir, scenery_npz, out, routing_graph).result()
     t.step("routing tiles")
 
     data = load_extract(args.cache, area, src)
     print(f"extract: {E.summary(data)}")
     t.step("extract")
 
-    g = G.build(data)
+    def route_links(pairs):
+        # In a child process, so the routing graph is freed before the export.
+        with ProcessPoolExecutor(1) as pool:
+            return pool.submit(R.route_pairs, routing_graph, pairs).result()
+
+    g = G.build(data, route_links)
     print("graph:", {k: round(v, 3) if isinstance(v, float) else v for k, v in g["stats"].items()})
     t.step("graph")
     scenery = S.Scenery(*S.merge([S.load(scenery_npz)]))
@@ -199,7 +205,11 @@ def main():
 
     places = X.export_places(data, g, index, version)
     tiles = split_tiles(network)
-    sizes = {k: write(os.path.join(out, "tiles", f"{k}.json"), tile) for k, tile in tiles.items()}
+    os.makedirs(os.path.join(out, "tiles"), exist_ok=True)
+    packed = {k: X.pack_tile(tile) for k, tile in tiles.items()}
+    unpacked_mib = sum(len(b) for b in packed.values()) / 2**20
+    sizes = {k: R.write_gz(os.path.join(out, "tiles", f"{k}.bin"), b) for k, b in packed.items()}
+    del packed
     place_tiles = X.split_places(places, network["nodes"], tile_key)
     place_sizes = [write(os.path.join(out, "places", f"{k}.json"), p) for k, p in place_tiles.items()]
     search_size = write(os.path.join(out, "search.json"), X.search_index(places))
@@ -211,7 +221,8 @@ def main():
         "files": {"search": "search.json"},
         "tiles": {
             "size": region.TILE_DEG,
-            "path": "tiles/{key}.json",
+            "format": 1,
+            "path": "tiles/{key}.bin",
             "keys": sorted(tiles),
             "places": {"path": "places/{key}.json", "keys": sorted(place_tiles)},
         },
@@ -233,7 +244,7 @@ def main():
     print(f"places: towns={len(places['towns'])} stations={len(places['stations'])} hotels={len(places['hotels'])}")
     print(f"place tiles: {len(place_sizes)} files, {sum(place_sizes) / mb:.1f} MiB, max {max(place_sizes) / 1024:.0f} KiB")
     print(f"search.json: {search_size / mb:.2f} MiB")
-    print(f"tiles: {len(s)} files, {sum(s) / mb:.1f} MiB, median {s[len(s) // 2] / mb:.2f} MiB, max {s[-1] / mb:.2f} MiB")
+    print(f"tiles: {len(s)} files, {unpacked_mib:.1f} MiB ({sum(s) / mb:.1f} MiB gzipped), median {s[len(s) // 2] / mb:.2f} MiB, max {s[-1] / mb:.2f} MiB gzipped")
     print(f"lines: {lines['routes']} routes, {lines['files']} files ({lines['empty']} empty), {lines['bytes'] / mb:.1f} MiB, max {lines['max'] / 1024:.0f} KiB")
     print("scenery:", S.stats(network["edges"]))
     print("routing:", routing_stats)

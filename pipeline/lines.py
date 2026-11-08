@@ -19,6 +19,8 @@ import sys
 import tempfile
 from collections import defaultdict
 
+import export as X
+
 MIN_ZOOM = 5
 MAX_ZOOM = 11
 # Lowest zoom a line is in the tiles at, by network class. Matches NetworkLayer.
@@ -64,9 +66,8 @@ def load_edges(data_dir, manifest):
     edges = {}
     tiles = manifest["tiles"]
     for key in tiles["keys"]:
-        with open(os.path.join(data_dir, tiles["path"].replace("{key}", key))) as f:
-            for e in json.load(f)["edges"]:
-                edges[e["id"]] = e
+        for e in X.load_tile(os.path.join(data_dir, tiles["path"].replace("{key}", key)))["edges"]:
+            edges[e["id"]] = e
     return list(edges.values())
 
 
