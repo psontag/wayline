@@ -18,6 +18,25 @@ export type DijkstraResult = {
 };
 
 /**
+ * Work done by all Dijkstra runs, for the benchmark (`pnpm bench`). Counts
+ * don't depend on machine speed.
+ */
+export const searchCounts = {
+  /** Runs without a target: cheapest paths to every node. */
+  oneToAll: 0,
+  /** Runs that stop at a target. */
+  toTarget: 0,
+  /** Nodes taken from the queue. */
+  settled: 0,
+};
+
+export function resetSearchCounts() {
+  searchCounts.oneToAll = 0;
+  searchCounts.toTarget = 0;
+  searchCounts.settled = 0;
+}
+
+/**
  * Cheapest paths from one node. Stops early at target or when the cost
  * passes maxCost.
  */
@@ -38,12 +57,15 @@ export function dijkstra(
   best[source] = 0;
   km[source] = 0;
   queue.push(source, 0);
+  if (target === undefined) searchCounts.oneToAll++;
+  else searchCounts.toTarget++;
 
   while (queue.length) {
     const c = queue.peekValue() ?? Infinity;
     const node = queue.pop();
     if (node === undefined) break;
     if (c > (best[node] ?? Infinity)) continue;
+    searchCounts.settled++;
     if (node === target || c > maxCost) break;
     for (const id of graph.edgesAt(node)) {
       const edge = graph.edge(id);
