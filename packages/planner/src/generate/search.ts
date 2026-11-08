@@ -158,9 +158,46 @@ export class Costs {
     return (e) => (this.base[e.id] ?? Infinity) * (penalty[e.id] ?? 1);
   }
 
-  /** Cheapest costs and km from a node, without penalties. */
-  from(graph: Graph, node: number) {
-    return dijkstra(graph, node, { cost: this.cost() });
+  /**
+   * Cheapest costs and km from a node, with the current penalties. With
+   * targets, only those are final: the search stops once it reached them.
+   */
+  from(graph: Graph, node: number, targets?: Iterable<number>) {
+    return dijkstra(graph, node, {
+      cost: this.cost(),
+      ...(targets ? { targets } : {}),
+    });
+  }
+}
+
+/** Cheapest cost and km from one node to every node. */
+export type Tree = { cost: Float32Array; km: Float32Array };
+
+/**
+ * Trees from nodes, each searched once and kept. All candidate lists of a
+ * search share them, so they use the costs as asked, without flavour or
+ * penalties. Float32 halves the memory: a one-way trip keeps up to about
+ * 50 trees, an open ride a few hundred on a small area.
+ */
+export class Trees {
+  private trees = new Map<number, Tree>();
+
+  constructor(
+    private graph: Graph,
+    private costs: Costs,
+  ) {}
+
+  from(node: number): Tree {
+    let tree = this.trees.get(node);
+    if (!tree) {
+      const base = this.costs.base;
+      const r = dijkstra(this.graph, node, {
+        cost: (e) => base[e.id] ?? Infinity,
+      });
+      tree = { cost: Float32Array.from(r.cost), km: Float32Array.from(r.km) };
+      this.trees.set(node, tree);
+    }
+    return tree;
   }
 }
 
@@ -239,19 +276,23 @@ export function acceptable(graph: Graph, steps: PathStep[], totalKm: number) {
 export function oneWayCandidates(
   graph: Graph,
   costs: Costs,
+  trees: Trees,
   start: number,
   ends: number[],
   vias: number[],
   totalKm: number,
   minKm = Math.min(40, totalKm / 4),
 ): Candidate[] {
+  // The start with the costs of this search. The ends come from the shared
+  // trees, so every search picks the same ends and reuses their trees.
   const fromStart = costs.from(graph, start);
+  const shared = trees.from(start);
   const startCoord = graph.coord(start);
   let picked: End[] = [];
   for (const end of ends) {
     const straight = distanceKm(startCoord, graph.coord(end));
     if (straight < minKm || straight > totalKm) continue;
-    const cost = fromStart.cost[end] ?? Infinity;
+    const cost = shared.cost[end] ?? Infinity;
     if (cost === Infinity) continue;
     const turn = bearing(startCoord, graph.coord(end));
     picked.push({ end, straight, bearing: turn, rate: cost / straight });
@@ -261,7 +302,7 @@ export function oneWayCandidates(
   }
   const out: Candidate[] = [];
   for (const { end, straight } of picked) {
-    const fromEnd = costs.from(graph, end);
+    const fromEnd = trees.from(end);
     // Prefer ends far from the start, so the trip goes somewhere.
     const far = Math.min(straight, 100) / 100;
     for (const v of [...vias, end]) {

@@ -36,6 +36,7 @@ import {
   oneWayCandidates,
   pathKm,
   seeksClimbs,
+  Trees,
   VARIETY_PENALTY,
 } from "./search";
 import {
@@ -325,12 +326,15 @@ export class Planner {
       options.wind?.length && (open || request.kind === "day-loop")
         ? { wind: options.wind, startHour: timeToHours(request.startTime) }
         : undefined;
+    // Trees from the end stations, shared by all candidate lists.
+    const trees = new Trees(graph, costs);
     const candidates = (c: Costs, km = totalKm, via = vias) => {
       const list =
         request.kind === "one-way"
           ? oneWayCandidates(
               graph,
               c,
+              trees,
               start,
               endStation === undefined
                 ? this.stops.stationNodes().filter((n) => n !== start)
@@ -361,6 +365,7 @@ export class Planner {
           request,
           totalKm,
           fillVias,
+          trees,
           progress,
         ),
       );
@@ -904,12 +909,13 @@ export class Planner {
     request: GenerateRequest,
     totalKm: number,
     vias: number[],
+    trees: Trees,
     progress: (tries: number) => void,
   ) {
     const graph = this.graph;
     const costs = new Costs(graph, request);
-    const fromStart = costs.from(graph, start);
-    const fromEnd = end === undefined ? undefined : costs.from(graph, end);
+    const fromStart = trees.from(start);
+    const fromEnd = end === undefined ? undefined : trees.from(end);
     const routes = routesInReach(graph, this.catalog, (n) =>
       fromEnd
         ? (fromStart.km[n] ?? Infinity) + (fromEnd.km[n] ?? Infinity) <=

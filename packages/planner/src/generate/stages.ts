@@ -83,17 +83,40 @@ export function stopCandidates(
   // Degrees per km, for a cheap prefilter before the real distance.
   const dLat = STOP_KM / 110;
   const dLon = STOP_KM / 70;
+  // Grid of path points with cells of the prefilter size, so each town
+  // looks only at the 3 × 3 cells around it.
+  const grid = new Map<string, number[]>();
+  for (let index = 1; index < last; index++) {
+    const [x, y] = graph.coord(points[index]?.node ?? 0);
+    const key = `${Math.floor(x / dLon)},${Math.floor(y / dLat)}`;
+    const list = grid.get(key);
+    if (list) list.push(index);
+    else grid.set(key, [index]);
+  }
   const out: StopCandidate[] = [];
   for (const node of hotelNodes) {
     const c = graph.coord(node);
     let best: { index: number; d: number } | undefined;
-    for (const [index, p] of points.entries()) {
-      if (index === 0 || index === last) continue;
-      const pc = graph.coord(p.node);
-      if (Math.abs(pc[1] - c[1]) > dLat || Math.abs(pc[0] - c[0]) > dLon)
-        continue;
-      const d = p.node === node ? 0 : distanceKm(c, pc);
-      if (d <= STOP_KM && (!best || d < best.d)) best = { index, d };
+    const cx = Math.floor(c[0] / dLon);
+    const cy = Math.floor(c[1] / dLat);
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const near = grid.get(`${cx + dx},${cy + dy}`);
+        for (const index of near ?? []) {
+          const p = points[index] as PathPoint;
+          const pc = graph.coord(p.node);
+          if (Math.abs(pc[1] - c[1]) > dLat || Math.abs(pc[0] - c[0]) > dLon)
+            continue;
+          const d = p.node === node ? 0 : distanceKm(c, pc);
+          // Ties go to the earlier point.
+          if (
+            d <= STOP_KM &&
+            (!best || d < best.d || (d === best.d && index < best.index))
+          ) {
+            best = { index, d };
+          }
+        }
+      }
     }
     if (!best) continue;
     const km = points[best.index]?.km ?? 0;

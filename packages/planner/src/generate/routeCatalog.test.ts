@@ -12,7 +12,10 @@ describe("cleanRouteName", () => {
     ["D-Route 6 - Donauroute [Regensburg - Passau]", "Donauroute"],
     ["D2 Ostseeküsten-Radweg - Abschnitt Fehmarn", "Ostseeküsten-Radweg"],
     ["Donauradweg - Abschnitt Deutschland 2", "Donauradweg"],
-    ["Deutscher Limes-Radweg 2. Abschnitt Holzhausen", "Deutscher Limes-Radweg"],
+    [
+      "Deutscher Limes-Radweg 2. Abschnitt Holzhausen",
+      "Deutscher Limes-Radweg",
+    ],
     ["Innradweg - Bayern", "Innradweg"],
     ["BahnRadRoute Weser - Lippe (Hauptroute)", "BahnRadRoute Weser - Lippe"],
     ["Grafschafter Fietsentour, Hauptroute", "Grafschafter Fietsentour"],
@@ -63,7 +66,10 @@ describe("RouteCatalog", () => {
   });
 
   it("takes the best class of the sections", () => {
-    const table = [info("Long Way Teil 1", "lcn"), info("Long Way Teil 2", "ncn")];
+    const table = [
+      info("Long Way Teil 1", "lcn"),
+      info("Long Way Teil 2", "ncn"),
+    ];
     const other = [info("Other Way", "rcn")];
     const catalog = new RouteCatalog([], [...table, ...other]);
     expect(catalog.rank("Long Way")).toBeLessThan(catalog.rank("Other Way"));

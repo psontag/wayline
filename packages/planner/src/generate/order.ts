@@ -17,7 +17,5 @@ export function byFit(totalKm: number) {
   const band = (f: Fit) =>
     Math.floor(Math.abs(f.km - totalKm) / totalKm / LENGTH_BAND);
   return (a: Fit, b: Fit) =>
-    band(a) - band(b) ||
-    (a.weak ?? 0) - (b.weak ?? 0) ||
-    b.quality - a.quality;
+    band(a) - band(b) || (a.weak ?? 0) - (b.weak ?? 0) || b.quality - a.quality;
 }
