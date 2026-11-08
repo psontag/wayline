@@ -1,28 +1,44 @@
-import { type LonLat, statsFromLegs, type Trip } from "@wayline/domain";
+import { distanceKm, type LonLat, statsFromLegs, type Trip } from "@wayline/domain";
 import type { AbortSignalLike, RoutingProvider } from "@wayline/providers";
 import type { Graph, PathStep } from "../graph/Graph";
 import { PLAN_PROFILE } from "./search";
 
-/** Gap between router waypoints on graph nodes. */
+/** Max gap between router waypoints on graph nodes. */
 const WAYPOINT_KM = 10;
+/**
+ * A piece this much longer than the straight line gets cut. Otherwise
+ * the router takes a shortcut and leaves the planned path.
+ */
+const MAX_DETOUR = 1.1;
+const MIN_KM = 1;
 
 /**
- * Steps of a stage cut about every WAYPOINT_KM. Each piece becomes one leg,
+ * Steps of a stage cut into pieces. Each piece becomes one leg,
  * so an edit routes only the pieces it touches and keeps the rest.
  */
 export function legSteps(graph: Graph, steps: PathStep[]): PathStep[][] {
   const total = steps.reduce((km, s) => km + graph.edge(s.edge).lengthKm, 0);
   const out: PathStep[][] = [[]];
+  const first = steps[0] && graph.edge(steps[0].edge);
+  if (!first || !steps[0]) return out;
+  let start = graph.coord(steps[0].forward ? first.from : first.to);
   let km = 0;
   let sinceLast = 0;
   for (const step of steps) {
-    const length = graph.edge(step.edge).lengthKm;
-    km += length;
-    sinceLast += length;
+    const e = graph.edge(step.edge);
+    const end = graph.coord(step.forward ? e.to : e.from);
+    km += e.lengthKm;
+    sinceLast += e.lengthKm;
     out.at(-1)?.push(step);
-    if (sinceLast >= WAYPOINT_KM && total - km >= WAYPOINT_KM / 2) {
+    const winding = sinceLast > MAX_DETOUR * distanceKm(start, end);
+    if (
+      total - km >= MIN_KM &&
+      ((sinceLast >= WAYPOINT_KM && total - km >= WAYPOINT_KM / 2) ||
+        (winding && sinceLast >= MIN_KM))
+    ) {
       out.push([]);
       sinceLast = 0;
+      start = end;
     }
   }
   return out;
