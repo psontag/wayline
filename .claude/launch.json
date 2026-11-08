@@ -6,24 +6,6 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],
       "port": 5173
-    },
-    {
-      "name": "api",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@wayline/api", "dev"],
-      "port": 8787
-    },
-    {
-      "name": "web-5175-network-routing",
-      "runtimeExecutable": "env",
-      "runtimeArgs": ["VITE_ROUTING=network", "pnpm", "--filter", "@wayline/web", "exec", "vite", "--port", "5175", "--strictPort"],
-      "port": 5175
-    },
-    {
-      "name": "web-5174",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@wayline/web", "exec", "vite", "--port", "5174", "--strictPort"],
-      "port": 5174
     }
   ]
 }

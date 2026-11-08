@@ -22,13 +22,19 @@ describe("wayFactor", () => {
 
   it("adds traffic and noise only for quiet", () => {
     const loud = est({ traffic: 6, noise: 6 });
-    expect(wayFactor(both(1), HIGHWAYS, COST_PROFILES.touring, loud)).toBeCloseTo(1.15);
-    expect(wayFactor(both(1), HIGHWAYS, COST_PROFILES.quiet, loud)).toBeCloseTo(4.15);
+    expect(
+      wayFactor(both(1), HIGHWAYS, COST_PROFILES.touring, loud),
+    ).toBeCloseTo(1.15);
+    expect(wayFactor(both(1), HIGHWAYS, COST_PROFILES.quiet, loud)).toBeCloseTo(
+      4.15,
+    );
   });
 
   it("keeps penalties on signed routes", () => {
     const signed = both(1) | (1 << 11);
-    expect(wayFactor(signed, HIGHWAYS, COST_PROFILES.quiet, est({ noise: 6 }))).toBe(3);
+    expect(
+      wayFactor(signed, HIGHWAYS, COST_PROFILES.quiet, est({ noise: 6 })),
+    ).toBe(3);
   });
 
   it("costs ferries like BRouter", () => {

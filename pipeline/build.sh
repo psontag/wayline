@@ -7,3 +7,5 @@ if [ ! -x .venv/bin/python ]; then
 fi
 VIRTUAL_ENV="$PWD/.venv" uv pip install -q -r requirements.txt
 .venv/bin/python build.py "$@"
+# In a worktree: move the new dataset to the main checkout and link it.
+node ../scripts/setup-worktree.js --data

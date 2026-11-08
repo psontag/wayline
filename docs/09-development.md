@@ -18,10 +18,13 @@
 pnpm install
 pnpm --filter @wayline/api db:migrate   # local D1 schema, once per new migration
 pnpm dev        # web app and Worker
-pnpm test
+pnpm check      # lint, typecheck, test, format check
 ```
 
-`pnpm dev` runs the web app with Vite on `localhost:5173` and the Worker with `cf dev` on `localhost:8787`. Vite forwards `/api` to the Worker. D1 runs locally.
+`pnpm dev` runs the web app with Vite and the Worker with `cf dev`. Vite forwards `/api` to the Worker. D1 runs locally.
+
+- Ports start at `5173` (web) and `8787` (Worker). When a port is in use, the next free one is taken, so several checkouts can run at once. Vite prints its address.
+- `PORT` sets the web port, `WAYLINE_API_PORT` the Worker port.
 
 ### Worktrees
 
@@ -31,10 +34,19 @@ Env files, region data and the local D1 are git-ignored, so a new worktree has n
 pnpm setup:worktree
 ```
 
-- Symlinks `apps/api/.dev.vars`, `apps/web/.env.local`, `apps/api/.wrangler/state`, and the region data from the main checkout. Then applies migrations.
+- Symlinks `apps/api/.dev.vars`, `apps/web/.env.local` and `apps/api/.wrangler/state` from the main checkout. Then applies migrations.
 - All worktrees share one D1 and one set of env files. A change in one applies to all.
-- Only one checkout can run `pnpm dev` at a time. The ports are fixed.
-- `.claude/launch.json` has configs for the Claude desktop app. `wayline` runs `pnpm dev`.
+- Route data and the pipeline cache live in the main checkout. The script links each dataset and `pipeline/cache`. Datasets or a cache found in the worktree move to the main checkout first.
+- `latest.json` is copied, not linked. Each checkout picks its own dataset.
+- Run it again to pick up datasets built later. `pnpm data:build` does this itself.
+- `.claude/launch.json` has one config for the Claude desktop app. `wayline` runs `pnpm dev`.
+
+### Claude Code
+
+`.claude/settings.json` sets up the sandbox and hooks.
+
+- `git` and `gh` run outside the sandbox.
+- `.claude/hooks/guard-bash.js` blocks `python`, `pip` and `sed -i`, and asks before `PROVIDERS=live`.
 
 The Worker config is `apps/api/cloudflare.config.ts`. Build settings, such as the assets folder, are in `apps/api/wrangler.config.ts`. `cf` writes generated files to `.cloudflare/` (git-ignored).
 
@@ -142,8 +154,7 @@ D1 schema changes are SQL migration files in `apps/api/migrations/`.
 | Trigger | Steps |
 |---|---|
 | Pull request | Lint, typecheck, test |
-| Push to `main` | Lint, typecheck, test, then deploy (`docs/12-deploy.md`) |
-| Monthly or manual | Data pipeline |
+| Push to `main` | Lint, typecheck, test, then deploy (`docs/12-deploy.md`). The deploy rebuilds the route data when the pipeline changed or a new month started. |
 
 ## Later
 

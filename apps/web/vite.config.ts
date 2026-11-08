@@ -10,9 +10,12 @@ export default defineConfig({
   },
   // The MapLibre worker uses ES module imports.
   worker: { format: "es" },
+  // Vite takes the next free port when this one is in use. scripts/dev.js
+  // picks the Worker port.
   server: {
+    port: Number(process.env.PORT) || 5173,
     proxy: {
-      "/api": "http://localhost:8787",
+      "/api": `http://localhost:${process.env.WAYLINE_API_PORT || 8787}`,
     },
   },
 });
