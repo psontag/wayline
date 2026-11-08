@@ -18,6 +18,14 @@
     "icons": "Icons, stats and day list"
   },
   "demo": {
+    "reachStation": "Würzburg Hbf",
+    "reachTime": "2 h 00",
+    "reachChanges": "1 change",
+    "reachMark": "R",
+    "reachName": "Bike reservation",
+    "reachHint": "IC or ICE: book a bike space before you go.",
+    "reachBand_one": "≤ {{count}} h",
+    "reachBand_other": "≤ {{count}} h",
     "planTrip": "Plan trip",
     "exportGpx": "Export GPX",
     "cancel": "Cancel",

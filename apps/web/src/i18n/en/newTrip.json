@@ -15,6 +15,26 @@
     "hint": "Pick a start on the map.",
     "choosePlace": "Choose a place"
   },
+  "reach": {
+    "title": "Train from home",
+    "maxTime": "Max train time",
+    "changesLabel": "Changes",
+    "upTo_one": "≤ {{count}} h",
+    "upTo_other": "≤ {{count}} h",
+    "maxChanges_one": "≤ {{count}} change",
+    "maxChanges_other": "≤ {{count}} changes",
+    "changes_zero": "direct",
+    "changes_one": "{{count}} change",
+    "changes_other": "{{count}} changes",
+    "fast": "IC and ICE",
+    "fastShort": "IC/ICE",
+    "fastHint": "Faster, with a bike reservation. Off: regional trains only.",
+    "mark": "R",
+    "reservation": "Bike reservation",
+    "reservationHint": "IC or ICE: book a bike space before you go.",
+    "unavailable": "Train times are only there from {{station}} for now. Your home station is {{home}}.",
+    "noData": "This map data has no train times yet."
+  },
   "loading": "Loading places",
   "loadFailed": "Could not load the places",
   "section": {

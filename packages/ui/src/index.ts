@@ -69,6 +69,14 @@ export {
   ToastViewport,
   type ToastProps,
 } from "./components/Toast";
+export {
+  ReachLabel,
+  type ReachBand,
+  reachBandClasses,
+  ReachLegend,
+  type Reservation,
+  ReservationMark,
+} from "./components/ReachLabel";
 export { Tooltip, TooltipProvider } from "./components/Tooltip";
 export { TrainRow, type TrainRowProps } from "./components/TrainRow";
 export { Logo, PageBar, TopBar, TopBarSpacer } from "./components/TopBar";

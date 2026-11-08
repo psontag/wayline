@@ -33,3 +33,13 @@ export function useHomeStation(): [string, (station: string) => void] {
   };
   return [station, set];
 }
+
+/** "Karlsruhe Hbf" and "Karlsruhe Hauptbahnhof" are the same station. */
+export function sameStation(a: string, b: string): boolean {
+  const norm = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/hauptbahnhof/g, "hbf")
+      .replace(/[^\p{L}\p{N}]/gu, "");
+  return norm(a) === norm(b);
+}

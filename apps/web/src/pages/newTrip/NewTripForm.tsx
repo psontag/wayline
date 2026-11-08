@@ -51,6 +51,9 @@ import {
 } from "./form";
 import { NewTripMap } from "./NewTripMap";
 import { PlaceField } from "./PlaceField";
+import { defaultReachFilter } from "./reach";
+import { TrainSection } from "./TrainSection";
+import { useReach } from "./useReach";
 import type { NewTripStep } from "./search";
 import { WherePanel } from "./WherePanel";
 import { nearestPlace } from "./places";
@@ -95,6 +98,16 @@ export function NewTripForm({
     navigate({ to: "/new", search: (prev) => ({ ...prev, step: next }) });
   const toTrip = () => void goTo("trip");
   const toWhere = () => void goTo("where");
+  const [reachFilter, setReachFilter] = useState(defaultReachFilter);
+  const reach = useReach(
+    places,
+    useStore(form.store, (s) => s.values.startDate),
+    reachFilter,
+  );
+  const pickStation = (station: Place) => {
+    form.setFieldValue("start", station);
+    toTrip();
+  };
   const setDays = (days: number) => {
     const next = withDays(form.state.values, days);
     form.setFieldValue("length", next.length);
@@ -142,6 +155,15 @@ export function NewTripForm({
                 end={!where && shape === "ab" ? end : null}
                 {...(next.open && { next: next.field })}
                 onPick={pick}
+                {...(where &&
+                  reach.stations && {
+                    reach: {
+                      stations: reach.stations,
+                      attribution: reach.attribution,
+                      fitKey: `${reachFilter.maxHours}`,
+                      onPick: pickStation,
+                    },
+                  })}
               />
             </div>
           );
@@ -163,7 +185,14 @@ export function NewTripForm({
               }}
               onDays={setDays}
               onChoosePlace={toTrip}
-            />
+            >
+              <TrainSection
+                home={reach.home}
+                available={reach.stations !== null}
+                filter={reachFilter}
+                onFilter={setReachFilter}
+              />
+            </WherePanel>
           )}
         </form.Subscribe>
       )}

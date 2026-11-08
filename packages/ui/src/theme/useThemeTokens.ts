@@ -38,6 +38,9 @@ const colorTokens = {
   windSpeed2: "wind-speed-2",
   windSpeed3: "wind-speed-3",
   windSpeed4: "wind-speed-4",
+  reach1: "reach-1",
+  reach2: "reach-2",
+  reach3: "reach-3",
 } as const;
 
 export type ThemeTokens = Record<keyof typeof colorTokens, string>;

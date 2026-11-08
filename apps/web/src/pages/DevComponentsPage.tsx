@@ -76,6 +76,8 @@ import {
   ProgressBar,
   ProposalCard,
   ProposalCardSkeleton,
+  ReachLabel,
+  ReachLegend,
   RouteLabel,
   routeColors,
   FloatingButton,
@@ -1201,6 +1203,28 @@ function ProposalDemos() {
         {routeColors.slice(1).map((color, i) => (
           <RouteLabel key={color} label={String(i + 2)} color={color} />
         ))}
+      </div>
+      <div className="flex flex-wrap items-start gap-3">
+        <ReachLabel
+          name={t("demo.reachStation")}
+          time={t("demo.reachTime")}
+          changes={t("demo.reachChanges")}
+          reservation={{
+            mark: t("demo.reachMark"),
+            label: t("demo.reachHint"),
+          }}
+        />
+        <ReachLegend
+          bands={([1, 2, 3] as const).map((band) => ({
+            band,
+            label: t("demo.reachBand", { count: band }),
+          }))}
+          reservation={{
+            mark: t("demo.reachMark"),
+            name: t("demo.reachName"),
+            label: t("demo.reachHint"),
+          }}
+        />
       </div>
       <Card padding="none">
         <MessagePanel

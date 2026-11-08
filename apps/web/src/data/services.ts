@@ -2,6 +2,7 @@ import { AreaCache, bboxAround, FakeRouting, Graph } from "@wayline/planner";
 import {
   type BBox,
   type LonLat,
+  type ReachFile,
   type RouteInfo,
   type RouteTable,
   SiteInfo,
@@ -22,6 +23,7 @@ import {
   type WeatherProvider,
 } from "@wayline/providers";
 import { offlineAware } from "./apiClient";
+import { sameStation } from "./homeStation";
 import { dataUrl, MOCK_DATA } from "./dataUrl";
 import { ApiTripStore, fetchMe, withMovedTrips } from "./ApiTripStore";
 import { indexedDbForecastCache } from "./forecastCache";
@@ -48,6 +50,8 @@ export type Services = {
   graph: (bbox: BBox) => Promise<Graph>;
   /** Vector tiles of the signed routes. Null if the data has none. */
   lines: () => Promise<RouteLines | null>;
+  /** Train times from a home station. Null if the data has none for it. */
+  reach: (home: string) => Promise<ReachFile | null>;
   /** Whether a hotel website works, and its image. Null without a server. */
   site: (url: string) => Promise<SiteInfo | null>;
 };
@@ -125,6 +129,13 @@ export function createServices(): Services {
         bounds: lines.bounds,
         routes: new Map(table.routes.map((r) => [r.id, r])),
       };
+    },
+    async reach(home) {
+      const base = await url;
+      const { files } = await network.manifest();
+      const entry = files.reach?.find((r) => sameStation(r.name, home));
+      if (!entry) return null;
+      return (await fetchJson(`${base}/${entry.path}`)) as ReachFile;
     },
     site: async (siteUrl) =>
       onServer
