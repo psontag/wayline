@@ -411,10 +411,15 @@ export class Planner {
 
     // All at once: the routing provider limits how many requests are open.
     const routed = picks.map(async (p, i) => {
+      // A homeward ride starts at another station, not a picked place.
       const placeAt = (node: number) =>
         this.endpoint(
           node,
-          node === start ? request.startStation : request.endStation,
+          node === start
+            ? request.startStation
+            : node === endStation
+              ? request.endStation
+              : undefined,
         );
       const trip = buildTrip(graph, this.stops, {
         id: `draft-${runId}-${i + 1}`,
@@ -539,11 +544,17 @@ export class Planner {
   }
 
   /** The station at a node, else the requested place. */
+  /**
+   * The place the user picked. The ride starts at the station it snapped
+   * to, for the train links, but keeps the picked name.
+   */
   private endpoint(node: number, requested?: Place): Place {
-    if (this.graph.node(node).kind === "station" || !requested) {
-      return this.stops.station(node);
+    if (this.graph.node(node).kind !== "station") {
+      return requested ?? this.stops.station(node);
     }
-    return requested;
+    const station = this.stops.station(node);
+    if (!requested || requested.kind === "station") return station;
+    return { ...requested, coord: station.coord, station };
   }
 
   /** Shared setup for checking candidate paths. */
@@ -863,7 +874,10 @@ export class Planner {
       let best: number[] = [];
       for (const route of routes) {
         // Long routes near a trip often don't fit it. Leaves time for the rest.
-        if (route.rank === NATIONAL && nationalMisses >= SIGNED.nationalMisses) {
+        if (
+          route.rank === NATIONAL &&
+          nationalMisses >= SIGNED.nationalMisses
+        ) {
           continue;
         }
         const km = kmUnused(graph, route, used);

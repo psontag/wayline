@@ -263,8 +263,12 @@ describe("Planner on the Heidelberg tiles", () => {
     const km = (p: typeof direct) => p!.trip.stages[0]!.stats.distance;
     for (const p of others) expect(km(p)).toBeGreaterThan(km(direct));
     expect(others.length).toBeGreaterThan(0);
-    // Weinheim has a station within 2 km.
-    expect(direct!.trip.stages[0]!.end.kind).toBe("station");
+    // Weinheim has a station within 2 km. The ride ends there, under the
+    // picked name.
+    const end = direct!.trip.stages[0]!.end;
+    expect(end.name).toBe("Weinheim");
+    expect(end.station?.kind).toBe("station");
+    expect(end.coord).toEqual(end.station?.coord);
     // The name keeps the towns the user picked.
     expect(direct!.trip.name).toBe("Heidelberg – Weinheim");
   });
