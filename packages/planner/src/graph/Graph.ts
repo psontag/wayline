@@ -107,6 +107,16 @@ export class Graph {
   readonly edges: NetworkEdge[];
   /** Edge ids at each node. */
   readonly adjacency: number[][];
+  /**
+   * The same as flat arrays, for fast searches: the edges of node i are
+   * adjEdge[adjStart[i]] to adjEdge[adjStart[i + 1] - 1], and adjTo holds
+   * the node at their other end.
+   */
+  readonly adjStart: Int32Array;
+  readonly adjEdge: Int32Array;
+  readonly adjTo: Int32Array;
+  /** Length of each edge. */
+  readonly lengthKm: Float64Array;
   /** Whether edges carry scenery data. The Oberfranken mock has none. */
   readonly hasScenery: boolean;
   private index: Flatbush;
@@ -124,6 +134,22 @@ export class Graph {
       this.edgesAt(e.from).push(e.id);
       if (e.to !== e.from) this.edgesAt(e.to).push(e.id);
     }
+    const n = network.nodes.length;
+    this.adjStart = new Int32Array(n + 1);
+    for (let i = 0; i < n; i++) {
+      this.adjStart[i + 1] =
+        (this.adjStart[i] ?? 0) + (this.adjacency[i]?.length ?? 0);
+    }
+    this.adjEdge = new Int32Array(this.adjStart[n] ?? 0);
+    this.adjTo = new Int32Array(this.adjEdge.length);
+    for (let i = 0; i < n; i++) {
+      let j = this.adjStart[i] ?? 0;
+      for (const id of this.edgesAt(i)) {
+        this.adjEdge[j] = id;
+        this.adjTo[j++] = this.other(id, i);
+      }
+    }
+    this.lengthKm = Float64Array.from(this.edges, (e) => e.lengthKm);
     this.index = new Flatbush(Math.max(1, network.nodes.length));
     for (const n of network.nodes) {
       const x = n.lon * KM_PER_LON;
