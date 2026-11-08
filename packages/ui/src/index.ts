@@ -146,6 +146,11 @@ export {
   type WeatherTimelineProps,
 } from "./components/WeatherTimeline";
 export {
+  type RouteWeatherPoint,
+  TripWeatherProfile,
+  type TripWeatherProfileProps,
+} from "./components/TripWeatherProfile";
+export {
   type NetworkRank,
   NetworkRouteCard,
   type NetworkRouteCardProps,

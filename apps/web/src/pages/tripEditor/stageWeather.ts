@@ -1,7 +1,10 @@
 import {
   addDays,
+  bearing,
   bestStart,
   hourlyAlongStage,
+  RAIN_MM,
+  relativeWind,
   rideSummary,
   rideWarnings,
   type Settings,
@@ -11,8 +14,15 @@ import {
   timeToHours,
   type Trip,
   weatherAlongStage,
+  type WindKind,
+  windRotation,
 } from "@wayline/domain";
-import type { Format, TimelineHour, Wind } from "@wayline/ui";
+import type {
+  Format,
+  RouteWeatherPoint,
+  TimelineHour,
+  Wind,
+} from "@wayline/ui";
 import type { TFunction } from "i18next";
 import type { StageForecast } from "../../data/queries";
 
@@ -155,3 +165,59 @@ export function withRideStart(
   rideStarts[index] = start;
   return { ...settings, rideStarts };
 }
+
+export type TripWeatherPoint = RouteWeatherPoint & {
+  /** Expected local time "YYYY-MM-DDTHH:MM". */
+  time: string;
+};
+
+/** The weather of every day along the trip km, for the trip chart. */
+export function tripWeatherPoints(days: StageWeather[]): TripWeatherPoint[] {
+  const out: TripWeatherPoint[] = [];
+  let offset = 0;
+  days.forEach((weather, day) => {
+    const { points } = weather;
+    points.forEach((p, i) => {
+      // The way ahead, or the last stretch at the end of the day.
+      const a = points[i === points.length - 1 ? i - 1 : i];
+      const b = points[i === points.length - 1 ? i : i + 1];
+      const way = a && b ? bearing(a.coord, b.coord) : 0;
+      const { sample } = p;
+      out.push({
+        km: offset + p.km,
+        day,
+        time: p.time,
+        rain: sample.precipitation,
+        rainChance: sample.precipitationProbability,
+        feelsLike: sample.apparentTemperature,
+        wind: {
+          kind: relativeWind(way, sample.windDirection),
+          rotation: windRotation(way, sample.windDirection),
+          speed: sample.windSpeed,
+          gusts: sample.windGusts,
+        },
+      });
+    });
+    offset += points.at(-1)?.km ?? 0;
+  });
+  return out;
+}
+
+/** Days with rain (1-based) and the main wind over the whole trip. */
+export function tripSummary(days: StageWeather[]): {
+  rainDays: number[];
+  wind: WindKind;
+} {
+  const rainDays = days.flatMap((d, i) =>
+    d.maxPrecipitation >= RAIN_MM ? [i + 1] : [],
+  );
+  const sum = { head: 0, tail: 0, cross: 0 };
+  for (const d of days) {
+    const km = d.points.at(-1)?.km ?? 0;
+    for (const kind of WIND_KINDS) sum[kind] += d.wind[kind] * km;
+  }
+  const wind = WIND_KINDS.reduce((a, b) => (sum[b] > sum[a] ? b : a));
+  return { rainDays, wind };
+}
+
+const WIND_KINDS: WindKind[] = ["tail", "cross", "head"];

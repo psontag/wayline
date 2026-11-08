@@ -31,7 +31,15 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
-import { useMe, useNetwork, useTrip, useWeatherGrid } from "../../data/queries";
+import {
+  useMe,
+  useNetwork,
+  useTrip,
+  useTripWeather,
+  useWeatherGrid,
+} from "../../data/queries";
+import { tripWeatherPoints } from "./stageWeather";
+import { TripWeatherPanel } from "./TripWeatherPanel";
 import { DayPanel } from "./DayPanel";
 import { StageProfile } from "./StageProfile";
 import { useRouteStations } from "./stations";
@@ -174,27 +182,48 @@ function TripEditor({
     [weatherOn, trip.stages],
   );
   const grid = useWeatherGrid(weatherGrid?.cells ?? []);
+  const tripWeatherOn = weatherOn && overview;
+  const tripWeather = useTripWeather(trip, tripWeatherOn);
+  const tripPoints = useMemo(
+    () => (tripWeather.data ? tripWeatherPoints(tripWeather.data) : []),
+    [tripWeather.data],
+  );
+  // On the trip level, the map shows the weather where the pointer is.
+  const pointed =
+    tripWeatherOn && hoverKm !== undefined
+      ? tripPoints.reduce<(typeof tripPoints)[number] | undefined>(
+          (best, p) =>
+            !best || Math.abs(p.km - hoverKm) < Math.abs(best.km - hoverKm)
+              ? p
+              : best,
+          undefined,
+        )
+      : undefined;
   const date = trip.startDate && addDays(trip.startDate, selected);
+  const fieldTime =
+    pointed?.time ?? (date && `${date}T${addHours("00:00", time)}`);
   const weatherField = useMemo(
     () =>
-      weatherGrid && grid.data?.length === weatherGrid.cells.length && date
-        ? fieldAt(weatherGrid, grid.data, `${date}T${addHours("00:00", time)}`)
+      weatherGrid && grid.data?.length === weatherGrid.cells.length && fieldTime
+        ? fieldAt(weatherGrid, grid.data, fieldTime)
         : undefined,
-    [weatherGrid, grid.data, date, time],
+    [weatherGrid, grid.data, fieldTime],
   );
   // Where the rider is at the marker time, inside the ride window.
   const riderKm =
     weatherOn && stage
       ? (time - rideStart) * stageSpeed(stage.stats, trip.settings.avgSpeed)
       : undefined;
-  const markKm = weatherOn
-    ? riderKm !== undefined &&
-      riderKm >= 0 &&
-      stage &&
-      riderKm <= stage.stats.distance / 1000
-      ? riderKm
-      : undefined
-    : hoverKm;
+  const markKm = tripWeatherOn
+    ? hoverKm
+    : weatherOn
+      ? riderKm !== undefined &&
+        riderKm >= 0 &&
+        stage &&
+        riderKm <= stage.stats.distance / 1000
+        ? riderKm
+        : undefined
+      : hoverKm;
   const hover =
     markKm !== undefined && points.length
       ? pointAtKm(points, markKm).coord
@@ -328,7 +357,18 @@ function TripEditor({
       };
 
   // The view under the map, or in the phone sheet.
-  const chart = weatherOn ? (
+  const chart = tripWeatherOn ? (
+    <TripWeatherPanel
+      trip={trip}
+      days={tripWeather.data}
+      points={tripPoints}
+      loading={tripWeather.isPending}
+      hoverKm={hoverKm}
+      onHoverKm={setHoverKm}
+      actions={switcher}
+      plain={isPhone}
+    />
+  ) : weatherOn ? (
     <WeatherPanel
       key={stage?.id}
       trip={trip}
