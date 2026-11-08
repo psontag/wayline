@@ -114,9 +114,15 @@ describe("routeTags", () => {
   it("tags climbing per km", () => {
     expect(tags({}, 100, 100)).toContain("flat");
     expect(tags({}, 100, 300)).not.toContain("flat");
-    expect(tags({}, 100, 500)).toContain("hilly");
-    expect(tags({}, 100, 800)).toContain("climbs");
-    expect(tags({}, 100, 800)).not.toContain("hilly");
+    expect(tags({}, 100, 700)).not.toContain("hilly");
+    expect(tags({}, 200, 1600)).toContain("hilly");
+    expect(tags({}, 200, 2400)).toContain("climbs");
+    expect(tags({}, 200, 2400)).not.toContain("hilly");
+  });
+
+  it("tags hilly when a day comes close to the max ascent", () => {
+    expect(tags({}, 100, 900)).toContain("hilly");
+    expect(tags({}, 100, 850)).not.toContain("hilly");
   });
 
   it("says when a route leaves the inputs", () => {
