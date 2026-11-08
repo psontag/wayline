@@ -99,7 +99,7 @@ Derived when shown: dates, weather, booking links.
 
 | Change | Recomputed |
 |---|---|
-| Move or add a via point | The two legs next to it and the stats of that stage |
+| Move or add a via point | The legs next to it and the stats of that stage. If the new route would ride out to a join and back along the old route, the join goes and the next leg is routed too. Up to 2 joins per side, never a via point, the start or the stop. |
 | Remove a via point | The two legs next to it become one |
 | Move a stop | Only the leg that passes the new stop, split at it. This and the next stage get new stats. The stop is locked. |
 | Revert a stage | Route, stop and hotel as proposed. The next stage starts at the proposed stop. |
