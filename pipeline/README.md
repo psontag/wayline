@@ -28,14 +28,14 @@ Output (November 2026):
 
 | | |
 |---|---|
-| Route network | 151,000 nodes, 203,000 edges, 212,000 km |
-| Tiles | 226 files of 0.5°, about 20 MiB (9 MiB gzipped) |
+| Route network | 152,000 nodes, 205,000 edges, 212,000 km, of which 1,650 km connectors |
+| Tiles | 226 files of 0.5°, 19.5 MiB (9.2 MiB gzipped), largest 0.21 MiB gzipped |
 | Place tiles | 229 files, 9.8 MiB (2.3 MiB gzipped), largest 143 KiB: 39,300 towns, 5,900 stations, 38,000 hotels |
 | `search.json` | 2.8 MiB (0.7 MiB gzipped): 31,800 towns and 5,900 stations on the network |
 | Route lines | 5,000 files (1,493 empty), 15 MiB, largest 206 KiB |
 | `routes.json` | 1.8 MiB: 16,300 routes |
 
-A 200 km trip loads up to about 110 tiles, about 12 MiB (5.5 MiB gzipped).
+A 200 km trip loads up to about 110 tiles, about 12 MiB (6 MiB gzipped).
 
 ## Route network
 
@@ -81,7 +81,7 @@ All numbers are little-endian. Coordinates are degrees × 10⁵. Shares are × 1
 
 Varint: the value zigzagged (0, −1, 1, −2 … as 0, 1, 2, 3 …), 7 bits per byte, low bits first, high bit set on all but the last byte.
 
-Hessen: 25 tiles, 1.5 MiB (0.7 MiB gzipped). As JSON they were 6.8 MiB (1.1 MiB gzipped).
+Germany: 226 tiles, 19.5 MiB (9.2 MiB gzipped). Hessen: 25 tiles, 1.5 MiB (0.7 MiB gzipped).
 
 ## Route lines
 
@@ -148,7 +148,7 @@ Sights within 500 m, share of edges:
 | Traffic | Way type: `unclassified` 1, `tertiary` 3, `secondary` 4, `primary` 5, `trunk` 6, links one less. One more at town class 3 and up |
 | Noise | Share of the edge within 100 m of a motorway, trunk or primary road, in sixths |
 
-Germany (November 2026): 17.0 M nodes, 21.2 M edges, 2.3 M km, 835 tiles. Search parts 163 MiB, geometry parts 125 MiB gzipped, largest tile 1.4 MiB. A 230 km trip routed in 10 km legs loads about 6 MiB.
+Germany (November 2026): 17.0 M nodes, 21.2 M edges, 2.3 M km, 854 tiles. Search parts 180 MiB, geometry parts 125 MiB gzipped, largest tile 1.4 MiB. A 230 km trip routed in 10 km legs loads about 6 MiB.
 
 Both files are gzipped. All numbers are little-endian. Coordinates are degrees × 10⁶. "Delta" means each value minus the one before, the first as is.
 
