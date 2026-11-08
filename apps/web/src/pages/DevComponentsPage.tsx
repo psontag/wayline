@@ -64,6 +64,7 @@ import {
   SaveStatus,
   StopMarker,
   TextLink,
+  ViaActions,
   ViaMarker,
   ViaRow,
   type TimelineHour,
@@ -730,13 +731,29 @@ function TripEditorParts() {
         <ClusterMarker kind="stations" count={3} />
         <HoverMarker />
         <ViaMarker aria-label={t("demo.removeVia")} />
+        <ViaMarker aria-label={t("demo.viaName")} selected />
         <GhostViaMarker />
+        <ViaActions
+          label={t("demo.viaName")}
+          removeLabel={t("demo.remove")}
+          onRemove={() => undefined}
+        />
       </div>
-      <div className="max-w-sm">
+      <div className="flex max-w-sm flex-col gap-1">
         <ViaRow
           n={1}
           name="Lichtenfels"
           detail="34 km"
+          onSelect={() => undefined}
+          removeLabel={t("demo.removeVia")}
+          onRemove={() => undefined}
+        />
+        <ViaRow
+          n={2}
+          name="Kloster Banz"
+          detail="58 km"
+          selected
+          onSelect={() => undefined}
           removeLabel={t("demo.removeVia")}
           onRemove={() => undefined}
         />

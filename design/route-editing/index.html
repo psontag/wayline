@@ -1,0 +1,463 @@
+<title>Wayline route editing</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one reading column for text, wide rows of device frames, Wayline tokens throughout. */
+:root{
+  --bg:#F6F7F9;--surface:#FFFFFF;--raised:#FFFFFF;--text:#15181D;--muted:#5A616C;--border:#E1E4EA;
+  --accent:#FFB088;--on-accent:#3B1503;--selected:#FFEDE3;--sel-border:#B4532A;
+  --success:#2F9E6B;--danger:#C2412D;--warning:#B7791F;
+  --route:#FF9A73;--casing:#B4532A;--via:#B4532A;--proposed:#5A616C;--network:#6F9B79;
+  --road:#E7E9EE;--map:#EEF1EC;--water:#D6E4F0;--stage-b:#C9BDE6;
+  --add-bg:#E6F4EC;--add-fg:#1F6B47;--chg-bg:#FFEDE3;--chg-fg:#8A3A17;--rem-bg:#FBE9E6;--rem-fg:#9A2F1F;
+  --font:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101216;--surface:#171A20;--raised:#1E222A;--text:#EDEFF3;--muted:#A0A7B3;--border:#2A2F38;
+  --accent:#FFB088;--on-accent:#2A0F02;--selected:#2D211B;--sel-border:#FFB088;
+  --success:#5CCB97;--danger:#FF8F7D;--warning:#F2CF7E;
+  --route:#FFA67F;--casing:#101216;--via:#FFB088;--proposed:#A0A7B3;--network:#4E6B57;
+  --road:#2A2F38;--map:#1A1E22;--water:#1C2A38;--stage-b:#8F82B8;
+  --add-bg:#16301F;--add-fg:#8FE0B5;--chg-bg:#2D211B;--chg-fg:#FFC3A3;--rem-bg:#341B17;--rem-fg:#FFB0A3;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101216;--surface:#171A20;--raised:#1E222A;--text:#EDEFF3;--muted:#A0A7B3;--border:#2A2F38;
+  --accent:#FFB088;--on-accent:#2A0F02;--selected:#2D211B;--sel-border:#FFB088;
+  --success:#5CCB97;--danger:#FF8F7D;--warning:#F2CF7E;
+  --route:#FFA67F;--casing:#101216;--via:#FFB088;--proposed:#A0A7B3;--network:#4E6B57;
+  --road:#2A2F38;--map:#1A1E22;--water:#1C2A38;--stage-b:#8F82B8;
+  --add-bg:#16301F;--add-fg:#8FE0B5;--chg-bg:#2D211B;--chg-fg:#FFC3A3;--rem-bg:#341B17;--rem-fg:#FFB0A3;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 64px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+.prose{max-width:68ch}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.15;font-weight:800;letter-spacing:-0.02em;margin:0 0 12px;text-wrap:balance}
+h2{font-size:22px;font-weight:800;letter-spacing:-0.01em;margin:0 0 6px;text-wrap:balance}
+h3{font-size:15px;font-weight:700;margin:0}
+p{margin:0}
+.lede{font-size:17px;color:var(--muted)}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sel-border);margin-bottom:8px}
+.muted{color:var(--muted)}
+section{display:flex;flex-direction:column;gap:20px}
+.devices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.dev{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.dev .ico{width:36px;height:36px;border-radius:10px;background:var(--selected);color:var(--sel-border);display:flex;align-items:center;justify-content:center}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600}
+.flag{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--rem-bg);color:var(--rem-fg)}
+.tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:700}
+.gest td:first-child{white-space:nowrap}
+.same{color:var(--muted);font-style:italic}
+.frames{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.frames.wide{grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr))}
+figure{margin:0;display:flex;flex-direction:column;gap:10px;min-width:0}
+figcaption{display:flex;flex-direction:column;gap:2px;font-size:13px}
+figcaption b{font-size:14px}
+.phone{border:1px solid var(--border);border-radius:28px;padding:6px;background:var(--surface);max-width:260px;width:100%;margin:0 auto}
+.phone .scr{border-radius:22px;overflow:hidden;background:var(--map);position:relative}
+.tablet,.browser{border:1px solid var(--border);border-radius:18px;padding:8px;background:var(--surface)}
+.browser{border-radius:12px;padding:0;overflow:hidden}
+.bar{height:26px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid var(--border);background:var(--bg)}
+.bar i{width:8px;height:8px;border-radius:50%;background:var(--border);display:block}
+.split{display:grid;grid-template-columns:1fr 38%;min-height:0}
+.split > svg{display:block;width:100%;height:auto}
+.panel{border-left:1px solid var(--border);background:var(--surface);padding:10px;font-size:11px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.ph{font-size:12px;font-weight:800}
+.sec{display:flex;gap:6px;align-items:center;font-weight:700;font-size:11px}
+.sec span.i{width:16px;height:16px;border-radius:5px;background:var(--selected);display:inline-block;flex:none}
+.vrow{display:flex;align-items:center;gap:6px}
+.vn{width:16px;height:16px;border-radius:50%;border:2px solid var(--via);background:var(--surface);font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.vrow .nm{flex:1;min-width:0;line-height:1.25}
+.vrow .nm small{display:block;color:var(--muted);font-size:10px}
+.x{color:var(--muted);font-size:12px}
+.sheet{background:var(--surface);border-top:1px solid var(--border);padding:8px 12px 12px;font-size:12px;display:flex;flex-direction:column;gap:8px}
+.grab{width:32px;height:4px;border-radius:2px;background:var(--border);margin:0 auto}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.btn{font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text)}
+.btn.p{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.delta{font-weight:800;font-variant-numeric:tabular-nums}
+.toast{background:var(--text);color:var(--bg);border-radius:10px;padding:8px 10px;font-size:11px;display:flex;justify-content:space-between}
+.toast b{color:var(--accent)}
+.lists{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.list{border-radius:14px;padding:16px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:12px}
+.pill{align-self:flex-start;font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px}
+.add .pill{background:var(--add-bg);color:var(--add-fg)}
+.chg .pill{background:var(--chg-bg);color:var(--chg-fg)}
+.rem .pill{background:var(--rem-bg);color:var(--rem-fg)}
+.list ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.list li{display:flex;flex-direction:column;gap:1px;font-size:14px}
+.list li b{font-weight:700}
+.list li span{color:var(--muted);font-size:13px}
+.where{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.03em}
+.steps{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));counter-reset:s}
+.step{border:1px solid var(--border);border-radius:14px;padding:16px;background:var(--surface);display:flex;flex-direction:column;gap:6px;counter-increment:s}
+.step::before{content:"Slice " counter(s);font-size:12px;font-weight:800;color:var(--sel-border)}
+.step p{font-size:13px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+code{font-size:.9em;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:0 4px}
+svg text{font-family:var(--font)}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="mapbase">
+      <rect width="400" height="400" fill="var(--map)"/>
+      <path d="M0 300 C80 290 120 340 200 330 S330 280 400 300 L400 400 L0 400Z" fill="var(--water)"/>
+      <path d="M0 90 L400 140 M70 0 L110 400 M0 230 L400 200 M290 0 L250 400 M160 0 C180 120 140 200 190 400" stroke="var(--road)" stroke-width="6" fill="none"/>
+      <path d="M0 160 C100 150 180 60 400 70" stroke="var(--network)" stroke-width="2" stroke-dasharray="1 5" stroke-linecap="round" fill="none" opacity=".8"/>
+    </g>
+    <path id="route" d="M30 360 C90 320 110 240 170 215 S260 150 300 110 S350 50 380 30"/>
+    <g id="via"><circle r="7" fill="var(--surface)" stroke="var(--via)" stroke-width="3"/></g>
+    <g id="pin"><line x1="0" y1="-6" x2="0" y2="-26" stroke="var(--via)" stroke-width="3"/><circle cy="-34" r="11" fill="var(--via)"/><circle cy="-34" r="4" fill="var(--surface)"/><circle r="4" fill="var(--via)"/></g>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<header class="prose">
+  <div class="eyebrow">Trip editor · design proposal</div>
+  <h1>Route editing on phone, iPad and desktop</h1>
+  <p class="lede">Every device gets the same actions. The input decides the gesture: a finger works differently from a mouse. Screen width only decides the layout.</p>
+</header>
+
+<section>
+  <div class="prose">
+    <h2>Three devices, two inputs</h2>
+    <p class="muted">The layout switches at 768 px. Every iPad is wider than that, so it gets the desktop layout. Today the desktop layout only works with a mouse.</p>
+  </div>
+  <div class="devices">
+    <div class="dev">
+      <div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/></svg></div>
+      <h3>Phone</h3>
+      <dl class="kv"><dt>Layout</dt><dd>Map and bottom sheet</dd><dt>Input</dt><dd>Touch</dd><dt>Today</dt><dd>Tap to add, drag a marker to move</dd></dl>
+    </div>
+    <div class="dev">
+      <div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/></svg></div>
+      <h3>iPad</h3>
+      <dl class="kv"><dt>Layout</dt><dd>Map and side panel</dd><dt>Input</dt><dd>Touch, Pencil, sometimes a trackpad</dd><dt>Today</dt><dd>Drag to add, which only listens to mouse events</dd></dl>
+      <p class="flag">You can't add a via point by touch on iPad today.</p>
+    </div>
+    <div class="dev">
+      <div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8"/></svg></div>
+      <h3>Desktop</h3>
+      <dl class="kv"><dt>Layout</dt><dd>Map and side panel</dd><dt>Input</dt><dd>Mouse, trackpad, keyboard</dd><dt>Today</dt><dd>Drag the line to add, click a via to remove</dd></dl>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="prose">
+    <h2>Gestures</h2>
+    <p class="muted">Each pointer event says whether it comes from a mouse, a pen or a finger. Use that, not the layout. An iPad with a trackpad gets the mouse column. Pencil uses the touch column.</p>
+  </div>
+  <div class="tablewrap">
+    <table class="gest">
+      <thead><tr><th>Action</th><th>Mouse</th><th>Touch</th><th>Panel</th></tr></thead>
+      <tbody>
+        <tr><td>Add on the route</td><td>Drag the line. Live preview.</td><td>Tap the line. Opens edit mode at that spot.</td><td class="same">—</td></tr>
+        <tr><td>Add off the route</td><td>Right-click, then "Route via here"</td><td>Long-press, then "Route via here"</td><td class="same">—</td></tr>
+        <tr><td>Select a via</td><td>Click it</td><td>Tap it</td><td>Tap the row</td></tr>
+        <tr><td>Move a via</td><td>Drag it. Live preview. <b>New</b></td><td>Select, then Move. Opens edit mode.</td><td class="same">—</td></tr>
+        <tr><td>Remove a via</td><td>Select, then Remove or the Delete key</td><td>Select, then Remove</td><td>× on the row</td></tr>
+        <tr><td>Cancel</td><td>Esc while dragging</td><td>Cancel in edit mode</td><td class="same">—</td></tr>
+        <tr><td>Undo, redo</td><td>⌘Z, ⇧⌘Z and the top bar</td><td>Top bar and the toast</td><td class="same">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted" style="font-size:13px">On every input: the preview shows the change in km and ascent. Removing shows an undo toast. If the route stays the same, a note says so.</p>
+</section>
+
+<section>
+  <div class="prose">
+    <h2>Phone</h2>
+    <p class="muted">Touch, bottom sheet. Your finger never covers the point you're placing.</p>
+  </div>
+  <div class="frames">
+    <figure>
+      <div class="phone"><div class="scr">
+        <svg viewBox="0 0 400 420" width="100%" style="display:block" role="img" aria-label="Edit mode with a fixed centre pin and a dashed routed preview">
+          <use href="#mapbase"/>
+          <use href="#route" stroke="var(--proposed)" stroke-width="7" fill="none" stroke-linecap="round" opacity=".35"/>
+          <path d="M30 360 C90 320 110 240 150 225 C190 205 220 200 250 210 C280 170 330 80 380 30" stroke="var(--via)" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="14 9"/>
+          <use href="#pin" x="250" y="210"/>
+          <path d="M70 120 h-16 m16 0 v-16 m0 16 h16 m-16 0 v16" stroke="var(--muted)" stroke-width="3"/>
+          <text x="98" y="126" font-size="20" font-weight="700" fill="var(--muted)">pan the map</text>
+          <rect x="70" y="16" width="260" height="36" rx="18" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="200" y="40" text-anchor="middle" font-size="18" font-weight="700" fill="var(--text)">Place via point</text>
+        </svg>
+        <div class="sheet"><div class="grab"></div>
+          <div class="row"><span class="delta">+6 km · +120 m</span><span class="muted">via Weismain</span></div>
+          <div class="row"><span class="btn">Cancel</span><span class="btn p">Done</span></div>
+        </div>
+      </div></div>
+      <figcaption><b>Edit mode</b><span class="muted">The pin stays in the centre and you pan the map under it. The preview updates as you go. Nothing is saved until Done.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="phone"><div class="scr">
+        <svg viewBox="0 0 400 420" width="100%" style="display:block" role="img" aria-label="A selected via point with Move and Remove actions">
+          <use href="#mapbase"/>
+          <use href="#route" stroke="var(--casing)" stroke-width="11" fill="none" stroke-linecap="round"/>
+          <use href="#route" stroke="var(--route)" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <circle cx="170" cy="215" r="26" fill="var(--via)" opacity=".18"/>
+          <circle cx="170" cy="215" r="10" fill="var(--via)" stroke="var(--surface)" stroke-width="3"/>
+          <g transform="translate(70 130)">
+            <rect width="200" height="52" rx="14" fill="var(--raised)" stroke="var(--border)"/>
+            <text x="50" y="33" text-anchor="middle" font-size="18" font-weight="700" fill="var(--text)">Move</text>
+            <line x1="100" y1="12" x2="100" y2="40" stroke="var(--border)" stroke-width="2"/>
+            <text x="150" y="33" text-anchor="middle" font-size="18" font-weight="700" fill="var(--danger)">Remove</text>
+          </g>
+          <text x="204" y="262" font-size="16" fill="var(--muted)">44 px target</text>
+        </svg>
+        <div class="sheet"><div class="toast"><span>Via point removed</span><b>Undo</b></div></div>
+      </div></div>
+      <figcaption><b>Tap selects a via point</b><span class="muted">Move opens edit mode. Remove shows an undo toast. A tap never deletes.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="phone"><div class="scr">
+        <svg viewBox="0 0 400 420" width="100%" style="display:block" role="img" aria-label="Long-press menu with Route via here">
+          <use href="#mapbase"/>
+          <use href="#route" stroke="var(--casing)" stroke-width="11" fill="none" stroke-linecap="round"/>
+          <use href="#route" stroke="var(--route)" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <circle cx="300" cy="250" r="24" fill="none" stroke="var(--via)" stroke-width="4" stroke-dasharray="100 151" transform="rotate(-90 300 250)" stroke-linecap="round"/>
+          <circle cx="300" cy="250" r="7" fill="var(--via)"/>
+          <text x="336" y="256" font-size="16" fill="var(--muted)">hold</text>
+          <g transform="translate(110 296)">
+            <rect width="260" height="76" rx="14" fill="var(--raised)" stroke="var(--border)"/>
+            <text x="18" y="32" font-size="18" font-weight="800" fill="var(--text)">Route via here</text>
+            <text x="18" y="56" font-size="15" fill="var(--muted)">Kloster Banz · 3 km off the route</text>
+          </g>
+        </svg>
+        <div class="sheet"><div class="grab"></div><div class="row"><b>Day 2 · 84 km</b><span class="muted">Ride</span></div></div>
+      </div></div>
+      <figcaption><b>Long-press anywhere</b><span class="muted">Go through a village or a viewpoint off the route. Opens the same edit mode.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="phone"><div class="scr">
+        <svg viewBox="0 0 400 200" width="100%" style="display:block" role="img" aria-label="Map with two via points">
+          <use href="#mapbase" transform="translate(0 -110)"/>
+          <path d="M20 190 C90 150 140 120 200 100 S320 50 390 20" stroke="var(--casing)" stroke-width="11" fill="none" stroke-linecap="round"/>
+          <path d="M20 190 C90 150 140 120 200 100 S320 50 390 20" stroke="var(--route)" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <use href="#via" x="130" y="133"/><use href="#via" x="290" y="62"/>
+        </svg>
+        <div class="sheet" style="font-size:12px"><div class="grab"></div>
+          <div class="sec"><span class="i"></span>Ride</div>
+          <div class="vrow"><span class="vn">1</span><span class="nm">Weismain<small>km 31</small></span><span class="x">✕</span></div>
+          <div class="vrow"><span class="vn">2</span><span class="nm">Kloster Banz<small>km 58</small></span><span class="x">✕</span></div>
+          <div class="muted" style="font-size:11px">Surface · weather · climbs</div>
+        </div>
+      </div></div>
+      <figcaption><b>Via points in the sheet</b><span class="muted">Each point with its km and a remove button. No need to hit a small marker.</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="prose">
+    <h2>iPad</h2>
+    <p class="muted">Desktop layout, touch gestures. Edit mode puts Cancel and Done in a bar on the map, because there is no bottom sheet. The side panel shows the change.</p>
+  </div>
+  <div class="frames wide">
+    <figure>
+      <div class="tablet"><div class="split" style="border-radius:12px;overflow:hidden">
+        <svg viewBox="0 0 400 330" role="img" aria-label="iPad edit mode with a pin, a preview and a floating bar">
+          <use href="#mapbase"/>
+          <use href="#route" stroke="var(--proposed)" stroke-width="6" fill="none" stroke-linecap="round" opacity=".35"/>
+          <path d="M30 360 C90 320 110 240 150 225 C190 205 220 200 250 210 C280 170 330 80 380 30" stroke="var(--via)" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="12 8"/>
+          <use href="#pin" x="250" y="210"/>
+          <g transform="translate(70 268)">
+            <rect width="260" height="44" rx="22" fill="var(--raised)" stroke="var(--border)"/>
+            <text x="22" y="28" font-size="15" font-weight="700" fill="var(--text)">Cancel</text>
+            <text x="130" y="28" text-anchor="middle" font-size="15" font-weight="800" fill="var(--text)">+6 km</text>
+            <rect x="180" y="7" width="70" height="30" rx="15" fill="var(--accent)"/>
+            <text x="215" y="27" text-anchor="middle" font-size="15" font-weight="800" fill="var(--on-accent)">Done</text>
+          </g>
+        </svg>
+        <div class="panel">
+          <div class="ph">Day 2 · Fri 13 Jun</div>
+          <div class="muted">Bamberg → Lichtenfels</div>
+          <div class="row"><span>84 → <b class="delta">90 km</b></span><span><b class="delta">+120 m</b></span></div>
+          <div class="sec"><span class="i"></span>Ride</div>
+          <div class="vrow"><span class="vn">1</span><span class="nm">Weismain<small>Moving…</small></span></div>
+          <div class="sec"><span class="i"></span>Stop</div>
+          <div class="muted">Lichtenfels</div>
+        </div>
+      </div></div>
+      <figcaption><b>Edit mode on iPad</b><span class="muted">Same pin and preview as on the phone. The bar sits at the bottom of the map, where your thumb reaches it.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="tablet"><div class="split" style="border-radius:12px;overflow:hidden">
+        <svg viewBox="0 0 400 330" role="img" aria-label="iPad with a long-press menu and a via list in the side panel">
+          <use href="#mapbase"/>
+          <use href="#route" stroke="var(--casing)" stroke-width="10" fill="none" stroke-linecap="round"/>
+          <use href="#route" stroke="var(--route)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <use href="#via" x="170" y="215"/>
+          <circle cx="120" cy="110" r="20" fill="none" stroke="var(--via)" stroke-width="4" stroke-dasharray="80 126" transform="rotate(-90 120 110)" stroke-linecap="round"/>
+          <circle cx="120" cy="110" r="6" fill="var(--via)"/>
+          <g transform="translate(140 120)">
+            <rect width="200" height="60" rx="12" fill="var(--raised)" stroke="var(--border)"/>
+            <text x="14" y="26" font-size="15" font-weight="800" fill="var(--text)">Route via here</text>
+            <text x="14" y="46" font-size="13" fill="var(--muted)">Vierzehnheiligen · 2 km off</text>
+          </g>
+        </svg>
+        <div class="panel">
+          <div class="ph">Day 2 · Fri 13 Jun</div>
+          <div class="sec"><span class="i"></span>Ride</div>
+          <div class="vrow"><span class="vn">1</span><span class="nm">Weismain<small>km 31</small></span><span class="x">✕</span></div>
+          <div class="sec"><span class="i"></span>Stop</div>
+          <div class="muted">Lichtenfels</div>
+          <div class="sec"><span class="i"></span>Hotel</div>
+        </div>
+      </div></div>
+      <figcaption><b>Long-press and via list</b><span class="muted">Same as on the phone. The list sits in the panel's Ride section.</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="prose">
+    <h2>Desktop</h2>
+    <p class="muted">Mouse. Direct drag stays, because a mouse doesn't pan the map by accident. Saves on drop, with undo.</p>
+  </div>
+  <div class="frames wide">
+    <figure>
+      <div class="browser"><div class="bar"><i></i><i></i><i></i></div><div class="split">
+        <svg viewBox="0 0 400 300" role="img" aria-label="Dragging a via point with a live preview and a change label by the cursor">
+          <use href="#mapbase"/>
+          <use href="#route" stroke="var(--proposed)" stroke-width="6" fill="none" stroke-linecap="round" opacity=".35"/>
+          <path d="M30 360 C90 320 110 240 150 225 C190 205 220 200 250 210 C280 170 330 80 380 30" stroke="var(--via)" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="12 8"/>
+          <circle cx="250" cy="210" r="8" fill="var(--via)" stroke="var(--surface)" stroke-width="3"/>
+          <path d="M256 216 l0 22 l6 -6 l8 12 l4 -2 l-8 -12 l9 0z" fill="var(--text)" stroke="var(--surface)" stroke-width="1.5"/>
+          <g transform="translate(276 236)">
+            <rect width="112" height="28" rx="8" fill="var(--text)"/>
+            <text x="56" y="19" text-anchor="middle" font-size="13" font-weight="800" fill="var(--bg)">+6 km · +120 m</text>
+          </g>
+          <text x="20" y="28" font-size="13" fill="var(--muted)">Esc cancels</text>
+        </svg>
+        <div class="panel">
+          <div class="ph">Day 2 · Fri 13 Jun</div>
+          <div class="sec"><span class="i"></span>Ride</div>
+          <div class="vrow"><span class="vn">1</span><span class="nm">Weismain<small>Moving…</small></span><span class="x">✕</span></div>
+          <div class="sec"><span class="i"></span>Stop</div>
+          <div class="muted">Lichtenfels</div>
+        </div>
+      </div></div>
+      <figcaption><b>Drag a via point with a preview</b><span class="muted">New: moving a via point shows the routed preview, like dragging the line already does. A label by the cursor shows the change.</span></figcaption>
+    </figure>
+    <figure>
+      <div class="browser"><div class="bar"><i></i><i></i><i></i></div><div class="split">
+        <svg viewBox="0 0 400 300" role="img" aria-label="Right-click menu and a selected via point with actions">
+          <use href="#mapbase"/>
+          <use href="#route" stroke="var(--casing)" stroke-width="10" fill="none" stroke-linecap="round"/>
+          <use href="#route" stroke="var(--route)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <circle cx="170" cy="215" r="18" fill="var(--via)" opacity=".18"/>
+          <circle cx="170" cy="215" r="8" fill="var(--via)" stroke="var(--surface)" stroke-width="3"/>
+          <g transform="translate(110 236)">
+            <rect width="140" height="34" rx="10" fill="var(--raised)" stroke="var(--border)"/>
+            <text x="16" y="22" font-size="13" font-weight="700" fill="var(--text)">Move</text>
+            <text x="64" y="22" font-size="13" font-weight="700" fill="var(--danger)">Remove</text>
+            <text x="124" y="22" text-anchor="end" font-size="11" fill="var(--muted)">⌫</text>
+          </g>
+          <g transform="translate(60 50)">
+            <rect width="190" height="56" rx="10" fill="var(--raised)" stroke="var(--border)"/>
+            <text x="14" y="24" font-size="13" font-weight="800" fill="var(--text)">Route via here</text>
+            <text x="14" y="42" font-size="12" fill="var(--muted)">Vierzehnheiligen · 2 km off</text>
+          </g>
+          <path d="M52 44 l0 18 l5 -5 l7 10 l3 -2 l-7 -10 l7 0z" fill="var(--text)" stroke="var(--surface)" stroke-width="1.5"/>
+        </svg>
+        <div class="panel">
+          <div class="ph">Day 2 · Fri 13 Jun</div>
+          <div class="sec"><span class="i"></span>Ride</div>
+          <div class="vrow" style="background:var(--selected);border-radius:6px;padding:2px"><span class="vn">1</span><span class="nm">Weismain<small>km 31</small></span><span class="x">✕</span></div>
+          <div class="toast" style="margin-top:auto"><span>Removed</span><b>Undo ⌘Z</b></div>
+        </div>
+      </div></div>
+      <figcaption><b>Click selects, right-click adds</b><span class="muted">Clicking a via point selects it on the map and in the list. Right-click works like long-press.</span></figcaption>
+    </figure>
+  </div>
+  <div class="legend">
+    <span><svg width="24" height="8"><line x1="2" y1="4" x2="22" y2="4" stroke="var(--route)" stroke-width="5" stroke-linecap="round"/></svg>Selected day</span>
+    <span><svg width="24" height="8"><line x1="2" y1="4" x2="22" y2="4" stroke="var(--via)" stroke-width="4" stroke-dasharray="6 4"/></svg>Routed preview</span>
+    <span><svg width="24" height="8"><line x1="2" y1="4" x2="22" y2="4" stroke="var(--proposed)" stroke-width="5" opacity=".4" stroke-linecap="round"/></svg>Route before the edit</span>
+    <span><svg width="16" height="16"><circle cx="8" cy="8" r="5" fill="var(--surface)" stroke="var(--via)" stroke-width="2.5"/></svg>Via point</span>
+  </div>
+</section>
+
+<section>
+  <div class="prose">
+    <h2>What changes</h2>
+  </div>
+  <div class="lists">
+    <div class="list add">
+      <span class="pill">Add</span>
+      <ul>
+        <li><div class="where">Phone · iPad</div><b>Edit mode with a centre pin</b><span>Live preview, change in km and ascent, Cancel and Done.</span></li>
+        <li><div class="where">All</div><b>"Route via here"</b><span>Long-press on touch, right-click with a mouse.</span></li>
+        <li><div class="where">All</div><b>Via list in the Ride section</b><span>Uses the existing <code>ViaRow</code>. Number, place, km, remove.</span></li>
+        <li><div class="where">All</div><b>Selected state for a via point</b><span>On the map and in the list, with Move and Remove.</span></li>
+        <li><div class="where">All</div><b>Undo toast after removing</b></li>
+        <li><div class="where">Desktop</div><b>Preview while dragging a via point</b><span>Needs a preview for a moved point; <code>preview(leg, at)</code> only inserts.</span></li>
+        <li><div class="where">Desktop</div><b>Keyboard</b><span>⌘Z, ⇧⌘Z, Esc cancels a drag, Delete removes the selected point.</span></li>
+      </ul>
+    </div>
+    <div class="list chg">
+      <span class="pill">Change</span>
+      <ul>
+        <li><div class="where">All</div><b>Gesture follows the input, not the layout</b><span>Pointer type per event instead of <code>tapToAdd</code> from the layout. Fixes iPad.</span></li>
+        <li><div class="where">Phone · iPad</div><b>Tap on the line opens edit mode</b><span>Instead of dropping a point that changes nothing.</span></li>
+        <li><div class="where">All</div><b>Via marker hit area to 44 px</b><span>The dot stays the same size.</span></li>
+        <li><div class="where">All</div><b>Same-route note on every input</b><span>Today the phone skips it with <code>keep=true</code>.</span></li>
+        <li><div class="where">Docs</div><b>One interactions table in <code>06-ui.md</code></b><span>Mouse and touch columns, replacing the phone notes.</span></li>
+      </ul>
+    </div>
+    <div class="list rem">
+      <span class="pill">Remove</span>
+      <ul>
+        <li><div class="where">All</div><b>Click or tap on a via point removes it</b></li>
+        <li><div class="where">Phone</div><b>Dragging a via marker by touch</b><span>Replaced by Move in edit mode.</span></li>
+        <li><div class="where">Phone</div><b>"Tap the route to add a via point" hint</b><span>Edit mode explains itself. Keep a short hint the first time if needed.</span></li>
+        <li><div class="where">Code</div><b><code>tapToAdd</code> prop and <code>keep</code> flag</b></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="prose">
+    <h2>Build order</h2>
+    <p class="muted">Each slice works on its own and can ship by itself.</p>
+  </div>
+  <div class="steps">
+    <div class="step"><h3>Select instead of remove</h3><p>Selected state, Move and Remove, undo toast, 44 px hit area, via list in the panel. Small, and it ends accidental deletes everywhere.</p></div>
+    <div class="step"><h3>Input-based gestures</h3><p>Choose by pointer type. Touch on iPad works. Keyboard shortcuts for undo, redo, Esc and Delete.</p></div>
+    <div class="step"><h3>Edit mode</h3><p>Centre pin, live preview, change in km and ascent. Sheet on phone, floating bar on iPad. Desktop gets the preview for moving a via.</p></div>
+    <div class="step"><h3>Route via here</h3><p>Long-press and right-click open the same menu, then edit mode. Snaps to the nearest leg of the selected day.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="prose">
+    <h2>Shared and per-input code</h2>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Part</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Selection, remove and undo, preview call, change in km and ascent, via list, "Route via here", same-route note</td><td>Shared. Lives with the editor state.</td></tr>
+        <tr><td>Drag the line, drag a via, right-click, keys</td><td>Mouse layer. Extends today's <code>useRouteDrag</code>.</td></tr>
+        <tr><td>Tap, long-press, centre-pin edit mode</td><td>Touch layer. New hook.</td></tr>
+        <tr><td>Where Cancel and Done go</td><td>Layout. Sheet on phone, bar on the map in the desktop layout.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div>

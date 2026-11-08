@@ -9,6 +9,7 @@ import {
   addHours,
   decodeLine,
   findClimbs,
+  type LonLat,
   type Place,
   pointAtKm,
   dayHours,
@@ -117,6 +118,10 @@ function TripEditor({
   // Hour the weather map shows. Follows the ride start until moved.
   const [mapTime, setMapTime] = useState<number>();
   const [findingDestination, setFindingDestination] = useState(false);
+  const [viaSelection, setViaSelection] = useState<{
+    day: number;
+    coord: LonLat;
+  }>();
   const shareDialog = canShare && (
     <ShareDialog trip={trip} open={sharing} onOpenChange={setSharing} />
   );
@@ -124,6 +129,21 @@ function TripEditor({
   const selected = Math.min(search.stage ?? 0, trip.stages.length - 1);
   // Without a stage in the URL, the panel shows the whole trip.
   const dayOpen = search.stage !== undefined;
+  // By coordinate, so it goes away when an edit moves or removes the point.
+  const viaIndex = (trip.stages[selected]?.via ?? []).findIndex(
+    ({ coord }) =>
+      viaSelection?.day === selected &&
+      coord[0] === viaSelection.coord[0] &&
+      coord[1] === viaSelection.coord[1],
+  );
+  const selectedVia = viaIndex < 0 ? undefined : viaIndex;
+  const selectVia = (index: number | undefined) => {
+    const coord =
+      index === undefined
+        ? undefined
+        : trip.stages[selected]?.via[index]?.coord;
+    setViaSelection(coord && { day: selected, coord });
+  };
   const select = (stage: number) => {
     setHoverKm(undefined);
     setHoveredClimb(undefined);
@@ -272,6 +292,8 @@ function TripEditor({
             void editor.insertVia(selected, leg, at, keep),
           onMoveVia: (coord, at) => void editor.moveVia(selected, coord, at),
           onRemoveVia: (coord) => void editor.removeVia(selected, coord),
+          selectedVia,
+          onSelectVia: selectVia,
           proposed,
           proposedHighlighted,
         };
@@ -426,6 +448,8 @@ function TripEditor({
       onHighlightProposed={setProposedHighlighted}
       findingDestination={findingDestination}
       onFindingDestination={setFindingDestination}
+      selectedVia={selectedVia}
+      onSelectVia={selectVia}
     />
   ) : (
     <TripPanel

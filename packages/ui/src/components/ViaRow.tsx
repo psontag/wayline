@@ -1,4 +1,6 @@
 import { X } from "lucide-react";
+import { cn } from "../lib/cn";
+import { focusRing } from "./Button";
 import { IconButton } from "./IconButton";
 
 export type ViaRowProps = {
@@ -7,6 +9,10 @@ export type ViaRowProps = {
   name: string;
   /** Muted line below, e.g. the distance from the start. */
   detail?: string;
+  /** Also selected on the map. */
+  selected?: boolean;
+  /** Selects the point. Without it, the row is plain text. */
+  onSelect?: () => void;
   removeLabel: string;
   onRemove: () => void;
 };
@@ -16,20 +22,51 @@ export function ViaRow({
   n,
   name,
   detail,
+  selected,
+  onSelect,
   removeLabel,
   onRemove,
 }: ViaRowProps) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-via-point bg-surface text-xs font-extrabold text-text tabular-nums">
+  const body = (
+    <>
+      <span
+        className={cn(
+          "flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-via-point text-xs font-extrabold tabular-nums",
+          selected ? "bg-via-point text-surface" : "bg-surface text-text",
+        )}
+      >
         {n}
       </span>
-      <div className="flex min-w-0 flex-1 flex-col">
+      <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-semibold">{name}</span>
         {detail && (
           <span className="text-xs text-text-muted tabular-nums">{detail}</span>
         )}
-      </div>
+      </span>
+    </>
+  );
+  return (
+    <div
+      className={cn(
+        "-mx-2 flex items-center gap-1 rounded-sm px-2 py-1",
+        selected && "bg-selected",
+      )}
+    >
+      {onSelect ? (
+        <button
+          type="button"
+          aria-pressed={selected}
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-3 rounded-sm text-left",
+            focusRing,
+          )}
+          onClick={onSelect}
+        >
+          {body}
+        </button>
+      ) : (
+        <div className="flex min-w-0 flex-1 items-center gap-3">{body}</div>
+      )}
       <IconButton
         size="sm"
         label={removeLabel}

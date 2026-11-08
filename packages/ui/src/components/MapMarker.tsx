@@ -5,12 +5,13 @@ import {
   ExternalLink,
   Star,
   TrainFront,
+  Trash2,
 } from "lucide-react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
-import { focusRing } from "./Button";
+import { Button, focusRing } from "./Button";
 import { SaveHotelButton } from "./HotelRow";
 import { WIND_SPEED_STEPS } from "./MapLayerMenu";
 
@@ -183,18 +184,57 @@ export function AlternativeMarker({
 export type ViaMarkerProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   "children"
->;
+> & { selected?: boolean };
 
-/** Via point on the route. Give it an aria-label that says what a click does. */
-export function ViaMarker({ className, ...props }: ViaMarkerProps) {
+/**
+ * Via point on the route. The dot is small, the button is a full touch
+ * target. Give it an aria-label that says what a click does.
+ */
+export function ViaMarker({ selected, className, ...props }: ViaMarkerProps) {
   return (
     <button
       type="button"
-      className={cn("group rounded-full p-1", focusRing, className)}
+      aria-pressed={selected}
+      className={cn(
+        "group flex size-11 items-center justify-center rounded-full",
+        focusRing,
+        className,
+      )}
       {...props}
     >
-      <span className="block size-3.5 rounded-full border-2 border-via-point bg-surface shadow-sm transition-colors group-hover:bg-via-point" />
+      <span
+        className={cn(
+          "block rounded-full border-2 shadow-sm transition-colors",
+          selected
+            ? "size-4 border-surface bg-via-point ring-4 ring-via-point/30"
+            : "size-3.5 border-via-point bg-surface group-hover:bg-via-point",
+        )}
+      />
     </button>
+  );
+}
+
+export type ViaActionsProps = {
+  /** Names the point, e.g. "Via point 2". */
+  label: string;
+  removeLabel: string;
+  onRemove: () => void;
+};
+
+/** Actions of the selected via point, shown above it on the map. */
+export function ViaActions({ label, removeLabel, onRemove }: ViaActionsProps) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className="flex items-center gap-1 rounded-md border border-border bg-surface-raised py-1 pr-1 pl-3 text-sm font-semibold text-text shadow-md"
+    >
+      <span className="whitespace-nowrap">{label}</span>
+      <Button size="sm" variant="danger" onClick={onRemove}>
+        <Trash2 aria-hidden />
+        {removeLabel}
+      </Button>
+    </div>
   );
 }
 
