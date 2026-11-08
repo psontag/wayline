@@ -2,6 +2,7 @@ import {
   bahnUrl,
   type Connection,
   localTimeToDate,
+  stationOf,
   trainQueries,
   type Trip,
 } from "@wayline/domain";
@@ -37,8 +38,7 @@ export function TrainOptions({
   // Look up trains only on request: the timetable API is rate-limited.
   const [open, setOpen] = useState(defaultOpen);
   const found = useTrainOptions(open ? query : undefined);
-  const station =
-    direction === "there" ? trip.stages[0]?.start : trip.stages.at(-1)?.end;
+  const station = tripStation(trip, direction);
   if (!query || station?.kind !== "station") return null;
 
   const saved = trip.trains.filter((train) => train.direction === direction);
@@ -105,7 +105,13 @@ export function TrainOptions({
 /** True when TrainOptions has something to show for this direction. */
 export function useHasTrains(trip: Trip, direction: Connection["direction"]) {
   const [home] = useHomeStation();
-  const station =
-    direction === "there" ? trip.stages[0]?.start : trip.stages.at(-1)?.end;
+  const station = tripStation(trip, direction);
   return !!trainQueries(trip, home)[direction] && station?.kind === "station";
+}
+
+/** Station at the trip start ("there") or end ("back"). */
+function tripStation(trip: Trip, direction: Connection["direction"]) {
+  const place =
+    direction === "there" ? trip.stages[0]?.start : trip.stages.at(-1)?.end;
+  return place && stationOf(place);
 }

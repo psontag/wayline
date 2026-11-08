@@ -290,6 +290,21 @@ describe("trainLinks", () => {
     expect(back).toContain("hd=2027-06-13T14%3A00%3A00&hza=D");
   });
 
+  it("goes to the station of a picked town", () => {
+    const first = trip.stages[0]!;
+    const { there } = trainLinks({
+      ...trip,
+      stages: [
+        {
+          ...first,
+          start: { ...first.start, station: { name: "Bamberg Hbf" } },
+        },
+        ...trip.stages.slice(1),
+      ],
+    } as typeof trip);
+    expect(there).toContain("zo=Bamberg%20Hbf");
+  });
+
   it("leaves time and home out when unknown", () => {
     const { there } = trainLinks({ ...trip, startDate: undefined });
     expect(there).toBe(

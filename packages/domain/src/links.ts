@@ -1,4 +1,4 @@
-import type { HotelBudget, LonLat, Trip } from "./schema";
+import { type HotelBudget, type LonLat, stationOf, type Trip } from "./schema";
 import {
   addDays,
   addHours,
@@ -134,14 +134,14 @@ export function trainQueries(
   return {
     there: {
       from: home,
-      to: first.start.name,
+      to: stationOf(first.start).name,
       ...(firstDate && {
         time: `${firstDate}T${stageStartTime(trip.settings, 0)}`,
       }),
       arrival: true,
     },
     back: {
-      from: last.end.name,
+      from: stationOf(last.end).name,
       to: home,
       ...(lastDate && { time: `${lastDate}T${roundUpToHalfHour(arrival)}` }),
     },

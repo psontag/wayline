@@ -51,14 +51,27 @@ export const PlaceKind = z.enum([
 ]);
 export type PlaceKind = z.infer<typeof PlaceKind>;
 
-/** Snapshot of a place. osmId is only a hint. */
-export const Place = z.object({
+const BasePlace = z.object({
   name: z.string(),
   kind: PlaceKind,
   coord: LonLat,
   osmId: z.string().optional(),
 });
+
+/** Snapshot of a place. osmId is only a hint. */
+export const Place = BasePlace.extend({
+  /**
+   * Station for the train to or from this place, when the place is not one.
+   * The ride starts or ends there.
+   */
+  station: BasePlace.optional(),
+});
 export type Place = z.infer<typeof Place>;
+
+/** Where the train arrives or leaves for a trip start or end. */
+export function stationOf(place: Place): Omit<Place, "station"> {
+  return place.station ?? place;
+}
 
 /** Place at a stage end. */
 export const Stop = Place.extend({
