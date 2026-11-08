@@ -121,8 +121,8 @@ describe("routeTags", () => {
   });
 
   it("tags hilly when a day comes close to the max ascent", () => {
-    expect(tags({}, 100, 900)).toContain("hilly");
-    expect(tags({}, 100, 850)).not.toContain("hilly");
+    expect(tags({}, 200, 900)).toContain("hilly");
+    expect(tags({}, 200, 850)).not.toContain("hilly");
   });
 
   it("says when a route leaves the inputs", () => {
