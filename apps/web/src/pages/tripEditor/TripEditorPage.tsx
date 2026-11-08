@@ -131,6 +131,9 @@ function TripEditor({
   const selected = Math.min(search.stage ?? 0, trip.stages.length - 1);
   // Without a stage in the URL, the panel shows the whole trip.
   const dayOpen = search.stage !== undefined;
+  // A one-day trip shows the same route either way, so it can always be
+  // edited.
+  const editsRoute = dayOpen || trip.stages.length === 1;
   // By coordinate, so it goes away when an edit moves or removes the point.
   const viaIndex = (trip.stages[selected]?.via ?? []).findIndex(
     ({ coord }) =>
@@ -478,7 +481,7 @@ function TripEditor({
           panel={panel}
           chart={chart}
           mapLayers={mapLayers}
-          route={dayOpen ? routeEditing : undefined}
+          route={editsRoute ? routeEditing : undefined}
           toast={<ToastViewport placement="inline" />}
         />
       </ToastProvider>
@@ -522,7 +525,7 @@ function TripEditor({
                 },
               })}
               hover={hover}
-              route={dayOpen ? routeEditing : undefined}
+              route={editsRoute ? routeEditing : undefined}
             >
               <ToastProvider>
                 {toast}
