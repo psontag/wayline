@@ -7,6 +7,7 @@ import {
   detour,
   formDays,
   fromRequest,
+  mapPick,
   missingPlaces,
   newTripSchema,
   toRequest,
@@ -177,5 +178,31 @@ describe("new trip form", () => {
     expect(
       fromRequest({ ...request, withWind: false }, defaults).withWind,
     ).toBe(false);
+  });
+});
+
+describe("mapPick", () => {
+  const place = placeOptions(searchIndex(placesJson as Places))[0]!;
+
+  it("sets the start, then the end, then moves the end", () => {
+    expect(mapPick({ shape: "ab", start: null, end: null })).toEqual({
+      field: "start",
+      open: true,
+    });
+    expect(mapPick({ shape: "ab", start: place, end: null })).toEqual({
+      field: "end",
+      open: true,
+    });
+    expect(mapPick({ shape: "ab", start: place, end: place })).toEqual({
+      field: "end",
+      open: false,
+    });
+  });
+
+  it("only sets the start of a loop", () => {
+    expect(mapPick({ shape: "loop", start: place, end: null })).toEqual({
+      field: "start",
+      open: false,
+    });
   });
 });
