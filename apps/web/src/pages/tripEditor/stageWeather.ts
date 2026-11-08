@@ -3,13 +3,16 @@ import {
   bestStart,
   hourlyAlongStage,
   rideSummary,
+  rideWarnings,
   type Settings,
   type Span,
+  stageStartTime,
   type StageWeather,
   timeToHours,
+  type Trip,
   weatherAlongStage,
 } from "@wayline/domain";
-import type { TimelineHour, Wind } from "@wayline/ui";
+import type { Format, TimelineHour, Wind } from "@wayline/ui";
 import type { TFunction } from "i18next";
 import type { StageForecast } from "../../data/queries";
 
@@ -109,6 +112,33 @@ export function describeRide(t: T, weather: StageWeather): string {
         ? t(`timeline.mostly.${summary.wind}`)
         : spanText(t, "headwind", summary.headwind),
   });
+}
+
+/** Cold start and late arrival of a day, as warning texts. */
+export function dayWarnings(
+  t: T,
+  format: Format,
+  trip: Trip,
+  index: number,
+  weather: StageForecast,
+): string[] {
+  const stage = trip.stages[index];
+  if (!stage) return [];
+  const { cold, dark } = rideWarnings(
+    weather,
+    {
+      start: stageStartTime(trip.settings, index),
+      stats: stage.stats,
+      avgSpeed: trip.settings.avgSpeed,
+    },
+    weather.daylight,
+  );
+  return [
+    ...(cold === undefined
+      ? []
+      : [t("warning.cold", { temperature: format.temperature(cold) })]),
+    ...(dark ? [t("warning.dark", dark)] : []),
+  ];
 }
 
 /** Settings with the ride start of one stage set. */

@@ -344,6 +344,9 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
                     temperature={stage.temperature}
                     rain={stage.day === 2 ? 1.2 : 0}
                     wind={stage.wind}
+                    {...(stage.day === 1 && {
+                      warnings: [t("demo.coldStart"), t("demo.lateArrival")],
+                    })}
                   />
                 }
                 hotel={t("demo.hotelName")}

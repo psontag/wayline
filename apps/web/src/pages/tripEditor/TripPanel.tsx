@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
 import { DatesSection } from "./DatesSection";
 import { isChanged } from "./routeEdits";
-import { stageWind } from "./stageWeather";
+import { dayWarnings, stageWind } from "./stageWeather";
 import { TripMenu } from "./TripHeader";
 import { TrainOptions, useHasTrains } from "./TrainOptions";
 import type { TripEditorState } from "./useTripEditor";
@@ -166,6 +166,7 @@ function DayItem({
   onHover: (on: boolean) => void;
   onOpen: () => void;
 }) {
+  const { t } = useTranslation("tripEditor");
   const format = useFormat();
   const weather = useWeather(trip, index).data;
   const stage = trip.stages[index];
@@ -193,6 +194,7 @@ function DayItem({
             temperature={weather.temperature}
             rain={weather.maxPrecipitation}
             wind={stageWind(weather)}
+            warnings={dayWarnings(t, format, trip, index, weather)}
           />
         )
       }

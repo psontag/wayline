@@ -384,3 +384,41 @@ function lexLess(a: number[], b: number[]): boolean {
   }
   return false;
 }
+
+/** A ride that starts below this, in °C, needs warm clothes. */
+export const COLD_START = 3;
+
+/** An arrival closer to sunset than this, in hours, gets a warning. */
+export const SUNSET_MARGIN = 1;
+
+export type RideWarnings = {
+  /** °C at the start, when below COLD_START. */
+  cold?: number;
+  /** "HH:MM" times, when the arrival is close to or after sunset. */
+  dark?: { arrival: string; sunset: string };
+};
+
+/** Cold start and late arrival of a day, with breaks. */
+export function rideWarnings(
+  weather: StageWeather,
+  ride: {
+    start: string;
+    stats: { distance: number; ascent: number };
+    avgSpeed: number;
+  },
+  daylight?: Daylight,
+): RideWarnings {
+  const out: RideWarnings = {};
+  const startTemperature = weather.points[0]?.sample.temperature;
+  if (startTemperature !== undefined && startTemperature < COLD_START) {
+    out.cold = startTemperature;
+  }
+  if (daylight) {
+    const sunset = daylight.sunset.slice(11);
+    const hours = dayHours(ride.stats, ride.avgSpeed);
+    if (timeToHours(ride.start) + hours > timeToHours(sunset) - SUNSET_MARGIN) {
+      out.dark = { arrival: addHours(ride.start, hours), sunset };
+    }
+  }
+  return out;
+}
