@@ -67,10 +67,10 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
    - The leg from A to B avoids edges near the start (cost × 8).
    - Time limit of about 2 s.
 4. **Filter** by length (within 12 % of the target), ascent and surface, using edge data. Drop loops whose middle part (20–80 % of the length) comes within 4 % of the length, or 4 km, of the start. Drop paths that ride back along themselves: parts within 1.5 km of an earlier part more than 10 km back may add up to 4 % of the length (min 4 km). A short touch, like a river bend, is fine.
-5. **Cut into stages.** See below. Each stage becomes one leg per piece of about 10 km, so an edit routes only the legs it touches.
+5. **Cut into stages.** See below. Each stage becomes one leg per piece, so an edit routes only the legs it touches. A piece ends after 10 km, or earlier (min 1 km) once the path is more than 10 % longer than the straight line from the piece start.
 6. **Signed routes**, then **pick** one proposal per flavour that differs from them. One day from A to B picks up to 5 diverse ones first, then signed routes. See below.
 7. **Fill** up to 8 proposals. See below. List order: the main proposal (best or direct), then proposals that follow a route, then the rest.
-8. **Route** the chosen proposals on the routing tiles. Waypoints are graph nodes about every 10 km, so the router follows the graph path. If routing fails, the proposal keeps the graph path.
+8. **Route** the chosen proposals on the routing tiles. Waypoints are the graph nodes between the pieces. Pieces cut at bends, so the router can't take a shortcut and follows the graph path. If routing fails, the proposal keeps the graph path.
 9. **Find hotels** at each stop from the OSM hotel data.
 10. **Tag** each proposal. See below.
 11. **Add weather** if the start date is within the forecast range.

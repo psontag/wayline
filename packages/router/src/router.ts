@@ -57,6 +57,8 @@ type Tile = {
   geometry?: Promise<GeometryTile | undefined>;
   /** Bounding box of each edge with its shape: min lon, min lat, max lon, max lat. */
   boxes?: Int32Array;
+  /** Edges of grid cell i: edges[start[i]] to edges[start[i + 1]]. */
+  grid?: { start: Int32Array; edges: Int32Array };
 };
 
 type Step = { tile: Tile; entry: number };
@@ -78,6 +80,9 @@ type Shape = {
 // Node and entry references: slot × SLOT + local index.
 const SLOT = 2 ** 24;
 const SNAP_M = 2000;
+const NEAR_M = 100;
+/** Snap grid cells per tile side. */
+const GRID = 128;
 const M_PER_DEG = 111_195;
 
 const meters = (lon1: number, lat1: number, lon2: number, lat2: number) =>
@@ -297,8 +302,64 @@ export class Router {
     return boxes;
   }
 
-  /** Nearest point on any edge, within maxM. */
+  /** Grid cell of a point in a tile, clamped to the tile. */
+  private cell(tile: Tile, lon: number, lat: number): [number, number] {
+    const size = this.index.size;
+    const [kx, ky] = tile.s.key.split("_").map(Number) as [number, number];
+    const c = (v: number) =>
+      Math.min(GRID - 1, Math.max(0, Math.floor(v * GRID)));
+    return [c(lon / size - kx), c(lat / size - ky)];
+  }
+
+  /** Edges by grid cell, by their boxes. Edges outside the tile go to the border cells. */
+  private grid(tile: Tile, boxes: Int32Array) {
+    if (tile.grid) return tile.grid;
+    const m = tile.s.from.length;
+    const cells = (e: number, visit: (cell: number) => void) => {
+      const [x0, y0] = this.cell(
+        tile,
+        at(boxes, 4 * e) / COORD,
+        at(boxes, 4 * e + 1) / COORD,
+      );
+      const [x1, y1] = this.cell(
+        tile,
+        at(boxes, 4 * e + 2) / COORD,
+        at(boxes, 4 * e + 3) / COORD,
+      );
+      for (let y = y0; y <= y1; y++)
+        for (let x = x0; x <= x1; x++) visit(y * GRID + x);
+    };
+    const start = new Int32Array(GRID * GRID + 1);
+    for (let e = 0; e < m; e++)
+      cells(e, (c) => (start[c + 1] = at(start, c + 1) + 1));
+    for (let i = 0; i < GRID * GRID; i++)
+      start[i + 1] = at(start, i + 1) + at(start, i);
+    const fill = start.slice(0, GRID * GRID);
+    const edges = new Int32Array(at(start, GRID * GRID));
+    for (let e = 0; e < m; e++)
+      cells(e, (c) => {
+        edges[at(fill, c)] = e;
+        fill[c] = at(fill, c) + 1;
+      });
+    tile.grid = { start, edges };
+    return tile.grid;
+  }
+
+  /**
+   * Nearest point on any edge, within maxM. Looks close by first, so
+   * fewer edges pass the box test.
+   */
   private async onEdge(
+    point: LonLat,
+    maxM: number,
+  ): Promise<OnEdge | undefined> {
+    return (
+      (maxM > NEAR_M ? await this.onEdgeWithin(point, NEAR_M) : undefined) ??
+      (await this.onEdgeWithin(point, maxM))
+    );
+  }
+
+  private async onEdgeWithin(
     [lon, lat]: LonLat,
     maxM: number,
   ): Promise<OnEdge | undefined> {
@@ -319,48 +380,58 @@ export class Router {
       if (!tile) continue;
       const g = await this.geometry(tile);
       const boxes = this.boxes(tile, g);
-      for (let e = 0; e < tile.s.from.length; e++) {
-        // Box test with the best distance so far.
-        const rLat = (bestM / M_PER_DEG) * COORD;
-        const rLon = rLat / cos;
-        const x = lon * COORD;
-        const y = lat * COORD;
-        if (
-          x < at(boxes, 4 * e) - rLon ||
-          y < at(boxes, 4 * e + 1) - rLat ||
-          x > at(boxes, 4 * e + 2) + rLon ||
-          y > at(boxes, 4 * e + 3) + rLat
-        )
-          continue;
-        const sh = this.shape(tile, g, e);
-        const total = at(sh.along, sh.along.length - 1);
-        for (let j = 1; j < sh.points.length; j++) {
-          const [ax, ay] = sh.points[j - 1] as LonLat;
-          const [bx, by] = sh.points[j] as LonLat;
-          // Local meters around the point.
-          const px = (ax - lon) * M_PER_DEG * cos;
-          const py = (ay - lat) * M_PER_DEG;
-          const qx = (bx - lon) * M_PER_DEG * cos;
-          const qy = (by - lat) * M_PER_DEG;
-          const dx = qx - px;
-          const dy = qy - py;
-          const len2 = dx * dx + dy * dy;
-          const t =
-            len2 > 0
-              ? Math.min(1, Math.max(0, -(px * dx + py * dy) / len2))
-              : 0;
-          const d = Math.hypot(px + t * dx, py + t * dy);
-          if (d >= bestM) continue;
-          bestM = d;
-          const seg = at(sh.along, j) - at(sh.along, j - 1);
-          best = {
-            tile,
-            e,
-            f: total > 0 ? (at(sh.along, j - 1) + t * seg) / total : 0,
-            point: [ax + t * (bx - ax), ay + t * (by - ay)],
-          };
-        }
-      }
+      const grid = this.grid(tile, boxes);
+      const [cx0, cy0] = this.cell(tile, lon - dLon, lat - dLat);
+      const [cx1, cy1] = this.cell(tile, lon + dLon, lat + dLat);
+      for (let cy = cy0; cy <= cy1; cy++)
+        for (let cx = cx0; cx <= cx1; cx++)
+          for (
+            let k = at(grid.start, cy * GRID + cx);
+            k < at(grid.start, cy * GRID + cx + 1);
+            k++
+          ) {
+            const e = at(grid.edges, k);
+            // Box test with the best distance so far.
+            const rLat = (bestM / M_PER_DEG) * COORD;
+            const rLon = rLat / cos;
+            const x = lon * COORD;
+            const y = lat * COORD;
+            if (
+              x < at(boxes, 4 * e) - rLon ||
+              y < at(boxes, 4 * e + 1) - rLat ||
+              x > at(boxes, 4 * e + 2) + rLon ||
+              y > at(boxes, 4 * e + 3) + rLat
+            )
+              continue;
+            const sh = this.shape(tile, g, e);
+            const total = at(sh.along, sh.along.length - 1);
+            for (let j = 1; j < sh.points.length; j++) {
+              const [ax, ay] = sh.points[j - 1] as LonLat;
+              const [bx, by] = sh.points[j] as LonLat;
+              // Local meters around the point.
+              const px = (ax - lon) * M_PER_DEG * cos;
+              const py = (ay - lat) * M_PER_DEG;
+              const qx = (bx - lon) * M_PER_DEG * cos;
+              const qy = (by - lat) * M_PER_DEG;
+              const dx = qx - px;
+              const dy = qy - py;
+              const len2 = dx * dx + dy * dy;
+              const t =
+                len2 > 0
+                  ? Math.min(1, Math.max(0, -(px * dx + py * dy) / len2))
+                  : 0;
+              const d = Math.hypot(px + t * dx, py + t * dy);
+              if (d >= bestM) continue;
+              bestM = d;
+              const seg = at(sh.along, j) - at(sh.along, j - 1);
+              best = {
+                tile,
+                e,
+                f: total > 0 ? (at(sh.along, j - 1) + t * seg) / total : 0,
+                point: [ax + t * (bx - ax), ay + t * (by - ay)],
+              };
+            }
+          }
     }
     return best;
   }

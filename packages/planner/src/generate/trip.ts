@@ -10,7 +10,7 @@ import {
   TRIP_SCHEMA_VERSION,
   tripTitle,
 } from "@wayline/domain";
-import type { Graph, PathStep } from "../graph/Graph";
+import { type Graph, PathClimb, type PathStep } from "../graph/Graph";
 import { pathToLeg } from "../graph/leg";
 import { endNode, legSteps } from "./route";
 import type { RouteCatalog } from "./routeCatalog";
@@ -31,7 +31,18 @@ export type TripParts = {
   stops: Stop[];
 };
 
-/** Builds a draft trip from a cut path. One leg per piece of about 10 km. */
+/**
+ * Climbing of the whole stage. Summing the legs would count the climbing
+ * under the hysteresis at every leg end.
+ */
+function stageClimb(graph: Graph, steps: PathStep[] = []) {
+  const climb = new PathClimb();
+  for (const { edge, forward } of steps) climb.add(graph.edge(edge), forward);
+  const { ascent, descent } = climb.total();
+  return { ascent: Math.round(ascent), descent: Math.round(descent) };
+}
+
+/** Builds a draft trip from a cut path. One leg per piece. */
 export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
   const { request } = p;
   const meta = { provider: GRAPH_PROVIDER, profileHash: PLAN_PROFILE };
@@ -72,7 +83,7 @@ export function buildTrip(graph: Graph, places: Stops, p: TripParts): Trip {
       via: [],
       ...(hotel ? { hotel } : {}),
       legs,
-      stats: statsFromLegs(legs),
+      stats: { ...statsFromLegs(legs), ...stageClimb(graph, stageSteps[i]) },
     };
   });
 

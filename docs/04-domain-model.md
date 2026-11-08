@@ -53,7 +53,7 @@ The hotel rating filter (none, 7+, 8+, 9+) is a user preference, not a trip sett
 | `end` | Stop |
 | `via` | User-set via points. Each one is a join between two legs. |
 | `hotel` | Selected hotel at the end. Empty on the last stage. |
-| `legs` | Stored, see below. Generated stages have one leg per piece of about 10 km. |
+| `legs` | Stored, see below. Generated stages have one leg per piece of up to 10 km. |
 | `stats` | Distance, ascent, descent, surface mix |
 
 ### Place
