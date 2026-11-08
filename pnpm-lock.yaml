@@ -361,6 +361,9 @@ importers:
       '@types/node':
         specifier: 24.19.1
         version: 24.19.1
+      '@wayline/router':
+        specifier: workspace:*
+        version: link:../router
 
   packages/providers:
     dependencies:

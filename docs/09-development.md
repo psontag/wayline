@@ -43,6 +43,7 @@ The Worker config is `apps/api/cloudflare.config.ts`. Build settings, such as th
 |---|---|
 | `pnpm build` | Builds the web app, then the Worker with `cf build` |
 | `pnpm report:trips` | Reports how proposals come out on fixed test trips. Needs the built data. |
+| `pnpm bench` | Times the proposal search on fixed trips and counts its work. Needs the built data. See below. |
 | `pnpm --filter @wayline/api exec cf deploy --dry-run` | Checks the deploy without uploading |
 | `pnpm --filter @wayline/api exec cf workers types` | Writes `Env` and runtime types. `typecheck` runs it. |
 
@@ -111,6 +112,25 @@ curl "http://localhost:17777/brouter?lonlats=10.8873,49.8917|9.9356,49.7913&prof
 | `providers` | Parsing against recorded fixtures. |
 | `api` | Worker endpoints with fake providers and local D1. |
 | `ui` | Contrast check over token pairs. |
+
+## Search benchmark
+
+`pnpm bench` runs the trips in `packages/planner/bench/trips.ts` and prints a table: proposals, load, ms per search step, total, and the Dijkstra work (one-to-all runs, runs to a target, nodes settled). Work counts don't depend on machine speed.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `BENCH_ONLY` | all | Trips whose name contains one of these, comma-separated |
+| `BENCH_RUNS` | 3 | Runs per trip. Times are the median. |
+| `BENCH_ROUTING` | on | `0` keeps the graph path, without the router |
+| `BENCH_TIME_LIMITS` | on | `0` stops by tries only, so results and counts are the same on every machine |
+| `BENCH_DATA` | `latest.json` | Dataset version in `apps/web/public/data/` |
+| `BENCH_OUT` | – | Writes the results to this JSON file |
+| `BENCH_BASE` | – | Compares with a JSON file from `BENCH_OUT` |
+
+```sh
+BENCH_TIME_LIMITS=0 BENCH_OUT=before.json pnpm bench
+BENCH_TIME_LIMITS=0 BENCH_BASE=before.json pnpm bench
+```
 
 ## Environments
 

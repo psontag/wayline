@@ -203,6 +203,13 @@ export type PlannerOptions = {
   now?: () => Date;
   /** Hourly wind of the start date. Day trips then plan with it. */
   wind?: HourlyWind[];
+  /**
+   * False stops by tries only, so results don't depend on machine speed.
+   * For the benchmark. Default true.
+   */
+  timeLimits?: boolean;
+  /** Filled with ms per search step, for the benchmark. */
+  profile?: Record<string, number>;
 };
 
 type Pick = {
@@ -236,6 +243,8 @@ export class Planner {
   private stops: Stops;
   private catalog: RouteCatalog;
   private runs = 0;
+  /** ms for the time limits. Stands still without time limits. */
+  private clock: () => number = Date.now;
 
   constructor(
     readonly graph: Graph,
@@ -257,6 +266,18 @@ export class Planner {
       if (signal?.aborted) throw abortError();
     };
     check();
+    this.clock = options.timeLimits === false ? () => 0 : Date.now;
+    const step = <T>(name: string, run: () => T): T => {
+      const t = performance.now();
+      try {
+        return run();
+      } finally {
+        if (options.profile) {
+          options.profile[name] =
+            (options.profile[name] ?? 0) + performance.now() - t;
+        }
+      }
+    };
 
     const graph = this.graph;
     const costs = new Costs(graph, request);
@@ -332,20 +353,24 @@ export class Planner {
     const fillVias = request.days === 1 ? dayVias(graph) : vias;
     const end = request.kind === "one-way" ? endStation : start;
     const follow = (taken: Pick[]) =>
-      this.followRoutes(
-        taken,
-        start,
-        end,
-        request,
-        totalKm,
-        fillVias,
-        progress,
+      step("signed", () =>
+        this.followRoutes(
+          taken,
+          start,
+          end,
+          request,
+          totalKm,
+          fillVias,
+          progress,
+        ),
       );
     // One-day A to B keeps its characters. Other trips get one per flavour.
     let found: { picks: Pick[]; failedLimit: FailedLimit };
     let picks: Pick[];
     if (direct) {
-      found = this.pick(candidates(costs), costs, request, totalKm, progress);
+      found = step("pick", () =>
+        this.pick(candidates(costs), costs, request, totalKm, progress),
+      );
       picks = [
         direct,
         ...found.picks.filter(
@@ -354,37 +379,36 @@ export class Planner {
       ].slice(0, PROPOSALS);
       follow(picks);
     } else if (open) {
-      found = this.pickDestinations(
-        candidates(costs),
-        costs,
-        request,
-        totalKm,
-        progress,
+      found = step("destinations", () =>
+        this.pickDestinations(
+          candidates(costs),
+          costs,
+          request,
+          totalKm,
+          progress,
+        ),
       );
       picks = found.picks;
     } else {
       // Signed routes first, so flavours do not take their corridors.
       const themed: Pick[] = [];
       if (!ride) follow(themed);
-      found = this.pickFlavours(
-        candidates,
-        request,
-        totalKm,
-        seek,
-        themed,
-        progress,
+      found = step("flavours", () =>
+        this.pickFlavours(candidates, request, totalKm, seek, themed, progress),
       );
       picks = [...themed, ...found.picks];
     }
-    this.fill(
-      picks,
-      start,
-      endStation !== undefined,
-      seek,
-      request,
-      totalKm,
-      (c, km) => candidates(c, km, fillVias),
-      progress,
+    step("fill", () =>
+      this.fill(
+        picks,
+        start,
+        endStation !== undefined,
+        seek,
+        request,
+        totalKm,
+        (c, km) => candidates(c, km, fillVias),
+        progress,
+      ),
     );
     if (!picks.length) return { ok: false, failedLimit: found.failedLimit };
     const followed = new Map(
@@ -422,6 +446,7 @@ export class Planner {
     onProgress?.({ phase: "cutting", done: picks.length, total: picks.length });
 
     // All at once. The router shares its tiles between the proposals.
+    const finishAt = performance.now();
     const routed = picks.map(async (p, i) => {
       // A homeward ride starts at another station, not a picked place.
       const placeAt = (node: number) =>
@@ -516,6 +541,7 @@ export class Planner {
       onProposal?.(proposal);
     }
     onProgress?.({ phase: "routing", done: picks.length, total: picks.length });
+    if (options.profile) options.profile.finish = performance.now() - finishAt;
     return { ok: true, proposals };
   }
 
@@ -669,7 +695,7 @@ export class Planner {
     progress: (tries: number) => void,
   ): { picks: Pick[]; failedLimit: FailedLimit } {
     const graph = this.graph;
-    const startedAt = Date.now();
+    const startedAt = this.clock();
     const used = new Set<number>();
     const picks: Pick[] = [];
     const tried = new Set<Candidate>();
@@ -682,7 +708,7 @@ export class Planner {
     for (const keyNodes of passes) {
       for (const c of candidates) {
         if (picks.length === PROPOSALS || tried.size === MAX_TRIES) break;
-        if (picks.length && Date.now() - startedAt > TIME_LIMIT_MS) break;
+        if (picks.length && this.clock() - startedAt > TIME_LIMIT_MS) break;
         if (tried.has(c)) continue;
         const mine = keyNodes(c.nodes);
         const close = picks.some((p) =>
@@ -730,7 +756,7 @@ export class Planner {
     progress: (tries: number) => void,
   ): { picks: Pick[]; failedLimit: FailedLimit } {
     const graph = this.graph;
-    const startedAt = Date.now();
+    const startedAt = this.clock();
     const picks: Pick[] = [];
     const tried = new Set<Candidate>();
     const ck = this.checker(candidates, request, totalKm);
@@ -746,7 +772,7 @@ export class Planner {
     for (const minTurn of [MIN_TURN_DEG, 0]) {
       for (const c of candidates) {
         if (picks.length === PROPOSALS || tried.size === MAX_TRIES) break;
-        if (picks.length && Date.now() - startedAt > TIME_LIMIT_MS) break;
+        if (picks.length && this.clock() - startedAt > TIME_LIMIT_MS) break;
         if (tried.has(c)) continue;
         if (c.homeward && picks.some((p) => p.homeward)) continue;
         const end = far(c);
@@ -797,7 +823,7 @@ export class Planner {
     let best: Pick | undefined;
     let ck: Check | undefined;
     let tries = 0;
-    const flavoursStart = Date.now();
+    const flavoursStart = this.clock();
     const order = flavourOrder(graph.hasScenery);
     const climbs: Flavour[] = ["flat", "hilly"];
     const search = [
@@ -805,7 +831,7 @@ export class Planner {
       ...climbs.filter((f) => order.includes(f)),
     ];
     for (const flavour of search) {
-      const startedAt = Date.now();
+      const startedAt = this.clock();
       if (others().length >= MAX_PROPOSALS) break;
       if (picks.length && startedAt - flavoursStart > FLAVOURS_TIME_MS) break;
       const climbing = flavour === "hilly" || (seek && flavour !== "flat");
@@ -831,7 +857,7 @@ export class Planner {
         if (tries === MAX_TRIES) break;
         if (
           picks.length &&
-          (mine === FLAVOUR_TRIES || Date.now() - startedAt > FLAVOUR_TIME_MS)
+          (mine === FLAVOUR_TRIES || this.clock() - startedAt > FLAVOUR_TIME_MS)
         ) {
           break;
         }
@@ -898,8 +924,8 @@ export class Planner {
     });
     const line = routeLine(graph, start);
     const endsKm = Math.max(CORRIDOR_ENDS.minKm, CORRIDOR_ENDS.share * totalKm);
-    const startedAt = Date.now();
-    const inTime = () => Date.now() - startedAt < SIGNED.timeMs;
+    const startedAt = this.clock();
+    const inTime = () => this.clock() - startedAt < SIGNED.timeMs;
     const used = new Set(picks.flatMap((p) => p.steps.map((s) => s.edge)));
     let added = 0;
     let nationalMisses = 0;
@@ -1020,9 +1046,9 @@ export class Planner {
         maxAscentPerDay: request.maxAscentPerDay * input.ascent,
       };
       const costs = new Costs(graph, asked, undefined, seek);
-      const listStart = Date.now();
+      const listStart = this.clock();
       const list = candidates(costs, km);
-      if (input !== FILL_INPUTS[0]) left -= Date.now() - listStart;
+      if (input !== FILL_INPUTS[0]) left -= this.clock() - listStart;
       const ck = this.checker(list, asked, km);
       for (const step of FILL_STEPS) {
         if (step.turn && endFixed) continue;
@@ -1030,7 +1056,7 @@ export class Planner {
           for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
         }
         let mine = 0;
-        const stepStart = Date.now();
+        const stepStart = this.clock();
         const stepMs = Math.min(left, FILL_TIME_MS / FILL_STEPS.length);
         const add = (p: Pick) => {
           picks.push(p);
@@ -1044,7 +1070,7 @@ export class Planner {
             held = undefined;
           }
           if (picks.length >= step.upTo || mine === FILL_TRIES) break;
-          if (Date.now() - stepStart > stepMs) break;
+          if (this.clock() - stepStart > stepMs) break;
           if (c.homeward && picks.some((p) => p.homeward)) continue;
           const via = mids(c.nodes);
           const close = picks.some((p) =>
@@ -1082,7 +1108,7 @@ export class Planner {
           else if (!held || kept.ascent > held.ascent) held = kept;
         }
         if (held && picks.length < step.upTo) add(held);
-        left -= Date.now() - stepStart;
+        left -= this.clock() - stepStart;
       }
     }
   }
