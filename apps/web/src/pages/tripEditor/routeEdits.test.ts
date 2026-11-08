@@ -14,6 +14,7 @@ import {
   insertVia,
   isChanged,
   moveVia,
+  previewVia,
   removeVia,
   revertStage,
   spurStart,
@@ -144,5 +145,46 @@ describe("revertStage", () => {
     const old = { ...trip, proposed: undefined };
     expect(await revertStage(old, 0, recorder())).toBe(old);
     expect(isChanged(old, 0)).toBe(false);
+  });
+});
+
+describe("previewVia", () => {
+  it("routes a new point on its leg and gives the extra distance", async () => {
+    const tools = recorder();
+    const preview = await previewVia(
+      stages[0]!,
+      { leg: 1 },
+      at(10.3, 49.05),
+      tools,
+    );
+    expect(tools.calls).toEqual([[at(10.2), at(10.3, 49.05), at(10.4)]]);
+    expect(preview?.line[0]).toEqual(at(10.2));
+    expect(preview?.line.at(-1)).toEqual(at(10.4));
+    expect(preview?.distance).toBeGreaterThan(0);
+  });
+
+  it("routes a moved point between its neighbours", async () => {
+    const tools = recorder();
+    const withVia = await insertVia(trip, 0, 1, at(10.3, 49.05), tools);
+    tools.calls.length = 0;
+    const preview = await previewVia(
+      withVia.stages[0]!,
+      { via: at(10.3, 49.05) },
+      at(10.3, 49),
+      tools,
+    );
+    expect(tools.calls).toEqual([[at(10.2), at(10.3, 49), at(10.4)]]);
+    // Back on the straight line: shorter than the detour it replaces.
+    expect(preview?.distance).toBeLessThan(0);
+  });
+
+  it("gives nothing for a point that is not on the stage", async () => {
+    const preview = await previewVia(
+      stages[0]!,
+      { via: at(12) },
+      at(10.3),
+      recorder(),
+    );
+    expect(preview).toBeUndefined();
   });
 });

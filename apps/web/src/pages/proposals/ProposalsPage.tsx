@@ -75,13 +75,8 @@ function Proposals({ request }: { request: GenerateRequest }) {
   // The map zooms only to a proposal the user picked, not to the first one
   // selected on load.
   const [focused, setFocused] = useState<string>();
-  // The request the user picked a proposal for.
-  const asked = JSON.stringify(request);
-  const [pickedFor, setPickedFor] = useState<string>();
-  const picked = pickedFor === asked;
   const select = (id: string) => {
     setFocused(id);
-    setPickedFor(asked);
     void navigate({
       search: (s) => ({ ...s, selected: id }),
       replace: true,
@@ -99,19 +94,17 @@ function Proposals({ request }: { request: GenerateRequest }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [focused]);
 
-  // Select the first proposal as soon as it is there. While the search runs,
-  // a better one may come first: it takes the selection until the user picks.
+  // Select the first proposal as soon as it is there.
   const first = proposals[0]?.id;
   const known = proposals.some((p) => p.id === selected);
-  const follow = generation.status === "running" && !picked;
   useEffect(() => {
-    if (first && (!known || (follow && first !== selected))) {
+    if (first && !known) {
       void navigate({
         search: (s) => ({ ...s, selected: first }),
         replace: true,
       });
     }
-  }, [first, known, follow, selected, navigate]);
+  }, [first, known, navigate]);
 
   const places: Place[] = [
     request.startStation,
@@ -146,7 +139,6 @@ function Proposals({ request }: { request: GenerateRequest }) {
             request={request}
             generation={generation}
             selected={selected}
-            picked={picked}
             onSelect={select}
             onHover={setHovered}
             onHoverDay={setHoveredDay}

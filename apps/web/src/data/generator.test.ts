@@ -1,4 +1,4 @@
-import { byRank, type GenerateRequest, type Proposal } from "@wayline/domain";
+import type { GenerateRequest, Proposal } from "@wayline/domain";
 import { readDataFile, readMockFile } from "@wayline/providers/testing";
 import { expose, wrap } from "comlink";
 import { describe, expect, it } from "vitest";
@@ -43,10 +43,7 @@ describe("createTripGenerator", () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // They arrive as found. Sorted by rank, they are the result.
-    expect([...seen].sort(byRank).map((p) => p.id)).toEqual(
-      result.proposals.map((p) => p.id),
-    );
+    expect(seen.map((p) => p.id)).toEqual(result.proposals.map((p) => p.id));
     expect(phases[0]).toBe("loading");
     expect(phases).toContain("searching");
     expect(phases.at(-1)).toBe("routing");

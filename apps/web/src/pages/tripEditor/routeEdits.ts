@@ -87,25 +87,52 @@ function withVia(stage: Stage, legs: Leg[], drop?: LonLat, add?: LonLat) {
   return { ...next, via: via.sort((a, b) => order(a) - order(b)) };
 }
 
-/** The route of a leg through a point, while it is dragged. Not saved. */
+/** A new via point on a leg, or an existing one at a coordinate. */
+export type ViaTarget = { leg: number } | { via: LonLat };
+
+/** A route through a point, before it is saved. */
+export type ViaPreview = {
+  line: LonLat[];
+  /** Meters more (or less, if negative) than the route it replaces. */
+  distance: number;
+  ascent: number;
+};
+
+/** The legs a via point edit routes again: from, to and the old legs. */
+function editedSpan(stage: Stage, target: ViaTarget) {
+  const points = legPoints(stage);
+  // A new point splits one leg. A moved one joins two.
+  const first = "leg" in target ? target.leg : joinAt(stage, target.via) - 1;
+  const count = "leg" in target ? 1 : 2;
+  const from = points[first];
+  const to = points[first + count];
+  if (first < 0 || !from || !to) return undefined;
+  return { from, to, old: stage.legs.slice(first, first + count) };
+}
+
+const sum = (legs: Leg[], key: "distance" | "ascent") =>
+  legs.reduce((total, leg) => total + leg[key], 0);
+
+/** The route through a point while it is placed or dragged. Not saved. */
 export async function previewVia(
   stage: Stage,
-  leg: number,
+  target: ViaTarget,
   at: LonLat,
   { route, snap }: RouteTools,
-): Promise<LonLat[]> {
-  const points = legPoints(stage);
-  const from = points[leg];
-  const to = points[leg + 1];
-  if (!from || !to) return [];
-  const legs = await route([from, await snap(at), to]);
-  return legs.flatMap((l) => decodeLine(l.geometry));
+): Promise<ViaPreview | undefined> {
+  const span = editedSpan(stage, target);
+  if (!span) return undefined;
+  const legs = await route([span.from, await snap(at), span.to]);
+  return {
+    line: legs.flatMap((l) => decodeLine(l.geometry)),
+    distance: sum(legs, "distance") - sum(span.old, "distance"),
+    ascent: sum(legs, "ascent") - sum(span.old, "ascent"),
+  };
 }
 
 /**
  * Adds a via point on a leg of a stage. Only that leg is routed again.
- * A via point on the old route changes nothing, unless `keep` asks for it
- * as a handle to drag.
+ * A via point on the old route changes nothing.
  */
 export async function insertVia(
   trip: Trip,
@@ -113,7 +140,6 @@ export async function insertVia(
   leg: number,
   at: LonLat,
   tools: RouteTools,
-  keep = false,
 ): Promise<Trip> {
   const stage = trip.stages[index];
   const points = stage && legPoints(stage);
@@ -124,7 +150,7 @@ export async function insertVia(
   // The via point ended up on the old route.
   const old = stage.legs[leg]?.distance ?? 0;
   const km = routed.legs.reduce((sum, l) => sum + l.distance, 0);
-  if (!keep && Math.abs(km - old) < SAME_ROUTE_M) return trip;
+  if (Math.abs(km - old) < SAME_ROUTE_M) return trip;
   const legs = [
     ...stage.legs.slice(0, leg),
     ...routed.legs,

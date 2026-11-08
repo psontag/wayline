@@ -64,6 +64,9 @@ import {
   SaveStatus,
   StopMarker,
   TextLink,
+  PlaceBar,
+  PlacePin,
+  PreviewLabel,
   ViaActions,
   ViaMarker,
   ViaRow,
@@ -737,8 +740,20 @@ function TripEditorParts() {
           label={t("demo.viaName")}
           removeLabel={t("demo.remove")}
           onRemove={() => undefined}
+          moveLabel={t("demo.move")}
+          onMove={() => undefined}
         />
+        <PlacePin />
+        <PreviewLabel>{t("demo.delta")}</PreviewLabel>
       </div>
+      <PlaceBar
+        title={t("demo.placeTitle")}
+        detail={t("demo.delta")}
+        cancelLabel={t("demo.cancel")}
+        doneLabel={t("demo.done")}
+        onCancel={() => undefined}
+        onDone={() => undefined}
+      />
       <div className="flex max-w-sm flex-col gap-1">
         <ViaRow
           n={1}

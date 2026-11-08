@@ -23,6 +23,7 @@ import {
   insertVia,
   moveVia,
   previewVia,
+  type ViaTarget,
   removeVia,
   revertStage,
   type RouteTools,
@@ -172,13 +173,15 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     toggleSavedHotel(hotel: Hotel) {
       if (canEdit) commit(toggleSavedHotel(trip, hotel));
     },
-    /** The route through a dragged point, for a live preview. */
-    preview: (index: number, leg: number, at: LonLat) => {
+    /** The route through a point while it is placed, for a live preview. */
+    preview: (index: number, target: ViaTarget, at: LonLat) => {
       const stage = trip.stages[index];
-      return stage ? previewVia(stage, leg, at, tools) : Promise.resolve([]);
+      return stage
+        ? previewVia(stage, target, at, tools)
+        : Promise.resolve(undefined);
     },
-    insertVia: (index: number, leg: number, at: LonLat, keep = false) =>
-      run(() => insertVia(trip, index, leg, at, tools, keep), routeNote(index)),
+    insertVia: (index: number, leg: number, at: LonLat) =>
+      run(() => insertVia(trip, index, leg, at, tools), routeNote(index)),
     moveVia: (index: number, coord: LonLat, at: LonLat) =>
       run(() => moveVia(trip, index, coord, at, tools), routeNote(index)),
     removeVia: (index: number, coord: LonLat) =>

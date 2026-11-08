@@ -152,7 +152,7 @@ describe("Planner on the Oberfranken network", () => {
   it("reports progress", async () => {
     const phases: string[] = [];
     await planner.generate(loop, { onProgress: (p) => phases.push(p.phase) });
-    expect([...new Set(phases)]).toEqual(["searching", "routing"]);
+    expect([...new Set(phases)]).toEqual(["searching", "cutting", "routing"]);
   });
 
   it("fails with the limit that does not fit", async () => {

@@ -194,12 +194,10 @@ The Web Worker reports phases:
 
 1. loading network
 2. searching
-3. routing n of m
+3. cutting stages
+4. routing n of m
 
-- Each kept proposal is cut, routed and sent right away. The search goes on after that.
-- Time limits pause while a proposal is routed.
-- Each proposal has a rank. The UI sorts by it, so the final order does not depend on when a proposal came.
-- The user can cancel.
+- Proposals appear one by one. The user can cancel.
 - If nothing fits, say which limit failed and offer to relax it.
 
 ## Other modes

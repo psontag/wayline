@@ -10,13 +10,12 @@ export type Fit = {
 };
 
 /**
- * Sort key for the best fit first, lowest first: closeness to the requested
- * km, then fewer weak stops, then route quality.
+ * Best fit first: closeness to the requested km, then fewer weak stops,
+ * then route quality.
  */
-export function fitRank(f: Fit, totalKm: number): number[] {
-  return [
-    Math.floor(Math.abs(f.km - totalKm) / totalKm / LENGTH_BAND),
-    f.weak ?? 0,
-    -f.quality,
-  ];
+export function byFit(totalKm: number) {
+  const band = (f: Fit) =>
+    Math.floor(Math.abs(f.km - totalKm) / totalKm / LENGTH_BAND);
+  return (a: Fit, b: Fit) =>
+    band(a) - band(b) || (a.weak ?? 0) - (b.weak ?? 0) || b.quality - a.quality;
 }

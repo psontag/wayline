@@ -25,7 +25,7 @@ import {
   Share2,
   Undo2,
 } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { downloadTripGpx } from "../../data/gpx";
 import {
@@ -90,6 +90,21 @@ export function PhoneTripEditor({
     setShownLevel(level);
     setSnap("half");
   }
+  // While a via point is placed, the sheet goes down so the pin in the
+  // middle of the map is free. It comes back after.
+  const snapBefore = useRef<SheetSnap>(undefined);
+  const placingRoute = route && {
+    ...route,
+    onPlacingChange: (placing: boolean) => {
+      if (placing) {
+        snapBefore.current = snap;
+        setSnap("peek");
+      } else if (snapBefore.current) {
+        setSnap(snapBefore.current);
+        snapBefore.current = undefined;
+      }
+    },
+  };
 
   // Fit the trip or the day into the part of the map above the half-open
   // sheet.
@@ -113,7 +128,7 @@ export function PhoneTripEditor({
           alternatives={alternatives}
           onPickAlternative={onPickAlternative}
           hover={hover}
-          route={route}
+          route={placingRoute}
           padding={padding}
           controls={false}
         >
