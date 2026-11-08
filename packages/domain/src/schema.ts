@@ -314,8 +314,24 @@ export const Proposal = z.object({
   homeward: z.boolean().optional(),
   /** 0 to 1: share of km on signed cycle routes. */
   signedShare: z.number().optional(),
+  /**
+   * Sort key, lowest first, compared number by number. Proposals arrive one
+   * by one, so the list can keep the final order as they come.
+   */
+  rank: z.array(z.number()).optional(),
 });
 export type Proposal = z.infer<typeof Proposal>;
+
+/** Compares proposals by rank: best first. Without rank, keeps the order. */
+export function byRank(a: Proposal, b: Proposal): number {
+  const x = a.rank ?? [];
+  const y = b.rank ?? [];
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const d = (x[i] ?? 0) - (y[i] ?? 0);
+    if (d) return d;
+  }
+  return 0;
+}
 
 export const GeneratePhase = z.enum([
   "loading",

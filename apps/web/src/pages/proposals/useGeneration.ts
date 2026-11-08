@@ -1,9 +1,10 @@
-import type {
-  FailedLimit,
-  GenerateProgress,
-  GenerateRequest,
-  HourlyWind,
-  Proposal,
+import {
+  byRank,
+  type FailedLimit,
+  type GenerateProgress,
+  type GenerateRequest,
+  type HourlyWind,
+  type Proposal,
 } from "@wayline/domain";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServices } from "../../data/ServicesProvider";
@@ -81,8 +82,12 @@ export function useGeneration(
               searched:
                 progress.phase === "searching" ? progress.done : s.searched,
             })),
+          // Proposals come as found. Rank keeps the list in its final order.
           onProposal: (proposal) =>
-            update((s) => ({ ...s, proposals: [...s.proposals, proposal] })),
+            update((s) => ({
+              ...s,
+              proposals: [...s.proposals, proposal].sort(byRank),
+            })),
         })
         .then(
           (result) =>
