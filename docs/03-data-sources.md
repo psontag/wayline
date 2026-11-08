@@ -12,6 +12,7 @@ All limits are for free plans. Check them again before relying on them. They cha
 | Hotels | OpenStreetMap | Free | Pipeline |
 | Ratings, prices, booking | Booking.com search link | Free | Browser (link only) |
 | Train connections | db.transport.rest, bahn.de link | Free | Browser |
+| Train times from home | gtfs.de timetables (CC BY 4.0) | Free | Pipeline |
 | Map tiles | OpenFreeMap | Free | Browser |
 | Hosting | Cloudflare | Free | — |
 
@@ -135,6 +136,20 @@ https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=Bamberg&zo=Coburg&hd=2027
 Without station ids (`soid`, `zoid`), bahn.de matches the names itself. Check by hand when the format breaks.
 
 Later: live connections with a bike filter. `db-vendo-client` / `v6.db.transport.rest` are community projects. Their state and bike support need checking.
+
+### Train times from home: gtfs.de
+
+The live API answers one trip at a time. Train times from home to every station come from the timetables instead, in the pipeline (`pipeline/reach.py`).
+
+| Feed | Content | URL |
+|---|---|---|
+| `rv_free` | Regional trains, and some long-distance trains | `download.gtfs.de/germany/rv_free/latest.zip` |
+| `fv_free` | Long-distance trains (IC, ICE, EC) | `download.gtfs.de/germany/fv_free/latest.zip` |
+
+- License: CC BY 4.0, data from DELFI e.V. Credit "gtfs.de, DELFI e.V." wherever the times show.
+- Updated weekly. A feed covers about a month from its date. The pipeline downloads it again after 7 days.
+- Some regional lines are missing, for example RB 27 at Königswinter.
+- No bike data. Long-distance trains count as "bike reservation needed".
 
 ## Map
 

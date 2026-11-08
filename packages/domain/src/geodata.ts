@@ -15,6 +15,8 @@ export type Manifest = {
     places?: string;
     search?: string;
     routes?: string;
+    /** Train reach per home station. Built by pipeline/reach.py. */
+    reach?: { station: string; name: string; path: string }[];
   };
   /** Only in tiled datasets. */
   tiles?: TileIndex;
@@ -23,6 +25,38 @@ export type Manifest = {
   /** All bikeable ways, for the router. Built by pipeline/routing.py. */
   routing?: RoutingTiles;
   createdAt: string;
+};
+
+export type ReachDay = "weekday" | "saturday" | "sunday";
+
+/**
+ * Per station id: minutes with at most 0, 1 and 2 changes, the same by
+ * regional trains only, then a bit per change count for "needs a bike
+ * reservation" (IC, ICE). null: not reachable with that many changes.
+ */
+export type ReachRow = [
+  number | null,
+  number | null,
+  number | null,
+  number | null,
+  number | null,
+  number | null,
+  number,
+];
+
+/** reach/<station>.json. Times for one typical date per day type. */
+export type ReachFile = {
+  version: string;
+  home: { id: string; name: string };
+  attribution: string;
+  dates: Record<ReachDay, string>;
+  /** Minutes after midnight. out: leaving home, 07:00–15:00. back: arriving home, 15:00–22:00. */
+  windows: { out: [number, number]; back: [number, number] };
+  format: string;
+  /** From home to each station. */
+  out: Record<ReachDay, Record<string, ReachRow>>;
+  /** From each station to home. */
+  back: Record<ReachDay, Record<string, ReachRow>>;
 };
 
 /** Binary tiles, gzipped. The format is in pipeline/README.md. */

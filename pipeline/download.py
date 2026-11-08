@@ -5,6 +5,7 @@ Usage: python download.py [cache_dir]
 
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -20,8 +21,13 @@ def dem_name(lat, lon):
     return f"Copernicus_DSM_COG_10_N{lat:02d}_00_E{lon:03d}_00_DEM"
 
 
-def fetch(url, path):
-    if os.path.exists(path):
+GTFS = "https://download.gtfs.de/germany/{}/latest.zip"
+GTFS_FEEDS = ("rv_free", "fv_free")
+GTFS_MAX_AGE_DAYS = 7  # a feed covers about a month from its date
+
+
+def fetch(url, path, max_age_days=None):
+    if os.path.exists(path) and (max_age_days is None or time.time() - os.path.getmtime(path) < max_age_days * 86400):
         return
     print(f"get {url}", flush=True)
     tmp = path + ".part"
@@ -34,7 +40,15 @@ def fetch(url, path):
     os.replace(tmp, path)
 
 
+def gtfs(cache):
+    """The gtfs.de timetables for the train reach (reach.py)."""
+    os.makedirs(os.path.join(cache, "gtfs"), exist_ok=True)
+    for f in GTFS_FEEDS:
+        fetch(GTFS.format(f), os.path.join(cache, "gtfs", f"{f}.zip"), GTFS_MAX_AGE_DAYS)
+
+
 def main(cache, area=AREA):
+    gtfs(cache)
     os.makedirs(os.path.join(cache, "osm"), exist_ok=True)
     os.makedirs(os.path.join(cache, "dem"), exist_ok=True)
     path = area if area == AREA else f"germany/{area}"
