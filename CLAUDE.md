@@ -31,6 +31,7 @@ Follow `docs/07-design-system.md`. Mockups are in `design/`.
 - Check every UI change in light and dark mode.
 - Use the terms and formats from the design system doc.
 - No literal text in components. Use translation keys (`docs/08-translation.md`).
+- Errors follow `docs/13-errors.md`: where they show, how they read, which code means what.
 
 ## Workflow
 

@@ -79,6 +79,8 @@ All API errors have one shape:
 | `INVALID` | Request failed validation |
 | `UNAUTHORIZED` | No valid Access login |
 
+How the UI shows each code: `13-errors.md`.
+
 ## API
 
 - zod schemas in `packages/domain`
