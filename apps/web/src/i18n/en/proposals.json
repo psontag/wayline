@@ -95,8 +95,6 @@
     "homeward": "Home from {{place}}",
     "via": "Via {{stops}}",
     "trainOutVia": "Train out · via {{stops}}",
-    "routes": "Routes: {{routes}}",
-    "noRoutes": "No signed routes",
     "open": "Open trip",
     "opening": "Opening",
     "openFailed": "Could not save the trip",
@@ -161,7 +159,8 @@
       "headwindSpeed": "The wind is mostly against you, on average {{speed}}",
       "leastHeadwind": "Clearly the least wind against you of these proposals",
       "fewBeds": "Day {{day}} ends where few hotels fit your budget",
-      "followedRoute": "At least half of this trip follows this signed cycle route"
+      "followedRoute": "At least half of this trip follows this signed cycle route",
+      "mainRoute": "One of the main signed cycle routes on this trip"
     },
     "beds_zero": "No place to sleep",
     "beds_one": "{{count}} place to sleep",

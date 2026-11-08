@@ -14,17 +14,31 @@ export type PointMenuItem = {
 export type PointMenuProps = {
   /** Names the menu for screen readers. */
   label: string;
+  /** What is at the spot, above the actions, e.g. the nearest town. */
+  heading?: { title: string; detail?: string };
   items: PointMenuItem[];
 };
 
 /** Actions for a spot on the map, from a right-click or a long-press. */
-export function PointMenu({ label, items }: PointMenuProps) {
+export function PointMenu({ label, heading, items }: PointMenuProps) {
   return (
     <div
       role="menu"
       aria-label={label}
-      className="flex flex-col rounded-md border border-border bg-surface-raised p-1 shadow-md"
+      className="flex max-w-popover flex-col rounded-md border border-border bg-surface-raised p-1 shadow-md"
     >
+      {heading && (
+        <div className="flex flex-col border-b border-border px-3 pt-1.5 pb-2">
+          <span className="truncate text-sm font-bold text-text">
+            {heading.title}
+          </span>
+          {heading.detail && (
+            <span className="text-xs text-text-muted tabular-nums">
+              {heading.detail}
+            </span>
+          )}
+        </div>
+      )}
       {items.map((item) => (
         <button
           key={item.label}

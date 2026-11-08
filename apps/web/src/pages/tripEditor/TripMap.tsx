@@ -1,5 +1,6 @@
 import {
   decodeLine,
+  type Leg,
   type LonLat,
   type Place,
   type Trip,
@@ -19,7 +20,7 @@ import {
   ViaMarker,
 } from "@wayline/ui";
 import type { FeatureCollection, LineString } from "geojson";
-import { Route } from "lucide-react";
+import { Flag, MapPin, Route } from "lucide-react";
 import type { FilterSpecification } from "maplibre-gl";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { type TFunction } from "i18next";
@@ -37,10 +38,12 @@ import {
   MapLayer,
   type MapPadding,
 } from "../../components/map/AppMap";
+import { townOf } from "../../components/placeLabels";
 import { isTyping, useLastPointer } from "../../components/useLastPointer";
 import { nearestOnLine, useRouteDrag } from "../../components/useRouteDrag";
 import type { MapHotel } from "./mapTypes";
-import { useTapHintSeen } from "./mapView";
+import { useDragHintSeen, useTapHintSeen } from "./mapView";
+import { bedsNear, nearestTown, useTripPlaces } from "./stopChoices";
 import { nearestLeg, type ViaPreview, type ViaTarget } from "./routeEdits";
 import { type SpotAnchor, usePointMenu } from "./usePointMenu";
 import type { MapStation } from "./stations";
@@ -52,6 +55,9 @@ import { type LiveVia, useViaPlacing, useViaPreview } from "./useViaPlacing";
 export type { MapPadding };
 
 const lineLayout = { "line-cap": "round", "line-join": "round" } as const;
+
+/** The point menu offers towns this close to the spot. */
+const TOWN_KM = 5;
 
 // Keeps the menu clear of the finger or cursor.
 const SPOT_OFFSET: Record<SpotAnchor, [number, number]> = {
@@ -117,6 +123,12 @@ export type RouteEditing = {
   /** Called with true while a point is placed with the pin, e.g. to lower a sheet. */
   onPlacingChange?: (placing: boolean) => void;
   onRemoveVia: (coord: LonLat) => void;
+  /** Legs of the stage while a via point is placed or dragged, else undefined. */
+  onPreviewChange?: (legs: Leg[] | undefined) => void;
+  /** Moves the end of the selected day. Without it, the point menu has no "End day here". */
+  onEndDayAt?: (place: Place) => void;
+  /** Moves the start of the selected day. Without it, the point menu has no "Start day here". */
+  onStartDayAt?: (place: Place) => void;
   /** Via point of the selected stage that shows its actions. */
   selectedVia?: number;
   onSelectVia: (index: number | undefined) => void;
@@ -215,6 +227,11 @@ export function TripMap({
 
   // A via point dragged with the mouse.
   const [viaDrag, setViaDrag] = useState<LiveVia>();
+  // The latest route edits, so handlers and effects do not go stale.
+  const routeRef = useRef(route);
+  useEffect(() => {
+    routeRef.current = route;
+  });
   // A point placed with the pin: on touch, or from the spot menu.
   const placer = useViaPlacing(mapRef);
   const { placing } = placer;
@@ -229,6 +246,12 @@ export function TripMap({
   const mouseDrag = lineDrag ?? viaDrag;
   const live = mouseDrag ?? placing;
   const preview = useViaPreview(live, route?.preview);
+  const previewLegs = preview?.legs;
+  useEffect(() => {
+    routeRef.current?.onPreviewChange?.(previewLegs);
+  }, [previewLegs]);
+  const places = useTripPlaces(trip);
+  const town = spot && places && nearestTown(places.towns, spot.at, TOWN_KM);
   const previewData = useMemo<FeatureCollection<LineString>>(() => {
     const leg = drag && trip.stages[selected]?.legs[drag.leg];
     // Until the first route comes back, a line drag shows a straight line.
@@ -268,14 +291,15 @@ export function TripMap({
     selectedVia === undefined
       ? undefined
       : trip.stages[selected]?.via[selectedVia]?.coord;
-  // The latest route edits, so the key handler does not go stale.
-  const routeRef = useRef(route);
-  useEffect(() => {
-    routeRef.current = route;
-  });
 
   const isPlacing = !!placing;
   const [tapHintSeen, setTapHintSeen] = useTapHintSeen();
+  const [dragHintSeen, setDragHintSeen] = useDragHintSeen();
+  // Once the route was dragged, the hint has done its job.
+  const isDragging = !!mouseDrag;
+  useEffect(() => {
+    if (isDragging && !dragHintSeen) setDragHintSeen();
+  }, [isDragging, dragHintSeen, setDragHintSeen]);
   useEffect(() => {
     routeRef.current?.onPlacingChange?.(isPlacing);
   }, [isPlacing]);
@@ -335,7 +359,8 @@ export function TripMap({
     ...(first ? [first.start.name] : []),
     ...trip.stages.map((stage) => stage.end.name),
     ...alternatives.map(({ place }) => place.name),
-  ];
+    ...stations.map(({ name }) => name),
+  ].flatMap((name) => [name, townOf(name)]);
 
   const onClick = (event: MapLayerMouseEvent) => {
     const props = event.features?.[0]?.properties;
@@ -393,18 +418,25 @@ export function TripMap({
       events={spotMenu.events}
       hint={
         route &&
-        pointerKind === "touch" &&
-        (placing || !tapHintSeen) && (
-          <MapHint icon={<Route aria-hidden />}>
-            {placing ? t("place.hint") : t("map.tapHint")}
-          </MapHint>
-        )
+        (pointerKind === "touch"
+          ? (placing || !tapHintSeen) && (
+              <MapHint icon={<Route aria-hidden />}>
+                {placing ? t("place.hint") : t("map.tapHint")}
+              </MapHint>
+            )
+          : !overview &&
+            !dragHintSeen && (
+              <MapHint icon={<Route aria-hidden />}>
+                {t("map.dragHint")}
+              </MapHint>
+            ))
       }
       overlay={
         <>
           {children}
           {placing && (
-            <div className="absolute inset-x-3 bottom-4 z-panel flex justify-center">
+            // High enough to leave the attribution in the corner visible.
+            <div className="absolute inset-x-3 bottom-10 z-panel flex justify-center">
               <PlaceBar
                 title={t("leg" in placing.target ? "place.add" : "place.move")}
                 detail={delta}
@@ -589,7 +621,7 @@ export function TripMap({
           }
         />
       )}
-      {route && spot && spotLeg && (
+      {route && spot && (
         <Marker
           longitude={spot.at[0]}
           latitude={spot.at[1]}
@@ -599,19 +631,62 @@ export function TripMap({
         >
           <PointMenu
             label={t("spot.label")}
+            heading={
+              town
+                ? {
+                    title: town.place.name,
+                    detail: t("spot.townDetail", {
+                      distance: format.distance(town.km * 1000),
+                      count: places
+                        ? bedsNear(places.hotels, town.place.coord).total
+                        : 0,
+                    }),
+                  }
+                : { title: t("spot.label"), detail: t("spot.noTown") }
+            }
             items={[
-              {
-                label: t("spot.routeHere"),
-                detail: t("spot.off", {
-                  distance: format.distance(spotLeg.km * 1000),
-                }),
-                icon: <Route aria-hidden />,
-                onSelect: () => {
-                  spotMenu.close();
-                  route.onSelectVia(undefined);
-                  placer.start({ leg: spotLeg.leg }, spot.at);
-                },
-              },
+              ...(spotLeg
+                ? [
+                    {
+                      label: t("spot.routeHere"),
+                      detail: t("spot.off", {
+                        distance: format.distance(spotLeg.km * 1000),
+                      }),
+                      icon: <Route aria-hidden />,
+                      onSelect: () => {
+                        spotMenu.close();
+                        route.onSelectVia(undefined);
+                        placer.start({ leg: spotLeg.leg }, spot.at);
+                      },
+                    },
+                  ]
+                : []),
+              ...(town && !overview && route.onEndDayAt
+                ? [
+                    {
+                      label: t("spot.endDay", { day: selected + 1 }),
+                      detail: t("spot.moveTo", { town: town.place.name }),
+                      icon: <Flag aria-hidden />,
+                      onSelect: () => {
+                        spotMenu.close();
+                        route.onEndDayAt?.(town.place);
+                      },
+                    },
+                  ]
+                : []),
+              ...(town && !overview && route.onStartDayAt
+                ? [
+                    {
+                      label: t("spot.startDay", { day: selected + 1 }),
+                      detail: t("spot.moveTo", { town: town.place.name }),
+                      icon: <MapPin aria-hidden />,
+                      onSelect: () => {
+                        spotMenu.close();
+                        route.onStartDayAt?.(town.place);
+                      },
+                    },
+                  ]
+                : []),
             ]}
           />
         </Marker>

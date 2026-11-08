@@ -153,13 +153,15 @@
     "kmh": "km/h"
   },
   "tripWeather": {
-    "label": "Rain and feels-like temperature along the trip",
+    "temperatureLabel": "Feels-like temperature along the trip",
+    "rainLabel": "Rain along the trip",
     "windLabel": "Wind along the trip",
     "windSpeedLabel": "Wind speed and gusts along the trip",
     "where": "Where and when"
   },
   "timeline": {
-    "label": "Rain and feels-like temperature by hour",
+    "temperatureLabel": "Feels-like temperature by hour",
+    "rainLabel": "Rain by hour",
     "windLabel": "Wind by hour",
     "windSpeedLabel": "Wind speed and gusts by hour",
     "time": "Time on the map",
@@ -200,6 +202,10 @@
     "day": "Day {{day}}",
     "dayDate": "Day {{day}} · {{date}}",
     "changed": "Changed",
-    "hotel": "Hotel"
+    "hotel": "Hotel",
+    "noForecast": "No forecast"
+  },
+  "proposalCard": {
+    "moreTags": "+{{count}}"
   }
 }

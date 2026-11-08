@@ -81,6 +81,7 @@
     "network": "Signed cycling routes",
     "proposed": "Proposed route",
     "tapHint": "Tap the route to add a via point",
+    "dragHint": "Drag the route to ride another way. Right-click for more.",
     "via": "Via point {{n}}. Click to select, drag to move."
   },
   "via": {
@@ -94,7 +95,14 @@
   "spot": {
     "label": "This spot",
     "routeHere": "Route via here",
-    "off": "{{distance}} off the route"
+    "off": "{{distance}} off the route",
+    "endDay": "End day {{day}} here",
+    "startDay": "Start day {{day}} here",
+    "townDetail_zero": "{{distance}} away · no hotels",
+    "townDetail_one": "{{distance}} away · {{count}} hotel",
+    "townDetail_other": "{{distance}} away · {{count}} hotels",
+    "noTown": "No town within 5 km",
+    "moveTo": "To {{town}}"
   },
   "place": {
     "add": "Add via point",

@@ -5,7 +5,8 @@ import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { ChartBody, ChartInfo, ChartToolbar } from "./ChartPanel";
 import { niceStep } from "./ElevationProfile";
-import { Tick, type WindKind } from "./WeatherTimeline";
+import { windSpeedColor } from "./MapLayerMenu";
+import { BandLabel, Tick, type WindKind } from "./WeatherTimeline";
 
 export type RouteWeatherPoint = {
   /** km from the trip start. */
@@ -49,12 +50,6 @@ const MIN_WIND_TOP = 30;
 /** Enough to read the wind, few enough for a phone. */
 const MAX_ARROWS = 16;
 
-const windColor: Record<WindKind, string> = {
-  head: "text-wind-head",
-  cross: "text-wind-cross",
-  tail: "text-wind-tail",
-};
-
 /**
  * Weather along a whole trip at the time the rider passes: rain,
  * feels-like temperature and wind relative to the route, with day breaks.
@@ -91,9 +86,9 @@ export function TripWeatherProfile<P extends RouteWeatherPoint>({
   const temps = points.map((p) => p.feelsLike);
   const tMin = Math.min(...temps) - 1;
   const tMax = Math.max(...temps) + 1;
-  const ty = (c: number) => 12 + (1 - (c - tMin) / (tMax - tMin || 1)) * 40;
+  const ty = (c: number) => 10 + (1 - (c - tMin) / (tMax - tMin || 1)) * 80;
   const tempTicks = [...new Set([Math.floor(tMax), Math.ceil(tMin)])];
-  const rainY = (mm: number) => H - (mm / maxRain) * 70;
+  const rainY = (mm: number) => H - (mm / maxRain) * 85;
   const hasRain = points.some((p) => p.rain > 0);
 
   const windTop =
@@ -187,18 +182,50 @@ export function TripWeatherProfile<P extends RouteWeatherPoint>({
           ))}
         </div>
         <div
-          className="relative flex touch-none flex-col gap-1.5"
+          className="relative flex touch-none flex-col gap-1"
           onPointerMove={onMove}
           onPointerDown={onMove}
           onPointerLeave={onHoverKm && (() => onHoverKm(undefined))}
         >
-          <div className="relative h-12">
+          <BandLabel icon={<Thermometer />}>
+            {t("timeline.feelsLike")}
+          </BandLabel>
+          <div className="relative h-8">
             <svg
               viewBox={`0 0 ${W} ${H}`}
               preserveAspectRatio="none"
               className="absolute inset-0 block size-full overflow-visible"
               role="img"
-              aria-label={t("tripWeather.label")}
+              aria-label={t("tripWeather.temperatureLabel")}
+            >
+              {dayLines(H)}
+              <path
+                d={path((p) => ty(p.feelsLike))}
+                fill="none"
+                strokeWidth={1.5}
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+                className="stroke-text-muted"
+              />
+              {crosshair(H)}
+            </svg>
+            {tempTicks.map((c) => (
+              <Tick key={c} side="left" top={ty(c)}>
+                {format.temperature(c)}
+              </Tick>
+            ))}
+          </div>
+
+          <BandLabel icon={<CloudRain />} divided>
+            {t("timeline.rain")}
+          </BandLabel>
+          <div className="relative h-7">
+            <svg
+              viewBox={`0 0 ${W} ${H}`}
+              preserveAspectRatio="none"
+              className="absolute inset-0 block size-full overflow-visible"
+              role="img"
+              aria-label={t("tripWeather.rainLabel")}
             >
               {days.flatMap((d) =>
                 d.slice(0, -1).map((p, i) => {
@@ -241,29 +268,23 @@ export function TripWeatherProfile<P extends RouteWeatherPoint>({
                 className="stroke-border"
               />
               {dayLines(H)}
-              <path
-                d={path((p) => ty(p.feelsLike))}
-                fill="none"
-                strokeWidth={1.5}
-                strokeLinejoin="round"
-                vectorEffect="non-scaling-stroke"
-                className="stroke-text-muted"
-              />
               {crosshair(H)}
             </svg>
-            {tempTicks.map((c) => (
-              <Tick key={c} side="left" top={ty(c)}>
-                {format.temperature(c)}
-              </Tick>
-            ))}
-            {hasRain && (
+            {hasRain ? (
               <Tick side="right" top={rainY(maxRain)}>
                 {t("timeline.rainTick", { rain: format.rain(maxRain) })}
+              </Tick>
+            ) : (
+              <Tick side="right" top={H}>
+                {t("stage.dry")}
               </Tick>
             )}
           </div>
 
-          <div className="relative h-12">
+          <BandLabel icon={<Wind />} divided>
+            {t("timeline.wind")}
+          </BandLabel>
+          <div className="relative h-10">
             <svg
               viewBox={`0 0 ${W} ${WIND_H}`}
               preserveAspectRatio="none"
@@ -332,7 +353,7 @@ export function TripWeatherProfile<P extends RouteWeatherPoint>({
                 key={p.km}
                 className={cn(
                   "absolute -translate-x-1/2",
-                  windColor[p.wind.kind],
+                  windSpeedColor(p.wind.speed),
                 )}
                 style={{ left: pct(p.km) }}
               >
@@ -392,7 +413,7 @@ export function TripWeatherProfile<P extends RouteWeatherPoint>({
             <div>
               <dt>
                 <Wind
-                  className={windColor[info.wind.kind]}
+                  className={windSpeedColor(info.wind.speed)}
                   aria-label={t("timeline.wind")}
                 />
               </dt>

@@ -151,6 +151,30 @@ const DESTINATIONS = 6;
 const SIZE_RANK: Record<TownSize, number> = { city: 0, town: 1, village: 2 };
 
 /** A loop has to end where it starts. */
+/** The closest town within maxKm, as a place, and how far it is. */
+export function nearestTown(
+  towns: GeoTown[],
+  at: LonLat,
+  maxKm: number,
+): { place: Place; km: number } | undefined {
+  let best: { town: GeoTown; km: number } | undefined;
+  for (const town of towns) {
+    const km = distanceKm([town.lon, town.lat], at);
+    if (km <= maxKm && (!best || km < best.km)) best = { town, km };
+  }
+  if (!best) return undefined;
+  const { town, km } = best;
+  return {
+    place: {
+      name: town.name,
+      kind: "town",
+      coord: [town.lon, town.lat],
+      osmId: town.id,
+    },
+    km,
+  };
+}
+
 export function hasMovableDestination(trip: Trip): boolean {
   return trip.kind === "one-way" || trip.kind === "route";
 }

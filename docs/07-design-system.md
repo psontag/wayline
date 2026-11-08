@@ -23,15 +23,15 @@ Color tokens are semantic. They name the purpose, not the color.
 | `accent`, `on-accent` | Primary actions, text on accent |
 | `success`, `warning`, `danger` | Status |
 | `focus-ring` | Keyboard focus |
-| `hover`, `active`, `selected`, `selected-border` | Interaction states |
+| `hover`, `active`, `selected`, `selected-border` | Interaction states. Selected cards and list rows get a 2 px `selected-border` outline and no fill. |
 | `scrim` | Behind dialogs and sheets |
 | `inverse`, `on-inverse`, `inverse-accent` | Toasts and tooltips |
 | `terrain-paved`, `terrain-gravel`, `terrain-unpaved`, `terrain-unknown` | Surface colors, e.g. in the strip under the elevation profile. Gravel is green so it never looks like a climb. Unknown is for route parts without surface data. |
-| `grade-1`, `grade-2`, `grade-3` | Climbs in the elevation profile: under 4 %, 4–7 %, over 7 % |
+| `grade-1`, `grade-2`, `grade-3` | Climbs in the elevation profile: under 4 %, 4–7 %, over 7 %. Plum, so a climb never looks like the route or a selection. |
 | `proposed` | The proposed route of a changed day, on the map and in the elevation profile. Always used faded. |
 | `rain` | Rain bars in the weather timeline |
-| `wind-head`, `wind-cross`, `wind-tail` | Wind relative to the route |
-| `wind-speed-1` to `wind-speed-4` | Wind speed, cyan to deep indigo, on the map and in the weather timeline: below 10, 10–20, 20–30, 30+ km/h |
+| `wind-head`, `wind-cross`, `wind-tail` | Share of head, cross and tail wind in the wind bar |
+| `wind-speed-1` to `wind-speed-4` | Wind speed, cyan to deep indigo: wind markers on the map and wind arrows in the weather charts. Below 10, 10–20, 20–30, 30+ km/h |
 | `night` | Dark hours in the weather timeline |
 
 Map tokens:
@@ -78,9 +78,9 @@ Color values:
 | `terrain-gravel` | `#93AD7F` | `#B3C9A1` |
 | `terrain-unpaved` | `#B98E73` | `#D9B49C` |
 | `terrain-unknown` | `#C3C8D0` | `#4B5260` |
-| `grade-1` | `#F6D38A` | `#8A6A2C` |
-| `grade-2` | `#F2A35E` | `#C47A3C` |
-| `grade-3` | `#D9573B` | `#F0745A` |
+| `grade-1` | `#E2C2D8` | `#5C3A54` |
+| `grade-2` | `#B8709F` | `#9E5F8D` |
+| `grade-3` | `#7A2F66` | `#DC8FC4` |
 | `proposed` | `#5A616C` | `#A0A7B3` |
 | `rain` | `#3D84D6` | `#6AB0F5` |
 | `wind-head` | `#C2412D` | `#FF8F7D` |
@@ -281,7 +281,7 @@ Sections hold only these patterns:
 | Pattern | Component | Use |
 |---|---|---|
 | Stat tiles | `StatTile` | Totals: icon and label, value, optional second line |
-| Choice list | `ChoiceList` | Pick one of several: radio, name, muted second line, optional tag, actions at the end. The current row is `selected`. `MoreRow` shows the rest of a long list. |
+| Choice list | `ChoiceList` | Pick one of several: radio, name, muted second line, optional tag, actions at the end. The current row has a `selected-border` outline. `MoreRow` shows the rest of a long list. |
 | Choice table | `StopChoices` | Pick one of several when the options are compared by numbers in columns |
 | Item rows | `DayCard`, `LinkRow`, `ProposalCard` | Rows that open the next level. End in a right chevron. A proposal card opens in place. |
 | Form fields | `FormField` with an input | Only in form panels |
