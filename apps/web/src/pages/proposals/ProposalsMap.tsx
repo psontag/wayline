@@ -24,8 +24,16 @@ import {
   type MapLayerMouseEvent,
   Marker,
   Source,
+  useMap,
 } from "react-map-gl/maplibre";
 import { AppMap, MapLayer, type MapPadding } from "../../components/map/AppMap";
+import {
+  centerBox,
+  type Cut,
+  labelBox,
+  placeLabels,
+  useZoom,
+} from "../../components/map/labels";
 import { labelPoints, tripPoints } from "./proposalView";
 import { routeColorAt } from "./routeColor";
 
@@ -233,20 +241,6 @@ export function ProposalsMap({
         />
       </Source>
 
-      {ends.map((place) => (
-        <Marker
-          key={place.name}
-          longitude={place.coord[0]}
-          latitude={place.coord[1]}
-          anchor="left"
-          offset={[-12, 0]}
-        >
-          <EndpointMarker
-            name={place.name}
-            station={place.kind === "station"}
-          />
-        </Marker>
-      ))}
       {wind && (
         <Marker
           longitude={wind.at[0]}
@@ -261,26 +255,124 @@ export function ProposalsMap({
           />
         </Marker>
       )}
-      {shown?.trip.stages.slice(0, -1).map((stage, i) => (
+      <ProposalMarkers
+        proposals={proposals}
+        ends={ends}
+        shown={shown}
+        highlighted={highlighted}
+        labels={labels}
+        onSelect={onSelect}
+      />
+    </AppMap>
+  );
+}
+
+/**
+ * Ends, stops of the shown proposal and route numbers. When they run into
+ * each other, the selected route number wins, then ends, then stops (they
+ * lose their name), then the other route numbers (they hide).
+ */
+function ProposalMarkers({
+  proposals,
+  ends,
+  shown,
+  highlighted,
+  labels,
+  onSelect,
+}: {
+  proposals: Proposal[];
+  ends: Place[];
+  shown: Proposal | undefined;
+  highlighted: string | undefined;
+  labels: LonLat[];
+  onSelect: (id: string) => void;
+}) {
+  const { t } = useTranslation("proposals");
+  const { current: map } = useMap();
+  const zoom = useZoom(map);
+  const stops = useMemo(() => shown?.trip.stages.slice(0, -1) ?? [], [shown]);
+
+  // Ends and stops lose their name when crowded, route numbers hide.
+  const crowded = useMemo(() => {
+    if (!map) return new Map<string, Cut>();
+    const at = (coord: LonLat) => map.project(coord);
+    return placeLabels([
+      ...ends.map((place) => {
+        const { x, y } = at(place.coord);
+        return {
+          id: `end-${place.name}`,
+          priority: 1,
+          box: labelBox(x, y, 12, place.name.length),
+          core: labelBox(x, y, 12),
+          fixed: true,
+        };
+      }),
+      ...stops.map((stage) => {
+        const { x, y } = at(stage.end.coord);
+        return {
+          id: `stop-${stage.id}`,
+          priority: 2,
+          box: labelBox(x, y, 16, stage.end.name.length),
+          core: labelBox(x, y, 16),
+          fixed: true,
+        };
+      }),
+      ...proposals.flatMap((p, i) => {
+        const coord = labels[i];
+        if (!coord) return [];
+        const { x, y } = at(coord);
+        return [
+          {
+            id: `route-${p.id}`,
+            priority: p.id === highlighted ? 0 : 3,
+            box: centerBox(x, y, 24, 22),
+          },
+        ];
+      }),
+    ]);
+    // zoom only triggers a new measure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, zoom, ends, stops, proposals, labels, highlighted]);
+
+  return (
+    <>
+      {ends.map((place) => (
         <Marker
-          key={`${shown.id}-${stage.id}`}
-          longitude={stage.end.coord[0]}
-          latitude={stage.end.coord[1]}
+          key={place.name}
+          longitude={place.coord[0]}
+          latitude={place.coord[1]}
           anchor="left"
-          offset={[-14, 0]}
-          style={{ zIndex: 1 }}
+          offset={[-12, 0]}
         >
-          <StopMarker
-            day={i + 1}
-            name={stage.end.name}
-            aria-label={t("map.stop", { day: i + 1, place: stage.end.name })}
-            onClick={() => onSelect(shown.id)}
+          <EndpointMarker
+            {...(!crowded.has(`end-${place.name}`) && { name: place.name })}
+            station={place.kind === "station"}
           />
         </Marker>
       ))}
+      {shown &&
+        stops.map((stage, i) => (
+          <Marker
+            key={`${shown.id}-${stage.id}`}
+            longitude={stage.end.coord[0]}
+            latitude={stage.end.coord[1]}
+            anchor="left"
+            offset={[-14, 0]}
+            style={{ zIndex: 1 }}
+          >
+            <StopMarker
+              day={i + 1}
+              {...(!crowded.has(`stop-${stage.id}`) && {
+                name: stage.end.name,
+              })}
+              aria-label={t("map.stop", { day: i + 1, place: stage.end.name })}
+              onClick={() => onSelect(shown.id)}
+            />
+          </Marker>
+        ))}
       {proposals.map((p, i) => {
         const at = labels[i];
-        if (!at) return null;
+        if (!at || crowded.has(`route-${p.id}`)) return null;
         const selected = p.id === highlighted;
         return (
           <Marker
@@ -299,6 +391,6 @@ export function ProposalsMap({
           </Marker>
         );
       })}
-    </AppMap>
+    </>
   );
 }
