@@ -6,7 +6,13 @@ import {
   type NetworkEdge,
   type Profile,
 } from "@wayline/domain";
-import { dijkstra, type EdgeWeights, shortestPath } from "../graph/dijkstra";
+import {
+  type DijkstraResult,
+  dijkstra,
+  type EdgeWeights,
+  pathTo,
+  shortestPath,
+} from "../graph/dijkstra";
 import type { Graph, PathStep } from "../graph/Graph";
 import { flavourShare, sceneryBoost } from "./theme";
 
@@ -163,11 +169,36 @@ export class Costs {
    * targets, only those are final: the search stops once it reached them.
    */
   from(graph: Graph, node: number, targets?: Iterable<number>) {
-    return dijkstra(graph, node, {
+    const result = dijkstra(graph, node, {
       cost: this.cost(),
       ...(targets ? { targets } : {}),
     });
+    if (!targets) {
+      this.tree = { node, result, penalty: this.penalty.slice() };
+    }
+    return result;
   }
+
+  /**
+   * Cheapest path from the node of the last full search, read from that
+   * search. Undefined if it was from another node or the penalties changed
+   * since. Null if b is not reachable.
+   */
+  pathFrom(graph: Graph, a: number, b: number): PathStep[] | null | undefined {
+    const tree = this.tree;
+    if (tree?.node !== a) return undefined;
+    const { penalty } = this;
+    for (let i = 0; i < penalty.length; i++) {
+      if (penalty[i] !== tree.penalty[i]) return undefined;
+    }
+    return pathTo(graph, tree.result, b);
+  }
+
+  private tree?: {
+    node: number;
+    result: DijkstraResult;
+    penalty: Float64Array;
+  };
 }
 
 /** Cheapest cost and km from one node to every node. */
@@ -221,8 +252,13 @@ export function chainPath(
   for (const [i, b] of nodes.entries()) {
     const a = nodes[i - 1];
     if (a === undefined || a === b) continue;
-    const legCost = avoid?.legs.includes(i - 1) ? avoiding : cost;
-    const path = shortestPath(graph, a, b, legCost);
+    const avoids = avoid?.legs.includes(i - 1);
+    // The first leg uses the penalties as they are, like Costs.from.
+    const reused = i === 1 && !avoids ? costs.pathFrom(graph, a, b) : undefined;
+    const path =
+      reused === undefined
+        ? shortestPath(graph, a, b, avoids ? avoiding : cost)
+        : reused;
     if (!path) return null;
     for (const s of path) local[s.edge] = (local[s.edge] ?? 1) * REUSE_PENALTY;
     steps.push(...path);
