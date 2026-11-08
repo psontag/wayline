@@ -38,7 +38,7 @@ const FERRY_FACTOR = 5.67;
 /** A full U-turn costs 2 × this. */
 export const TURN_COST = 90;
 
-/** The switches of the BRouter profiles in infra/brouter/profiles that change way costs. */
+/** The switches of the BRouter profiles in packages/router/profiles that change way costs. */
 export type CostProfile = {
   /** Signed routes cost 1 per meter and have no turn cost. */
   cycleRoutes: boolean;
@@ -85,7 +85,7 @@ const POOR_MINOR = [5, 1.3, 2, 3, 5, 5];
 
 /**
  * Cost per meter of an edge, ported from the way costs of BRouter's profiles
- * (infra/brouter/profiles). 1 is the best way.
+ * (packages/router/profiles). 1 is the best way.
  */
 export function wayFactor(
   bits: number,

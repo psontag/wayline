@@ -8,7 +8,6 @@
 | Vite | Web app dev server and build |
 | cf | Run, build and deploy the Worker, local D1 |
 | Wrangler | Bundler behind cf. Secrets and live logs. |
-| Docker | Local BRouter, to compare routes |
 | Vitest | Unit and integration tests |
 | ESLint, Prettier | Lint and format |
 | GitHub Actions | CI, deploy, data pipeline |
@@ -32,10 +31,10 @@ Env files, region data and the local D1 are git-ignored, so a new worktree has n
 pnpm setup:worktree
 ```
 
-- Symlinks `apps/api/.dev.vars`, `apps/web/.env.local`, `apps/api/.wrangler/state`, the region data and the BRouter segments (`.cache/brouter`) from the main checkout. Then applies migrations.
+- Symlinks `apps/api/.dev.vars`, `apps/web/.env.local`, `apps/api/.wrangler/state`, and the region data from the main checkout. Then applies migrations.
 - All worktrees share one D1 and one set of env files. A change in one applies to all.
 - Only one checkout can run `pnpm dev` at a time. The ports are fixed.
-- `.claude/launch.json` has two configs for the Claude desktop app: `wayline` runs `pnpm dev`, `brouter` runs `pnpm brouter`.
+- `.claude/launch.json` has configs for the Claude desktop app. `wayline` runs `pnpm dev`.
 
 The Worker config is `apps/api/cloudflare.config.ts`. Build settings, such as the assets folder, are in `apps/api/wrangler.config.ts`. `cf` writes generated files to `.cloudflare/` (git-ignored).
 
@@ -84,25 +83,6 @@ Geodata:
 - The app uses the region data named by `apps/web/public/data/latest.json` (`pnpm data:build`, see `pipeline/README.md`).
 - Without it, or with `VITE_DATA=mock` in `apps/web/.env.local`, it uses the Oberfranken mock.
 - Tests use the mock and the Heidelberg tiles in `apps/web/public/data/mock/`.
-
-## Local BRouter
-
-A local BRouter, to compare our router with. It covers Germany (5–15° E, 45–55° N) and needs Docker. On macOS, `pnpm brouter` starts Docker Desktop if it is not running.
-
-```sh
-pnpm brouter    # BRouter on localhost:17777
-```
-
-- First run downloads four segment files (about 760 MB) into `.cache/brouter/segments4/`. Later runs skip them.
-- BRouter runs with `docker compose` from `infra/brouter/`. The image pins BRouter 1.7.10.
-- Our presets are BRouter profiles in `infra/brouter/profiles/`: `touring`, `fast`, `scenic`, `quiet`. Each is `trekking` with a few switches changed. A restart picks up changes.
-- To update the segments, delete `.cache/brouter/segments4/` and run again.
-
-Check it:
-
-```sh
-curl "http://localhost:17777/brouter?lonlats=10.8873,49.8917|9.9356,49.7913&profile=touring&alternativeidx=0&format=geojson"
-```
 
 ## Tests
 

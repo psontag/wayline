@@ -1,5 +1,5 @@
 // Links the git-ignored local state of the main checkout into a worktree:
-// env files, region data, BRouter segments and the local D1. Then applies
+// env files, region data and the local D1. Then applies
 // migrations.
 // All worktrees share one D1, so saved trips stay across branches.
 import { execFileSync, spawnSync } from "node:child_process";
@@ -33,7 +33,6 @@ const paths = [
   "apps/api/.dev.vars",
   "apps/web/.env.local",
   "apps/api/.wrangler/state",
-  ".cache/brouter",
   ...(existsSync(join(main, data))
     ? readdirSync(join(main, data))
         .filter((name) => name !== "mock")

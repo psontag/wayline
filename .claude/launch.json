@@ -8,12 +8,6 @@
       "port": 5173
     },
     {
-      "name": "brouter",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["brouter"],
-      "port": 17777
-    },
-    {
       "name": "api",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@wayline/api", "dev"],
