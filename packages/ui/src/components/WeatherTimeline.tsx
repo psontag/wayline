@@ -20,6 +20,7 @@ import { cn } from "../lib/cn";
 import { Button } from "./Button";
 import { WET_MM } from "./DayWeather";
 import { ChartBody, ChartInfo, ChartToolbar } from "./ChartPanel";
+import { windSpeedColor } from "./MapLayerMenu";
 
 export type WindKind = "head" | "tail" | "cross";
 
@@ -73,14 +74,10 @@ const TIME_STEP = 0.25;
 /** Top of the wind axis, unless gusts are stronger. */
 const MIN_WIND_TOP = 30;
 
-const windColor: Record<WindKind, string> = {
-  head: "text-wind-head",
-  cross: "text-wind-cross",
-  tail: "text-wind-tail",
-};
-
 const W = 1000;
 const H = 100;
+/** Height of the tallest rain bar, leaving room for its scale line. */
+const RAIN_H = 85;
 const WIND_H = 40;
 /** Room above the wind scale for the label of the strongest gust. */
 const WIND_PAD = 8;
@@ -141,10 +138,9 @@ export function WeatherTimeline({
   const temps = shown.map((h) => h.feelsLike);
   const tMin = Math.min(...temps) - 1;
   const tMax = Math.max(...temps) + 1;
-  // Temperature in the upper part, rain bars grow from the bottom.
-  const ty = (c: number) => 12 + (1 - (c - tMin) / (tMax - tMin || 1)) * 40;
+  const ty = (c: number) => 10 + (1 - (c - tMin) / (tMax - tMin || 1)) * 80;
   const tempTicks = [...new Set([Math.floor(tMax), Math.ceil(tMin)])];
-  const rainY = (mm: number) => H - (mm / maxRain) * 70;
+  const rainY = (mm: number) => H - (mm / maxRain) * RAIN_H;
   const line = edgeToEdge(shown, (h) => ty(h.feelsLike))
     .map(([px, py]) => `${px.toFixed(1)} ${py.toFixed(1)}`)
     .join(" L");
@@ -278,6 +274,16 @@ export function WeatherTimeline({
       ? [{ from: Math.max(sunset, from), to }]
       : []),
   ];
+  const nightRects = night.map((n) => (
+    <rect
+      key={n.from}
+      x={x(n.from)}
+      y={0}
+      width={x(n.to) - x(n.from)}
+      height={H}
+      className="fill-night"
+    />
+  ));
   // Every second hour, away from the edges, so the labels never touch.
   const labelHours: number[] = [];
   for (let h = from + 1; h <= to; h += 2) labelHours.push(h);
@@ -346,7 +352,7 @@ export function WeatherTimeline({
         <div
           ref={areaRef}
           className={cn(
-            "relative flex touch-none flex-col gap-1.5",
+            "relative flex touch-none flex-col gap-1",
             onTimeChange && "cursor-pointer",
           )}
           onPointerDown={onAreaPointerDown}
@@ -361,40 +367,56 @@ export function WeatherTimeline({
               style={{ left: pct(hovered), width: `${(1 / span) * 100}%` }}
             />
           )}
-          <div ref={chartRef} className="relative h-12">
+          <BandLabel icon={<Thermometer />}>
+            {t("timeline.feelsLike")}
+          </BandLabel>
+          <div ref={chartRef} className="relative h-8">
             <svg
               viewBox={`0 0 ${W} ${H}`}
               preserveAspectRatio="none"
               className="absolute inset-0 block size-full overflow-visible"
               role="img"
-              aria-label={t("timeline.label")}
+              aria-label={t("timeline.temperatureLabel")}
             >
-              {sunrise !== undefined && sunrise > from && (
-                <rect
-                  x={0}
-                  y={0}
-                  width={x(Math.min(sunrise, to))}
-                  height={H}
-                  className="fill-night"
+              {nightRects}
+              {shown.length > 1 && (
+                <path
+                  d={`M${line}`}
+                  fill="none"
+                  strokeWidth={1.5}
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                  className="stroke-text-muted"
                 />
               )}
-              {sunset !== undefined && sunset < to && (
-                <rect
-                  x={x(Math.max(sunset, from))}
-                  y={0}
-                  width={W - x(Math.max(sunset, from))}
-                  height={H}
-                  className="fill-night"
-                />
-              )}
+            </svg>
+            {tempTicks.map((c) => (
+              <Tick key={c} side="left" top={ty(c)}>
+                {format.temperature(c)}
+              </Tick>
+            ))}
+          </div>
+
+          <BandLabel icon={<CloudRain />} divided>
+            {t("timeline.rain")}
+          </BandLabel>
+          <div className="relative h-7">
+            <svg
+              viewBox={`0 0 ${W} ${H}`}
+              preserveAspectRatio="none"
+              className="absolute inset-0 block size-full overflow-visible"
+              role="img"
+              aria-label={t("timeline.rainLabel")}
+            >
+              {nightRects}
               {shown.map((h) =>
                 hasRain && h.rain > 0 ? (
                   <rect
                     key={h.hour}
                     x={x(h.hour) + 10}
                     width={W / span - 20}
-                    y={H - (h.rain / maxRain) * 70}
-                    height={(h.rain / maxRain) * 70}
+                    y={rainY(h.rain)}
+                    height={(h.rain / maxRain) * RAIN_H}
                     rx={2}
                     className="fill-rain"
                     // Likely rain is drawn stronger.
@@ -423,30 +445,22 @@ export function WeatherTimeline({
                 vectorEffect="non-scaling-stroke"
                 className="stroke-border"
               />
-              {shown.length > 1 && (
-                <path
-                  d={`M${line}`}
-                  fill="none"
-                  strokeWidth={1.5}
-                  strokeLinejoin="round"
-                  vectorEffect="non-scaling-stroke"
-                  className="stroke-text-muted"
-                />
-              )}
             </svg>
-            {tempTicks.map((c) => (
-              <Tick key={c} side="left" top={ty(c)}>
-                {format.temperature(c)}
-              </Tick>
-            ))}
-            {hasRain && (
+            {hasRain ? (
               <Tick side="right" top={rainY(maxRain)}>
                 {t("timeline.rainTick", { rain: format.rain(maxRain) })}
+              </Tick>
+            ) : (
+              <Tick side="right" top={H}>
+                {t("stage.dry")}
               </Tick>
             )}
           </div>
 
-          <div className="relative h-12">
+          <BandLabel icon={<Wind />} divided>
+            {t("timeline.wind")}
+          </BandLabel>
+          <div className="relative h-10">
             <svg
               viewBox={`0 0 ${W} ${WIND_H}`}
               preserveAspectRatio="none"
@@ -524,7 +538,7 @@ export function WeatherTimeline({
                 key={h.hour}
                 className={cn(
                   "absolute -translate-x-1/2",
-                  windColor[h.wind.kind],
+                  windSpeedColor(h.wind.speed),
                 )}
                 style={{ left: pct(h.hour + 0.5) }}
               >
@@ -652,13 +666,13 @@ export function WeatherTimeline({
               <div>
                 <dt>
                   <Wind
-                    className={windColor[info.wind.kind]}
+                    className={windSpeedColor(info.wind.speed)}
                     aria-label={t("timeline.wind")}
                   />
                 </dt>
                 <dd>
                   {format.speed(info.wind.speed)}
-                  {/* The arrow color says the kind on narrow screens. */}
+                  {/* The arrow direction says the kind on narrow screens. */}
                   <span className="max-sm:hidden">
                     {" "}
                     {t(`timeline.kind.${info.wind.kind}`)}
@@ -673,6 +687,35 @@ export function WeatherTimeline({
           )}
         </dl>
       </ChartInfo>
+    </div>
+  );
+}
+
+/**
+ * Names the chart row below it, in its top left corner. Takes no height,
+ * so the charts keep their size. divided draws a line between the rows.
+ */
+export function BandLabel({
+  icon,
+  divided = false,
+  children,
+}: {
+  icon: ReactNode;
+  divided?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "pointer-events-none relative z-panel -my-0.5 h-0",
+        divided && "border-t border-border",
+      )}
+    >
+      <span className="absolute top-1 left-1 flex items-center gap-1 rounded-sm bg-surface/85 px-1 py-0.5 text-2xs leading-none font-semibold text-text-muted [&_svg]:size-3">
+        {icon}
+        {children}
+      </span>
     </div>
   );
 }

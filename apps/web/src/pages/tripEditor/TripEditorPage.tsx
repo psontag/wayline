@@ -4,6 +4,7 @@ import {
   addHours,
   decodeLine,
   findClimbs,
+  type Leg,
   type LonLat,
   type Place,
   pointAtKm,
@@ -39,7 +40,11 @@ import { TripWeatherPanel } from "./TripWeatherPanel";
 import { DayPanel } from "./DayPanel";
 import { StageProfile } from "./StageProfile";
 import { useRouteStations } from "./stations";
-import { useMapHotels, useStopOptions } from "./stopChoices";
+import {
+  hasMovableDestination,
+  useMapHotels,
+  useStopOptions,
+} from "./stopChoices";
 import { ShareDialog } from "./ShareDialog";
 import { TripActions } from "./TripHeader";
 import { proposedSection } from "./proposedSection";
@@ -112,6 +117,7 @@ function TripEditor({
   const [hoveredDay, setHoveredDay] = useState<number>();
   const [hoveredClimb, setHoveredClimb] = useState<number>();
   const [proposedHighlighted, setProposedHighlighted] = useState(false);
+  const [previewLegs, setPreviewLegs] = useState<Leg[]>();
   const [sharing, setSharing] = useState(false);
   const [view, setView] = usePanelView();
   const [layers, setLayers] = useMapLayers();
@@ -292,6 +298,15 @@ function TripEditor({
         onAddVia: (leg, at) => void editor.insertVia(selected, leg, at),
         onMoveVia: (coord, at) => void editor.moveVia(selected, coord, at),
         onRemoveVia: (coord) => void editor.removeVia(selected, coord),
+        onPreviewChange: setPreviewLegs,
+        onEndDayAt:
+          selected < trip.stages.length - 1 || hasMovableDestination(trip)
+            ? (place) => void editor.moveStop(selected, place)
+            : undefined,
+        onStartDayAt:
+          selected > 0
+            ? (place) => void editor.moveStop(selected - 1, place)
+            : undefined,
         selectedVia,
         onSelectVia: selectVia,
         proposed,
@@ -415,6 +430,7 @@ function TripEditor({
       highlightedClimb={activeClimb}
       proposedHighlighted={proposedHighlighted}
       onHighlightProposed={setProposedHighlighted}
+      previewLegs={previewLegs}
       actions={switcher}
       plain={isPhone}
     />

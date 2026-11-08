@@ -151,6 +151,8 @@ export type ViaTarget = { leg: number } | { via: LonLat };
 /** A route through a point, before it is saved. */
 export type ViaPreview = {
   line: LonLat[];
+  /** All legs of the stage with the edit, e.g. for the elevation profile. */
+  legs: Leg[];
   /** Meters more (or less, if negative) than the route it replaces. */
   distance: number;
   ascent: number;
@@ -188,6 +190,7 @@ export async function previewVia(
   const old = stage.legs.slice(routed.from, routed.to);
   return {
     line: legs.flatMap((l) => decodeLine(l.geometry)),
+    legs: spliced(stage, routed),
     distance: sum(legs, "distance") - sum(old, "distance"),
     ascent: sum(legs, "ascent") - sum(old, "ascent"),
   };

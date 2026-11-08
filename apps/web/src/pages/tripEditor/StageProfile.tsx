@@ -2,6 +2,7 @@ import {
   addDays,
   type Climb,
   expectedTimeAtKm,
+  type Leg,
   localTimeToDate,
   ridingHours,
   type RouteNetwork,
@@ -49,6 +50,8 @@ export type StageProfileProps = {
   /** Show the proposed route of a changed day stronger. */
   proposedHighlighted?: boolean;
   onHighlightProposed?: (on: boolean) => void;
+  /** Legs of the day while a via point is placed. Shown instead of the proposed route. */
+  previewLegs?: Leg[];
 };
 
 /** Elevation of a stage by surface, in a ChartPanel. */
@@ -65,6 +68,7 @@ export function StageProfile({
   actions,
   proposedHighlighted: highlightRequested = false,
   onHighlightProposed,
+  previewLegs,
 }: StageProfileProps) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -83,8 +87,16 @@ export function StageProfile({
     () => (legs && proposed ? proposedSection(legs, proposed.legs) : undefined),
     [legs, proposed],
   );
+  const previewSection = useMemo(
+    () =>
+      !overview && legs && previewLegs
+        ? proposedSection(legs, previewLegs)
+        : undefined,
+    [overview, legs, previewLegs],
+  );
   if (!stage) return null;
   const proposedHighlighted = highlightRequested && !!section;
+  const compare = previewSection ?? section;
 
   const date = trip.startDate && addDays(trip.startDate, index);
   const highest = points.reduce<ProfilePoint | undefined>(
@@ -194,8 +206,8 @@ export function StageProfile({
           highlightedClimb={highlightedClimb}
           points={points}
           dayBreaks={overview ? dayBreaks(trip) : undefined}
-          compare={section?.points}
-          compareHighlighted={proposedHighlighted}
+          compare={compare?.points}
+          compareHighlighted={!!previewSection || proposedHighlighted}
           hoverKm={hoverKm}
           onHoverKm={onHoverKm}
           aria-label={label}

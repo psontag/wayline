@@ -1,7 +1,9 @@
+import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { Stat } from "./Stat";
+import { Tooltip } from "./Tooltip";
 import { WarningText } from "./WarningText";
 
 /** mm per hour from which an hour counts as wet. Below, a day is "Dry". */
@@ -24,6 +26,8 @@ export type DayWeatherProps = {
   wind?: Wind;
   /** E.g. "Cold start: −1 °C". One line each, below the stats. */
   warnings?: string[];
+  /** One line. Warnings become an icon with a tooltip. */
+  compact?: boolean;
   className?: string;
 };
 
@@ -34,6 +38,7 @@ export function DayWeather({
   rain,
   wind,
   warnings = [],
+  compact = false,
   className,
 }: DayWeatherProps) {
   const { t } = useTranslation("ui");
@@ -42,9 +47,34 @@ export function DayWeather({
     min: Math.round(temperature.min),
     max: format.temperature(temperature.max),
   });
+  const windKind = wind
+    ? t(`stage.wind.${wind.kind}`, { share: format.percent(wind.share) })
+    : "";
+  const windText = wind
+    ? t("stage.windWithSpeed", {
+        wind: windKind,
+        speed: format.speed(wind.speedKmh),
+      })
+    : "";
 
   return (
-    <div className={cn("flex flex-wrap gap-x-4 gap-y-1.5", className)}>
+    <div
+      className={cn(
+        compact
+          ? "flex items-center gap-x-3.5 overflow-hidden"
+          : "flex flex-wrap gap-x-4 gap-y-1.5",
+        className,
+      )}
+    >
+      {compact && warnings.length > 0 && (
+        <Tooltip label={warnings.join(" · ")}>
+          <TriangleAlert
+            role="img"
+            aria-label={warnings.join(", ")}
+            className="size-3.5 shrink-0 text-warning"
+          />
+        </Tooltip>
+      )}
       <Stat
         size="sm"
         icon="temperature"
@@ -69,23 +99,20 @@ export function DayWeather({
         }
       />
       {wind && (
+        // One line has no room for the speed. The tooltip has it.
         <Stat
           size="sm"
           icon="wind"
-          label={t("stage.windLabel")}
-          value={t("stage.windWithSpeed", {
-            wind: t(`stage.wind.${wind.kind}`, {
-              share: format.percent(wind.share),
-            }),
-            speed: format.speed(wind.speedKmh),
-          })}
+          label={compact ? windText : t("stage.windLabel")}
+          value={compact ? windKind : windText}
         />
       )}
-      {warnings.map((warning) => (
-        <WarningText key={warning} className="w-full">
-          {warning}
-        </WarningText>
-      ))}
+      {!compact &&
+        warnings.map((warning) => (
+          <WarningText key={warning} className="w-full">
+            {warning}
+          </WarningText>
+        ))}
     </div>
   );
 }

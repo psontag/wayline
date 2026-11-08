@@ -56,6 +56,12 @@ export function useTapHintSeen() {
   return [stored.seen, () => set({ seen: true })] as const;
 }
 
+/** Whether the desktop hint for dragging the route was used once. */
+export function useDragHintSeen() {
+  const [stored, set] = useStored("wayline.dragHint", { seen: false });
+  return [stored.seen, () => set({ seen: true })] as const;
+}
+
 export function useMapLayers() {
   return useStored("wayline.mapLayers", allOn);
 }

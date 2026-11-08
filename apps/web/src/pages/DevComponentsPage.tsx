@@ -352,15 +352,19 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
                 distance={format.distance(stage.distance)}
                 ascent={format.elevation(stage.ascent)}
                 ridingTime={format.duration(stage.ridingHours)}
+                dated
                 weather={
-                  <DayWeather
-                    temperature={stage.temperature}
-                    rain={stage.day === 2 ? 1.2 : 0}
-                    wind={stage.wind}
-                    {...(stage.day === 1 && {
-                      warnings: [t("demo.coldStart"), t("demo.lateArrival")],
-                    })}
-                  />
+                  stage.day !== 3 && (
+                    <DayWeather
+                      compact
+                      temperature={stage.temperature}
+                      rain={stage.day === 2 ? 1.2 : 0}
+                      wind={stage.wind}
+                      {...(stage.day === 1 && {
+                        warnings: [t("demo.coldStart"), t("demo.lateArrival")],
+                      })}
+                    />
+                  )
                 }
                 hotel={t("demo.hotelName")}
                 locked={locked[stage.day]}
@@ -1162,7 +1166,16 @@ function ProposalDemos() {
                       hint: t("demo.flattestHint"),
                     },
                   ]
-                : []
+                : [
+                    { label: t("demo.tagWater"), hint: t("demo.tagHint") },
+                    { label: t("demo.tagNature"), hint: t("demo.tagHint") },
+                    { label: t("demo.tagDry"), hint: t("demo.tagHint") },
+                    { label: t("demo.tagRoute"), hint: t("demo.tagHint") },
+                    {
+                      label: t("demo.flattest"),
+                      hint: t("demo.flattestHint"),
+                    },
+                  ]
             }
             stats={stats}
             surface={{ paved: 84, gravel: 12, unpaved: 4 }}
@@ -1175,7 +1188,6 @@ function ProposalDemos() {
               />
             }
             days={days}
-            footer={t("demo.proposalRoutes")}
             selected={selected === n}
             onSelect={() => setSelected(n)}
           >

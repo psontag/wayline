@@ -13,6 +13,7 @@ import {
   bedsNear,
   destinationStations,
   hasMovableDestination,
+  nearestTown,
   placeIndex,
   routeNear,
   stopChoices,
@@ -132,5 +133,20 @@ describe("stopHotels", () => {
     const detours = inBudget.map((h) => h.detourKm);
     expect(detours).toEqual([...detours].sort((a, b) => a - b));
     expect(hotels.every((h) => h.distanceKm <= 5)).toBe(true);
+  });
+});
+
+describe("nearestTown", () => {
+  const town = index.towns[0]!;
+  const at: [number, number] = [town.lon + 0.001, town.lat];
+
+  it("finds the closest town as a place", () => {
+    const found = nearestTown(index.towns, at, 5);
+    expect(found?.km).toBeLessThan(0.5);
+    expect(found?.place.kind).toBe("town");
+  });
+
+  it("finds nothing beyond the limit", () => {
+    expect(nearestTown(index.towns, [0, 0], 5)).toBeUndefined();
   });
 });

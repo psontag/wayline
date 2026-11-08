@@ -38,6 +38,16 @@ export function hidePlaceLabels(map: MaplibreMap, names: string[]) {
 }
 
 /**
+ * The town in a station name, as the base map labels it:
+ * "Bamberg Hbf" → "Bamberg", "Wickede (Ruhr)" → "Wickede".
+ */
+export function townOf(station: string): string {
+  return station
+    .replace(/\s*\(.*\)$/, "")
+    .replace(/\s+(Hbf|Hauptbahnhof|Bahnhof|Bf)$/, "");
+}
+
+/**
  * Keeps the place labels with these names hidden. Pass the returned
  * callback to onLoad and onStyleData, so it runs again after a style swap.
  */

@@ -19,8 +19,10 @@ export type DayCardProps = {
   distance: string;
   ascent?: string;
   ridingTime?: string;
-  /** E.g. a DayWeather, below the stats. */
+  /** A compact DayWeather, one line below the stats. */
   weather?: ReactNode;
+  /** The trip has dates: without weather, the line says "No forecast". */
+  dated?: boolean;
   /** Hotel at the stop. */
   hotel?: string;
   locked?: boolean;
@@ -41,6 +43,7 @@ export function DayCard({
   ascent,
   ridingTime,
   weather,
+  dated = false,
   hotel,
   locked,
   changed,
@@ -60,7 +63,7 @@ export function DayCard({
       className={cn(
         "flex w-full items-stretch overflow-hidden rounded-md border text-left transition-colors",
         highlighted
-          ? "border-selected-border bg-selected"
+          ? "border-selected-border bg-surface ring-1 ring-selected-border"
           : "border-border bg-surface hover:bg-hover",
         focusRing,
       )}
@@ -81,7 +84,7 @@ export function DayCard({
             {changed && <Badge tone="accent">{t("dayCard.changed")}</Badge>}
           </span>
           <span className="truncate text-md font-extrabold">{place}</span>
-          <span className="flex flex-wrap gap-x-3.5 gap-y-1">
+          <span className="flex gap-x-3.5 overflow-hidden">
             <Stat
               size="sm"
               icon="distance"
@@ -105,19 +108,25 @@ export function DayCard({
               />
             )}
           </span>
+          {(weather || dated) && (
+            <span className="flex h-5 items-center">
+              {weather || (
+                <span className="text-xs text-text-muted">
+                  {t("dayCard.noForecast")}
+                </span>
+              )}
+            </span>
+          )}
         </span>
-        {(weather || hotel) && (
-          <span className="flex flex-col gap-1.5 border-t border-border px-3 py-2">
-            {weather}
-            {hotel && (
-              <Stat
-                size="sm"
-                icon="beds"
-                value={hotel}
-                label={t("dayCard.hotel")}
-                className="min-w-0"
-              />
-            )}
+        {hotel && (
+          <span className="flex border-t border-border px-3 py-2">
+            <Stat
+              size="sm"
+              icon="beds"
+              value={hotel}
+              label={t("dayCard.hotel")}
+              className="min-w-0"
+            />
           </span>
         )}
       </span>

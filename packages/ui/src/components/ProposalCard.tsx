@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "../lib/cn";
 import { focusRing } from "./Button";
 import type { StatIcon } from "../icons";
@@ -23,7 +24,7 @@ export type ProposalCardProps = {
   subtitle?: string;
   /** Route color of the number, as on the map. */
   color?: RouteColor;
-  /** Short badges, e.g. "Flattest". The hint shows on hover. */
+  /** Short badges, most useful first, e.g. "Flattest". The hint shows on hover. */
   tags?: ProposalTag[];
   /** Three stats. A compact card shows them in one line. */
   stats: ProposalStat[];
@@ -33,8 +34,6 @@ export type ProposalCardProps = {
   chart?: ReactNode;
   /** Shown when selected. One row per day. */
   days?: ProposalDay[];
-  /** Shown when selected, e.g. the main routes. */
-  footer?: string;
   selected?: boolean;
   onSelect?: () => void;
   /** Called with true when the pointer enters, false when it leaves. */
@@ -44,6 +43,9 @@ export type ProposalCardProps = {
   /** Shown at the bottom when selected, e.g. actions. */
   children?: ReactNode;
 };
+
+/** Tags before "+n". */
+const SHOWN_TAGS = 3;
 
 /** One generated trip in the proposals list. Only the selected one is open. */
 export function ProposalCard({
@@ -56,13 +58,13 @@ export function ProposalCard({
   surface,
   chart,
   days = [],
-  footer,
   selected = false,
   onSelect,
   onHover,
   onHoverDay,
   children,
 }: ProposalCardProps) {
+  const { t } = useTranslation("ui");
   return (
     <article
       onMouseEnter={() => onHover?.(true)}
@@ -70,7 +72,7 @@ export function ProposalCard({
       className={cn(
         "flex flex-col rounded-md border transition-colors",
         selected
-          ? "border-selected-border bg-selected"
+          ? "border-selected-border bg-surface ring-1 ring-selected-border"
           : "border-border bg-surface hover:border-text-muted hover:bg-hover",
       )}
     >
@@ -97,13 +99,29 @@ export function ProposalCard({
           )}
           {tags.length > 0 && (
             <span className="mt-1 flex flex-wrap gap-1">
-              {tags.map(({ label, hint }) => (
+              {tags.slice(0, SHOWN_TAGS).map(({ label, hint }) => (
                 <Tooltip key={label} label={hint}>
                   <span>
                     <Badge>{label}</Badge>
                   </span>
                 </Tooltip>
               ))}
+              {tags.length > SHOWN_TAGS && (
+                <Tooltip
+                  label={tags
+                    .slice(SHOWN_TAGS)
+                    .map((tag) => tag.label)
+                    .join(" · ")}
+                >
+                  <span>
+                    <Badge>
+                      {t("proposalCard.moreTags", {
+                        count: tags.length - SHOWN_TAGS,
+                      })}
+                    </Badge>
+                  </span>
+                </Tooltip>
+              )}
             </span>
           )}
         </span>
@@ -120,7 +138,6 @@ export function ProposalCard({
           </div>
           {chart}
           {days.length > 0 && <DayList days={days} onHoverDay={onHoverDay} />}
-          {footer && <span className="text-xs text-text-muted">{footer}</span>}
           {children}
         </div>
       )}

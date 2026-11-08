@@ -48,7 +48,9 @@ export function ChoiceList({
           key={o.id}
           className={cn(
             "flex items-center gap-1 pr-2",
-            o.id === value ? "bg-selected" : "hover:bg-hover",
+            o.id === value
+              ? "ring-2 ring-selected-border ring-inset"
+              : "hover:bg-hover",
           )}
         >
           <RadioGroup.Item

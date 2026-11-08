@@ -26,6 +26,20 @@ export type MapLayerMenuProps = {
 /** Wind speed steps in km/h, from the wind-speed-1 to -4 tokens. */
 export const WIND_SPEED_STEPS = [10, 20, 30] as const;
 
+const windSpeedTextColors = [
+  "text-wind-speed-1",
+  "text-wind-speed-2",
+  "text-wind-speed-3",
+  "text-wind-speed-4",
+] as const;
+
+/** Text color class for a wind speed in km/h. */
+export function windSpeedColor(speed: number): string {
+  return windSpeedTextColors[
+    WIND_SPEED_STEPS.filter((s) => speed >= s).length
+  ] as string;
+}
+
 const windSpeedColors = [
   "bg-wind-speed-1",
   "bg-wind-speed-2",

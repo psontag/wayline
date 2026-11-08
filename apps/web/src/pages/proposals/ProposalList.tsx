@@ -307,8 +307,6 @@ function toWindDays(days: StageWeather[], proposal: Proposal): WindDay[] {
 
 /** A stop with this many places to sleep or fewer is flagged. */
 const WEAK_STOP_BEDS = 2;
-/** Tags on a card that is not selected. */
-const CLOSED_CARD_TAGS = 3;
 
 function ProposalItem({
   proposal,
@@ -455,6 +453,10 @@ function ProposalItem({
       : []),
     ...tags.map(tagOf),
     ...routeTags.filter((tag) => !isOffInput(tag)).map(tagOf),
+    ...routeNames
+      .slice(0, 2)
+      .filter((r) => r !== route && r !== proposal.followedRoute)
+      .map((r) => ({ label: r, hint: t("card.tagHint.mainRoute") })),
   ];
 
   return (
@@ -469,7 +471,7 @@ function ProposalItem({
             })
           : ""
       }
-      tags={selected ? cardTags : cardTags.slice(0, CLOSED_CARD_TAGS)}
+      tags={cardTags}
       stats={[
         {
           icon: "distance",
@@ -508,11 +510,6 @@ function ProposalItem({
             : {}),
         };
       })}
-      footer={
-        routeNames.length
-          ? t("card.routes", { routes: routeNames.slice(0, 2).join(" · ") })
-          : t("card.noRoutes")
-      }
       selected={selected}
       onSelect={onSelect}
       onHover={onHover}

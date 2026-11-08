@@ -14,7 +14,7 @@ import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { Button, focusRing } from "./Button";
 import { SaveHotelButton } from "./HotelRow";
-import { WIND_SPEED_STEPS } from "./MapLayerMenu";
+import { windSpeedColor } from "./MapLayerMenu";
 
 export type StopMarkerProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -82,13 +82,6 @@ export function EndpointMarker({
   );
 }
 
-const windSpeedColor = [
-  "text-wind-speed-1",
-  "text-wind-speed-2",
-  "text-wind-speed-3",
-  "text-wind-speed-4",
-] as const;
-
 /**
  * Wind at a place: an arrow pointing where the wind blows, colored by
  * speed, and the speed.
@@ -106,13 +99,12 @@ export function WindMarker({
   label: string;
 }) {
   const format = useFormat();
-  const step = WIND_SPEED_STEPS.filter((s) => speed >= s).length;
   return (
     <span role="img" aria-label={label} className="flex items-center gap-1.5">
       <span
         className={cn(
           "flex size-7 items-center justify-center rounded-full bg-surface shadow-md",
-          windSpeedColor[step],
+          windSpeedColor(speed),
         )}
       >
         <ArrowUp
