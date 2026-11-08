@@ -35,7 +35,7 @@ Output (November 2026):
 | `search.json` | 2.8 MiB (0.7 MiB gzipped): 31,800 towns and 5,900 stations on the network |
 | Route lines | 5,000 files (1,493 empty), 15 MiB, largest 206 KiB |
 | `routes.json` | 1.8 MiB: 16,300 routes |
-| `reach/<station>.json` | 1.1 MiB (0.3 MiB gzipped) per home station, 11 s: 4,250 stations within 6 h of Karlsruhe |
+| `reach/<station>.json` | 1.2 MiB (0.3 MiB gzipped) per home station, 11 s: 4,800 stations within 7 h of Karlsruhe |
 
 A 200 km trip loads up to about 110 tiles, about 12 MiB (6 MiB gzipped).
 
@@ -204,10 +204,10 @@ Geometry part (`.geo.bin`), edges in the same order:
 | | |
 |---|---|
 | Day types | Weekday (Tue–Thu), Saturday, Sunday. Per type the date with the most trips, so holidays are not used. |
-| Out | Leaving home 07:00–10:00 |
+| Out | Leaving home 07:00–15:00, so half days count too |
 | Back | Arriving home 15:00–22:00. A search backwards in time from home. |
 | Changes | 0, 1 and 2, at least 5 minutes each |
-| Longest | 6 hours |
+| Longest | 7 hours |
 | Bike reservation | IC, ICE and other long-distance trains: the `fv_free` feed, and operators in `LONG_DISTANCE` in `rv_free` |
 
 Format in `ReachFile` in `packages/domain/src/geodata.ts`. Per station id: minutes with at most 0, 1 and 2 changes, the same by regional trains only, and a bit per change count for "needs a reservation". 5,450 of our 5,874 stations match a timetable stop (same name within 1.5 km, else the nearest within 300 m). The rest are missing from the free feeds.

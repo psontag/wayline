@@ -50,7 +50,7 @@ export type ReachFile = {
   home: { id: string; name: string };
   attribution: string;
   dates: Record<ReachDay, string>;
-  /** Minutes after midnight. out: leaving home. back: arriving home. */
+  /** Minutes after midnight. out: leaving home, 07:00–15:00. back: arriving home, 15:00–22:00. */
   windows: { out: [number, number]; back: [number, number] };
   format: string;
   /** From home to each station. */

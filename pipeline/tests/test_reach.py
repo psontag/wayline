@@ -76,6 +76,19 @@ def test_change_needs_time(tmp_path):
     assert out["n4"] == [None, None, 90, None, None, 90, 0]
 
 
+def test_out_window_and_longest_journey(tmp_path):
+    rv = [
+        ("early", [("1", "06:50"), ("2", "07:00")]),  # before 07:00, left out
+        ("late", [("1", "14:50"), ("2", "15:15")]),  # leaves by 15:00, a half day
+        ("after", [("1", "15:10"), ("3", "15:20")]),  # after 15:00, left out
+        ("long", [("1", "08:00"), ("4", "15:01")]),  # over 7 hours, left out
+    ]
+    out = build(tmp_path, rv, [])["out"]["weekday"]
+    assert out["n2"] == [25, 25, 25, 25, 25, 25, 0]
+    assert "n3" not in out
+    assert "n4" not in out
+
+
 def test_long_distance_trains_in_the_regional_feed_need_a_reservation(tmp_path):
     out = build(tmp_path, RV, [], rv_agency="DB Fernverkehr AG")["out"]["weekday"]
     assert out["n2"] == [30, 30, 30, None, None, None, 7]

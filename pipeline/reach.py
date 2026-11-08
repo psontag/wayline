@@ -7,7 +7,7 @@ from every station, for at most 0, 1 and 2 changes. Once with all trains, once
 with regional trains only. Long-distance trains (IC, ICE, EC, ...) need a bike
 reservation.
 
-"Out" leaves home 07:00-10:00. "Back" arrives home 15:00-22:00. Times are for
+"Out" leaves home 07:00-15:00. "Back" arrives home 15:00-22:00. Times are for
 one typical date per day type, so they say how far a station is, not which
 train to take.
 
@@ -39,9 +39,10 @@ ATTRIBUTION = "gtfs.de, DELFI e.V."
 HOMES = ["Karlsruhe Hbf"]
 # Weekdays: Tuesday to Thursday, since Mondays and Fridays have extra trains.
 DAY_TYPES = {"weekday": (1, 2, 3), "saturday": (5,), "sunday": (6,)}
-OUT_WINDOW = (7 * 60, 10 * 60)  # departures from home, minutes after midnight
+# Departures from home, minutes after midnight. Until 15:00 for a half day on the bike.
+OUT_WINDOW = (7 * 60, 15 * 60)
 HOME_WINDOW = (15 * 60, 22 * 60)  # arrivals at home
-MAX_MINUTES = 6 * 60  # longer journeys are left out
+MAX_MINUTES = 7 * 60  # longer journeys are left out
 MAX_CHANGES = 2
 CHANGE_MINUTES = 5  # to change trains with a bike
 MATCH_M = 300  # our station to a timetable station, by distance alone
@@ -194,6 +195,8 @@ def raptor(routes, at, home, starts, max_trips=MAX_CHANGES + 1, max_minutes=MAX_
     # tau[k][s] = (time, reservation, by train). tau[k] is never later than tau[k-1].
     tau = [dict() for _ in range(max_trips + 1)]
     best = [dict() for _ in range(max_trips + 1)]
+    # No waiting at home for a train after the window.
+    last = max(starts, default=-INF)
     for d in sorted(set(starts), reverse=True):
         tau[0][home] = (d, False, False)
         marked = {home}
@@ -231,6 +234,8 @@ def raptor(routes, at, home, starts, max_trips=MAX_CHANGES + 1, max_minutes=MAX_
                     j = bisect.bisect_left(r.deps[i], ready)
                     while j < len(r.trips) and not r.trips[j][2][i]:
                         j += 1
+                    if s == home and j < len(r.trips) and r.deps[i][j] > last:
+                        continue
                     if j < len(r.trips) and j < ti:
                         trip, ti, board_resv = r.trips[j], j, lp[1]
             if not marked:
