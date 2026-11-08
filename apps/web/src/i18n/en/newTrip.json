@@ -1,7 +1,7 @@
 {
   "title": "New trip",
   "loading": "Loading places",
-  "loadFailed": "Could not load the places.",
+  "loadFailed": "Could not load the places",
   "section": {
     "trip": "Trip",
     "places": "Start and end",

@@ -8,9 +8,11 @@ import {
 } from "@wayline/domain";
 import type { HotelOption } from "@wayline/providers";
 import { type SaveState, useFormat } from "@wayline/ui";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSaveTrip } from "../../data/queries";
+import { queryKeys, useSaveTrip } from "../../data/queries";
+import { type ErrorAction, useErrorText, useFailedText } from "../../errors";
 import { useServices } from "../../data/ServicesProvider";
 import {
   moveStop,
@@ -30,8 +32,15 @@ import {
 } from "./routeEdits";
 import { withRideStart } from "./stageWeather";
 
-/** Message after an edit. Undo is offered unless nothing changed. */
-export type EditorNote = { id: number; message: string; changed: boolean };
+/** Message after an edit or a failed save, with an optional action. */
+export type EditorNote = {
+  id: number;
+  message: string;
+  action?: "undo" | Exclude<ErrorAction, "back">;
+  actionLabel?: string;
+  /** Stays open until closed. */
+  sticky?: boolean;
+};
 
 export function toHotel({
   osmId,
@@ -55,6 +64,9 @@ export function useTripEditor(trip: Trip, readOnly = false) {
   const format = useFormat();
   const { routing, lodging, snap } = useServices();
   const save = useSaveTrip();
+  const client = useQueryClient();
+  const errorText = useErrorText();
+  const failedText = useFailedText();
   const [past, setPast] = useState<Trip[]>([]);
   const [future, setFuture] = useState<Trip[]>([]);
   const [busy, setBusy] = useState(false);
@@ -64,16 +76,58 @@ export function useTripEditor(trip: Trip, readOnly = false) {
   const saveState: SaveState =
     save.isPending || busy ? "saving" : save.isError ? "error" : "saved";
 
+  /** Saves a trip. A failed save keeps a note open until it is handled. */
+  const send = (next: Trip) =>
+    save.mutate(next, {
+      onError(error) {
+        const text = errorText(error);
+        setNote({
+          id: Date.now(),
+          message:
+            text.kind === "CONFLICT"
+              ? `${text.title}. ${text.text}`
+              : failedText(t("note.saveFailed"), error, true),
+          action: text.action === "back" ? "retry" : text.action,
+          actionLabel: text.actionLabel,
+          sticky: true,
+        });
+      },
+    });
+
   // Edits start from the latest saved trip, so updatedAt always matches.
   const commit = (next: Trip, message?: string) => {
     setPast((p) => [...p.slice(-49), trip]);
     setFuture([]);
-    save.mutate(next);
-    if (message) setNote({ id: Date.now(), message, changed: true });
+    send(next);
+    if (message) {
+      setNote({
+        id: Date.now(),
+        message,
+        action: "undo",
+        actionLabel: t("note.undo"),
+      });
+    }
   };
 
   const restore = (target: Trip) =>
-    save.mutate({ ...target, updatedAt: trip.updatedAt });
+    send({ ...target, updatedAt: trip.updatedAt });
+
+  const undo = () => {
+    const prev = past.at(-1);
+    if (!prev || !canEdit) return;
+    setPast(past.slice(0, -1));
+    setFuture([...future, trip]);
+    setNote(undefined);
+    restore(prev);
+  };
+
+  /** Loads the saved trip again and drops the undo history. */
+  const reload = () => {
+    setPast([]);
+    setFuture([]);
+    save.reset();
+    void client.invalidateQueries({ queryKey: queryKeys.trip(trip.id) });
+  };
 
   const tools: RouteTools = {
     route: (points: LonLat[]) =>
@@ -84,11 +138,7 @@ export function useTripEditor(trip: Trip, readOnly = false) {
   /** Runs an edit that routes, then saves it with a note. */
   // Routing can fail, e.g. when the router is down. Nothing changes then.
   const failed = () =>
-    setNote({
-      id: Date.now(),
-      message: t("note.routingFailed"),
-      changed: false,
-    });
+    setNote({ id: Date.now(), message: t("note.routingFailed") });
 
   const run = async (edit: () => Promise<Trip>, note: (t: Trip) => string) => {
     if (!canEdit) return;
@@ -97,11 +147,7 @@ export function useTripEditor(trip: Trip, readOnly = false) {
       const next = await edit();
       if (next !== trip) commit(next, note(next));
       else {
-        setNote({
-          id: Date.now(),
-          message: t("note.sameRoute"),
-          changed: false,
-        });
+        setNote({ id: Date.now(), message: t("note.sameRoute") });
       }
     } catch {
       failed();
@@ -123,16 +169,24 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     saveState,
     note,
     clearNote: () => setNote(undefined),
+    /** Runs the action of the note. */
+    noteAction() {
+      setNote(undefined);
+      switch (note?.action) {
+        case "undo":
+          return undo();
+        case "retry":
+          if (save.variables) send(save.variables);
+          return;
+        case "reload":
+          return reload();
+        case "login":
+          return location.reload();
+      }
+    },
     canUndo: canEdit && past.length > 0,
     canRedo: canEdit && future.length > 0,
-    undo() {
-      const prev = past.at(-1);
-      if (!prev || !canEdit) return;
-      setPast(past.slice(0, -1));
-      setFuture([...future, trip]);
-      setNote(undefined);
-      restore(prev);
-    },
+    undo,
     redo() {
       const next = future.at(-1);
       if (!next || !canEdit) return;

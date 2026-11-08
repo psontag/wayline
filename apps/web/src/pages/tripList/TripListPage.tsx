@@ -3,6 +3,7 @@ import type { TripSummary } from "@wayline/domain";
 import { Button, cn, EmptyState } from "@wayline/ui";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { ErrorPanel } from "../../components/ErrorPanel";
 import { useTrips } from "../../data/queries";
 import { TripListItem } from "./TripListItem";
 
@@ -37,9 +38,11 @@ export function TripListPage() {
           {t("loading")}
         </p>
       ) : trips.isError ? (
-        <p className="text-danger" role="alert">
-          {t("loadFailed")}
-        </p>
+        <ErrorPanel
+          error={trips.error}
+          title={t("loadFailed")}
+          onRetry={() => void trips.refetch()}
+        />
       ) : trips.data.length === 0 ? (
         <EmptyState
           title={t("empty.title")}

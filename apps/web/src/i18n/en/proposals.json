@@ -98,7 +98,7 @@
     "noRoutes": "No signed routes",
     "open": "Open trip",
     "opening": "Opening",
-    "openFailed": "Could not save the trip. Try again.",
+    "openFailed": "Could not save the trip",
     "tag": {
       "nature": "Nature",
       "water": "Rivers & lakes",

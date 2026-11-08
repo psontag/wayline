@@ -17,23 +17,25 @@ How errors look, read and flow through the code. The same rules apply on phones 
 | Case | Show with | Example |
 |---|---|---|
 | Wrong input in a field | `FormField` `error` | Enter 20 to 250 km. |
-| A screen or panel has nothing to show | `MessagePanel`: icon, title, text, one primary action | Could not load your trips. · Try again |
-| An action failed and nothing changed | `Toast`, with Try again when it helps | Couldn't reach the router, so nothing changed. |
-| A save failed | `SaveStatus` `error`, plus a toast with Try again | Not saved |
-| An action in a dialog failed | Text below the control, inside the dialog | Could not share the trip. Try again. |
+| A screen or panel could not load | `ErrorPanel` (`ErrorScreen` for a whole screen) | Could not load your trips · You're offline. · Try again |
+| An action failed and nothing changed | `Toast`, with Try again when it helps | Could not reach the router, so nothing changed. |
+| A save failed | `SaveStatus` `error`, plus a toast with the action for the code | Could not save the last change. · Try again |
+| An action next to its button failed, also in dialogs | `InlineError` | Could not create the trip. You're offline. |
 | Optional data is missing | Muted text in its place | Timetable not available. Search on bahn.de. |
 | A problem with the plan, not the app | `WarningText` | 1 place to sleep |
-| Unknown URL or unknown trip | `MessagePanel` with Back to trips | This trip doesn't exist or isn't shared with you. |
-| A crash inside a screen | Root route error component with `MessagePanel` and Reload | Something went wrong. |
+| Unknown trip | `ErrorScreen` with Back to trips | This trip doesn't exist |
+| Unknown URL | `NotFoundScreen`, the router's default | Page not found |
+| A crash inside a screen, or a stale screen after a deploy | `ErrorScreen`, the router's default | A new version is available · Reload |
 
-- Inline error text uses `text-danger` and `role="alert"`. Loading and status text uses `role="status"`.
-- A field with an error sets `aria-invalid` and points to the error with `aria-describedby`.
-- Toasts stay 8 s and can be closed. On phones they sit above the bottom sheet.
+- `ErrorPanel`, `ErrorScreen` and `NotFoundScreen` are in `apps/web/src/components/ErrorPanel.tsx`. They pick icon, text and button by code.
+- Loading and status text uses `role="status"`. `InlineError`, `FormField` errors and `ErrorPanel` use `role="alert"`.
+- A field with an error sets `aria-invalid` and `aria-describedby`. `FormField` gives the error the id `${htmlFor}-error`.
+- Toasts stay 8 s and can be closed. A toast for a failed save stays until it is closed or its action runs.
 - Don't put error details in tooltips. Touch screens can't hover.
 
 ## Text
 
-- Title: what happened, in a few words. "Could not load your trips."
+- Title: what happened, in a few words, no period. "Could not load your trips"
 - Text: the next step, and the cause when the user can act on it.
 - Name the thing: "the router", "the weather forecast", "the train timetable". Not "the server" or "the request".
 - Use "Could not …". Not "Failed to …", "Error:" or "Oops".
@@ -61,7 +63,7 @@ Services throw `WaylineError` with a code (`packages/domain/src/errors.ts`). The
 - Throw `WaylineError` at the edge of every service: trip stores, providers, the API. A plain `Error` means a bug.
 - Turn HTTP answers into `WaylineError` in one place (`readJson` in `apps/web/src/data/apiClient.ts`). Fetch through `offlineAware`, so a lost connection becomes `OFFLINE`.
 - Every `useQuery` renders its pending, error and data states. Every `useMutation` has an error state in the UI.
-- Get error text from `useErrorText` (`apps/web/src/errors.ts`). Screens don't write their own `switch` over codes. A screen may set its own title, e.g. "Could not load your trips".
+- Get error text from `apps/web/src/errors.ts`: `useErrorText` for panels, `useFailedText` for one-line errors ("Could not save the trip. You're offline."). Screens don't write their own `switch` over codes. A screen may set its own title, e.g. "Could not load your trips".
 - Queries retry by `shouldRetry` in the same file.
 - The root route has an error component and a not-found component. A failed lazy chunk after a deploy shows "A new version is available." with Reload.
 - Log with `console.warn` when the app recovers, `console.error` for bugs. The API logs unknown errors and answers with the generic error shape.

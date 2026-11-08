@@ -1,9 +1,10 @@
 import { Shares, type Trip } from "@wayline/domain";
-import { Button, Dialog, IconButton, Input } from "@wayline/ui";
+import { Button, Dialog, IconButton, InlineError, Input } from "@wayline/ui";
 import { Info, Mail, X } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSetShares, useShares } from "../../data/queries";
+import { useFailedText } from "../../errors";
 
 export type ShareDialogProps = {
   trip: Trip;
@@ -18,12 +19,13 @@ export function ShareDialog({ trip, open, onOpenChange }: ShareDialogProps) {
   const setShares = useSetShares(trip.id);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string>();
+  const failedText = useFailedText();
   const emails = shares.data ?? trip.sharedWith;
 
   const save = (next: string[], onSuccess?: () => void) =>
     setShares.mutate(next, {
       onSuccess,
-      onError: () => setError(t("share.failed")),
+      onError: (e) => setError(failedText(t("share.failed"), e)),
     });
 
   const add = (event: FormEvent) => {
@@ -71,9 +73,9 @@ export function ShareDialog({ trip, open, onOpenChange }: ShareDialogProps) {
           </Button>
         </div>
         {error && (
-          <span id="share-error" className="text-xs text-danger">
+          <InlineError id="share-error" size="xs">
             {error}
-          </span>
+          </InlineError>
         )}
       </form>
 

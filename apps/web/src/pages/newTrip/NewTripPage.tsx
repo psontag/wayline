@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { ErrorScreen } from "../../components/ErrorPanel";
 import { useServices } from "../../data/ServicesProvider";
 import { NewTripForm } from "./NewTripForm";
 import { placeOptions } from "./places";
@@ -20,10 +21,19 @@ export function NewTripPage() {
     [places.data],
   );
 
+  if (places.isError) {
+    return (
+      <ErrorScreen
+        error={places.error}
+        title={t("loadFailed")}
+        onRetry={() => void places.refetch()}
+      />
+    );
+  }
   if (!options) {
     return (
       <p className="p-6 text-text-muted" role="status">
-        {places.isError ? t("loadFailed") : t("loading")}
+        {t("loading")}
       </p>
     );
   }

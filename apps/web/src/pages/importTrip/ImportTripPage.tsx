@@ -14,6 +14,7 @@ import {
   FileDrop,
   FormField,
   IconButton,
+  InlineError,
   Input,
   PanelHeader,
   PanelSection,
@@ -27,6 +28,7 @@ import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSaveTrip } from "../../data/queries";
 import { useServices } from "../../data/ServicesProvider";
+import { useFailedText } from "../../errors";
 import { startTimes } from "../newTrip/form";
 import { usePlaceIndex } from "../tripEditor/stopChoices";
 import { toHotel } from "../tripEditor/useTripEditor";
@@ -54,6 +56,7 @@ const budgets: HotelBudget[] = ["low", "mid", "high"];
 
 export function ImportTripPage() {
   const { t } = useTranslation("importTrip");
+  const failedText = useFailedText();
   const format = useFormat();
   const id = useId();
   const navigate = useNavigate();
@@ -283,12 +286,12 @@ export function ImportTripPage() {
             )}
 
             {failed.length > 0 && (
-              <p role="alert" className="text-sm text-danger">
+              <InlineError>
                 {t("failed", {
                   files: failed.join(", "),
                   count: failed.length,
                 })}
-              </p>
+              </InlineError>
             )}
           </PanelSection>
 
@@ -376,9 +379,9 @@ export function ImportTripPage() {
 
         <div className="flex items-center justify-between gap-3 border-t border-border bg-surface px-4 py-4 max-md:sticky max-md:bottom-0">
           {create.isError ? (
-            <span role="alert" className="text-sm text-danger">
-              {t("createFailed")}
-            </span>
+            <InlineError>
+              {failedText(t("createFailed"), create.error)}
+            </InlineError>
           ) : (
             <span />
           )}

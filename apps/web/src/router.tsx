@@ -5,6 +5,7 @@ import {
   lazyRouteComponent,
 } from "@tanstack/react-router";
 import { AppShell } from "./components/AppShell";
+import { ErrorScreen, NotFoundScreen } from "./components/ErrorPanel";
 import { DevComponentsPage } from "./pages/DevComponentsPage";
 import { validateNewTripSearch } from "./pages/newTrip/search";
 import { validateProposalsSearch } from "./pages/proposals/search";
@@ -93,7 +94,20 @@ const routeTree = rootRoute.addChildren([
   devComponentsRoute,
 ]);
 
-export const router = createRouter({ routeTree });
+export const router = createRouter({
+  routeTree,
+  // Errors in a screen show inside the app shell, with the top bar.
+  defaultErrorComponent: ({ error, reset }) => (
+    <ErrorScreen
+      error={error}
+      onRetry={() => {
+        reset();
+        void router.invalidate();
+      }}
+    />
+  ),
+  defaultNotFoundComponent: NotFoundScreen,
+});
 
 declare module "@tanstack/react-router" {
   interface Register {
