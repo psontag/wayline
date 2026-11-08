@@ -12,6 +12,7 @@ import { readDataFile } from "@wayline/providers/testing";
 import { it } from "vitest";
 import { corridorShare } from "../src/generate/corridor";
 import { Planners } from "../src/generate/generate";
+import { linePoints, loopKm } from "../src/generate/loops";
 
 const place = (name: string, coord: LonLat) => ({
   name,
@@ -102,6 +103,16 @@ const trips: Trip[] = [
     170,
     1200,
   ],
+  // The design review trip: short A to B over several days.
+  [
+    "Würzburg to Bamberg 3×70",
+    "one-way",
+    place("Würzburg", [9.936, 49.802]),
+    bamberg,
+    3,
+    70,
+    900,
+  ],
   [
     "Köln to Bonn 45",
     "one-way",
@@ -171,6 +182,10 @@ it("reports", { timeout: 900_000 }, async () => {
     kmPerDay,
     maxAscentPerDay,
   ] of trips) {
+    // REPORT_ONLY=Würzburg runs only the trips whose name contains it.
+    if (process.env.REPORT_ONLY && !name.includes(process.env.REPORT_ONLY)) {
+      continue;
+    }
     const request: GenerateRequest = {
       kind,
       startStation,
@@ -202,7 +217,12 @@ it("reports", { timeout: 900_000 }, async () => {
       for (const tag of p.tags ?? [])
         tagged.set(tag, (tagged.get(tag) ?? 0) + 1);
       total++;
-      return `${i + 1} ${km.toFixed(0)} km ${up.toFixed(0)} m, via ${p.via.slice(0, 3).join(", ")} [${[p.followedRoute, ...(p.tags ?? [])].filter(Boolean).join(", ")}]`;
+      const loops = p.trip.stages.map((s) =>
+        loopKm(
+          linePoints(s.legs.flatMap((leg) => decodeLine(leg.geometry))),
+        ).toFixed(0),
+      );
+      return `${i + 1} ${km.toFixed(0)} km ${up.toFixed(0)} m, loops ${loops.join("/")} km, via ${p.via.slice(0, 3).join(", ")} [${[p.followedRoute, ...(p.tags ?? [])].filter(Boolean).join(", ")}]`;
     });
     console.log(
       `\n${name}: ${proposals.length} proposals, ${(ms / 1000).toFixed(1)} s, same road ${(road * 100).toFixed(0)} %, same corridor ${(corridor * 100).toFixed(0)} %`,

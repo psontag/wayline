@@ -21,6 +21,7 @@ import {
   RadioCards,
   SegmentedControl,
   Select,
+  Suggestion,
   Switch,
   useFormat,
 } from "@wayline/ui";
@@ -44,6 +45,7 @@ import {
   toRequest,
   type TripLength,
   type TripShape,
+  withDays,
 } from "./form";
 import { NewTripMap } from "./NewTripMap";
 import { PlaceField } from "./PlaceField";
@@ -431,6 +433,11 @@ export function NewTripForm({
                 <DetourHint
                   values={values}
                   onFit={(km) => form.setFieldValue("kmPerDay", km)}
+                  onDays={(days) => {
+                    const next = withDays(values, days);
+                    form.setFieldValue("length", next.length);
+                    form.setFieldValue("endDate", next.endDate);
+                  }}
                 />
               )}
             </form.Subscribe>
@@ -546,35 +553,41 @@ function Days({ values }: { values: NewTripValues }) {
 function DetourHint({
   values,
   onFit,
+  onDays,
 }: {
   values: NewTripValues;
   onFit: (kmPerDay: number) => void;
+  onDays: (days: number) => void;
 }) {
   const { t } = useTranslation("newTrip");
   const format = useFormat();
   const shares = values.length === "one" ? [1] : sharesOf(values);
-  const fit =
-    shares &&
-    detour(
-      values,
-      shares.reduce((a, b) => a + b, 0),
-    );
-  if (!fit) return null;
+  const days = shares?.reduce((a, b) => a + b, 0);
+  const fit = days && detour(values, days);
+  if (!fit || !days || !values.kmPerDay) return null;
+  const { days: fewer, kmPerDay } = fit;
   return (
-    <div className="flex items-center gap-3 rounded-md bg-selected px-3 py-2 text-sm">
-      <span className="min-w-0 flex-1">
-        {t("detour.text", {
-          from: values.start?.name,
-          to: values.end?.name,
-          distance: format.distance(fit.km * 1000),
-        })}
-      </span>
-      <Button size="sm" type="button" onClick={() => onFit(fit.kmPerDay)}>
-        {t(values.length === "one" ? "detour.fitOne" : "detour.fit", {
-          distance: format.distance(fit.kmPerDay * 1000),
-        })}
-      </Button>
-    </div>
+    <Suggestion
+      text={t("detour.text", {
+        from: values.start?.name,
+        to: values.end?.name,
+        distance: format.distance(fit.km * 1000),
+        total: format.distance(days * values.kmPerDay * 1000),
+      })}
+    >
+      {fewer && (
+        <Button size="sm" type="button" onClick={() => onDays(fewer)}>
+          {t("detour.days", { count: fewer })}
+        </Button>
+      )}
+      {kmPerDay && (
+        <Button size="sm" type="button" onClick={() => onFit(kmPerDay)}>
+          {t(values.length === "one" ? "detour.fitOne" : "detour.fit", {
+            distance: format.distance(kmPerDay * 1000),
+          })}
+        </Button>
+      )}
+    </Suggestion>
   );
 }
 

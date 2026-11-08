@@ -1,8 +1,13 @@
-import type { GenerateRequest, Proposal } from "@wayline/domain";
+import {
+  decodeLine,
+  type GenerateRequest,
+  type Proposal,
+} from "@wayline/domain";
 import { MockNetworkSource } from "@wayline/providers";
 import { readMockFile } from "@wayline/providers/testing";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { loadPlanner, type Planner } from "./generate";
+import { linePoints, loopsBack } from "./loops";
 
 // Frozen, so time limits never stop the search and results do not depend on
 // the speed of the machine. Try limits still end it.
@@ -102,7 +107,8 @@ describe("Planner on the Oberfranken network", () => {
     expect(ends.size).toBeGreaterThan(1);
   });
 
-  it("ends at the requested station", async () => {
+  // Bamberg to Coburg is about 45 km, so 210 km need detours.
+  it("ends at the requested station, without filler loops", async () => {
     const request: GenerateRequest = {
       ...oneWay,
       endStation: {
@@ -122,6 +128,10 @@ describe("Planner on the Oberfranken network", () => {
       // The fill may widen the km per day.
       if (p.flavour) checkTrip(p, request);
       expect(p.trip.stages.at(-1)?.end.name).toBe("Coburg");
+      const days = p.trip.stages.map((s) =>
+        linePoints(s.legs.flatMap((leg) => decodeLine(leg.geometry))),
+      );
+      expect(loopsBack(days)).toBe(false);
     }
   });
 

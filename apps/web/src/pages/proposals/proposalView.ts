@@ -12,6 +12,7 @@ import {
   type RoutePoint,
   routePoints,
   type RouteTag,
+  shortTrip,
   type StageWeather,
   type Trip,
   tripStats,
@@ -305,6 +306,47 @@ export type Relaxed =
 const roundTo = (value: number, step: number) =>
   Math.round(value / step) * step;
 
+/** The request over fewer days. One day has no short days or hotels. */
+export function withDays(
+  request: GenerateRequest,
+  days: number,
+): GenerateRequest {
+  if (days === 1) {
+    const one = { ...request, days };
+    delete one.dayShares;
+    delete one.hotelBudget;
+    return one;
+  }
+  return {
+    ...request,
+    days,
+    ...(request.dayShares && {
+      dayShares: dayShares(days, request.startTime, request.backBy),
+    }),
+  };
+}
+
+/**
+ * A to B much shorter than the planned days, with the days that fit.
+ * Undefined for other trips.
+ */
+export function shortRequest(request: GenerateRequest) {
+  const { startStation, endStation } = request;
+  if (request.kind !== "one-way" || !startStation || !endStation) return;
+  const days = (request.dayShares ?? []).reduce(
+    (sum, share) => sum + share,
+    request.days - (request.dayShares?.length ?? 0),
+  );
+  const short = shortTrip(
+    startStation.coord,
+    endStation.coord,
+    days,
+    request.kmPerDay,
+  );
+  if (!short || short.days >= request.days) return;
+  return { ...short, plannedKm: days * request.kmPerDay };
+}
+
 /** Up to two changes that relax the failed limit. Main one first. */
 export function relaxOptions(
   request: GenerateRequest,
@@ -345,19 +387,7 @@ export function relaxOptions(
         options.push({
           change: "days",
           value: fewerDays,
-          request: {
-            ...request,
-            days: fewerDays,
-            ...(request.dayShares
-              ? {
-                  dayShares: dayShares(
-                    fewerDays,
-                    request.startTime,
-                    request.backBy,
-                  ),
-                }
-              : {}),
-          },
+          request: withDays(request, fewerDays),
         });
       }
       options.push(lessKm);
