@@ -3,6 +3,7 @@ import {
   type GenerateRequest,
   headwindShare,
   type Proposal,
+  ridingHours,
   type RouteTag,
   type StageWeather,
   type WindDay,
@@ -409,6 +410,9 @@ function ProposalItem({
           place: stage.end.name,
           distance: format.distance(stage.stats.distance),
           ascent: format.elevation(stage.stats.ascent),
+          ridingTime: format.duration(
+            ridingHours(stage.stats, trip.settings.avgSpeed),
+          ),
           ...(share < 1
             ? { tag: t(share <= 0.5 ? "card.halfDay" : "card.shortDay") }
             : {}),
