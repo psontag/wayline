@@ -1,4 +1,9 @@
-import { distanceKm, type LonLat, statsFromLegs, type Trip } from "@wayline/domain";
+import {
+  distanceKm,
+  type LonLat,
+  statsFromLegs,
+  type Trip,
+} from "@wayline/domain";
 import type { AbortSignalLike, RoutingProvider } from "@wayline/providers";
 import type { Graph, PathStep } from "../graph/Graph";
 import { PLAN_PROFILE } from "./search";

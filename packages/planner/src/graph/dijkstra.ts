@@ -37,17 +37,23 @@ export function resetSearchCounts() {
 }
 
 /**
- * Cheapest paths from one node. Stops early at target or when the cost
- * passes maxCost.
+ * Cheapest paths from one node. Stops early at target, once all targets
+ * are reached, or when the cost passes maxCost.
  */
 export function dijkstra(
   graph: Graph,
   source: number,
   {
     target,
+    targets,
     cost = defaultCost,
     maxCost = Infinity,
-  }: { target?: number; cost?: EdgeCost; maxCost?: number } = {},
+  }: {
+    target?: number;
+    targets?: Iterable<number>;
+    cost?: EdgeCost;
+    maxCost?: number;
+  } = {},
 ): DijkstraResult {
   const n = graph.nodes.length;
   const best = new Float64Array(n).fill(Infinity);
@@ -57,7 +63,8 @@ export function dijkstra(
   best[source] = 0;
   km[source] = 0;
   queue.push(source, 0);
-  if (target === undefined) searchCounts.oneToAll++;
+  const open = targets ? new Set(targets) : undefined;
+  if (target === undefined && !open) searchCounts.oneToAll++;
   else searchCounts.toTarget++;
 
   while (queue.length) {
@@ -67,6 +74,10 @@ export function dijkstra(
     if (c > (best[node] ?? Infinity)) continue;
     searchCounts.settled++;
     if (node === target || c > maxCost) break;
+    if (open) {
+      open.delete(node);
+      if (!open.size) break;
+    }
     for (const id of graph.edgesAt(node)) {
       const edge = graph.edge(id);
       const next = graph.other(id, node);

@@ -82,7 +82,8 @@ export function followedRoute(
   let found: string | undefined;
   let most = minShare * total;
   for (const [name, km] of ridden) {
-    const tie = found && km === most && catalog.rank(name) < catalog.rank(found);
+    const tie =
+      found && km === most && catalog.rank(name) < catalog.rank(found);
     if (km > most || tie || (!found && km === most)) {
       found = name;
       most = km;
@@ -112,16 +113,19 @@ export function routeCandidates(
     onRoute.add(e.from);
     onRoute.add(e.to);
   }
-  const fromStart = costs.from(graph, start);
-  const all = vias
-    .filter((n) => onRoute.has(n) && n !== start && n !== end)
-    .sort((a, b) => (fromStart.km[a] ?? 0) - (fromStart.km[b] ?? 0));
+  const candidates = vias.filter(
+    (n) => onRoute.has(n) && n !== start && n !== end,
+  );
+  // Each search stops once it reached the nodes read below.
+  const fromStart = costs.from(graph, start, candidates);
+  const all = candidates.sort(
+    (a, b) => (fromStart.km[a] ?? 0) - (fromStart.km[b] ?? 0),
+  );
   const every = Math.max(1, all.length / maxVias);
   const some = Array.from(
     { length: Math.min(all.length, maxVias) },
     (_, i) => all[Math.floor(i * every)] as number,
   );
-  const from = new Map(some.map((v) => [v, costs.from(graph, v)]));
   const stops = new Map(
     some.map((v) => [
       v,
@@ -131,6 +135,13 @@ export function routeCandidates(
           filter: (n) => n.kind === "station" && n.id !== start,
         }),
     ]),
+  );
+  const from = new Map(
+    some.map((v) => {
+      const stop = stops.get(v);
+      const targets = stop === undefined ? some : [...some, stop];
+      return [v, costs.from(graph, v, targets)];
+    }),
   );
 
   // Without an end, a far first via makes the trip ride out and back past the

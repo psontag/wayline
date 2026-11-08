@@ -74,7 +74,11 @@ describe("routesInReach", () => {
         routes: [e.id < 2 ? "Way One Teil 1" : "Way One Teil 2", "10-11"],
       })),
     });
-    const routes = routesInReach(parts, new RouteCatalog(parts.edges), () => true);
+    const routes = routesInReach(
+      parts,
+      new RouteCatalog(parts.edges),
+      () => true,
+    );
     expect(routes.map((r) => r.name)).toEqual(["Way One"]);
     expect(routes[0]?.edges.size).toBe(4);
   });
@@ -97,13 +101,29 @@ describe("routeCandidates", () => {
   const costs = new Costs(graph, { kmPerDay: 40, maxAscentPerDay: 1000 });
 
   it("rides between two vias, longest ride first", () => {
-    const list = routeCandidates(graph, costs, 0, 4, named("Route R"), [1, 2, 3], 8);
+    const list = routeCandidates(
+      graph,
+      costs,
+      0,
+      4,
+      named("Route R"),
+      [1, 2, 3],
+      8,
+    );
     expect(list[0]?.nodes).toEqual([0, 1, 3, 4]);
     expect(list[0]?.km).toBe(40);
   });
 
   it("limits the vias", () => {
-    const list = routeCandidates(graph, costs, 0, 4, named("Route R"), [1, 2, 3], 2);
+    const list = routeCandidates(
+      graph,
+      costs,
+      0,
+      4,
+      named("Route R"),
+      [1, 2, 3],
+      2,
+    );
     expect(new Set(list.flatMap((c) => c.nodes.slice(1, -1))).size).toBe(2);
   });
 
@@ -140,9 +160,7 @@ describe("followedRoute", () => {
   it("needs a share of the path on the route", () => {
     const off = new Graph({
       ...network,
-      edges: network.edges.map((e) =>
-        e.id > 0 ? { ...e, routes: [] } : e,
-      ),
+      edges: network.edges.map((e) => (e.id > 0 ? { ...e, routes: [] } : e)),
     });
     const offCatalog = new RouteCatalog(off.edges);
     expect(followedRoute(off, steps(0, 1), offCatalog, 0.5)).toBe("Route R");
