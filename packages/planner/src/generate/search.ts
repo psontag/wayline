@@ -6,7 +6,7 @@ import {
   type NetworkEdge,
   type Profile,
 } from "@wayline/domain";
-import { dijkstra, type EdgeCost, shortestPath } from "../graph/dijkstra";
+import { dijkstra, type EdgeWeights, shortestPath } from "../graph/dijkstra";
 import type { Graph, PathStep } from "../graph/Graph";
 import { flavourShare, sceneryBoost } from "./theme";
 
@@ -153,9 +153,9 @@ export class Costs {
     this.penalty = new Float64Array(graph.edges.length).fill(1);
   }
 
-  /** Cost function with the given penalties. */
-  cost(penalty = this.penalty): EdgeCost {
-    return (e) => (this.base[e.id] ?? Infinity) * (penalty[e.id] ?? 1);
+  /** Edge costs with the given penalties. */
+  cost(penalty = this.penalty): EdgeWeights {
+    return { base: this.base, factor: penalty };
   }
 
   /**
@@ -190,9 +190,9 @@ export class Trees {
   from(node: number): Tree {
     let tree = this.trees.get(node);
     if (!tree) {
-      const base = this.costs.base;
       const r = dijkstra(this.graph, node, {
-        cost: (e) => base[e.id] ?? Infinity,
+        cost: { base: this.costs.base },
+        reuse: true,
       });
       tree = { cost: Float32Array.from(r.cost), km: Float32Array.from(r.km) };
       this.trees.set(node, tree);
@@ -201,8 +201,8 @@ export class Trees {
   }
 }
 
-/** Edges that some legs of a chain should stay off, with a cost factor. */
-export type Avoid = { legs: number[]; edges: Set<number>; factor: number };
+/** Legs of a chain with an extra cost factor per edge id. */
+export type Avoid = { legs: number[]; factor: Float64Array };
 
 /**
  * Chains shortest paths through the nodes. Each leg avoids the edges of
@@ -216,8 +216,7 @@ export function chainPath(
 ): PathStep[] | null {
   const local = costs.penalty.slice();
   const cost = costs.cost(local);
-  const avoiding: EdgeCost = (e) =>
-    cost(e) * (avoid?.edges.has(e.id) ? avoid.factor : 1);
+  const avoiding = { ...cost, extra: avoid?.factor };
   const steps: PathStep[] = [];
   for (const [i, b] of nodes.entries()) {
     const a = nodes[i - 1];
