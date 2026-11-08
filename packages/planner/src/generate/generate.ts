@@ -1266,10 +1266,10 @@ export function signedShare(graph: Graph, steps: PathStep[]): number {
 /** Edges near the start, for the middle leg of a loop to avoid. */
 function nearEdges(graph: Graph, start: number, totalKm: number): Avoid {
   const km = Math.max(LOOP_AVOID.minKm, LOOP_AVOID.share * totalKm);
-  const edges = new Set<number>();
+  const factor = new Float64Array(graph.edges.length).fill(1);
   for (const n of graph.nodesWithin(graph.coord(start), km))
-    for (const e of graph.edgesAt(n)) edges.add(e);
-  return { legs: [1], edges, factor: LOOP_AVOID.factor };
+    for (const e of graph.edgesAt(n)) factor[e] = LOOP_AVOID.factor;
+  return { legs: [1], factor };
 }
 
 /** Does the middle of a loop come back close to the start? */
