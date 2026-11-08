@@ -3,7 +3,7 @@ import { bboxAround } from "@wayline/domain";
 import { TiledNetworkSource } from "@wayline/providers";
 import { readDataFile } from "@wayline/providers/testing";
 import { AreaCache } from "../graph/area";
-import { shortestPath } from "../graph/dijkstra";
+import { dijkstra, pathTo, shortestPath } from "../graph/dijkstra";
 import { Graph } from "../graph/Graph";
 import { Costs, type End, spreadEnds } from "./search";
 
@@ -32,9 +32,8 @@ describe("Costs.pathFrom", () => {
     const costs = new Costs(graph, request);
     costs.from(graph, 0);
     for (let b = 1; b < graph.nodes.length; b += 97) {
-      expect(costs.pathFrom(graph, 0, b)).toEqual(
-        shortestPath(graph, 0, b, costs.cost()),
-      );
+      const search = dijkstra(graph, 0, { target: b, cost: costs.cost() });
+      expect(costs.pathFrom(graph, 0, b)).toEqual(pathTo(graph, search, b));
     }
   });
 
@@ -45,5 +44,45 @@ describe("Costs.pathFrom", () => {
     expect(costs.pathFrom(graph, 1, 5)).toBeUndefined();
     costs.penalty[0] = 2;
     expect(costs.pathFrom(graph, 0, 5)).toBeUndefined();
+  });
+});
+
+describe("shortestPath", () => {
+  it("costs the same as a search from one end", async () => {
+    const graph = await new AreaCache(
+      new TiledNetworkSource(readDataFile, "/data/mock/heidelberg"),
+      (n) => new Graph(n),
+    ).get(bboxAround([[8.675, 49.403]], 20));
+    const costs = new Costs(graph, { kmPerDay: 70, maxAscentPerDay: 900 });
+    // Some penalties, as after a few picks.
+    for (let e = 0; e < graph.edges.length; e += 7) costs.penalty[e] = 2;
+    const weights = costs.cost();
+    const costOf = (steps: { edge: number }[]) =>
+      steps.reduce(
+        (sum, s) =>
+          sum + (weights.base[s.edge] ?? 0) * (weights.factor?.[s.edge] ?? 1),
+        0,
+      );
+    const n = graph.nodes.length;
+    for (let i = 0; i < 50; i++) {
+      const a = (i * 7919) % n;
+      const b = (i * 104729 + 13) % n;
+      const one = dijkstra(graph, a, { target: b, cost: weights });
+      const path = shortestPath(graph, a, b, weights);
+      if (one.cost[b] === Infinity) {
+        expect(path).toBeNull();
+        continue;
+      }
+      expect(path).not.toBeNull();
+      expect(costOf(path!)).toBeCloseTo(one.cost[b]!, 6);
+      // A connected chain from a to b.
+      let node = a;
+      for (const s of path!) {
+        const e = graph.edge(s.edge);
+        expect(s.forward ? e.from : e.to).toBe(node);
+        node = s.forward ? e.to : e.from;
+      }
+      expect(node).toBe(b);
+    }
   });
 });
