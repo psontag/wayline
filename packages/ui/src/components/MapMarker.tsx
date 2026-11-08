@@ -3,6 +3,7 @@ import {
   BedDouble,
   BookmarkCheck,
   ExternalLink,
+  Move,
   Star,
   TrainFront,
   Trash2,
@@ -219,10 +220,19 @@ export type ViaActionsProps = {
   label: string;
   removeLabel: string;
   onRemove: () => void;
+  /** Without it, there is no Move button, e.g. where the point is dragged. */
+  onMove?: () => void;
+  moveLabel?: string;
 };
 
 /** Actions of the selected via point, shown above it on the map. */
-export function ViaActions({ label, removeLabel, onRemove }: ViaActionsProps) {
+export function ViaActions({
+  label,
+  removeLabel,
+  onRemove,
+  onMove,
+  moveLabel,
+}: ViaActionsProps) {
   return (
     <div
       role="group"
@@ -230,11 +240,42 @@ export function ViaActions({ label, removeLabel, onRemove }: ViaActionsProps) {
       className="flex items-center gap-1 rounded-md border border-border bg-surface-raised py-1 pr-1 pl-3 text-sm font-semibold text-text shadow-md"
     >
       <span className="whitespace-nowrap">{label}</span>
+      {onMove && (
+        <Button size="sm" variant="secondary" onClick={onMove}>
+          <Move aria-hidden />
+          {moveLabel}
+        </Button>
+      )}
       <Button size="sm" variant="danger" onClick={onRemove}>
         <Trash2 aria-hidden />
         {removeLabel}
       </Button>
     </div>
+  );
+}
+
+/**
+ * The point being placed: a pin whose tip marks the spot. It stays in the
+ * middle of the map while the map moves under it.
+ */
+export function PlacePin() {
+  return (
+    <span className="pointer-events-none flex flex-col items-center">
+      <span className="flex size-7 items-center justify-center rounded-full bg-via-point shadow-md">
+        <span className="size-2.5 rounded-full bg-surface" />
+      </span>
+      <span className="h-4 w-0.5 bg-via-point" />
+      <span className="size-2 rounded-full bg-via-point" />
+    </span>
+  );
+}
+
+/** Short figures next to a dragged point, e.g. the change in distance. */
+export function PreviewLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="pointer-events-none rounded-sm bg-inverse px-2 py-1 text-xs font-bold whitespace-nowrap text-on-inverse tabular-nums shadow-md">
+      {children}
+    </span>
   );
 }
 

@@ -179,6 +179,8 @@ export {
   StationMarker,
   HoverMarker,
   StopMarker,
+  PlacePin,
+  PreviewLabel,
   ViaActions,
   ViaMarker,
   type AlternativeMarkerProps,
@@ -249,3 +251,4 @@ export {
   type HotelActionsProps,
   type HotelDetailProps,
 } from "./components/HotelChoice";
+export { PlaceBar, type PlaceBarProps } from "./components/PlaceBar";

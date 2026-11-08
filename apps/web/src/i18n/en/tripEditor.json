@@ -88,7 +88,18 @@
     "name": "Via point {{n}}",
     "at": "At {{distance}}",
     "remove": "Remove",
+    "move": "Move",
     "removeLabel": "Remove via point {{n}}"
+  },
+  "place": {
+    "add": "Add via point",
+    "move": "Move via point",
+    "hint": "Move the map to place the point",
+    "cancel": "Cancel",
+    "done": "Done",
+    "delta": "{{distance}} · {{ascent}}",
+    "more": "+{{value}}",
+    "less": "−{{value}}"
   },
   "note": {
     "nextStage": "Day {{day}} now starts in {{place}} and is {{distance}}.",

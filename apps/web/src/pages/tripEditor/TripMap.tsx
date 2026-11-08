@@ -5,9 +5,14 @@ import {
   type Trip,
 } from "@wayline/domain";
 import {
+  type Format,
   GhostViaMarker,
   HoverMarker,
   MapHint,
+  PlaceBar,
+  PlacePin,
+  PreviewLabel,
+  useFormat,
   useThemeTokens,
   ViaActions,
   ViaMarker,
@@ -16,6 +21,7 @@ import type { FeatureCollection, LineString } from "geojson";
 import { Route } from "lucide-react";
 import type { FilterSpecification } from "maplibre-gl";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import {
   Layer,
@@ -31,16 +37,14 @@ import {
   type MapPadding,
 } from "../../components/map/AppMap";
 import { isTyping, useLastPointer } from "../../components/useLastPointer";
-import {
-  nearestOnLine,
-  type RouteDrag,
-  useRouteDrag,
-} from "../../components/useRouteDrag";
+import { nearestOnLine, useRouteDrag } from "../../components/useRouteDrag";
 import type { MapHotel } from "./mapTypes";
+import type { ViaPreview, ViaTarget } from "./routeEdits";
 import type { MapStation } from "./stations";
 import { TripMarkers } from "./TripMarkers";
 import type { WeatherField } from "./weatherGrid";
 import { WeatherLayers } from "./WeatherLayers";
+import { type LiveVia, useViaPlacing, useViaPreview } from "./useViaPlacing";
 
 export type { MapPadding };
 
@@ -95,11 +99,12 @@ export type TripMapProps = {
 export type RouteEditing = {
   /** False while an edit is saved. */
   enabled: boolean;
-  /** Route of a leg through a point, while the point is dragged. */
-  preview: (leg: number, at: LonLat) => Promise<LonLat[]>;
-  /** keep: add it even if the route stays the same, as a handle. */
-  onAddVia: (leg: number, at: LonLat, keep?: boolean) => void;
+  /** Route through a point while it is placed or dragged. Not saved. */
+  preview: (target: ViaTarget, at: LonLat) => Promise<ViaPreview | undefined>;
+  onAddVia: (leg: number, at: LonLat) => void;
   onMoveVia: (coord: LonLat, at: LonLat) => void;
+  /** Called with true while a point is placed with the pin, e.g. to lower a sheet. */
+  onPlacingChange?: (placing: boolean) => void;
   onRemoveVia: (coord: LonLat) => void;
   /** Via point of the selected stage that shows its actions. */
   selectedVia?: number;
@@ -109,9 +114,6 @@ export type RouteEditing = {
   /** Show the proposed route stronger. */
   proposedHighlighted?: boolean;
 };
-
-/** Waits this long after the last move before a preview is routed. */
-const PREVIEW_MS = 120;
 
 /** Trip on the map, days in the colors of the day list. The selected day is full strength. */
 export function TripMap({
@@ -200,49 +202,38 @@ export function TripMap({
   const { drag, ghost } = routeDrag;
   const ghostAt = drag?.at ?? ghost;
 
-  // The route through the dragged point, routed shortly after each move.
-  // It belongs to one drag position and is ignored for any other.
-  const [routed, setRouted] = useState<{ drag: RouteDrag; line: LonLat[] }>();
-  // The latest preview function, so a new one does not restart the timer.
-  const previewFn = useRef(route?.preview);
-  useEffect(() => {
-    previewFn.current = route?.preview;
-  });
-  useEffect(() => {
-    if (!drag) return;
-    let stale = false;
-    const timer = setTimeout(() => {
-      void previewFn.current?.(drag.leg, drag.at).then((line) => {
-        if (!stale) setRouted({ drag, line });
-      });
-    }, PREVIEW_MS);
-    return () => {
-      stale = true;
-      clearTimeout(timer);
-    };
-  }, [drag]);
+  // A via point dragged with the mouse.
+  const [viaDrag, setViaDrag] = useState<LiveVia>();
+  // A point placed with the pin, on touch.
+  const placer = useViaPlacing(mapRef);
+  const { placing } = placer;
+  const lineDrag = useMemo<LiveVia | undefined>(
+    () => drag && { target: { leg: drag.leg }, at: drag.at },
+    [drag],
+  );
+  const mouseDrag = lineDrag ?? viaDrag;
+  const live = mouseDrag ?? placing;
+  const preview = useViaPreview(live, route?.preview);
   const previewData = useMemo<FeatureCollection<LineString>>(() => {
-    const preview = routed && routed.drag === drag ? routed.line : [];
-    const points = trip.stages[selected]?.legs ?? [];
-    const leg = drag && points[drag.leg];
-    const coordinates = preview.length
-      ? preview
-      : leg && drag
-        ? [leg.from, drag.at, leg.to]
-        : [];
+    const leg = drag && trip.stages[selected]?.legs[drag.leg];
+    // Until the first route comes back, a line drag shows a straight line.
+    const coordinates =
+      preview?.line ?? (leg && drag ? [leg.from, drag.at, leg.to] : []);
     return {
       type: "FeatureCollection",
       features: coordinates.length
         ? [
             {
               type: "Feature",
-              properties: { routed: preview.length > 0 },
+              properties: {},
               geometry: { type: "LineString", coordinates },
             },
           ]
         : [],
     };
-  }, [routed, drag, trip.stages, selected]);
+  }, [preview, drag, trip.stages, selected]);
+  const format = useFormat();
+  const delta = preview && formatDelta(t, format, preview);
   const proposedData = useMemo<FeatureCollection<LineString>>(
     () => ({
       type: "FeatureCollection",
@@ -267,6 +258,27 @@ export function TripMap({
   useEffect(() => {
     routeRef.current = route;
   });
+
+  const isPlacing = !!placing;
+  useEffect(() => {
+    routeRef.current?.onPlacingChange?.(isPlacing);
+  }, [isPlacing]);
+  const stopPlacing = placer.stop;
+  useEffect(() => {
+    if (!isPlacing) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") stopPlacing();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isPlacing, stopPlacing]);
+  const finishPlacing = () => {
+    if (!placing || !route) return;
+    const { target, at } = placing;
+    if ("leg" in target) route.onAddVia(target.leg, at);
+    else route.onMoveVia(target.via, at);
+    placer.stop();
+  };
   useEffect(() => {
     if (!selectedCoord) return;
     const onKey = (event: KeyboardEvent) => {
@@ -287,8 +299,8 @@ export function TripMap({
   }, [selectedCoord]);
 
   // Zoom to the stage when the selection changes, keeping its stop choices
-  // and hotels in view. Not while the route is dragged.
-  const dragging = !!drag;
+  // and hotels in view. Not while the route is edited.
+  const dragging = !!live;
   const fitTarget = overview ? -1 : selected;
   const [fitDay, setFitDay] = useState(fitTarget);
   if (!dragging && fitDay !== fitTarget) setFitDay(fitTarget);
@@ -308,6 +320,8 @@ export function TripMap({
   const onClick = (event: MapLayerMouseEvent) => {
     const props = event.features?.[0]?.properties;
     const map = mapRef.current;
+    // While placing, the map only moves.
+    if (placing) return;
     // Clicks on markers also reach the map. A click on the map itself only
     // clears the selected via point, so a tap meant to close it adds nothing.
     if (selectedVia !== undefined && map) {
@@ -323,7 +337,7 @@ export function TripMap({
     ) {
       const line = legLines[props.leg];
       if (map && line) {
-        route.onAddVia(props.leg, nearestOnLine(map, line, event.point), true);
+        placer.start({ leg: props.leg }, nearestOnLine(map, line, event.point));
       }
       return;
     }
@@ -354,10 +368,29 @@ export function TripMap({
       hint={
         route &&
         pointerKind === "touch" && (
-          <MapHint icon={<Route aria-hidden />}>{t("map.tapHint")}</MapHint>
+          <MapHint icon={<Route aria-hidden />}>
+            {placing ? t("place.hint") : t("map.tapHint")}
+          </MapHint>
         )
       }
-      overlay={children}
+      overlay={
+        <>
+          {children}
+          {placing && (
+            <div className="absolute inset-x-3 bottom-4 z-panel flex justify-center">
+              <PlaceBar
+                title={t("leg" in placing.target ? "place.add" : "place.move")}
+                detail={delta}
+                cancelLabel={t("place.cancel")}
+                doneLabel={t("place.done")}
+                busy={!route?.enabled}
+                onCancel={placer.stop}
+                onDone={finishPlacing}
+              />
+            </div>
+          )}
+        </>
+      }
       mapRef={mapRef}
       interactiveLayerIds={["stage-hit", "leg-hit"]}
       cursor={drag ? "grabbing" : ghost ? "grab" : undefined}
@@ -486,9 +519,17 @@ export function TripMap({
             key={index}
             longitude={via.coord[0]}
             latitude={via.coord[1]}
-            draggable={route.enabled}
+            // On touch, Move places it with the pin instead.
+            draggable={route.enabled && pointerKind === "mouse" && !placing}
             onDragStart={() => (draggedVia.current = true)}
+            onDrag={(e) =>
+              setViaDrag({
+                target: { via: via.coord },
+                at: [e.lngLat.lng, e.lngLat.lat],
+              })
+            }
             onDragEnd={(e) => {
+              setViaDrag(undefined);
               route.onMoveVia(via.coord, [e.lngLat.lng, e.lngLat.lat]);
               // The click, if any, comes right after the drag ends.
               setTimeout(() => (draggedVia.current = false));
@@ -506,12 +547,43 @@ export function TripMap({
             />
           </Marker>
         ))}
-      {route && selectedVia !== undefined && (
+      {route && selectedVia !== undefined && !placing && (
         <ViaActionsMarker
           route={route}
           via={trip.stages[selected]?.via[selectedVia]?.coord}
           n={selectedVia + 1}
+          onMove={
+            pointerKind === "touch"
+              ? (coord) => {
+                  route.onSelectVia(undefined);
+                  placer.start({ via: coord }, coord);
+                }
+              : undefined
+          }
         />
+      )}
+      {placing && (
+        <Marker
+          longitude={placing.at[0]}
+          latitude={placing.at[1]}
+          anchor="bottom"
+          // The tip of the pin, not its bottom edge, marks the spot.
+          offset={[0, 4]}
+          style={{ zIndex: 8, pointerEvents: "none" }}
+        >
+          <PlacePin />
+        </Marker>
+      )}
+      {mouseDrag && delta && (
+        <Marker
+          longitude={mouseDrag.at[0]}
+          latitude={mouseDrag.at[1]}
+          anchor="top-left"
+          offset={[16, 16]}
+          style={{ zIndex: 8, pointerEvents: "none" }}
+        >
+          <PreviewLabel>{delta}</PreviewLabel>
+        </Marker>
       )}
       {ghostAt && (
         <Marker
@@ -536,10 +608,12 @@ function ViaActionsMarker({
   route,
   via,
   n,
+  onMove,
 }: {
   route: RouteEditing;
   via: LonLat | undefined;
   n: number;
+  onMove?: (coord: LonLat) => void;
 }) {
   const { t } = useTranslation("tripEditor");
   if (!via) return null;
@@ -559,7 +633,23 @@ function ViaActionsMarker({
           route.onSelectVia(undefined);
           route.onRemoveVia(via);
         }}
+        moveLabel={t("via.move")}
+        onMove={onMove && (() => onMove(via))}
       />
     </Marker>
   );
+}
+
+/** "+6 km · +120 m": how much longer and hillier the day gets. */
+function formatDelta(
+  t: TFunction<"tripEditor">,
+  format: Format,
+  { distance, ascent }: ViaPreview,
+) {
+  const signed = (value: number, text: string) =>
+    t(value < 0 ? "place.less" : "place.more", { value: text });
+  return t("place.delta", {
+    distance: signed(distance, format.distance(Math.abs(distance))),
+    ascent: signed(ascent, format.elevation(Math.abs(Math.round(ascent)))),
+  });
 }

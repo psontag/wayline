@@ -266,8 +266,14 @@ export function AppMap({
           {children}
         </LabelLayerContext.Provider>
       </MapGL>
+      {/* Below a floating header, as the layer menu. */}
       {hint && (
-        <div className="pointer-events-none absolute top-3 left-3 z-panel">
+        <div
+          className={cn(
+            "pointer-events-none absolute left-3 z-panel",
+            !controls && !maximized ? "top-16" : "top-3",
+          )}
+        >
           {hint}
         </div>
       )}
