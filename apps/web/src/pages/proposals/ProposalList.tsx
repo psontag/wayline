@@ -17,10 +17,11 @@ import {
   ProgressBar,
   ProposalCard,
   ProposalCardSkeleton,
+  Suggestion,
   useFormat,
 } from "@wayline/ui";
 import { ArrowRight, Mountain, RotateCcw, SearchX } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
 import { useNetwork, useTripsWeather } from "../../data/queries";
@@ -37,12 +38,14 @@ import {
   type RainTag,
   rainTag,
   relaxOptions,
+  shortRequest,
   shownRouteTags,
   titleRoutes,
   titleTowns,
   tripRidingHours,
   type Relaxed,
   windTag,
+  withDays,
 } from "./proposalView";
 import { useRequestSummary } from "./ProposalsHeader";
 import type { Generation } from "./useGeneration";
@@ -95,6 +98,8 @@ export function ProposalList({
   const rain = proposals.map((_, i) => rainTag(weather[i] ?? undefined));
   // Dry on every route says nothing about the route.
   const allDry = rain.every((r) => r?.kind === "dry");
+  const [kept, setKept] = useState(false);
+  const shortTrip = kept ? undefined : shortRequest(request);
 
   if (status === "failed" && generation.failedLimit) {
     return (
@@ -124,10 +129,22 @@ export function ProposalList({
               : t("done.count", { count: proposals.length })
         }
         notice={
-          status === "running" ? (
-            <Progress generation={generation} />
-          ) : status === "cancelled" ? (
-            <CancelledNotice retry={generation.retry} />
+          status === "running" || status === "cancelled" || shortTrip ? (
+            <div className="flex flex-col gap-3">
+              {status === "running" ? (
+                <Progress generation={generation} />
+              ) : status === "cancelled" ? (
+                <CancelledNotice retry={generation.retry} />
+              ) : null}
+              {shortTrip && (
+                <ShortTripNotice
+                  request={request}
+                  short={shortTrip}
+                  onRelax={onRelax}
+                  onKeep={() => setKept(true)}
+                />
+              )}
+            </div>
           ) : undefined
         }
       >
@@ -195,6 +212,39 @@ function Progress({
         {steps.join(" · ")}
       </span>
     </div>
+  );
+}
+
+/** A to B is much shorter than planned: offer fewer days. */
+function ShortTripNotice({
+  request,
+  short,
+  onRelax,
+  onKeep,
+}: {
+  request: GenerateRequest;
+  short: NonNullable<ReturnType<typeof shortRequest>>;
+  onRelax: (request: GenerateRequest) => void;
+  onKeep: () => void;
+}) {
+  const { t } = useTranslation("proposals");
+  const format = useFormat();
+  return (
+    <Suggestion
+      text={t("short.text", {
+        from: request.startStation?.name ?? "",
+        to: request.endStation?.name ?? "",
+        distance: format.distance(short.km * 1000),
+        total: format.distance(short.plannedKm * 1000),
+      })}
+    >
+      <Button size="sm" onClick={() => onRelax(withDays(request, short.days))}>
+        {t("short.fewer", { count: short.days })}
+      </Button>
+      <Button size="sm" variant="ghost" onClick={onKeep}>
+        {t("short.keep", { count: request.days })}
+      </Button>
+    </Suggestion>
   );
 }
 

@@ -13,6 +13,7 @@ import {
   toRequest,
   type TripLength,
   type TripShape,
+  withDays,
 } from "./form";
 import { nearbyStation, placeOptions, searchPlaces } from "./places";
 
@@ -157,8 +158,10 @@ describe("new trip form", () => {
       kmPerDay: 70,
     };
     // About 70 km apart, so about 90 km by bike.
-    expect(detour(ab, 3)).toEqual({ km: 90, kmPerDay: 30 });
+    expect(detour(ab, 3)).toEqual({ km: 90, days: 2, kmPerDay: 30 });
     expect(detour({ ...ab, kmPerDay: 30 }, 3)).toBeUndefined();
+    expect(formDays(withDays(ab, 2))).toBe(2);
+    expect(withDays(ab, 1).length).toBe("one");
     expect(detour({ ...ab, shape: "loop" }, 3)).toBeUndefined();
   });
   it("round-trips an open day ride with the wind", () => {

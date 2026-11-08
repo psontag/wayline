@@ -13,10 +13,12 @@ import {
   progressValue,
   rainTag,
   relaxOptions,
+  shortRequest,
   shownRouteTags,
   titleRoutes,
   titleTowns,
   windTag,
+  withDays,
 } from "./proposalView";
 
 const request: GenerateRequest = {
@@ -38,6 +40,28 @@ function line(lon: number): RoutePoint[] {
     km: i * 1.11,
   }));
 }
+
+describe("shortRequest", () => {
+  const toWuerzburg: GenerateRequest = {
+    ...request,
+    endStation: { name: "Würzburg", kind: "station", coord: [9.931, 49.793] },
+  };
+
+  it("offers fewer days when A to B is much shorter than planned", () => {
+    const short = shortRequest(toWuerzburg);
+    expect(short).toMatchObject({ km: 90, days: 2, plannedKm: 210 });
+    const fewer = withDays(toWuerzburg, short!.days);
+    expect(fewer.days).toBe(2);
+    expect(withDays(toWuerzburg, 1).hotelBudget).toBeUndefined();
+  });
+
+  it("says nothing without an end or when the days fit", () => {
+    expect(shortRequest(request)).toBeUndefined();
+    expect(shortRequest({ ...toWuerzburg, days: 2, kmPerDay: 60 })).toBe(
+      undefined,
+    );
+  });
+});
 
 describe("relaxOptions", () => {
   it("offers more ascent first when stages are too steep", () => {

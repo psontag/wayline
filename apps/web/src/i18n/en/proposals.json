@@ -40,6 +40,13 @@
     "count_one": "{{count}} proposal",
     "count_other": "{{count}} proposals"
   },
+  "short": {
+    "text": "{{from}} to {{to}} is about {{distance}} by bike, but you plan {{total}}. The routes make detours to fill the days.",
+    "fewer_one": "Ride {{count}} day",
+    "fewer_other": "Ride {{count}} days",
+    "keep_one": "Keep {{count}} day",
+    "keep_other": "Keep {{count}} days"
+  },
   "cancelled": {
     "title": "Search cancelled",
     "count_one": "{{count}} proposal so far",

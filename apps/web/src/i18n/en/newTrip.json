@@ -96,7 +96,9 @@
     "zoomOut": "Zoom out"
   },
   "detour": {
-    "text": "{{from}} to {{to}} is about {{distance}} by bike. Longer routes make detours.",
+    "text": "{{from}} to {{to}} is about {{distance}} by bike, but you plan {{total}}. Longer routes make detours.",
+    "days_one": "Ride {{count}} day",
+    "days_other": "Ride {{count}} days",
     "fit": "Plan {{distance}} per day",
     "fitOne": "Plan {{distance}}"
   }

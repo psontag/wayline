@@ -109,6 +109,7 @@ export {
 export { FormField, type FormFieldProps } from "./components/FormField";
 export { PlaceMarker } from "./components/PlaceMarker";
 export { MapHint } from "./components/MapHint";
+export { Suggestion } from "./components/Suggestion";
 export { ViaRow, type ViaRowProps } from "./components/ViaRow";
 export { WarningText } from "./components/WarningText";
 export {

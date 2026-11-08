@@ -46,6 +46,7 @@ import {
   type Stop,
   stopCandidates,
 } from "./stages";
+import { linePoints, loopsBack } from "./loops";
 import { Stops } from "./stops";
 import { corridorShare } from "./corridor";
 import { NATIONAL, REGIONAL, RouteCatalog } from "./routeCatalog";
@@ -618,6 +619,27 @@ export class Planner {
       if (cutStages(points, towns, flat)) ck.fails.ascent++;
       else ck.fails.hotels++;
       return undefined;
+    }
+    // A day loop comes back by design. Other days must not pad with loops.
+    if (!(ck.isLoop && ck.request.days === 1)) {
+      // Point i is the end of step i - 1. Edge lines catch loops between
+      // nodes. Days start and end in the stop town, as the trip does.
+      const cuts = [0, ...stops.map((s) => s.index), points.length - 1];
+      const days = cuts.slice(1).map((end, i) => {
+        const from = stops[i - 1]?.coord;
+        const to = stops[i]?.coord;
+        return linePoints([
+          ...(from ? [from] : []),
+          ...steps
+            .slice(cuts[i], end)
+            .flatMap((s) => graph.edgeLine(s.edge, s.forward).coords),
+          ...(to ? [to] : []),
+        ]);
+      });
+      if (loopsBack(days)) {
+        ck.fails.length++;
+        return undefined;
+      }
     }
     const km = pathKm(graph, steps);
     const ascent = points.at(-1)?.ascent ?? 0;
