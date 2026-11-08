@@ -11,6 +11,7 @@ import {
 } from "@wayline/domain";
 import {
   Button,
+  cn,
   DateField,
   DayStrip,
   FormField,
@@ -104,8 +105,14 @@ export function NewTripForm({
             return place;
           };
           return (
-            // Phones: a small map, so the form keeps most of the screen.
-            <div className="relative h-1/4 shrink-0 md:h-auto md:min-w-0 md:flex-1">
+            // Phones: a small map, so the form keeps most of the screen. It
+            // shows nothing useful until there is a start.
+            <div
+              className={cn(
+                "relative h-1/4 shrink-0 md:h-auto md:min-w-0 md:flex-1",
+                !start && "max-md:hidden",
+              )}
+            >
               <NewTripMap
                 start={start}
                 end={shape === "ab" ? end : null}
