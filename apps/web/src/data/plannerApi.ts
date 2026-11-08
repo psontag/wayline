@@ -21,6 +21,8 @@ export type PlannerApi = {
     onProposal?: (proposal: Proposal) => unknown,
     wind?: HourlyWind[],
   ): Promise<GenerateResult>;
+  /** Loads the network a request needs, so generate starts sooner. */
+  prepare(request: GenerateRequest, dataUrl: string): Promise<void>;
 };
 
 /**
@@ -31,19 +33,27 @@ export function createPlannerApi(
   fetchJson: FetchJson,
   routing?: RoutingProvider,
 ): PlannerApi {
-  const sources = new Map<string, Planners>();
+  // Promises, so a prepare and a generate at the same time share one load.
+  const sources = new Map<string, Promise<Planners>>();
+  const plannerFor = async (request: GenerateRequest, dataUrl: string) => {
+    let planners = sources.get(dataUrl);
+    if (!planners) {
+      planners = openSource(fetchJson, dataUrl).then((s) => new Planners(s));
+      planners.catch(() => sources.delete(dataUrl));
+      sources.set(dataUrl, planners);
+    }
+    return (await planners).for(request);
+  };
   return {
+    async prepare(request, dataUrl) {
+      await plannerFor(request, dataUrl);
+    },
     async generate(request, dataUrl, onProgress, onProposal, wind) {
       // Callbacks may be async (comlink). Wait for all of them before the
       // result, so no proposal arrives after it.
       const pending: unknown[] = [];
       pending.push(onProgress?.({ phase: "loading", done: 0, total: 0 }));
-      let planners = sources.get(dataUrl);
-      if (!planners) {
-        planners = new Planners(await openSource(fetchJson, dataUrl));
-        sources.set(dataUrl, planners);
-      }
-      const planner = await planners.for(request);
+      const planner = await plannerFor(request, dataUrl);
       const result = await planner.generate(request, {
         onProgress: (p) => pending.push(onProgress?.(p)),
         onProposal: (p) => pending.push(onProposal?.(p)),

@@ -122,6 +122,7 @@ The browser loads only the network and place tiles near a trip (`TiledNetworkSou
 ## Frontend data flow
 
 - The planner runs in a Web Worker via Comlink. A new edit cancels the running job.
+- The new trip form loads the route network for its trip in the worker while the user fills it in.
 - TanStack Query keys are per stage. Old data stays visible while new data loads.
 - Selected stage, selected proposal and map view live in URL search params.
 

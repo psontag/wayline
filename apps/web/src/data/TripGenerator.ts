@@ -22,4 +22,9 @@ export interface TripGenerator {
     request: GenerateRequest,
     options?: GenerateOptions,
   ): Promise<GenerateResult>;
+  /**
+   * Starts loading what generate needs for the request, in the background.
+   * Errors are ignored: generate loads again and reports them.
+   */
+  prepare(request: GenerateRequest): void;
 }
