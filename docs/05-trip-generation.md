@@ -163,8 +163,8 @@ The planner sets these when a route is done. Scenery and ways come from the grap
 | Main roads | `mainRoads` | ≥ 15 % of km with way quality up to 0.78 |
 | Off signed routes | `offRoutes` | < 50 % of km on signed routes |
 | Flat | `flat` | ≤ 1.5 m of climbing per km |
-| Hilly | `hilly` | ≥ 5 m per km |
-| Lots of climbing | `climbs` | ≥ 8 m per km. Replaces Hilly. |
+| Hilly | `hilly` | ≥ 8 m per km, or a day climbs ≥ 90 % of its max ascent |
+| Lots of climbing | `climbs` | ≥ 12 m per km. Replaces Hilly. |
 | Longer, Shorter | `longer`, `shorter` | ≥ 10 % off the target km. Not on one day from A to B, which has a character. |
 | More climbing | `moreClimbing` | A stage over its max ascent by more than 5 % |
 

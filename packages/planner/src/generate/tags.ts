@@ -17,8 +17,10 @@ const MIN_SHARE = {
 const OFF_ROUTES = 0.5;
 /** Meters climbed per km. */
 const FLAT_MAX = 1.5;
-const HILLY_MIN = 5;
-const CLIMBS_MIN = 8;
+const HILLY_MIN = 8;
+const CLIMBS_MIN = 12;
+/** A day climbing this share of its max ascent makes a route hilly. */
+const NEAR_MAX_ASCENT = 0.9;
 /** Longer or shorter than the target by this share. */
 const OFF_TARGET = 0.1;
 /** A stage may pass its max ascent by this factor: routing changes it a bit. */
@@ -85,9 +87,14 @@ export function routeTags(
   const distance = trip.stages.reduce((sum, s) => sum + s.stats.distance, 0);
   const ascent = trip.stages.reduce((sum, s) => sum + s.stats.ascent, 0);
   const perKm = distance ? ascent / (distance / 1000) : 0;
+  const dayMax = (i: number) =>
+    request.maxAscentPerDay * (request.dayShares?.[i] ?? 1);
+  const nearMax = trip.stages.some(
+    (s, i) => s.stats.ascent >= dayMax(i) * NEAR_MAX_ASCENT,
+  );
   if (perKm <= FLAT_MAX) tags.push("flat");
   if (perKm >= CLIMBS_MIN) tags.push("climbs");
-  else if (perKm >= HILLY_MIN) tags.push("hilly");
+  else if (perKm >= HILLY_MIN || nearMax) tags.push("hilly");
 
   if (targetKm) {
     const off = distance / 1000 / targetKm - 1;
@@ -95,9 +102,7 @@ export function routeTags(
     if (off <= -OFF_TARGET) tags.push("shorter");
   }
   const over = trip.stages.some(
-    (s, i) =>
-      s.stats.ascent >
-      request.maxAscentPerDay * (request.dayShares?.[i] ?? 1) * ASCENT_MARGIN,
+    (s, i) => s.stats.ascent > dayMax(i) * ASCENT_MARGIN,
   );
   if (over) tags.push("moreClimbing");
   return tags;

@@ -164,23 +164,33 @@ describe("shownRouteTags", () => {
   const tagged = (id: string, tags: RouteTag[]) =>
     ({ id, tags }) as unknown as Proposal;
 
-  it("hides tags every proposal has, and puts the rarest first", () => {
+  it("hides tags more than half the proposals have, rarest first", () => {
     const shown = shownRouteTags([
-      tagged("a", ["flat", "water", "wine"]),
+      tagged("a", ["flat", "water", "wine", "gravel"]),
       tagged("b", ["flat", "water"]),
-      tagged("c", ["flat"]),
+      tagged("c", ["flat", "gravel"]),
+      tagged("d", []),
     ]);
-    expect(shown.get("a")).toEqual(["wine", "water"]);
-    expect(shown.get("c")).toEqual([]);
+    expect(shown.get("a")).toEqual(["wine", "water", "gravel"]);
+    expect(shown.get("c")).toEqual(["gravel"]);
   });
 
-  it("always shows when a proposal leaves the inputs, first", () => {
+  it("shows leaving the inputs first, and hides Longer when most are", () => {
     const shown = shownRouteTags([
       tagged("a", ["wine", "longer"]),
       tagged("b", ["longer"]),
+      tagged("c", ["shorter", "moreClimbing"]),
     ]);
-    expect(shown.get("a")).toEqual(["longer", "wine"]);
-    expect(shown.get("b")).toEqual(["longer"]);
+    expect(shown.get("a")).toEqual(["wine"]);
+    expect(shown.get("c")).toEqual(["shorter", "moreClimbing"]);
+  });
+
+  it("always shows More climbing", () => {
+    const shown = shownRouteTags([
+      tagged("a", ["moreClimbing"]),
+      tagged("b", ["moreClimbing"]),
+    ]);
+    expect(shown.get("a")).toEqual(["moreClimbing"]);
   });
 
   it("keeps all tags of a single proposal", () => {
