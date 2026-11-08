@@ -203,7 +203,13 @@ function tripWeatherQuery(
       trip?.id,
       variant,
       trip?.startDate,
-      trip?.stages.map((s) => s.id).join(","),
+      trip?.settings.avgSpeed,
+      trip?.stages
+        .map(
+          (s, i) =>
+            `${s.id}:${s.stats.distance}:${stageStartTime(trip.settings, i)}`,
+        )
+        .join(","),
     ],
     enabled: enabled && !!trip?.startDate,
     queryFn: async () => {

@@ -169,6 +169,11 @@
     "play": "Play the ride",
     "pause": "Pause"
   },
+  "tripWeather": {
+    "rainDays_one": "Rain on day {{days}}",
+    "rainDays_other": "Rain on days {{days}}",
+    "at": "Day {{day}} · {{time}} · {{distance}}"
+  },
   "layers": {
     "map": "Map",
     "hotels": "Hotels",

@@ -676,7 +676,7 @@ export function WeatherTimeline({
 }
 
 /** A value on the scale beside a chart row. top is in percent. */
-function Tick({
+export function Tick({
   side,
   top,
   children,
