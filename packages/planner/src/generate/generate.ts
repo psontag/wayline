@@ -213,11 +213,11 @@ export type PlannerOptions = {
   profile?: Record<string, number>;
 };
 
-type Pick = {
-  nodes: number[];
-  steps: PathStep[];
+/** A searched path, before it is cut into stages. */
+type Path = { nodes: number[]; steps: PathStep[]; km: number };
+
+type Pick = Path & {
   stops: Stop[];
-  km: number;
   /** Meters. */
   ascent: number;
   shared: number;
@@ -675,13 +675,24 @@ export class Planner {
   /**
    * The path of a candidate, if it has the right length, does not ride
    * back along itself and cuts into stages. Counts why others fail.
+   * reject: the caller's checks that need only the path, such as overlap
+   * with other picks. They run before the costly checks. A rejected path
+   * gives null and counts as no failure.
    */
-  private fit(c: Candidate, costs: Costs, ck: Check): Pick | undefined {
+  private fit(
+    c: Candidate,
+    costs: Costs,
+    ck: Check,
+    reject?: (p: Path) => boolean,
+  ): Pick | null | undefined {
     const graph = this.graph;
     const steps = chainPath(graph, c.nodes, costs, ck.avoid);
     if (!steps || !acceptable(graph, steps, ck.totalKm)) {
       ck.fails.length++;
       return undefined;
+    }
+    if (reject?.({ nodes: c.nodes, steps, km: pathKm(graph, steps) })) {
+      return null;
     }
     const start = c.nodes[0] ?? 0;
     const points = pathPoints(graph, start, steps);
@@ -769,15 +780,16 @@ export class Planner {
 
         tried.add(c);
         if (tried.size % 10 === 0) progress(tried.size);
-        const p = this.fit(c, costs, ck);
+        const usedKm = (q: Path) => {
+          let km = 0;
+          for (const e of new Set(q.steps.map((s) => s.edge)))
+            if (used.has(e)) km += graph.edge(e).lengthKm;
+          return km;
+        };
+        const p = this.fit(c, costs, ck, (q) => usedKm(q) > MAX_SHARED * q.km);
         if (!p) continue;
         const edges = new Set(p.steps.map((s) => s.edge));
-        let shared = 0;
-        for (const e of edges)
-          if (used.has(e)) shared += graph.edge(e).lengthKm;
-        if (shared > MAX_SHARED * p.km) continue;
-
-        picks.push({ ...p, shared: shared / p.km });
+        picks.push({ ...p, shared: usedKm(p) / p.km });
         for (const e of edges) {
           used.add(e);
           costs.penalty[e] = (costs.penalty[e] ?? 1) * VARIETY_PENALTY;
@@ -832,13 +844,16 @@ export class Planner {
 
         tried.add(c);
         if (tried.size % 10 === 0) progress(tried.size);
-        const p = this.fit(c, costs, ck);
+        const p = this.fit(
+          c,
+          costs,
+          ck,
+          (q) => mostShared(graph, q, picks) > MAX_SHARED * q.km,
+        );
         if (!p) continue;
-        const shared = Math.max(0, ...picks.map((q) => sharedKm(graph, p, q)));
-        if (shared > MAX_SHARED * p.km) continue;
         picks.push({
           ...p,
-          shared: shared / p.km,
+          shared: mostShared(graph, p, picks) / p.km,
           ...(c.homeward && { homeward: true }),
         });
         for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
@@ -911,14 +926,20 @@ export class Planner {
         if (found && more++ === (climbing ? CLIMB_TRIES : STOP_TRIES)) break;
         mine++;
         if (++tries % 10 === 0) progress(tries);
-        const p = this.fit(c, costs, ck);
+        // Best keeps the first path that fits, even one that overlaps, as
+        // the yardstick for the other flavours. So no early check until then.
+        const overlaps = (q: Path) =>
+          mostShared(graph, q, others()) > MAX_SHARED * q.km;
+        const p = this.fit(
+          c,
+          costs,
+          ck,
+          flavour === "best" && !best ? undefined : overlaps,
+        );
         if (!p) continue;
         if (flavour === "best") best ??= p;
-        const shared = Math.max(
-          0,
-          ...others().map((q) => sharedKm(graph, p, q)),
-        );
-        if (shared > MAX_SHARED * p.km) continue;
+        if (overlaps(p)) continue;
+        const shared = mostShared(graph, p, others());
         if (!addsFlavour(graph, flavour, p, best, picks, seek)) continue;
         // Climbing: more climbing first. Others: fewer weak stops, else the first.
         const better = !found
@@ -1014,7 +1035,7 @@ export class Planner {
       if (!on) break;
       routes.splice(routes.indexOf(on), 1);
       const route = on;
-      const rides = (p: Pick) =>
+      const rides = (p: Path) =>
         kmOnRoute(graph, p.steps, route) >= SIGNED.share * p.km;
       if (picks.some(rides)) continue;
       costs.penalty.fill(1);
@@ -1040,20 +1061,21 @@ export class Planner {
         let fitted = false;
         for (const c of fits.slice(0, SIGNED.tries)) {
           if (!inTime() || (!fitted && tried++ === SIGNED.misses)) break;
-          const p = this.fit(c, costs, ck);
-          if (!p) continue;
-          fitted = true;
-          if (!rides(p)) continue;
-          const ridden = kmOnRoute(graph, p.steps, route);
-          if (ridden <= longest) continue;
-          const shared = Math.max(
-            0,
-            ...picks.map((q) => sharedKm(graph, p, q)),
+          // A path that is dropped here still counts as a fit for the misses.
+          const p = this.fit(
+            c,
+            costs,
+            ck,
+            (q) =>
+              !rides(q) ||
+              kmOnRoute(graph, q.steps, route) <= longest ||
+              mostShared(graph, q, picks) > MAX_SHARED * q.km ||
+              nearOther(q, picks, line, endsKm, SIGNED.corridor),
           );
-          if (shared > MAX_SHARED * p.km) continue;
-          if (nearOther(p, picks, line, endsKm, SIGNED.corridor)) continue;
-          found = { ...p, shared: shared / p.km };
-          longest = ridden;
+          if (p !== undefined) fitted = true;
+          if (!p) continue;
+          found = { ...p, shared: mostShared(graph, p, picks) / p.km };
+          longest = kmOnRoute(graph, p.steps, route);
         }
       }
       if (!found && route.rank === NATIONAL) nationalMisses++;
@@ -1085,7 +1107,7 @@ export class Planner {
     let left = FILL_TIME_MS;
     const home = graph.coord(start);
     const line = routeLine(graph, start);
-    const heading = (p: Pick) => bearing(home, farthest(home, line(p)));
+    const heading = (p: Path) => bearing(home, farthest(home, line(p)));
     const gapKm = Math.min(MIN_VIA_GAP_KM, VIA_GAP_SHARE * totalKm);
     const endsKm = Math.max(CORRIDOR_ENDS.minKm, CORRIDOR_ENDS.share * totalKm);
     const mids = (nodes: number[]) => nodes.slice(1, -1);
@@ -1140,23 +1162,20 @@ export class Planner {
 
           mine++;
           if (++tries % 10 === 0) progress(MAX_TRIES + tries);
-          const p = this.fit(c, costs, ck);
-          if (!p) continue;
-          const shared = Math.max(
-            0,
-            ...picks.map((q) => sharedKm(graph, p, q)),
+          const p = this.fit(
+            c,
+            costs,
+            ck,
+            (q) =>
+              mostShared(graph, q, picks) > step.shared * q.km ||
+              nearOther(q, picks, line, endsKm, step.corridor) ||
+              (!!step.turn &&
+                picks.some((o) => turn(heading(o), heading(q)) < step.turn)),
           );
-          if (shared > step.shared * p.km) continue;
-          if (nearOther(p, picks, line, endsKm, step.corridor)) continue;
-          if (
-            step.turn &&
-            picks.some((q) => turn(heading(q), heading(p)) < step.turn)
-          ) {
-            continue;
-          }
+          if (!p) continue;
           const kept: Pick = {
             ...p,
-            shared: shared / p.km,
+            shared: mostShared(graph, p, picks) / p.km,
             ...(c.homeward && { homeward: true }),
           };
           if (!seek) await add(kept);
@@ -1180,8 +1199,8 @@ function isBefore(a: number[], b: number[]): boolean {
 
 /** Line of a pick, kept per pick. */
 function routeLine(graph: Graph, start: number) {
-  const lines = new Map<Pick, LonLat[]>();
-  return (p: Pick) => {
+  const lines = new WeakMap<Path, LonLat[]>();
+  return (p: Path) => {
     let l = lines.get(p);
     if (!l) {
       l = pathPoints(graph, p.nodes[0] ?? start, p.steps).map((q) =>
@@ -1195,9 +1214,9 @@ function routeLine(graph: Graph, start: number) {
 
 /** Does a pick run near another for more than the limit? */
 function nearOther(
-  p: Pick,
+  p: Path,
   picks: Pick[],
-  line: (p: Pick) => LonLat[],
+  line: (p: Path) => LonLat[],
   endsKm: number,
   limit: number,
 ): boolean {
@@ -1417,12 +1436,17 @@ export function targetKm(request: GenerateRequest): number {
 }
 
 /** km of a path on the edges of another. */
-function sharedKm(graph: Graph, a: Pick, b: Pick): number {
+function sharedKm(graph: Graph, a: Path, b: Path): number {
   const edges = new Set(b.steps.map((s) => s.edge));
   let km = 0;
   for (const s of a.steps)
     if (edges.has(s.edge)) km += graph.edge(s.edge).lengthKm;
   return km;
+}
+
+/** Most km a path shares with any of the others. */
+function mostShared(graph: Graph, p: Path, others: Path[]): number {
+  return Math.max(0, ...others.map((q) => sharedKm(graph, p, q)));
 }
 
 /** Longest search radius around the start, in km. */
