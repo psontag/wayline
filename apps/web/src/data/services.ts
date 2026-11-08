@@ -5,6 +5,7 @@ import {
   type RouteInfo,
   type RouteTable,
   SiteInfo,
+  WaylineError,
 } from "@wayline/domain";
 import {
   DbRestTrains,
@@ -20,6 +21,7 @@ import {
   TransitousTrains,
   type WeatherProvider,
 } from "@wayline/providers";
+import { offlineAware } from "./apiClient";
 import { dataUrl, MOCK_DATA } from "./dataUrl";
 import { ApiTripStore, fetchMe, withMovedTrips } from "./ApiTripStore";
 import { indexedDbForecastCache } from "./forecastCache";
@@ -64,9 +66,12 @@ export type RouteLines = {
 /** A dragged via point moves to a way or network node this close. */
 const SNAP_KM = 0.5;
 
+const fetchOnline = offlineAware(globalThis.fetch);
+
 async function fetchJson(url: string): Promise<unknown> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${url}: ${res.status}`);
+  const res = await fetchOnline(url);
+  if (!res.ok)
+    throw new WaylineError("PROVIDER_UNAVAILABLE", `${url}: ${res.status}`);
   return res.json();
 }
 

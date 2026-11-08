@@ -8,5 +8,46 @@
     "trips": "Trips",
     "newTrip": "New trip",
     "settings": "Settings"
+  },
+  "errors": {
+    "thing": "Wayline",
+    "PROVIDER_UNAVAILABLE": {
+      "title": "Could not reach {{thing}}",
+      "text": "It may be down for a moment. Try again."
+    },
+    "RATE_LIMITED": {
+      "title": "Too many requests",
+      "text": "Wait a minute, then try again."
+    },
+    "NOT_FOUND": {
+      "title": "This trip doesn't exist",
+      "text": "It may be deleted, or it isn't shared with you."
+    },
+    "CONFLICT": {
+      "title": "This trip changed somewhere else",
+      "text": "Reload it to see the latest version. Your last change is not saved."
+    },
+    "INVALID": {
+      "title": "Something went wrong",
+      "text": "Try again. If it keeps happening, reload the page."
+    },
+    "UNAUTHORIZED": {
+      "title": "You're logged out",
+      "text": "Log in again to see your trips."
+    },
+    "OFFLINE": {
+      "title": "You're offline",
+      "text": "Check your connection, then try again."
+    },
+    "INTERNAL": {
+      "title": "Something went wrong",
+      "text": "Try again. If it keeps happening, reload the page."
+    },
+    "action": {
+      "retry": "Try again",
+      "reload": "Reload",
+      "login": "Log in",
+      "back": "Back to trips"
+    }
   }
 }

@@ -78,6 +78,8 @@ All API errors have one shape:
 | `CONFLICT` | Trip changed since it was loaded |
 | `INVALID` | Request failed validation |
 | `UNAUTHORIZED` | No valid Access login |
+| `INTERNAL` | A bug on the server. Logged there. |
+| `OFFLINE` | No connection. Only the web app throws it. |
 
 How the UI shows each code: `13-errors.md`.
 

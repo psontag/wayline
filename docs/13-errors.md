@@ -53,15 +53,16 @@ Services throw `WaylineError` with a code (`packages/domain/src/errors.ts`). The
 | `CONFLICT` | This trip changed somewhere else. | Reload trip | No |
 | `INVALID` | The text on the field. Without a field it is a bug: generic text. | Try again | No |
 | `UNAUTHORIZED` | You're logged out. | Log in | No |
-| Offline (`fetch` rejects) | You're offline. | Try again | When back online |
-| Anything else | Something went wrong. | Try again or Reload | No |
+| `OFFLINE` | You're offline. | Try again | When back online |
+| `INTERNAL`, or not a `WaylineError` | Something went wrong. | Try again or Reload | Yes, up to 2 times |
 
 ## Code
 
 - Throw `WaylineError` at the edge of every service: trip stores, providers, the API. A plain `Error` means a bug.
-- Turn HTTP answers into `WaylineError` in one place (`readJson` in `apps/web/src/data/apiClient.ts`).
+- Turn HTTP answers into `WaylineError` in one place (`readJson` in `apps/web/src/data/apiClient.ts`). Fetch through `offlineAware`, so a lost connection becomes `OFFLINE`.
 - Every `useQuery` renders its pending, error and data states. Every `useMutation` has an error state in the UI.
-- Map errors to text in one shared function. Screens don't write their own `switch` over codes.
+- Get error text from `useErrorText` (`apps/web/src/errors.ts`). Screens don't write their own `switch` over codes. A screen may set its own title, e.g. "Could not load your trips".
+- Queries retry by `shouldRetry` in the same file.
 - The root route has an error component and a not-found component. A failed lazy chunk after a deploy shows "A new version is available." with Reload.
 - Log with `console.warn` when the app recovers, `console.error` for bugs. The API logs unknown errors and answers with the generic error shape.
 - Tests cover the error state of each screen that loads data.

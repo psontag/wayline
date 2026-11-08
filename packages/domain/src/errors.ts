@@ -8,6 +8,10 @@ export const ErrorCode = z.enum([
   "CONFLICT",
   "INVALID",
   "UNAUTHORIZED",
+  /** No connection. Only the web app throws it, the API never sends it. */
+  "OFFLINE",
+  /** A bug on the server. */
+  "INTERNAL",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
 

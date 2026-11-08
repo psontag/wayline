@@ -5,11 +5,14 @@ import "@wayline/ui/fonts.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ServicesProvider } from "./data/ServicesProvider";
+import { shouldRetry } from "./errors";
 import "./i18n";
 import { router } from "./router";
 import "./styles.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: shouldRetry } },
+});
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root element");
