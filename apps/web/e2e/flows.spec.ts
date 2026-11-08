@@ -6,6 +6,11 @@ test.describe("desktop flows", () => {
 
   test("plan a new trip and open a proposal", async ({ page }, info) => {
     await open(page, "/new");
+    await expect(
+      page.getByRole("heading", { name: "Where to ride" }),
+    ).toBeVisible();
+    await screenshots(page, info, "new-trip-where");
+    await page.getByRole("button", { name: "Choose a place" }).click();
     await page.getByRole("button", { name: "Start" }).click();
     await page.getByRole("option", { name: /^Bamberg Town/ }).click();
     await page.getByRole("button", { name: "End" }).click();

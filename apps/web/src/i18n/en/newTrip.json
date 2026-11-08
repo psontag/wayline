@@ -1,5 +1,20 @@
 {
   "title": "New trip",
+  "step": {
+    "where": "Step 1 of 2",
+    "trip": "Step 2 of 2",
+    "back": "Where"
+  },
+  "where": {
+    "title": "Where to ride",
+    "dates": "Dates",
+    "days": "Days",
+    "dayCount_one": "{{count}} day",
+    "dayCount_other": "{{count}} days",
+    "range": "{{first}} – {{last}}",
+    "hint": "Pick a start on the map.",
+    "choosePlace": "Choose a place"
+  },
   "loading": "Loading places",
   "loadFailed": "Could not load the places",
   "section": {

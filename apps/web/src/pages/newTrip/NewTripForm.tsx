@@ -25,7 +25,7 @@ import {
   Switch,
   useFormat,
 } from "@wayline/ui";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronLeft } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -36,6 +36,7 @@ import {
   formDays,
   fromRequest,
   mapPick,
+  startPick,
   isFormError,
   lengths,
   missingPlaces,
@@ -50,6 +51,8 @@ import {
 } from "./form";
 import { NewTripMap } from "./NewTripMap";
 import { PlaceField } from "./PlaceField";
+import type { NewTripStep } from "./search";
+import { WherePanel } from "./WherePanel";
 import { nearestPlace } from "./places";
 import { usePrepare } from "./usePrepare";
 
@@ -65,10 +68,12 @@ export function NewTripForm({
   places,
   kind,
   request,
+  step,
 }: {
   places: Place[];
   kind?: TripKind;
   request?: GenerateRequest;
+  step: NewTripStep;
 }) {
   const { t } = useTranslation("newTrip");
   const format = useFormat();
@@ -85,6 +90,17 @@ export function NewTripForm({
       navigate({ to: "/proposals", search: { request: toRequest(value) } }),
   });
   usePrepare(useStore(form.store, (s) => s.values));
+  const where = step === "where";
+  const goTo = (next: NewTripStep) =>
+    navigate({ to: "/new", search: (prev) => ({ ...prev, step: next }) });
+  const toTrip = () => void goTo("trip");
+  const toWhere = () => void goTo("where");
+  const setDays = (days: number) => {
+    const next = withDays(form.state.values, days);
+    form.setFieldValue("length", next.length);
+    form.setFieldValue("shape", next.shape);
+    form.setFieldValue("endDate", next.endDate);
+  };
 
   /** The first error of a field, once the user changed it or submitted. */
   const errorOf = (meta: { isTouched: boolean; errors: unknown[] }) => {
@@ -103,24 +119,27 @@ export function NewTripForm({
         }
       >
         {([shape, start, end]) => {
-          const next = mapPick({ shape, start, end });
+          // Where: a click picks the start and moves on to the Trip step.
+          const next = where ? startPick : mapPick({ shape, start, end });
           const pick = (at: LonLat, nearKm: number) => {
             const place = nearestPlace(places, at, nearKm);
             if (place) form.setFieldValue(next.field, place);
+            if (place && where) toTrip();
             return place;
           };
           return (
-            // Phones: a small map, so the form keeps most of the screen. It
-            // shows nothing useful until there is a start.
+            // Phones: on Trip a small map, so the form keeps most of the
+            // screen. It shows nothing useful until there is a start.
             <div
               className={cn(
-                "relative h-1/4 shrink-0 md:h-auto md:min-w-0 md:flex-1",
-                !start && "max-md:hidden",
+                "relative shrink-0 md:h-auto md:min-w-0 md:flex-1",
+                where ? "h-1/2" : "h-1/4",
+                !where && !start && "max-md:hidden",
               )}
             >
               <NewTripMap
-                start={start}
-                end={shape === "ab" ? end : null}
+                start={where ? null : start}
+                end={!where && shape === "ab" ? end : null}
                 {...(next.open && { next: next.field })}
                 onPick={pick}
               />
@@ -129,16 +148,48 @@ export function NewTripForm({
         }}
       </form.Subscribe>
 
+      {where && (
+        <form.Subscribe
+          selector={(s) => [s.values.startDate, formDays(s.values)] as const}
+        >
+          {([startDate, days]) => (
+            <WherePanel
+              now={now}
+              startDate={startDate}
+              days={days}
+              onStartDate={(date) => {
+                form.setFieldValue("startDate", date);
+                form.setFieldValue("endDate", addDays(date, days - 1));
+              }}
+              onDays={setDays}
+              onChoosePlace={toTrip}
+            />
+          )}
+        </form.Subscribe>
+      )}
+
       <form
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
           void form.handleSubmit();
         }}
-        className="flex min-h-0 w-full flex-col border-border bg-surface max-md:flex-1 max-md:border-t md:max-w-panel md:border-l"
+        className={cn(
+          "min-h-0 w-full flex-col border-border bg-surface max-md:flex-1 max-md:border-t md:max-w-panel md:border-l",
+          where ? "hidden" : "flex",
+        )}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          <PanelHeader title={t("title")} />
+          <PanelHeader
+            nav={
+              <Button type="button" variant="ghost" size="sm" onClick={toWhere}>
+                <ChevronLeft aria-hidden />
+                {t("step.back")}
+              </Button>
+            }
+            eyebrow={t("step.trip")}
+            title={t("title")}
+          />
 
           <PanelSection icon="trip" title={t("section.trip")}>
             <form.Field name="length">
@@ -439,11 +490,7 @@ export function NewTripForm({
                 <DetourHint
                   values={values}
                   onFit={(km) => form.setFieldValue("kmPerDay", km)}
-                  onDays={(days) => {
-                    const next = withDays(values, days);
-                    form.setFieldValue("length", next.length);
-                    form.setFieldValue("endDate", next.endDate);
-                  }}
+                  onDays={setDays}
                 />
               )}
             </form.Subscribe>
