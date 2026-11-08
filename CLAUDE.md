@@ -28,7 +28,7 @@ Follow `docs/07-design-system.md`. Mockups are in `design/`.
 - Use components from `packages/ui`. Add a new component there instead of styling inline.
 - Every side panel follows "Side panels" in `docs/07-design-system.md`: panel header, then sections with icon, title and summary.
 - Use only design tokens. No raw colors, sizes or arbitrary Tailwind values.
-- Check every UI change in light and dark mode.
+- Check every UI change in light and dark mode. The `verify-ui` skill has the steps.
 - Use the terms and formats from the design system doc.
 - No literal text in components. Use translation keys (`docs/08-translation.md`).
 - Errors follow `docs/13-errors.md`: where they show, how they read, which code means what.
@@ -49,7 +49,7 @@ Follow `docs/07-design-system.md`. Mockups are in `design/`.
 
 Private repo `psontag/wayline`. Use the `gh` CLI for issues, PRs and other GitHub actions.
 
-Work is tracked in issues, milestones and the project board. Issues and PRs start with a plain-language summary (why, before, after, solves); technical details come after, for agents. Follow the agent workflow in `docs/11-tracking.md`: claim the issue, ask and record decisions in comments, open a PR with `Closes #<n>`.
+Work is tracked in issues, milestones and the project board. Issues and PRs start with a plain-language summary (why, before, after, solves); technical details come after, for agents. Follow the agent workflow in `docs/11-tracking.md`: claim the issue, ask and record decisions in comments, open a PR with `Closes #<n>`. The `ship` skill has the commands.
 
 ## Docs
 
