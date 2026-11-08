@@ -409,7 +409,7 @@ export class Planner {
     // Stages are cut during the search, since a path only counts if it cuts.
     onProgress?.({ phase: "cutting", done: picks.length, total: picks.length });
 
-    // All at once: the routing provider limits how many requests are open.
+    // All at once. The router shares its tiles between the proposals.
     const routed = picks.map(async (p, i) => {
       const placeAt = (node: number) =>
         this.endpoint(
@@ -863,7 +863,10 @@ export class Planner {
       let best: number[] = [];
       for (const route of routes) {
         // Long routes near a trip often don't fit it. Leaves time for the rest.
-        if (route.rank === NATIONAL && nationalMisses >= SIGNED.nationalMisses) {
+        if (
+          route.rank === NATIONAL &&
+          nationalMisses >= SIGNED.nationalMisses
+        ) {
           continue;
         }
         const km = kmUnused(graph, route, used);

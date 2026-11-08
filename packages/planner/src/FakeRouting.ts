@@ -10,7 +10,7 @@ const SNAP_KM = 5;
 
 /**
  * Router on the route network: snaps to the nearest node and takes the
- * nicest path. Stands in for BRouter. graph gives the network around a bbox.
+ * nicest path. Stands in for LocalRouting. graph gives the network around a bbox.
  */
 export class FakeRouting implements RoutingProvider {
   constructor(private graph: (bbox: BBox) => Promise<Graph>) {}
