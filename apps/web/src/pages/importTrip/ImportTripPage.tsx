@@ -5,6 +5,7 @@ import {
   type HotelBudget,
   localTimeToDate,
   type Profile,
+  tripTitle,
 } from "@wayline/domain";
 import {
   Button,
@@ -95,8 +96,8 @@ export function ImportTripPage() {
   const suggestedName = (() => {
     const from = townName(files[0], "start");
     const to = townName(files.at(-1), "end");
-    if (from && to && from !== to) return t("nameFromTo", { from, to });
-    return files[0]?.name ?? from ?? "";
+    if (from) return tripTitle(from, to);
+    return files[0]?.name ?? "";
   })();
   const tripName = name ?? suggestedName;
 

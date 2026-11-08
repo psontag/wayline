@@ -26,7 +26,6 @@
     "hotel": "Hotel"
   },
   "name": "Name",
-  "nameFromTo": "{{from}} to {{to}}",
   "defaultName": "Imported trip",
   "startDate": "Start date",
   "optional": "(optional)",

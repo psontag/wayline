@@ -195,7 +195,7 @@ describe("Planner on the Heidelberg tiles", () => {
       // The asked 60 km, 20 % either way on fill proposals, plus tolerance.
       expect(stage!.stats.distance / 1000).toBeGreaterThan(42);
       expect(stage!.stats.distance / 1000).toBeLessThan(81);
-      expect(p.trip.name).toContain(" – ");
+      expect(p.trip.name).toMatch(/^Loop from Heidelberg/);
     }
   });
 
