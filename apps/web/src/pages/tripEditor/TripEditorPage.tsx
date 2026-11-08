@@ -55,6 +55,7 @@ import { TripPanel } from "./TripPanel";
 import { PhoneTripEditor } from "./PhoneTripEditor";
 import { useIsPhone } from "../../components/useIsPhone";
 import { toHotel, useTripEditor } from "./useTripEditor";
+import { useUndoKeys } from "./useUndoKeys";
 import { type PanelView, useMapLayers, usePanelView } from "./mapView";
 import { fieldAt, gridOf } from "./weatherGrid";
 import { WeatherPanel } from "./WeatherPanel";
@@ -106,6 +107,7 @@ function TripEditor({
   const search = useSearch({ from: "/trips/$tripId" });
   const navigate = useNavigate({ from: "/trips/$tripId" });
   const editor = useTripEditor(trip, readOnly);
+  useUndoKeys(editor);
   const network = useNetwork(networkArea(tripStops(trip)));
   const isPhone = useIsPhone();
   const [hoverKm, setHoverKm] = useState<number>();
@@ -281,22 +283,20 @@ function TripEditor({
       proposedSection(selectedLegs, proposedLegs);
     return section ? [section.coords] : [];
   }, [selectedLegs, proposedLegs]);
-  const routeEditing = (tapToAdd: boolean): RouteEditing | undefined =>
-    readOnly
-      ? undefined
-      : {
-          enabled: editor.canEdit,
-          tapToAdd,
-          preview: (leg, at) => editor.preview(selected, leg, at),
-          onAddVia: (leg, at, keep) =>
-            void editor.insertVia(selected, leg, at, keep),
-          onMoveVia: (coord, at) => void editor.moveVia(selected, coord, at),
-          onRemoveVia: (coord) => void editor.removeVia(selected, coord),
-          selectedVia,
-          onSelectVia: selectVia,
-          proposed,
-          proposedHighlighted,
-        };
+  const routeEditing: RouteEditing | undefined = readOnly
+    ? undefined
+    : {
+        enabled: editor.canEdit,
+        preview: (leg, at) => editor.preview(selected, leg, at),
+        onAddVia: (leg, at, keep) =>
+          void editor.insertVia(selected, leg, at, keep),
+        onMoveVia: (coord, at) => void editor.moveVia(selected, coord, at),
+        onRemoveVia: (coord) => void editor.removeVia(selected, coord),
+        selectedVia,
+        onSelectVia: selectVia,
+        proposed,
+        proposedHighlighted,
+      };
 
   const toast = editor.note && (
     <Toast
@@ -479,7 +479,7 @@ function TripEditor({
           panel={panel}
           chart={chart}
           mapLayers={mapLayers}
-          route={dayOpen ? routeEditing(true) : undefined}
+          route={dayOpen ? routeEditing : undefined}
           toast={<ToastViewport placement="inline" />}
         />
       </ToastProvider>
@@ -523,7 +523,7 @@ function TripEditor({
                 },
               })}
               hover={hover}
-              route={dayOpen ? routeEditing(false) : undefined}
+              route={dayOpen ? routeEditing : undefined}
             >
               <ToastProvider>
                 {toast}

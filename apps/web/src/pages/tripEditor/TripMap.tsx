@@ -30,6 +30,7 @@ import {
   MapLayer,
   type MapPadding,
 } from "../../components/map/AppMap";
+import { isTyping, useLastPointer } from "../../components/useLastPointer";
 import {
   nearestOnLine,
   type RouteDrag,
@@ -94,8 +95,6 @@ export type TripMapProps = {
 export type RouteEditing = {
   /** False while an edit is saved. */
   enabled: boolean;
-  /** Tap the line to add a via point. For touch, where a drag pans. */
-  tapToAdd?: boolean;
   /** Route of a leg through a point, while the point is dragged. */
   preview: (leg: number, at: LonLat) => Promise<LonLat[]>;
   /** keep: add it even if the route stays the same, as a handle. */
@@ -188,10 +187,14 @@ export function TripMap({
     }),
     [legLines],
   );
+  // A mouse drags the line to add a via point. A finger taps it, because
+  // a drag pans the map.
+  const [pointer, pointerKind] = useLastPointer();
   const routeDrag = useRouteDrag({
     mapRef,
     lines: legLines,
-    enabled: !!route?.enabled && !route.tapToAdd,
+    enabled: !!route?.enabled,
+    pointer,
     onDrop: (leg, at) => route?.onAddVia(leg, at),
   });
   const { drag, ghost } = routeDrag;
@@ -255,15 +258,33 @@ export function TripMap({
   const draggedVia = useRef(false);
 
   const selectedVia = route?.selectedVia;
-  const onSelectVia = route?.onSelectVia;
+  const selectedCoord =
+    selectedVia === undefined
+      ? undefined
+      : trip.stages[selected]?.via[selectedVia]?.coord;
+  // The latest route edits, so the key handler does not go stale.
+  const routeRef = useRef(route);
   useEffect(() => {
-    if (selectedVia === undefined || !onSelectVia) return;
+    routeRef.current = route;
+  });
+  useEffect(() => {
+    if (!selectedCoord) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onSelectVia(undefined);
+      const edits = routeRef.current;
+      if (!edits || isTyping(event.target)) return;
+      if (event.key === "Escape") edits.onSelectVia(undefined);
+      if (
+        (event.key === "Delete" || event.key === "Backspace") &&
+        edits.enabled
+      ) {
+        event.preventDefault();
+        edits.onSelectVia(undefined);
+        edits.onRemoveVia(selectedCoord);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedVia, onSelectVia]);
+  }, [selectedCoord]);
 
   // Zoom to the stage when the selection changes, keeping its stop choices
   // and hotels in view. Not while the route is dragged.
@@ -291,11 +312,15 @@ export function TripMap({
     // clears the selected via point, so a tap meant to close it adds nothing.
     if (selectedVia !== undefined && map) {
       if (event.originalEvent.target === map.getCanvas()) {
-        onSelectVia?.(undefined);
+        route?.onSelectVia(undefined);
       }
       return;
     }
-    if (typeof props?.leg === "number" && route?.tapToAdd && route.enabled) {
+    if (
+      typeof props?.leg === "number" &&
+      pointer.current === "touch" &&
+      route?.enabled
+    ) {
       const line = legLines[props.leg];
       if (map && line) {
         route.onAddVia(props.leg, nearestOnLine(map, line, event.point), true);
@@ -327,7 +352,8 @@ export function TripMap({
       layers={layers}
       network={network}
       hint={
-        route?.tapToAdd && (
+        route &&
+        pointerKind === "touch" && (
           <MapHint icon={<Route aria-hidden />}>{t("map.tapHint")}</MapHint>
         )
       }
