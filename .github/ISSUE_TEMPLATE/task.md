@@ -6,12 +6,11 @@ labels: task
 
 ## Summary
 
-Plain language. No technical terms.
-
-- **Why:** why we do this
-- **Before:** how it works today
-- **After:** how it will work
-- **Solves:** which problem goes away
+<!--
+For the owner, in plain words. What is wrong or missing today and how it
+works now, what should work after, and which problem goes away. A short
+paragraph or a few bullets. As long as the task needs, no fixed fields.
+-->
 
 ## For agents
 

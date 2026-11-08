@@ -21,14 +21,13 @@ Board columns: Backlog → Ready → In progress → In review → Done.
 
 ## Writing issues and PRs
 
-Every epic, task and PR starts with a **Summary** in plain language, for the owner:
+Every epic, task and PR starts with a **Summary** for the owner. It answers:
 
-- **Why:** why we do this
-- **Before:** how it works today
-- **After:** how it will work
-- **Solves:** which problem goes away
+- What is wrong or missing today, and how it works now.
+- What works after this change, as the owner would notice it.
+- Which problem goes away.
 
-No technical terms in the summary. Technical details go below, under **For agents**.
+Write it as a short paragraph or a few bullets, whatever reads best. Use as much space as the change needs: one sentence for a small fix, more for a big one. No fixed fields, no technical terms. Technical details go below, under **For agents**.
 
 ## Labels
 

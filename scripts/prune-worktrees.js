@@ -31,6 +31,12 @@ const cwds = (() => {
 const inUse = (path) =>
   cwds.some((cwd) => cwd === path || cwd.startsWith(`${path}/`));
 
+// Older branches ignore only a pipeline/cache folder, not the link.
+const dirty = (path) =>
+  git(["status", "--porcelain"], path)
+    .split("\n")
+    .some((line) => line && line !== "?? pipeline/cache");
+
 const here = git(["rev-parse", "--show-toplevel"]);
 const main = dirname(resolve(here, git(["rev-parse", "--git-common-dir"])));
 git(["fetch", "-q", "--prune", "origin"]);
@@ -60,8 +66,7 @@ for (const wt of worktrees) {
   if (wt.path === here) reason = "current checkout";
   else if (inUse(wt.path)) reason = "a process runs in it";
   else if (!merged(wt.head)) reason = "not merged";
-  else if (git(["status", "--porcelain"], wt.path))
-    reason = "uncommitted changes";
+  else if (dirty(wt.path)) reason = "uncommitted changes";
   if (reason) {
     if (wt.branch) keep.add(wt.branch);
     console.log(`keep   ${wt.path} (${name}, ${reason})`);
@@ -89,7 +94,8 @@ if (!apply) {
 const share = join(here, "scripts/setup-worktree.js");
 for (const wt of remove) {
   execFileSync("node", [share, "--data"], { cwd: wt.path, stdio: "inherit" });
-  git(["worktree", "remove", wt.path]);
+  // Checked clean above. --force only removes the data links just made.
+  git(["worktree", "remove", "--force", wt.path]);
 }
 if (branches.length) git(["branch", "-d", ...branches]);
 console.log(

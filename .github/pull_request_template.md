@@ -2,12 +2,11 @@ Closes #
 
 ## Summary
 
-Plain language. No technical terms.
-
-- **Why:** why this change
-- **Before:** how it worked
-- **After:** how it works now
-- **Solves:** which problem went away
+<!--
+For the owner, in plain words. What was wrong or missing, how it worked
+before, what works now and which problem went away. A short paragraph or a
+few bullets. As long as the change needs, no fixed fields.
+-->
 
 ## Screenshots
 
