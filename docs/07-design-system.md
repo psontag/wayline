@@ -175,7 +175,7 @@ A screen has at most one primary button (`variant="primary"`, accent fill). Ever
 | Import | Create trip |
 | Trip editor | None. Export GPX and Booking.com are secondary. |
 
-- A message panel that replaces the screen (empty, error) may have one primary button for its main action.
+- A message panel that replaces the screen (empty, error) may have one primary button for its main action. Error states follow `13-errors.md`.
 - `FloatingButton` has no accent variant.
 
 ## Dark mode
