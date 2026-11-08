@@ -4,8 +4,9 @@ Usage: python build.py [--cache DIR] [--out DIR] [--area germany|<state>]
 
 Reads the downloads from the cache (see download.py) and writes
 <out>/<version>/ with manifest.json, search.json, tiles/<x>_<y>.json,
-places/<x>_<y>.json, the route lines (lines.py) and the routing tiles
-route/<x>_<y>.bin (routing.py), plus <out>/latest.json
+places/<x>_<y>.json, the route lines (lines.py), the routing tiles
+route/<x>_<y>.bin (routing.py) and the train reach reach/<station>.json
+(reach.py), plus <out>/latest.json
 that names the newest version.
 """
 
@@ -25,6 +26,7 @@ import export as X
 import extract as E
 import graph as G
 import lines as L
+import reach as RE
 import region
 import routing as R
 import scenery as S
@@ -213,12 +215,15 @@ def main():
     place_tiles = X.split_places(places, network["nodes"], tile_key)
     place_sizes = [write(os.path.join(out, "places", f"{k}.json"), p) for k, p in place_tiles.items()]
     search_size = write(os.path.join(out, "search.json"), X.search_index(places))
+    gtfs = RE.gtfs_paths(args.cache)
+    reach = RE.write_into(out, RE.build(gtfs, places["stations"], version)) if gtfs else []
+    t.step("reach")
     lons = [n["lon"] for n in network["nodes"]]
     lats = [n["lat"] for n in network["nodes"]]
     manifest = {
         "version": version,
         "region": {"name": region.NAME, "bbox": [min(lons), min(lats), max(lons), max(lats)]},
-        "files": {"search": "search.json"},
+        "files": {"search": "search.json", "reach": reach},
         "tiles": {
             "size": region.TILE_DEG,
             "format": 1,

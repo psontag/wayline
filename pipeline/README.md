@@ -9,7 +9,7 @@ pnpm data:build
 ```
 
 - Needs [uv](https://docs.astral.sh/uv/), Python 3.12, [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`, `apt install osmium-tool`) and [tippecanoe](https://github.com/felt/tippecanoe) 2.79 or newer (`brew install tippecanoe`; the Ubuntu package is too old, so build it from source as in `.github/workflows/ci.yml`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
-- Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): the Geofabrik extract of Germany (4.5 GB) and Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB).
+- Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): the Geofabrik extract of Germany (4.5 GB), Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB) and the gtfs.de timetables (12 MB, again after 7 days).
 - In a worktree, `pipeline/cache` is a link to the main checkout (`pnpm setup:worktree`). After the build, the new dataset moves to the main checkout and is linked back.
 - Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `de-<date of the extracts>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
 - First filters the OSM file with osmium-tool to what the pipeline reads (`OSM_FILTER` in `build.py`): 4.5 to 1.5 GB.
@@ -35,6 +35,7 @@ Output (November 2026):
 | `search.json` | 2.8 MiB (0.7 MiB gzipped): 31,800 towns and 5,900 stations on the network |
 | Route lines | 5,000 files (1,493 empty), 15 MiB, largest 206 KiB |
 | `routes.json` | 1.8 MiB: 16,300 routes |
+| `reach/<station>.json` | 1.1 MiB (0.3 MiB gzipped) per home station, 11 s: 4,250 stations within 6 h of Karlsruhe |
 
 A 200 km trip loads up to about 110 tiles, about 12 MiB (6 MiB gzipped).
 
@@ -196,6 +197,23 @@ Geometry part (`.geo.bin`), edges in the same order:
 | Shape points per edge | u16 | m |
 | Elevation in m: from node, shape points, to node of each edge | i16 | p + 2m |
 
+## Train reach
+
+`reach.py` finds the train time from each home station (`HOMES`, for now Karlsruhe Hbf) to every station and back, with range RAPTOR on the gtfs.de timetables (`docs/03-data-sources.md`).
+
+| | |
+|---|---|
+| Day types | Weekday (Tue–Thu), Saturday, Sunday. Per type the date with the most trips, so holidays are not used. |
+| Out | Leaving home 07:00–10:00 |
+| Back | Arriving home 15:00–22:00. A search backwards in time from home. |
+| Changes | 0, 1 and 2, at least 5 minutes each |
+| Longest | 6 hours |
+| Bike reservation | IC, ICE and other long-distance trains: the `fv_free` feed, and operators in `LONG_DISTANCE` in `rv_free` |
+
+Format in `ReachFile` in `packages/domain/src/geodata.ts`. Per station id: minutes with at most 0, 1 and 2 changes, the same by regional trains only, and a bit per change count for "needs a reservation". 5,450 of our 5,874 stations match a timetable stop (same name within 1.5 km, else the nearest within 300 m). The rest are missing from the free feeds.
+
+`uv run reach.py <data dir>` adds the reach files to a built dataset.
+
 ## Files
 
 | File | Does |
@@ -210,6 +228,7 @@ Geometry part (`.geo.bin`), edges in the same order:
 | `export.py` | Writes nodes, edges and places in the format of `packages/domain/src/geodata.ts` |
 | `lines.py` | Writes the vector tiles of the signed routes and `routes.json` |
 | `routing.py` | Writes the routing tiles |
+| `reach.py` | Writes the train times from home stations |
 | `region.py` | States, DEM tiles and tile size |
 | `check_area.py` | Checks the data around a station |
 | `subset.py` | Copies the tiles of a bbox into a small dataset |
