@@ -1,4 +1,5 @@
 import {
+  distanceKm,
   encodeLine,
   type Leg,
   type LonLat,
@@ -24,11 +25,33 @@ import {
 const meta = { provider: "test", profileHash: "touring" };
 const at = (lon: number, lat = 49): LonLat => [lon, lat];
 
-function recorder() {
+/** A leg along a line through the points. */
+function legAlong(line: LonLat[]): Leg {
+  const km = line
+    .slice(1)
+    .reduce((sum, p, i) => sum + distanceKm(line[i]!, p), 0);
+  return {
+    ...straightLeg(line[0]!, line.at(-1)!, meta),
+    geometry: encodeLine(line),
+    distance: Math.round(km * 1000),
+  };
+}
+
+const same = (a: LonLat, b: LonLat) => a[0] === b[0] && a[1] === b[1];
+
+/**
+ * Records calls. Routes are straight, or follow one of `lines` that
+ * starts and ends at the same points.
+ */
+function recorder(lines: LonLat[][] = []) {
   const calls: LonLat[][] = [];
   const route = async (points: LonLat[]) => {
     calls.push(points);
-    return points.slice(1).map((to, i) => straightLeg(points[i]!, to, meta));
+    return points.slice(1).map((to, i) => {
+      const from = points[i]!;
+      const line = lines.find((l) => same(l[0]!, from) && same(l.at(-1)!, to));
+      return legAlong(line ?? [from, to]);
+    });
   };
   return { calls, route, snap: async (c: LonLat) => c };
 }
@@ -68,6 +91,47 @@ describe("insertVia", () => {
     expect(first!.stats.distance).toBeCloseTo(km(first!.legs));
     expect(km(first!.legs)).toBeGreaterThan(km(stages[0]!.legs));
     expect(next.stages[1]).toBe(trip.stages[1]);
+  });
+
+  // The old route rides S → J → W → E, with W north of E. A via point V
+  // south of J → W makes the new route reach W from E, so the old leg
+  // W → E rides back the same way.
+  const [s, j, w, m, e, v] = [
+    at(10),
+    at(10.2),
+    at(10.4, 49.1),
+    at(10.4, 49.05),
+    at(10.4),
+    at(10.3, 48.95),
+  ];
+  const loopStage: Stage = {
+    ...stage("a", [10, 10.4], "E"),
+    legs: [legAlong([s, j]), legAlong([j, w]), legAlong([w, m, e])],
+  };
+  const loop: Trip = { ...trip, stages: [loopStage] };
+  const viaE = [v, e, m, w];
+
+  it("drops a join the route would ride out to and back", async () => {
+    const tools = recorder([viaE]);
+    const next = await insertVia(loop, 0, 1, v, tools);
+    expect(tools.calls).toEqual([
+      [j, v, w],
+      [j, v, e],
+    ]);
+    const legs = next.stages[0]!.legs;
+    expect(legs[0]).toBe(loopStage.legs[0]);
+    expect(legs.map((l) => l.to)).toEqual([j, v, e]);
+  });
+
+  it("keeps a via point the route rides out to and back", async () => {
+    const tools = recorder([viaE]);
+    const kept: Trip = {
+      ...loop,
+      stages: [{ ...loopStage, via: [{ name: "", kind: "custom", coord: w }] }],
+    };
+    const next = await insertVia(kept, 0, 1, v, tools);
+    expect(tools.calls).toEqual([[j, v, w]]);
+    expect(next.stages[0]!.legs.map((l) => l.to)).toEqual([j, v, w, e]);
   });
 
   it("snaps the via point to the network", async () => {
@@ -158,7 +222,7 @@ describe("previewVia", () => {
       at(10.3, 49.05),
       tools,
     );
-    expect(tools.calls).toEqual([[at(10.2), at(10.3, 49.05), at(10.4)]]);
+    expect(tools.calls.at(-1)).toEqual([at(10.2), at(10.3, 49.05), at(10.4)]);
     expect(preview?.line[0]).toEqual(at(10.2));
     expect(preview?.line.at(-1)).toEqual(at(10.4));
     expect(preview?.distance).toBeGreaterThan(0);
@@ -174,7 +238,7 @@ describe("previewVia", () => {
       at(10.3, 49),
       tools,
     );
-    expect(tools.calls).toEqual([[at(10.2), at(10.3, 49), at(10.4)]]);
+    expect(tools.calls.at(-1)).toEqual([at(10.2), at(10.3, 49), at(10.4)]);
     // Back on the straight line: shorter than the detour it replaces.
     expect(preview?.distance).toBeLessThan(0);
   });

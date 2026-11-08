@@ -56,26 +56,84 @@ export function spurStart(before: Leg, after: Leg): LonLat | undefined {
 }
 
 /**
- * Routes from `from` through `at` to `to`. The via point snaps to the
- * network. If the route rides out and back to it, the via point moves to
+ * Joins an edit may drop on each side. Joins between the pieces of a
+ * generated stage are not real stops. They keep the route on the
+ * generated path.
+ */
+const DROP_JOINS = 2;
+
+/** The start, the end and via points stay. Other joins may go. */
+function isAnchor(stage: Stage, points: LonLat[], i: number): boolean {
+  const p = points[i];
+  if (i <= 0 || i >= points.length - 1 || !p) return true;
+  return stage.via.some((v) => same(v.coord, p));
+}
+
+/** Legs `from` up to `to` of a stage, routed again through a via point. */
+type Rerouted = { from: number; to: number; via: LonLat; legs: Leg[] };
+
+/**
+ * Routes the points `first` to `last` of a stage again through `at`.
+ * If the new route rides out to a join and back along the old route, the
+ * join goes and the route ends at the next one. Up to DROP_JOINS joins
+ * go on each side, never a via point, the start or the stop. If the
+ * route rides out and back to the via point, the via point moves to
  * where the spur starts.
  */
-async function routeThrough(
-  from: LonLat,
+async function rerouteAround(
+  stage: Stage,
+  first: number,
+  last: number,
   at: LonLat,
-  to: LonLat,
   { route, snap }: RouteTools,
-): Promise<{ via: LonLat; legs: Leg[] }> {
+): Promise<Rerouted | undefined> {
+  const points = legPoints(stage);
+  let from = first;
+  let to = last;
   let via = await snap(at);
-  let legs = await route([from, via, to]);
-  const [before, after] = legs;
-  const spur = before && after && spurStart(before, after);
+  const routeSpan = async () => {
+    const a = points[from];
+    const b = points[to];
+    return a && b ? route([a, via, b]) : [];
+  };
+  let legs = await routeSpan();
+  if (!legs.length) return undefined;
+  for (;;) {
+    const [head, tail] = legs;
+    const prev = stage.legs[from - 1];
+    const next = stage.legs[to];
+    const back =
+      first - from < DROP_JOINS &&
+      !isAnchor(stage, points, from) &&
+      !!prev &&
+      !!head &&
+      !!spurStart(prev, head);
+    const ahead =
+      to - last < DROP_JOINS &&
+      !isAnchor(stage, points, to) &&
+      !!next &&
+      !!tail &&
+      !!spurStart(tail, next);
+    if (!back && !ahead) break;
+    if (back) from--;
+    if (ahead) to++;
+    legs = await routeSpan();
+  }
+  const [head, tail] = legs;
+  const spur = head && tail && spurStart(head, tail);
   if (spur) {
     via = spur;
-    legs = await route([from, via, to]);
+    legs = await routeSpan();
   }
-  return { via, legs };
+  return { from, to, via, legs };
 }
+
+/** The legs of a stage with legs `from` up to `to` replaced. */
+const spliced = (stage: Stage, { from, to, legs }: Rerouted) => [
+  ...stage.legs.slice(0, from),
+  ...legs,
+  ...stage.legs.slice(to),
+];
 
 /** Replaces the via point at a join, keeping the order along the stage. */
 function withVia(stage: Stage, legs: Leg[], drop?: LonLat, add?: LonLat) {
@@ -98,16 +156,20 @@ export type ViaPreview = {
   ascent: number;
 };
 
-/** The legs a via point edit routes again: from, to and the old legs. */
-function editedSpan(stage: Stage, target: ViaTarget) {
-  const points = legPoints(stage);
-  // A new point splits one leg. A moved one joins two.
+/**
+ * Routes a via point edit again. A new point splits one leg. A moved one
+ * joins the two legs next to it.
+ */
+function rerouteTarget(
+  stage: Stage,
+  target: ViaTarget,
+  at: LonLat,
+  tools: RouteTools,
+) {
   const first = "leg" in target ? target.leg : joinAt(stage, target.via) - 1;
-  const count = "leg" in target ? 1 : 2;
-  const from = points[first];
-  const to = points[first + count];
-  if (first < 0 || !from || !to) return undefined;
-  return { from, to, old: stage.legs.slice(first, first + count) };
+  const last = first + ("leg" in target ? 1 : 2);
+  if (first < 0 || last > stage.legs.length) return undefined;
+  return rerouteAround(stage, first, last, at, tools);
 }
 
 const sum = (legs: Leg[], key: "distance" | "ascent") =>
@@ -118,21 +180,23 @@ export async function previewVia(
   stage: Stage,
   target: ViaTarget,
   at: LonLat,
-  { route, snap }: RouteTools,
+  tools: RouteTools,
 ): Promise<ViaPreview | undefined> {
-  const span = editedSpan(stage, target);
-  if (!span) return undefined;
-  const legs = await route([span.from, await snap(at), span.to]);
+  const routed = await rerouteTarget(stage, target, at, tools);
+  if (!routed) return undefined;
+  const { legs } = routed;
+  const old = stage.legs.slice(routed.from, routed.to);
   return {
     line: legs.flatMap((l) => decodeLine(l.geometry)),
-    distance: sum(legs, "distance") - sum(span.old, "distance"),
-    ascent: sum(legs, "ascent") - sum(span.old, "ascent"),
+    distance: sum(legs, "distance") - sum(old, "distance"),
+    ascent: sum(legs, "ascent") - sum(old, "ascent"),
   };
 }
 
 /**
- * Adds a via point on a leg of a stage. Only that leg is routed again.
- * A via point on the old route changes nothing.
+ * Adds a via point on a leg of a stage. That leg is routed again, and
+ * the legs next to it if the route would ride out and back to their
+ * joins. A via point on the old route changes nothing.
  */
 export async function insertVia(
   trip: Trip,
@@ -142,24 +206,19 @@ export async function insertVia(
   tools: RouteTools,
 ): Promise<Trip> {
   const stage = trip.stages[index];
-  const points = stage && legPoints(stage);
-  const from = points?.[leg];
-  const to = points?.[leg + 1];
-  if (!stage || !from || !to) return trip;
-  const routed = await routeThrough(from, at, to, tools);
+  const routed = stage && (await rerouteTarget(stage, { leg }, at, tools));
+  if (!stage || !routed) return trip;
   // The via point ended up on the old route.
-  const old = stage.legs[leg]?.distance ?? 0;
-  const km = routed.legs.reduce((sum, l) => sum + l.distance, 0);
-  if (Math.abs(km - old) < SAME_ROUTE_M) return trip;
-  const legs = [
-    ...stage.legs.slice(0, leg),
-    ...routed.legs,
-    ...stage.legs.slice(leg + 1),
-  ];
+  const old = sum(stage.legs.slice(routed.from, routed.to), "distance");
+  if (Math.abs(sum(routed.legs, "distance") - old) < SAME_ROUTE_M) return trip;
+  const legs = spliced(stage, routed);
   return setStage(trip, index, withVia(stage, legs, undefined, routed.via));
 }
 
-/** Moves a via point. Only the two legs next to it are routed again. */
+/**
+ * Moves a via point. The two legs next to it are routed again, and the
+ * legs after them if the route would ride out and back to their joins.
+ */
 export async function moveVia(
   trip: Trip,
   index: number,
@@ -168,17 +227,10 @@ export async function moveVia(
   tools: RouteTools,
 ): Promise<Trip> {
   const stage = trip.stages[index];
-  const i = stage ? joinAt(stage, coord) : -1;
-  const points = stage && legPoints(stage);
-  const from = points?.[i - 1];
-  const to = points?.[i + 1];
-  if (!stage || i < 0 || !from || !to) return trip;
-  const routed = await routeThrough(from, at, to, tools);
-  const legs = [
-    ...stage.legs.slice(0, i - 1),
-    ...routed.legs,
-    ...stage.legs.slice(i + 1),
-  ];
+  const routed =
+    stage && (await rerouteTarget(stage, { via: coord }, at, tools));
+  if (!stage || !routed) return trip;
+  const legs = spliced(stage, routed);
   return setStage(trip, index, withVia(stage, legs, coord, routed.via));
 }
 
