@@ -14,7 +14,7 @@
     "@wayline/cache": "workspace:*",
     "@wayline/domain": "workspace:*",
     "flatbush": "4.6.2",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@types/node": "24.19.1"
