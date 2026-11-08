@@ -23,4 +23,4 @@ description: Check a Wayline UI change in the browser pane in light and dark, de
 8. Fix, then check again from step 3.
 9. Reset with `preset: "desktop"` when done.
 
-For the PR, save the four screenshots and follow the `ship` skill.
+For the PR, save the four screenshots and follow the `ship` skill. For the trip list, new trip, proposals, trip and day pages, `pnpm e2e` already writes light and dark screenshots to `apps/web/e2e/out/screenshots/`.

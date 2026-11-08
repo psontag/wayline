@@ -19,10 +19,13 @@
     "data:build": "pipeline/build.sh",
     "report:trips": "vitest run --config packages/planner/report/vitest.config.ts --root . --disable-console-intercept",
     "bench": "vitest run --config packages/planner/bench/vitest.config.ts --root . --disable-console-intercept",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm format:check"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm format:check",
+    "e2e": "playwright test",
+    "test:pipeline": "cd pipeline && uvx ruff@0.17.2 check . && uv run --no-project -p 3.12 --with-requirements requirements.txt --with pytest==9.1.1 pytest tests -q"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
     "eslint": "10.12.0",
     "eslint-plugin-better-tailwindcss": "4.7.0",
     "eslint-plugin-i18next": "6.1.5",

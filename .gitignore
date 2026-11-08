@@ -18,3 +18,5 @@ pipeline/.venv/
 .cache/
 .env.local
 packages/planner/report/out/
+# Playwright results and screenshots
+apps/web/e2e/out/

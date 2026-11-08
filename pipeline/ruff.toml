@@ -1,0 +1,8 @@
+# Rules that find bugs, not style. A change to pipeline/*.py changes the data
+# version, so the code is not reformatted.
+extend-exclude = ["spike"]
+
+[lint]
+select = ["E4", "E7", "E9", "F", "B"]
+# zip(strict=), short names and unused loop variables are style here.
+ignore = ["B905", "E741", "B007"]

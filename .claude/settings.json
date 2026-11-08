@@ -48,6 +48,8 @@
       "Bash(pnpm format:check)",
       "Bash(pnpm build)",
       "Bash(pnpm worktree:prune)",
+      "Bash(pnpm e2e:*)",
+      "Bash(pnpm test:pipeline)",
       "Bash(ls:*)",
       "Bash(wc:*)",
       "Bash(du:*)"

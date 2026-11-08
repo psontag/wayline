@@ -37,6 +37,49 @@ jobs:
       - if: github.event_name == 'pull_request'
         run: pnpm build
 
+  # Browser tests on the mock data. Screenshots are a workflow artifact.
+  e2e:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
+      - if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: e2e
+          path: apps/web/e2e/out/
+          retention-days: 14
+
+  # Lint and a sample-area build of the route data pipeline. The build test
+  # only runs when the pipeline or the tile reader changed.
+  pipeline:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.2.0
+      - run: uvx ruff@0.17.2 check .
+        working-directory: pipeline
+      - id: changed
+        run: |
+          git fetch -q --depth=1 origin "$GITHUB_BASE_REF"
+          if git diff --quiet FETCH_HEAD HEAD -- pipeline packages/providers/src/networkTile.ts packages/providers/fixtures apps/web/public/data/mock; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.changed.outputs.run == 'true'
+        working-directory: pipeline
+        run: uv run --no-project -p 3.12 --with-requirements requirements.txt --with pytest==9.1.1 pytest tests -q
+
   # Sets up Cloudflare, builds the route data and deploys. See docs/12-deploy.md.
   deploy:
     needs: check
