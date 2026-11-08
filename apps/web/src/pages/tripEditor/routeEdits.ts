@@ -266,3 +266,18 @@ export async function revertStage(
   );
   return { ...trip, stages };
 }
+
+/** The leg whose line passes closest to a point, and how far off it is. */
+export function nearestLeg(
+  lines: LonLat[][],
+  at: LonLat,
+): { leg: number; km: number } | undefined {
+  let best: { leg: number; km: number } | undefined;
+  for (const [leg, line] of lines.entries()) {
+    for (const p of line) {
+      const km = distanceKm(p, at);
+      if (!best || km < best.km) best = { leg, km };
+    }
+  }
+  return best;
+}

@@ -91,6 +91,11 @@
     "move": "Move",
     "removeLabel": "Remove via point {{n}}"
   },
+  "spot": {
+    "label": "This spot",
+    "routeHere": "Route via here",
+    "off": "{{distance}} off the route"
+  },
   "place": {
     "add": "Add via point",
     "move": "Move via point",

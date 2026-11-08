@@ -252,3 +252,8 @@ export {
   type HotelDetailProps,
 } from "./components/HotelChoice";
 export { PlaceBar, type PlaceBarProps } from "./components/PlaceBar";
+export {
+  PointMenu,
+  type PointMenuItem,
+  type PointMenuProps,
+} from "./components/PointMenu";
