@@ -156,13 +156,124 @@ export function pathTo(
   return steps.reverse();
 }
 
-/** Cheapest path between two nodes, or null if they are not connected. */
+/** One side of a bidirectional search. Only touched nodes are reset. */
+type Side = {
+  cost: Float64Array;
+  prevEdge: Int32Array;
+  queue: FlatQueue<number>;
+  touched: number[];
+};
+
+const sides = new WeakMap<Graph, [Side, Side]>();
+
+function sidesOf(graph: Graph): [Side, Side] {
+  let s = sides.get(graph);
+  if (!s) {
+    const n = graph.nodes.length;
+    const side = (): Side => ({
+      cost: new Float64Array(n).fill(Infinity),
+      prevEdge: new Int32Array(n).fill(-1),
+      queue: new FlatQueue<number>(),
+      touched: [],
+    });
+    s = [side(), side()];
+    sides.set(graph, s);
+  }
+  return s;
+}
+
+function reset(side: Side) {
+  for (const n of side.touched) {
+    side.cost[n] = Infinity;
+    side.prevEdge[n] = -1;
+  }
+  side.touched.length = 0;
+  side.queue.clear();
+}
+
+/**
+ * Cheapest path between two nodes, or null if they are not connected.
+ * Searches from both ends at once. Edges are undirected and cost the same
+ * both ways, so the search from `to` uses the same costs.
+ */
 export function shortestPath(
   graph: Graph,
   from: number,
   to: number,
   cost: EdgeCost | EdgeWeights = defaultCost,
 ): PathStep[] | null {
-  const result = dijkstra(graph, from, { target: to, cost, reuse: true });
-  return pathTo(graph, result, to);
+  searchCounts.toTarget++;
+  if (from === to) return [];
+  const { adjStart, adjEdge, adjTo } = graph;
+  const edgeCost = typeof cost === "function" ? cost : undefined;
+  const w = typeof cost === "function" ? undefined : cost;
+  const base = w?.base;
+  const factor = w?.factor;
+  const extra = w?.extra;
+  const weight = (id: number) => {
+    if (edgeCost) return edgeCost(graph.edge(id));
+    let ec = base?.[id] ?? Infinity;
+    if (factor) ec *= factor[id] ?? 1;
+    if (extra) ec *= extra[id] ?? 1;
+    return ec;
+  };
+
+  const [fwd, bwd] = sidesOf(graph);
+  reset(fwd);
+  reset(bwd);
+  for (const [side, node] of [
+    [fwd, from],
+    [bwd, to],
+  ] as const) {
+    side.cost[node] = 0;
+    side.touched.push(node);
+    side.queue.push(node, 0);
+  }
+
+  let best = Infinity;
+  let meet = -1;
+  while (fwd.queue.length && bwd.queue.length) {
+    const tf = fwd.queue.peekValue() as number;
+    const tb = bwd.queue.peekValue() as number;
+    if (tf + tb >= best) break;
+    const [side, other] = tf <= tb ? [fwd, bwd] : [bwd, fwd];
+    const c = side.queue.peekValue() as number;
+    const node = side.queue.pop() as number;
+    if (c > (side.cost[node] as number)) continue;
+    searchCounts.settled++;
+    const end = adjStart[node + 1] as number;
+    for (let j = adjStart[node] as number; j < end; j++) {
+      const id = adjEdge[j] as number;
+      const next = adjTo[j] as number;
+      const nc = c + weight(id);
+      if (nc < (side.cost[next] as number)) {
+        if (side.cost[next] === Infinity) side.touched.push(next);
+        side.cost[next] = nc;
+        side.prevEdge[next] = id;
+        side.queue.push(next, nc);
+      }
+      const through = nc + (other.cost[next] as number);
+      if (through < best) {
+        best = through;
+        meet = next;
+      }
+    }
+  }
+  if (meet < 0) return null;
+
+  // from → meet, then meet → to.
+  const steps: PathStep[] = [];
+  for (let node = meet; node !== from;) {
+    const id = fwd.prevEdge[node] as number;
+    const prev = graph.other(id, node);
+    steps.push({ edge: id, forward: graph.edge(id).from === prev });
+    node = prev;
+  }
+  steps.reverse();
+  for (let node = meet; node !== to;) {
+    const id = bwd.prevEdge[node] as number;
+    steps.push({ edge: id, forward: graph.edge(id).from === node });
+    node = graph.other(id, node);
+  }
+  return steps;
 }
