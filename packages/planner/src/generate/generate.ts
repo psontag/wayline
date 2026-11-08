@@ -47,6 +47,7 @@ import {
   stopCandidates,
 } from "./stages";
 import { linePoints, loopsBack } from "./loops";
+import { byFit, type Fit } from "./order";
 import { Stops } from "./stops";
 import { corridorShare } from "./corridor";
 import { NATIONAL, REGIONAL, RouteCatalog } from "./routeCatalog";
@@ -392,10 +393,19 @@ export class Planner {
         followedRoute(graph, p.steps, this.catalog, SIGNED.share),
       ]),
     );
-    // The main proposal, then those that follow a route, then the rest.
-    const place = (p: Pick) =>
-      p === direct || p.flavour === "best" ? 0 : followed.get(p) ? 1 : 2;
-    picks.sort((a, b) => place(a) - place(b));
+    // The direct route, then the best fit.
+    const fit = new Map(
+      picks.map((p) => [
+        p,
+        { ...p, quality: meanScore(graph, p.steps) * (1 - 0.5 * p.shared) },
+      ]),
+    );
+    const order = byFit(totalKm);
+    picks.sort(
+      (a, b) =>
+        Number(b === direct) - Number(a === direct) ||
+        order(fit.get(a) as Fit, fit.get(b) as Fit),
+    );
     // Rides with the wind first. Close factors keep the search order.
     if (open && ride) {
       const wind = (p: Pick) =>

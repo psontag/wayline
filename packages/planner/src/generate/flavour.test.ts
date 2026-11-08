@@ -78,10 +78,10 @@ describe("flavours", () => {
   it("proposes one loop per flavour on the Heidelberg tiles", async () => {
     const proposals = await generate(heidelberg);
     checkFlavours(proposals);
-    expect(proposals[0]?.flavour).toBe("best");
     expect(proposals.length).toBeGreaterThanOrEqual(3);
     const nature = proposals.find((p) => p.flavour === "nature");
-    const best = proposals[0];
+    const best = proposals.find((p) => p.flavour === "best");
+    expect(best).toBeDefined();
     if (nature && best) {
       const share = (p: Proposal) =>
         (p.themes?.nature ?? 0) + (p.themes?.water ?? 0);
@@ -127,7 +127,7 @@ describe("flavours", () => {
       theme: "wine",
       profile: "scenic",
     });
-    expect(proposals[0]?.flavour).toBe("best");
+    expect(proposals.some((p) => p.flavour === "best")).toBe(true);
     expect(proposals[0]?.trip.settings.profile).toBe("touring");
   });
 
@@ -144,7 +144,7 @@ describe("flavours", () => {
     });
     if (!result.ok) throw new Error(result.failedLimit);
     checkFlavours(result.proposals);
-    expect(result.proposals[0]?.flavour).toBe("best");
+    expect(result.proposals.some((p) => p.flavour === "best")).toBe(true);
     for (const p of result.proposals.filter((q) => q.flavour)) {
       expect(["best", "flat", "hilly"]).toContain(p.flavour);
     }
