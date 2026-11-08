@@ -4,6 +4,7 @@ import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { focusRing } from "./Button";
 import { IconButton } from "./IconButton";
+import { ReservationMark } from "./ReachLabel";
 
 export type TrainRowProps = {
   departure: Date;
@@ -13,6 +14,8 @@ export type TrainRowProps = {
   lines: string[];
   /** bahn.de search for this train. */
   href: string;
+  /** An IC or ICE: the bike needs a reservation. */
+  reservation?: boolean;
   saved?: boolean;
   /** Without it, the row has no save button, e.g. on shared trips. */
   onToggleSave?: () => void;
@@ -25,6 +28,7 @@ export function TrainRow({
   changes,
   lines,
   href,
+  reservation = false,
   saved = false,
   onToggleSave,
 }: TrainRowProps) {
@@ -53,12 +57,20 @@ export function TrainRow({
             arrival: format.time(arrival),
           })}
         </span>
-        <span className="truncate text-xs text-text-muted">
-          {[
-            format.duration(hours),
-            t("train.changes", { count: changes }),
-            lines.join(", "),
-          ].join(" · ")}
+        <span className="flex min-w-0 items-center gap-1.5 text-xs text-text-muted">
+          <span className="truncate">
+            {[
+              format.duration(hours),
+              t("train.changes", { count: changes }),
+              lines.join(", "),
+            ].join(" · ")}
+          </span>
+          {reservation && (
+            <ReservationMark
+              mark={t("train.reservationMark")}
+              label={t("train.reservation")}
+            />
+          )}
         </span>
       </a>
       {onToggleSave && (

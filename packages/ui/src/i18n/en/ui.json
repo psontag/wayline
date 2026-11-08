@@ -79,7 +79,9 @@
     "changes_one": "1 change",
     "changes_other": "{{count}} changes",
     "save": "Save train",
-    "unsave": "Remove saved train"
+    "unsave": "Remove saved train",
+    "reservationMark": "R",
+    "reservation": "IC, ICE or Flix: book a bike space."
   },
   "hotel": {
     "stars_one": "{{count}} star",

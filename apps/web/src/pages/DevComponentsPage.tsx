@@ -672,6 +672,7 @@ function TripEditorParts() {
             changes={1}
             lines={["ICE 591", "RE 10"]}
             href="https://www.bahn.de"
+            reservation
             saved={trainSaved}
             onToggleSave={() => setTrainSaved(!trainSaved)}
           />
@@ -681,6 +682,7 @@ function TripEditorParts() {
             changes={0}
             lines={["IC 2063"]}
             href="https://www.bahn.de"
+            reservation
           />
         </div>
       </Card>
