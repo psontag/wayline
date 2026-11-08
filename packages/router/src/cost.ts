@@ -133,7 +133,7 @@ function baseFactor(bits: number, highways: string[], profile: CostProfile) {
   return f + 0.05;
 }
 
-/** Surface class of an edge, close to what parseBrouterLeg reads from BRouter's way tags. */
+/** Surface class of an edge, from its way tags. */
 export function surfaceOf(bits: number, highways: string[]): keyof Surface {
   const b = bitsOf(bits);
   const hw = highways[b.highway];

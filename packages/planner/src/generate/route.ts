@@ -38,8 +38,7 @@ export function endNode(graph: Graph, steps: PathStep[]): number | undefined {
 
 /**
  * Router waypoints of each stage: the stage ends and the graph nodes
- * between its legs, so the router follows the graph path. Node ids repeat
- * between proposals, so routed legs can be cached.
+ * between its legs, so the router follows the graph path.
  */
 export function stageWaypoints(
   graph: Graph,
@@ -57,10 +56,7 @@ export function stageWaypoints(
   });
 }
 
-/**
- * Step 7: routes all stages of a trip with the router. One call for the
- * whole trip, so the router's limit on parallel requests holds.
- */
+/** Step 7: routes all stages of a trip with the router, in one call. */
 export async function routeTrip(
   trip: Trip,
   waypoints: LonLat[][],
