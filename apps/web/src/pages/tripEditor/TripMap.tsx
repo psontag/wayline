@@ -11,6 +11,7 @@ import {
   MapHint,
   PlaceBar,
   PlacePin,
+  PointMenu,
   PreviewLabel,
   useFormat,
   useThemeTokens,
@@ -39,7 +40,8 @@ import {
 import { isTyping, useLastPointer } from "../../components/useLastPointer";
 import { nearestOnLine, useRouteDrag } from "../../components/useRouteDrag";
 import type { MapHotel } from "./mapTypes";
-import type { ViaPreview, ViaTarget } from "./routeEdits";
+import { nearestLeg, type ViaPreview, type ViaTarget } from "./routeEdits";
+import { type SpotAnchor, usePointMenu } from "./usePointMenu";
 import type { MapStation } from "./stations";
 import { TripMarkers } from "./TripMarkers";
 import type { WeatherField } from "./weatherGrid";
@@ -49,6 +51,14 @@ import { type LiveVia, useViaPlacing, useViaPreview } from "./useViaPlacing";
 export type { MapPadding };
 
 const lineLayout = { "line-cap": "round", "line-join": "round" } as const;
+
+// Keeps the menu clear of the finger or cursor.
+const SPOT_OFFSET: Record<SpotAnchor, [number, number]> = {
+  "top-left": [8, 8],
+  "top-right": [-8, 8],
+  "bottom-left": [8, -8],
+  "bottom-right": [-8, -8],
+};
 
 export type MapAlternative = {
   place: Place;
@@ -204,9 +214,13 @@ export function TripMap({
 
   // A via point dragged with the mouse.
   const [viaDrag, setViaDrag] = useState<LiveVia>();
-  // A point placed with the pin, on touch.
+  // A point placed with the pin: on touch, or from the spot menu.
   const placer = useViaPlacing(mapRef);
   const { placing } = placer;
+  // "Route via here" for a spot off the route.
+  const spotMenu = usePointMenu(!!route?.enabled && !placing);
+  const spot = spotMenu.spot;
+  const spotLeg = spot && nearestLeg(legLines, spot.at);
   const lineDrag = useMemo<LiveVia | undefined>(
     () => drag && { target: { leg: drag.leg }, at: drag.at },
     [drag],
@@ -322,6 +336,10 @@ export function TripMap({
     const map = mapRef.current;
     // While placing, the map only moves.
     if (placing) return;
+    if (spot) {
+      spotMenu.close();
+      return;
+    }
     // Clicks on markers also reach the map. A click on the map itself only
     // clears the selected via point, so a tap meant to close it adds nothing.
     if (selectedVia !== undefined && map) {
@@ -365,6 +383,7 @@ export function TripMap({
       controls={controls}
       layers={layers}
       network={network}
+      events={spotMenu.events}
       hint={
         route &&
         pointerKind === "touch" && (
@@ -561,6 +580,33 @@ export function TripMap({
               : undefined
           }
         />
+      )}
+      {route && spot && spotLeg && (
+        <Marker
+          longitude={spot.at[0]}
+          latitude={spot.at[1]}
+          anchor={spot.anchor}
+          offset={SPOT_OFFSET[spot.anchor]}
+          style={{ zIndex: 9 }}
+        >
+          <PointMenu
+            label={t("spot.label")}
+            items={[
+              {
+                label: t("spot.routeHere"),
+                detail: t("spot.off", {
+                  distance: format.distance(spotLeg.km * 1000),
+                }),
+                icon: <Route aria-hidden />,
+                onSelect: () => {
+                  spotMenu.close();
+                  route.onSelectVia(undefined);
+                  placer.start({ leg: spotLeg.leg }, spot.at);
+                },
+              },
+            ]}
+          />
+        </Marker>
       )}
       {placing && (
         <Marker

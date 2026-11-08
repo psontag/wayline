@@ -14,6 +14,7 @@ import {
   insertVia,
   isChanged,
   moveVia,
+  nearestLeg,
   previewVia,
   removeVia,
   revertStage,
@@ -186,5 +187,21 @@ describe("previewVia", () => {
       recorder(),
     );
     expect(preview).toBeUndefined();
+  });
+});
+
+describe("nearestLeg", () => {
+  it("picks the leg that passes closest and how far off it is", () => {
+    const lines = [
+      [at(10), at(10.2)],
+      [at(10.2), at(10.4)],
+    ];
+    const near = nearestLeg(lines, at(10.4, 49.01));
+    expect(near?.leg).toBe(1);
+    expect(near?.km).toBeCloseTo(1.11, 1);
+  });
+
+  it("gives nothing without lines", () => {
+    expect(nearestLeg([], at(10))).toBeUndefined();
   });
 });

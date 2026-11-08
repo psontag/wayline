@@ -27,6 +27,7 @@ import MapGL, {
   Layer,
   type LayerProps,
   type MapLayerMouseEvent,
+  type MapProps,
   type MapRef,
 } from "react-map-gl/maplibre";
 import { HillshadeLayer } from "../HillshadeLayer";
@@ -73,6 +74,17 @@ export type MapPadding = {
 
 export type MapNetwork = "full" | "quiet" | "off";
 
+/** More map events, passed straight to the map. */
+export type MapEvents = Pick<
+  MapProps,
+  | "onContextMenu"
+  | "onTouchStart"
+  | "onTouchMove"
+  | "onTouchEnd"
+  | "onTouchCancel"
+  | "onMoveStart"
+>;
+
 export type AppMapProps = {
   /** Accessible name of the map region. */
   label: string;
@@ -108,6 +120,7 @@ export type AppMapProps = {
   onMouseDown?: (event: MapLayerMouseEvent) => void;
   onMouseLeave?: (event: MapLayerMouseEvent) => void;
   onZoomEnd?: (zoom: number) => void;
+  events?: MapEvents;
   /** Sources, layers and markers of the screen. */
   children?: ReactNode;
 };
@@ -160,6 +173,7 @@ export function AppMap({
   onMouseDown,
   onMouseLeave,
   onZoomEnd,
+  events,
   children,
 }: AppMapProps) {
   const { t } = useTranslation("map");
@@ -178,10 +192,7 @@ export function AppMap({
   };
 
   // Fit when the key changes, not on load: initialViewState does that.
-  const key = JSON.stringify([
-    fitKey === undefined ? fit : fitKey,
-    maximized,
-  ]);
+  const key = JSON.stringify([fitKey === undefined ? fit : fitKey, maximized]);
   const fitted = useRef(key);
   const latest = useRef({ fit, padding });
   useEffect(() => {
@@ -240,6 +251,7 @@ export function AppMap({
         onMouseMove={onMouseMove}
         onMouseDown={onMouseDown}
         onZoomEnd={(event) => onZoomEnd?.(event.viewState.zoom)}
+        {...events}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={(event) => {
           setHovering(false);
@@ -257,10 +269,7 @@ export function AppMap({
         />
         <HillshadeLayer beforeId={ROUTES_ANCHOR} />
         {network !== "off" && (
-          <NetworkLayer
-            beforeId={ROUTES_ANCHOR}
-            subtle={network === "quiet"}
-          />
+          <NetworkLayer beforeId={ROUTES_ANCHOR} subtle={network === "quiet"} />
         )}
         <LabelLayerContext.Provider value={labelLayerId}>
           {children}
