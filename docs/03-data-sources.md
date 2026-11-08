@@ -33,8 +33,7 @@ License: ODbL. The map must show OSM attribution.
 
 The browser routes on the routing tiles of the dataset (`packages/router`, tiles in `pipeline/README.md`). No server and no request limits.
 
-- Costs follow BRouter's trekking profile. Our presets are BRouter profiles in `infra/brouter/profiles/`, ported to `packages/router/src/cost.ts`.
-- A local BRouter in Docker (`09-development.md`) is only for comparing routes.
+- Costs follow BRouter's trekking profile. Our presets are BRouter profiles in `packages/router/profiles/`, ported to `packages/router/src/cost.ts`.
 
 ## Weather: Open-Meteo
 
