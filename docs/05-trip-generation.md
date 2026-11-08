@@ -67,9 +67,13 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
    - The leg from A to B avoids edges near the start (cost × 8).
    - Time limit of about 2 s.
 4. **Filter** by length (within 12 % of the target), ascent and surface, using edge data. Drop loops whose middle part (20–80 % of the length) comes within 4 % of the length, or 4 km, of the start. Drop paths that ride back along themselves: parts within 1.5 km of an earlier part more than 10 km back may add up to 4 % of the length (min 4 km). A short touch, like a river bend, is fine.
+   After cutting stages, drop a path when a day comes back within 5 km of a point it passed at least 20 km earlier that day, for more than 10 % of the day (max 8 km). Day loops are exempt.
 5. **Cut into stages.** See below. Each stage becomes one leg per piece, so an edit routes only the legs it touches. A piece ends after 10 km, or earlier (min 1 km) once the path is more than 10 % longer than the straight line from the piece start.
 6. **Signed routes**, then **pick** one proposal per flavour that differs from them. One day from A to B picks up to 5 diverse ones first, then signed routes. See below.
-7. **Fill** up to 8 proposals. See below. List order: the main proposal (best or direct), then proposals that follow a route, then the rest.
+7. **Fill** up to 8 proposals. See below. List order: the direct route first, then the best fit:
+   1. Closeness to the requested km, in bands of 10 %.
+   2. Fewer stops with few hotels.
+   3. Route quality: mean edge score × (1 − 0.5 × reused share).
 8. **Route** the chosen proposals on the routing tiles. Waypoints are the graph nodes between the pieces. Pieces cut at bends, so the router can't take a shortcut and follows the graph path. If routing fails, the proposal keeps the graph path.
 9. **Find hotels** at each stop from the OSM hotel data.
 10. **Tag** each proposal. See below.
@@ -271,7 +275,7 @@ Each flavour searches with its own edge costs.
 | `hilly` | (max(1, s))² / (1 + 30 × min(s, 1)), s = climb / average allowed. Keeps the path that climbs most of its tries, until one reaches 65 % of the max ascent. Stages still keep the max ascent. |
 | `sights` | Boosts max(culture, wine) |
 
-- Order: best first, then the rest.
+- Search order: best first, then the rest. The list is sorted by fit afterwards.
 - Flat and hilly are searched last, so they can be held to the least and the most climbing.
 - Each flavour raises the cost of edges of earlier proposals ×2, once per edge (penalty method), and tries candidates best first. After the first proposal, each flavour gets about 60 candidates or 1.5 s.
 - If a flavour's first path has stops with fewer than 3 hotels, it tries up to 15 more candidates and keeps the one with the fewest such stops.
