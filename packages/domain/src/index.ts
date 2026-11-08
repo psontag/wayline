@@ -5,6 +5,7 @@ export * from "./errors";
 export * from "./geodata";
 export * from "./line";
 export * from "./links";
+export * from "./trains";
 export * from "./schema";
 export * from "./stats";
 export * from "./time";

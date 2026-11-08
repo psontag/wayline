@@ -1,7 +1,9 @@
 import {
   bahnUrl,
   type Connection,
+  connectionNeedsReservation,
   localTimeToDate,
+  preferFewChanges,
   stationOf,
   trainQueries,
   type Trip,
@@ -44,10 +46,11 @@ export function TrainOptions({
   const saved = trip.trains.filter((train) => train.direction === direction);
   const rows = [
     ...saved,
-    ...(open ? (found.data ?? []) : [])
+    ...(open ? preferFewChanges(found.data ?? []) : [])
       .map((option) => ({ ...option, direction }))
       .filter((option) => !saved.some((s) => sameTrain(s, option))),
   ].sort((a, b) => a.departure.localeCompare(b.departure));
+  const reservation = rows.some(connectionNeedsReservation);
 
   return (
     <div className="flex flex-col gap-1">
@@ -90,6 +93,7 @@ export function TrainOptions({
                 to: query.to,
                 time: train.departure,
               })}
+              reservation={connectionNeedsReservation(train)}
               saved={saved.includes(train)}
               {...(editor.canEdit && {
                 onToggleSave: () => editor.toggleTrain(train),
@@ -97,6 +101,14 @@ export function TrainOptions({
             />
           ))}
         </div>
+      )}
+      {reservation && (
+        <p className="text-xs text-text-muted">
+          {t("trains.reservation")}{" "}
+          <TextLink href={bahnUrl(query)} target="_blank" rel="noreferrer">
+            {t("trains.book")}
+          </TextLink>
+        </p>
       )}
     </div>
   );

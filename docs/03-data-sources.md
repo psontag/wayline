@@ -52,6 +52,7 @@ The browser routes on the routing tiles of the dataset (`packages/router`, tiles
 - Two calls per search: `/locations` finds the station id (kept in memory), `/journeys` finds 3 connections before the first day's start or after the last day's arrival.
 - The editor looks up trains only when the user opens the list. Saved connections are stored on the trip.
 - Booking stays on bahn.de. Each connection links to a bahn.de search at its time.
+- Its `bike` option is not used: the list marks connections that need a bike reservation instead of hiding them.
 
 ## Hotels
 
@@ -135,7 +136,11 @@ https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=Bamberg&zo=Coburg&hd=2027
 
 Without station ids (`soid`, `zoid`), bahn.de matches the names itself. Check by hand when the format breaks.
 
-Later: live connections with a bike filter. `db-vendo-client` / `v6.db.transport.rest` are community projects. Their state and bike support need checking.
+Bikes:
+
+- Connections are not filtered by bike. An IC, ICE, EC, Railjet, night train, TGV, Flixtrain or FlixBus leg gets an **R**: the bike needs a reservation. The rule reads the line names, so it works with every provider.
+- When some connections have at most one change, the list leaves out the others.
+- A note under the list links to bahn.de to book the bike space.
 
 ### Train times from home: gtfs.de
 

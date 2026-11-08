@@ -32,7 +32,9 @@
     "unavailable": "Timetable not available. Search on bahn.de.",
     "from": "From {{station}}",
     "arriveBy": "Arrive by {{time}}",
-    "summary": "{{from}} and {{to}}"
+    "summary": "{{from}} and {{to}}",
+    "reservation": "R: IC, ICE or Flix. Book a bike space with the ticket.",
+    "book": "Book on bahn.de"
   },
   "summary": {
     "stageCount_one": "{{count}} day",
