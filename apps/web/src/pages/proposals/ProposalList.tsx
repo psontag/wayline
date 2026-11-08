@@ -11,6 +11,7 @@ import {
 import {
   Button,
   ElevationProfile,
+  InlineError,
   MessagePanel,
   PanelHeader,
   PanelSection,
@@ -62,7 +63,8 @@ export type ProposalListProps = {
   onOpen: (proposal: Proposal) => void;
   /** Id of the proposal being saved. */
   opening?: string;
-  openFailed: boolean;
+  /** Why saving the selected proposal failed. */
+  openError?: string;
   onRelax: (request: GenerateRequest) => void;
 };
 
@@ -77,7 +79,7 @@ export function ProposalList({
   onHoverDay,
   onOpen,
   opening,
-  openFailed,
+  openError,
   onRelax,
 }: ProposalListProps) {
   const { t } = useTranslation("proposals");
@@ -174,7 +176,7 @@ export function ProposalList({
             onHoverDay={onHoverDay}
             onOpen={() => onOpen(p)}
             opening={opening === p.id}
-            openFailed={openFailed && p.id === selected}
+            openError={p.id === selected ? openError : undefined}
           />
         ))}
         {status === "running" && <ProposalCardSkeleton />}
@@ -324,7 +326,7 @@ function ProposalItem({
   onHoverDay,
   onOpen,
   opening,
-  openFailed,
+  openError,
 }: {
   proposal: Proposal;
   number: number;
@@ -345,7 +347,7 @@ function ProposalItem({
   onHoverDay: (day: number | undefined) => void;
   onOpen: () => void;
   opening: boolean;
-  openFailed: boolean;
+  openError: string | undefined;
 }) {
   const { t } = useTranslation("proposals");
   const format = useFormat();
@@ -516,11 +518,7 @@ function ProposalItem({
       onHover={onHover}
       onHoverDay={onHoverDay}
     >
-      {openFailed && (
-        <span role="alert" className="text-sm text-danger">
-          {t("card.openFailed")}
-        </span>
-      )}
+      {openError && <InlineError>{openError}</InlineError>}
       <Button variant="primary" onClick={onOpen} disabled={opening}>
         {opening ? t("card.opening") : t("card.open")}
         <ArrowRight aria-hidden />

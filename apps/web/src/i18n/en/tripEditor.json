@@ -1,7 +1,6 @@
 {
   "title": "Trip",
   "loading": "Loading trip",
-  "notFound": "This trip does not exist.",
   "backToList": "Back to trips",
   "header": {
     "startDate": "Start date",
@@ -69,6 +68,7 @@
     "noStartDate": "Set a start date to see the weather.",
     "forecastFrom": "Forecast from {{date}}",
     "loadingWeather": "Loading weather",
+    "weatherFailed": "Could not load the weather forecast. Try again later.",
     "totalsWithRiding": "{{distance}} · {{ascent}} · about {{duration}} riding",
     "proposed": "Proposed route: {{distance}} · {{ascent}}",
     "proposedAt": "proposed {{elevation}}"
@@ -114,7 +114,8 @@
     "reversed": "The trip now runs the other way round.",
     "dateMoved": "The trip now starts on {{date}}.",
     "sameRoute": "The best way through that point is the same route.",
-    "routingFailed": "Couldn't reach the router, so nothing changed. Try again in a moment.",
+    "routingFailed": "Could not reach the router, so nothing changed. Try again in a moment.",
+    "saveFailed": "Could not save the last change",
     "undo": "Undo"
   },
   "wind": {
@@ -144,7 +145,7 @@
     "remove": "Stop sharing with {{email}}",
     "invalid": "Enter an email address.",
     "self": "This is your own email.",
-    "failed": "Could not save. Try again.",
+    "failed": "Could not change who sees the trip",
     "accessNote": "Friends also need to be on the Wayline login list.",
     "done": "Done"
   },

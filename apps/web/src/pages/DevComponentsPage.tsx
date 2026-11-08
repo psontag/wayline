@@ -99,8 +99,10 @@ import {
   Trash2,
   Undo2,
 } from "lucide-react";
+import { WaylineError } from "@wayline/domain";
 import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { ErrorPanel, NotFoundScreen } from "../components/ErrorPanel";
 
 const stages = [
   {
@@ -151,6 +153,13 @@ const alternatives = [
   { name: "Küps", distance: 56_000 },
   { name: "Kronach", distance: 64_000 },
   { name: "Steinwiesen", distance: 75_000 },
+];
+
+const errorDemos = [
+  new WaylineError("OFFLINE", "offline"),
+  new WaylineError("CONFLICT", "conflict"),
+  new WaylineError("NOT_FOUND", "not found"),
+  new TypeError("Failed to fetch dynamically imported module"),
 ];
 
 export function DevComponentsPage() {
@@ -421,6 +430,19 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
           />
           <ToastViewport placement="inline" />
         </ToastProvider>
+      </Section>
+
+      <Section title={t("section.errors")}>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {errorDemos.map((error) => (
+            <Card key={error.message} padding="none">
+              <ErrorPanel error={error} onRetry={() => undefined} />
+            </Card>
+          ))}
+          <Card padding="none">
+            <NotFoundScreen />
+          </Card>
+        </div>
       </Section>
 
       <FormDemos />
@@ -939,6 +961,7 @@ function FormDemos() {
               value={km}
               onValueChange={setKm}
               aria-invalid={!km}
+              aria-describedby={km ? undefined : `${id}-km-error`}
             />
           </FormField>
         </div>

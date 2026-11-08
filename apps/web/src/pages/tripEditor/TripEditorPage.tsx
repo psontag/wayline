@@ -1,9 +1,4 @@
-import {
-  Link,
-  useNavigate,
-  useParams,
-  useSearch,
-} from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import {
   addDays,
   addHours,
@@ -20,7 +15,6 @@ import {
   type Trip,
 } from "@wayline/domain";
 import {
-  Button,
   type MapLayerGroup,
   type MapLayerKind,
   SegmentedControl,
@@ -31,6 +25,7 @@ import {
 } from "@wayline/ui";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ErrorScreen } from "../../components/ErrorPanel";
 import { networkArea } from "../../components/NetworkLayer";
 import {
   useMe,
@@ -77,18 +72,21 @@ export function TripEditorPage() {
       />
     );
   }
+  const error = trip.error ?? me.error;
+  if (error) {
+    return (
+      <ErrorScreen
+        error={error}
+        onRetry={() => {
+          void trip.refetch();
+          void me.refetch();
+        }}
+      />
+    );
+  }
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-text-muted">
-      {trip.isError || me.isError ? (
-        <>
-          <p>{t("notFound")}</p>
-          <Button asChild>
-            <Link to="/">{t("backToList")}</Link>
-          </Button>
-        </>
-      ) : (
-        <p role="status">{t("loading")}</p>
-      )}
+      <p role="status">{t("loading")}</p>
     </div>
   );
 }
@@ -302,11 +300,11 @@ function TripEditor({
       key={editor.note.id}
       open
       onOpenChange={(open) => !open && editor.clearNote()}
-      duration={8000}
+      duration={editor.note.sticky ? Infinity : 8000}
       message={editor.note.message}
       action={
-        editor.note.changed
-          ? { label: t("note.undo"), onClick: editor.undo }
+        editor.note.action && editor.note.actionLabel
+          ? { label: editor.note.actionLabel, onClick: editor.noteAction }
           : undefined
       }
     />

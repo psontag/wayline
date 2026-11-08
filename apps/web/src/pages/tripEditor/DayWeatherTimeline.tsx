@@ -69,9 +69,11 @@ export function StageWeather({
     ? t("profile.noStartDate")
     : weather.isPending
       ? t("profile.loadingWeather")
-      : t("profile.forecastFrom", {
-          date: format.date(localTimeToDate(forecastFrom(date))),
-        });
+      : weather.isError
+        ? t("profile.weatherFailed")
+        : t("profile.forecastFrom", {
+            date: format.date(localTimeToDate(forecastFrom(date))),
+          });
   // Keep the ChartPanel rows, so switching views moves nothing.
   return (
     <>

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { type StatIcon, statIcons } from "../icons";
 import { cn } from "../lib/cn";
+import { InlineError } from "./InlineError";
 import { Label } from "./Input";
 
 export type FormFieldProps = {
@@ -15,8 +16,12 @@ export type FormFieldProps = {
   note?: string;
   /** Muted text below the control. */
   hint?: string;
-  /** Shown below the control instead of the hint. Give it errorId. */
+  /**
+   * Shown below the control instead of the hint. The control sets
+   * aria-invalid and aria-describedby={errorId}.
+   */
   error?: string;
+  /** Defaults to `${htmlFor}-error`. */
   errorId?: string;
   className?: string;
   children: ReactNode;
@@ -49,9 +54,9 @@ export function FormField({
       </Label>
       {children}
       {error ? (
-        <span id={errorId} className="text-xs text-danger">
+        <InlineError id={errorId ?? (htmlFor && `${htmlFor}-error`)} size="xs">
           {error}
-        </span>
+        </InlineError>
       ) : (
         hint && <span className="text-xs text-text-muted">{hint}</span>
       )}

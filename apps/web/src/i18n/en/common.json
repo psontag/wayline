@@ -11,6 +11,8 @@
   },
   "errors": {
     "thing": "Wayline",
+    "failed": "{{what}}. {{reason}}.",
+    "failedPlain": "{{what}}.",
     "PROVIDER_UNAVAILABLE": {
       "title": "Could not reach {{thing}}",
       "text": "It may be down for a moment. Try again."
@@ -42,6 +44,14 @@
     "INTERNAL": {
       "title": "Something went wrong",
       "text": "Try again. If it keeps happening, reload the page."
+    },
+    "UPDATE": {
+      "title": "A new version is available",
+      "text": "Reload to get it."
+    },
+    "pageNotFound": {
+      "title": "Page not found",
+      "text": "This link doesn't lead anywhere in Wayline."
     },
     "action": {
       "retry": "Try again",

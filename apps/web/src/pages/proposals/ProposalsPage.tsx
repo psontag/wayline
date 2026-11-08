@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { useDebouncedHover } from "../../components/useDebouncedHover";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useDayWind } from "../../data/queries";
+import { useFailedText } from "../../errors";
 import { ProposalList } from "./ProposalList";
 import { ProposalsHeader } from "./ProposalsHeader";
 import { ProposalsMap } from "./ProposalsMap";
@@ -51,6 +52,7 @@ export function ProposalsPage() {
 }
 
 function Proposals({ request }: { request: GenerateRequest }) {
+  const { t } = useTranslation("proposals");
   const { selected } = useSearch({ from: "/proposals" });
   const navigate = useNavigate({ from: "/proposals" });
   const home = request.startStation?.coord;
@@ -67,6 +69,7 @@ function Proposals({ request }: { request: GenerateRequest }) {
       timeToHours(request.startTime) + request.kmPerDay / AVG_SPEED_KMH / 2,
     );
   const open = useOpenProposal();
+  const failedText = useFailedText();
   const [hovered, setHovered] = useDebouncedHover<string>(HOVER_MS);
   const [hoveredDay, setHoveredDay] = useState<number>();
   const isPhone = useIsPhone();
@@ -152,7 +155,11 @@ function Proposals({ request }: { request: GenerateRequest }) {
             onHoverDay={setHoveredDay}
             onOpen={onOpen}
             opening={open.isPending ? open.variables.id : undefined}
-            openFailed={open.isError}
+            openError={
+              open.isError
+                ? failedText(t("card.openFailed"), open.error)
+                : undefined
+            }
             onRelax={(next) => void navigate({ search: { request: next } })}
           />
         </aside>

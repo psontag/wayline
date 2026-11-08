@@ -49,7 +49,7 @@
   "dayEnd": "End of day {{day}}",
   "create": "Create trip",
   "creating": "Creating trip",
-  "createFailed": "Could not create the trip.",
+  "createFailed": "Could not create the trip",
   "map": {
     "label": "Map of the imported days"
   },
