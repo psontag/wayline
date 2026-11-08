@@ -131,8 +131,9 @@ describe("Planner on the Heidelberg tiles", () => {
     if (!result.ok) throw new Error(result.failedLimit);
     expect(router.calls).toHaveLength(result.proposals.length);
 
-    for (const [i, p] of result.proposals.entries()) {
-      const points = router.calls[i]!;
+    for (const p of result.proposals) {
+      // Routed in the order kept, the last number of the rank.
+      const points = router.calls[p.rank!.at(-1)!]!;
       expect(points[0]).toEqual(request.startStation!.coord);
       // Waypoints are about 10 km apart along the path.
       for (let j = 1; j < points.length; j++) {
