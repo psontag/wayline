@@ -1,6 +1,6 @@
 import type { LonLat, StageWeather, WeatherSample } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
-import { tripSummary, tripWeatherPoints } from "./stageWeather";
+import { stageWind, tripSummary, tripWeatherPoints } from "./stageWeather";
 
 function sample(values: Partial<WeatherSample>): WeatherSample {
   return {
@@ -43,6 +43,25 @@ function day(
     maxPrecipitation: values.precipitation ?? 0,
   };
 }
+
+describe("stageWind", () => {
+  it("names the main wind", () => {
+    const wind = {
+      cross: 0.47,
+      tail: 0.3,
+      head: 0.23,
+      dominant: "cross" as const,
+    };
+    expect(stageWind(day(60, {}, { ...wind, avgSpeed: 14 })).kind).toBe(
+      "cross",
+    );
+  });
+
+  it("says calm below 10 km/h, whatever the shares", () => {
+    const wind = { cross: 0.47, dominant: "cross" as const, avgSpeed: 4 };
+    expect(stageWind(day(60, {}, wind)).kind).toBe("calm");
+  });
+});
 
 describe("tripWeatherPoints", () => {
   it("puts each day after the one before on the trip km", () => {

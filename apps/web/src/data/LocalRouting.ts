@@ -4,6 +4,7 @@ import {
   type LonLat,
   type Manifest,
   type Profile,
+  WaylineError,
 } from "@wayline/domain";
 import type { RouteOptions, RoutingProvider } from "@wayline/providers";
 import { COST_PROFILES, type FetchFile, Router } from "@wayline/router";
@@ -47,7 +48,13 @@ export class LocalRouting implements RoutingProvider {
     work: (router: Router) => Promise<T>,
   ): Promise<T> {
     const { manifest, fetchFile } = await this.tiles;
-    if (!manifest.routing) throw new Error("The dataset has no routing tiles");
+    if (!manifest.routing) {
+      // A setup problem, not an outage: retrying won't help.
+      throw new WaylineError(
+        "INTERNAL",
+        `Dataset ${manifest.version} has no routing tiles. Run pnpm data:build.`,
+      );
+    }
     let kept = this.routers.get(profile);
     if (!kept) {
       const router = new Router(

@@ -32,6 +32,7 @@ import {
   backByTimes,
   defaultValues,
   detour,
+  endRequired,
   formDays,
   fromRequest,
   mapPick,
@@ -189,8 +190,10 @@ export function NewTripForm({
             </form.Subscribe>
           </PanelSection>
 
-          <form.Subscribe selector={(s) => s.values.shape}>
-            {(shape) => (
+          <form.Subscribe
+            selector={(s) => [s.values.shape, s.values.length] as const}
+          >
+            {([shape, length]) => (
               <PanelSection
                 icon="stop"
                 title={t(shape === "ab" ? "section.places" : "section.place")}
@@ -235,6 +238,7 @@ export function NewTripForm({
                               places={places}
                               value={field.state.value}
                               onChange={field.handleChange}
+                              optional={!endRequired({ shape, length })}
                               invalid={!!error}
                               describedBy={error && `${id}-end-error`}
                             />

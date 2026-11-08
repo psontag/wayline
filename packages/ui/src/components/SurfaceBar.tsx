@@ -25,8 +25,11 @@ export function SurfaceBar({
   className,
 }: {
   shares: SurfaceShares;
-  /** Show the shares as text below, e.g. "97% paved · 2% gravel". */
-  caption?: boolean;
+  /**
+   * Show the shares as text below, e.g. "97% paved · 2% gravel". "rest"
+   * leaves out paved, for places that show the paved share already.
+   */
+  caption?: boolean | "rest";
   className?: string;
 }) {
   const { t } = useTranslation("ui");
@@ -35,10 +38,13 @@ export function SurfaceBar({
   const total = Math.max(known, 1);
   const all = { ...shares, unknown: total - known };
   const percent = (value: number) => format.percent(value / total);
-  const parts = segments
+  const shown = segments
     // Shares below half a percent would read as "0%".
     .filter(({ key }) => all[key] / total >= 0.005)
-    .map(({ key }) => t(`surface.share.${key}`, { share: percent(all[key]) }));
+    .map(({ key }) => key);
+  const parts = shown.map((key) =>
+    t(`surface.share.${key}`, { share: percent(all[key]) }),
+  );
 
   const bar = (
     <div
@@ -56,13 +62,18 @@ export function SurfaceBar({
       )}
     </div>
   );
-  if (!caption) return bar;
+  const captionParts = parts.filter(
+    (_, i) => caption !== "rest" || shown[i] !== "paved",
+  );
+  if (!caption || captionParts.length === 0) {
+    return caption ? <div className={className}>{bar}</div> : bar;
+  }
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       {bar}
       <span aria-hidden className="text-2xs text-text-muted tabular-nums">
-        {parts.join(" · ")}
+        {captionParts.join(" · ")}
       </span>
     </div>
   );

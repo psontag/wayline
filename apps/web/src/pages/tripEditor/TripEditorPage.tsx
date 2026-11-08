@@ -450,6 +450,7 @@ function TripEditor({
       onFindingDestination={setFindingDestination}
       selectedVia={selectedVia}
       onSelectVia={selectVia}
+      chart={isPhone ? chart : undefined}
     />
   ) : (
     <TripPanel
@@ -477,7 +478,8 @@ function TripEditor({
           onPickAlternative={pickAlternative}
           hover={hover}
           panel={panel}
-          chart={chart}
+          // A day shows the chart under its header instead.
+          chart={dayOpen ? undefined : chart}
           mapLayers={mapLayers}
           route={editsRoute ? routeEditing : undefined}
           toast={<ToastViewport placement="inline" />}

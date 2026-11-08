@@ -66,16 +66,31 @@ describe("new trip form", () => {
     expect(empty.kmPerDay).toBe(70);
   });
 
-  it("can't find routes without a start, or an end for A to B", () => {
-    expect(missingPlaces(empty)).toBe("startAndEnd");
+  it("can't find routes without a start, or an end for one day A to B", () => {
+    const oneDay = { ...empty, length: "one" as const };
+    expect(missingPlaces(oneDay)).toBe("startAndEnd");
+    expect(missingPlaces(empty)).toBe("start");
     expect(missingPlaces({ ...empty, shape: "loop" })).toBe("start");
-    expect(missingPlaces({ ...empty, start: defaults.start })).toBe("end");
+    expect(missingPlaces({ ...oneDay, start: defaults.start })).toBe("end");
     expect(missingPlaces({ ...defaults, end: null, shape: "loop" })).toBe(
       undefined,
     );
     expect(missingPlaces(defaults)).toBeUndefined();
     const result = newTripSchema.safeParse({ ...empty, shape: "loop" });
     expect(result.error?.issues[0]?.message).toBe("startRequired");
+  });
+
+  it("leaves the end open on several days A to B", () => {
+    expect(missingPlaces({ ...defaults, end: null })).toBeUndefined();
+    const request = toRequest({ ...defaults, end: null });
+    expect(request.kind).toBe("one-way");
+    expect(request.endStation).toBeUndefined();
+    const oneDay = newTripSchema.safeParse({
+      ...defaults,
+      length: "one",
+      end: null,
+    });
+    expect(oneDay.error?.issues[0]?.message).toBe("endRequired");
   });
 
   it("turns the defaults into a generate request", () => {
