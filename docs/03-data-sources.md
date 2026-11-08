@@ -150,6 +150,7 @@ The live API answers one trip at a time. Train times from home to every station 
 - Updated weekly. A feed covers about a month from its date. The pipeline downloads it again after 7 days.
 - Some regional lines are missing, for example RB 27 at Königswinter.
 - No bike data. Long-distance trains count as "bike reservation needed".
+- The app loads `reach/<station>.json` from the manifest for the home station. The Where step uses the out times of the first day's day type. The credit shows in the map attribution while the layer is on.
 
 ## Map
 

@@ -32,6 +32,7 @@ Color tokens are semantic. They name the purpose, not the color.
 | `rain` | Rain bars in the weather timeline |
 | `wind-head`, `wind-cross`, `wind-tail` | Share of head, cross and tail wind in the wind bar |
 | `wind-speed-1` to `wind-speed-4` | Wind speed, cyan to deep indigo: wind markers on the map and wind arrows in the weather charts. Below 10, 10–20, 20–30, 30+ km/h |
+| `reach-1`, `reach-2`, `reach-3` | Train time from home on the Where map: up to 1 h, 2 h, 3 h. Blue, strong to light. Stations over the limit use `text-muted`, faded. |
 | `night` | Dark hours in the weather timeline |
 
 Map tokens:
@@ -90,6 +91,9 @@ Color values:
 | `wind-speed-2` | `#1D7F8C` | `#4CC4B9` |
 | `wind-speed-3` | `#2F4AA6` | `#8B9CF5` |
 | `wind-speed-4` | `#2B1A6B` | `#C0A8FF` |
+| `reach-1` | `#1F5FAE` | `#8CC0FA` |
+| `reach-2` | `#5B93D6` | `#4F86C9` |
+| `reach-3` | `#A9C6EC` | `#34557F` |
 | `night` | `#E4E7EC` | `#0B0D11` |
 | `route`, `route-selected` | `#FF9A73` | `#FFA67F` |
 | `route-casing` | `#B4532A` | `#101216` |
