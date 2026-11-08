@@ -5,15 +5,9 @@ import {
   type Trip,
 } from "@wayline/domain";
 import {
-  AlternativeMarker,
-  ClusterMarker,
-  EndpointMarker,
   GhostViaMarker,
-  HotelMarker,
   HoverMarker,
   MapHint,
-  StationMarker,
-  StopMarker,
   useThemeTokens,
   ViaMarker,
 } from "@wayline/ui";
@@ -28,25 +22,21 @@ import {
   type MapRef,
   Marker,
   Source,
-  useMap,
 } from "react-map-gl/maplibre";
 import {
   AppMap,
   type AppMapProps,
-  boundsOf,
   MapLayer,
   type MapPadding,
 } from "../../components/map/AppMap";
-import { clusterPoints } from "../../components/map/cluster";
 import {
   nearestOnLine,
   type RouteDrag,
   useRouteDrag,
 } from "../../components/useRouteDrag";
-import { useSiteInfo } from "../../data/queries";
-import { hotelBookingUrl } from "./BookingLink";
 import type { MapHotel } from "./mapTypes";
 import type { MapStation } from "./stations";
+import { TripMarkers } from "./TripMarkers";
 import type { WeatherField } from "./weatherGrid";
 import { WeatherLayers } from "./WeatherLayers";
 
@@ -117,14 +107,6 @@ export type RouteEditing = {
   proposedHighlighted?: boolean;
 };
 
-/** Stations show from this zoom on, so the whole trip stays calm. */
-const STATION_ZOOM = 10;
-
-/** Below this zoom, hotels and stations close together show as one. */
-const CLUSTER_ZOOM = 13;
-/** Screen distance in pixels within which places join a cluster. */
-const CLUSTER_RADIUS = 36;
-
 /** Waits this long after the last move before a preview is routed. */
 const PREVIEW_MS = 120;
 
@@ -155,12 +137,6 @@ export function TripMap({
   const { t } = useTranslation("tripEditor");
   const tokens = useThemeTokens();
   const mapRef = useRef<MapRef>(null);
-  const [activeHotel, setActiveHotel] = useState<string>();
-  const activeSite = useSiteInfo(
-    hotels.find((h) => h.osmId === activeHotel)?.website,
-  );
-  // Full hotel markers crowd the stop labels until zoomed in.
-  const [zoom, setZoom] = useState(0);
 
   const lines = useMemo(
     () =>
@@ -287,7 +263,6 @@ export function TripMap({
   ];
 
   const first = trip.stages[0];
-  const last = trip.stages.at(-1);
   const hiddenLabels = [
     ...(first ? [first.start.name] : []),
     ...trip.stages.map((stage) => stage.end.name),
@@ -341,7 +316,6 @@ export function TripMap({
       onMouseMove={routeDrag.onMouseMove}
       onMouseDown={routeDrag.onMouseDown}
       onMouseLeave={routeDrag.onMouseLeave}
-      onZoomEnd={setZoom}
     >
       {/* First, so it sits below the routes. */}
       {weather && <WeatherLayers {...weather} />}
@@ -443,136 +417,18 @@ export function TripMap({
         />
       </Source>
 
-      {first && (
-        <Marker
-          longitude={first.start.coord[0]}
-          latitude={first.start.coord[1]}
-          anchor="left"
-          offset={[-12, 0]}
-        >
-          <EndpointMarker
-            name={first.start.name}
-            station={first.start.kind === "station"}
-          />
-        </Marker>
-      )}
-      {last && (
-        <Marker
-          longitude={last.end.coord[0]}
-          latitude={last.end.coord[1]}
-          anchor="left"
-          offset={[-12, 0]}
-        >
-          <EndpointMarker
-            name={last.end.name}
-            station={last.end.kind === "station"}
-          />
-        </Marker>
-      )}
-      <ClusteredMarkers
-        kind="stations"
-        items={zoom >= STATION_ZOOM ? stations : noStations}
-        render={(station) => (
-          <Marker
-            key={station.id}
-            longitude={station.coord[0]}
-            latitude={station.coord[1]}
-            style={{ zIndex: 1 }}
-          >
-            <StationMarker name={station.name} href={station.href} />
-          </Marker>
-        )}
-      />
-      <AlternativeMarkers
+      <TripMarkers
+        trip={trip}
+        selected={selected}
+        overview={overview}
+        onSelect={onSelect}
         alternatives={alternatives}
-        labels={[
-          ...trip.stages.slice(0, -1).map((stage, index) => ({
-            coord: stage.end.coord,
-            text: stage.end.name,
-            kind:
-              !overview && index === selected
-                ? ("selected" as const)
-                : ("stop" as const),
-          })),
-          ...[first?.start, last?.end].flatMap((place) =>
-            place
-              ? [{ coord: place.coord, text: place.name, kind: "end" as const }]
-              : [],
-          ),
-        ]}
-        onPick={(place) => onPickAlternative?.(place)}
-      />
-      {trip.stages.slice(0, -1).map((stage, index) => (
-        <Marker
-          key={stage.id}
-          longitude={stage.end.coord[0]}
-          latitude={stage.end.coord[1]}
-          anchor="left"
-          // Center the circle on the stop. It is larger when selected.
-          offset={[!overview && index === selected ? -20 : -16, 0]}
-          style={{ zIndex: !overview && index === selected ? 4 : 3 }}
-        >
-          <StopMarker
-            day={index + 1}
-            name={stage.end.name}
-            selected={!overview && index === selected}
-            aria-label={t("map.selectStage", {
-              day: index + 1,
-              place: stage.end.name,
-            })}
-            onClick={() => onSelect(index)}
-          />
-        </Marker>
-      ))}
-      <ClusteredMarkers
-        kind="hotels"
-        items={hotels}
-        // Selected and saved hotels always show on their own.
-        pinned={(hotel) =>
-          hotel.osmId === selectedHotelId ||
-          trip.savedHotels.some((h) => h.osmId === hotel.osmId)
-        }
-        render={(hotel) => (
-          <Marker
-            key={hotel.osmId}
-            longitude={hotel.coord[0]}
-            latitude={hotel.coord[1]}
-            style={{
-              zIndex:
-                activeHotel === hotel.osmId
-                  ? 5
-                  : hotel.osmId === selectedHotelId
-                    ? 3
-                    : 1,
-            }}
-          >
-            <HotelMarker
-              name={hotel.name}
-              kind={hotel.kind}
-              stars={hotel.stars}
-              detour={hotel.detourKm * 1000}
-              website={
-                hotel.osmId === activeHotel && activeSite?.ok === false
-                  ? undefined
-                  : hotel.website
-              }
-              booking={hotelBookingUrl(trip, selected, hotel)}
-              {...(hotel.osmId === activeHotel &&
-                activeSite?.image && { image: activeSite.image })}
-              selected={hotel.osmId === selectedHotelId}
-              saved={trip.savedHotels.some((h) => h.osmId === hotel.osmId)}
-              {...(onToggleSaveHotel && {
-                onToggleSave: () => onToggleSaveHotel(hotel.osmId),
-              })}
-              onClick={() => onSelectHotel?.(hotel.osmId)}
-              onActiveChange={(active) =>
-                setActiveHotel((id) =>
-                  active ? hotel.osmId : id === hotel.osmId ? undefined : id,
-                )
-              }
-            />
-          </Marker>
-        )}
+        onPickAlternative={onPickAlternative}
+        stations={stations}
+        hotels={hotels}
+        selectedHotelId={selectedHotelId}
+        onSelectHotel={onSelectHotel}
+        onToggleSaveHotel={onToggleSaveHotel}
       />
       {route &&
         trip.stages[selected]?.via.map((via, index) => (
@@ -615,183 +471,4 @@ export function TripMap({
       )}
     </AppMap>
   );
-}
-
-const noStations: MapStation[] = [];
-
-/**
- * Places close together on screen as one marker with their count, below
- * CLUSTER_ZOOM. A click zooms in to them. Pinned places never join one.
- */
-function ClusteredMarkers<T extends { coord: LonLat }>({
-  kind,
-  items,
-  pinned = () => false,
-  render,
-}: {
-  kind: "hotels" | "stations";
-  items: T[];
-  pinned?: (item: T) => boolean;
-  /** The marker of one place, with its key. */
-  render: (item: T) => ReactNode;
-}) {
-  const { current: map } = useMap();
-  const [zoom, setZoom] = useState(() => map?.getZoom() ?? 0);
-  useEffect(() => {
-    if (!map) return;
-    const update = () => setZoom(map.getZoom());
-    update();
-    map.on("zoomend", update);
-    return () => void map.off("zoomend", update);
-  }, [map]);
-
-  if (!map || zoom >= CLUSTER_ZOOM) return items.map(render);
-  const clusters = clusterPoints(
-    items.filter((item) => !pinned(item)),
-    (coord) => map.project(coord),
-    CLUSTER_RADIUS,
-  );
-  return [
-    ...items.filter(pinned).map(render),
-    ...clusters.map(({ coord, items: members }) =>
-      members.length === 1 && members[0] ? (
-        render(members[0])
-      ) : (
-        <Marker
-          key={`${kind}-${coord.join()}`}
-          longitude={coord[0]}
-          latitude={coord[1]}
-          // A cluster often sits on the town of a stop. Below the point and
-          // above the stop, it stays readable without hiding the day.
-          anchor="top"
-          offset={[0, 12]}
-          style={{ zIndex: 5 }}
-        >
-          <ClusterMarker
-            kind={kind}
-            count={members.length}
-            onClick={() =>
-              map.fitBounds(boundsOf(members.map((m) => m.coord)), {
-                padding: 80,
-                maxZoom: CLUSTER_ZOOM,
-              })
-            }
-          />
-        </Marker>
-      ),
-    ),
-  ];
-}
-
-/** A label on the map that options must not cover. */
-type MapLabel = {
-  coord: LonLat;
-  text: string;
-  kind: "selected" | "stop" | "end";
-};
-
-type Box = { left: number; right: number; top: number; bottom: number };
-
-/**
- * Rough label boxes in screen pixels, from the marker size and the text
- * length. Good enough to tell when labels run into each other.
- */
-const boxOf = {
-  selected: (x: number, y: number, chars: number): Box => ({
-    left: x - 20,
-    right: x + 26 + chars * 9,
-    top: y - 20,
-    bottom: y + 20,
-  }),
-  stop: (x: number, y: number, chars: number): Box => ({
-    left: x - 16,
-    right: x + 22 + chars * 7.5,
-    top: y - 16,
-    bottom: y + 16,
-  }),
-  end: (x: number, y: number, chars: number): Box => ({
-    left: x - 12,
-    right: x + 18 + chars * 7.5,
-    top: y - 12,
-    bottom: y + 12,
-  }),
-  option: (x: number, y: number, chars: number, beds: boolean): Box => ({
-    left: x - 8,
-    right: x + 14 + chars * 6.5 + (beds ? 28 : 0),
-    top: y - 10,
-    bottom: y + 10,
-  }),
-};
-
-function overlaps(a: Box, b: Box) {
-  return (
-    a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
-  );
-}
-
-/**
- * Other towns for the selected stop. An option whose label would cover a
- * stop, an end or an earlier option shows only its circle until hovered.
- */
-function AlternativeMarkers({
-  alternatives,
-  labels,
-  onPick,
-}: {
-  alternatives: MapAlternative[];
-  labels: MapLabel[];
-  onPick: (place: Place) => void;
-}) {
-  const { current: ref } = useMap();
-  // Bumped on every zoom, so the boxes are measured again.
-  const [zoomed, setZoomed] = useState(0);
-  useEffect(() => {
-    const map = ref?.getMap();
-    if (!map) return;
-    const update = () => setZoomed((n) => n + 1);
-    map.on("zoomend", update);
-    return () => void map.off("zoomend", update);
-  }, [ref]);
-
-  const crowded = useMemo(() => {
-    const out = new Set<string>();
-    if (!ref) return out;
-    const taken = labels.map(({ coord, text, kind }) => {
-      const { x, y } = ref.project(coord);
-      return boxOf[kind](x, y, text.length);
-    });
-    for (const { place, label, beds } of alternatives) {
-      const { x, y } = ref.project(place.coord);
-      const box = boxOf.option(x, y, label.length, beds !== undefined);
-      if (taken.some((t) => overlaps(t, box))) {
-        out.add(place.name);
-        // Its circle still takes room.
-        taken.push(boxOf.option(x, y, 0, false));
-      } else {
-        taken.push(box);
-      }
-    }
-    return out;
-    // zoomed only triggers a new measure.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ref, zoomed, labels, alternatives]);
-
-  return alternatives.map(({ place, label, beds }) => (
-    <Marker
-      key={place.name}
-      longitude={place.coord[0]}
-      latitude={place.coord[1]}
-      anchor="left"
-      offset={[-8, 0]}
-      style={{ zIndex: 2 }}
-    >
-      <AlternativeMarker
-        label={label}
-        beds={beds}
-        compact={crowded.has(place.name)}
-        aria-label={label}
-        onClick={() => onPick(place)}
-      />
-    </Marker>
-  ));
 }
