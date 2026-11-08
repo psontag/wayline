@@ -21,7 +21,7 @@ import {
   useFormat,
 } from "@wayline/ui";
 import { ArrowRight, Mountain, RotateCcw, SearchX } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { networkArea } from "../../components/NetworkLayer";
 import { useNetwork, useTripsWeather } from "../../data/queries";
@@ -54,6 +54,8 @@ export type ProposalListProps = {
   request: GenerateRequest;
   generation: Generation & { cancel: () => void; retry: () => void };
   selected?: string;
+  /** The user picked the selected card: it stays in place as others come in. */
+  picked?: boolean;
   onSelect: (id: string) => void;
   onHover: (id: string | undefined) => void;
   onHoverDay: (day: number | undefined) => void;
@@ -69,6 +71,7 @@ export function ProposalList({
   request,
   generation,
   selected,
+  picked = false,
   onSelect,
   onHover,
   onHoverDay,
@@ -101,6 +104,11 @@ export function ProposalList({
   const [kept, setKept] = useState(false);
   const shortTrip = kept ? undefined : shortRequest(request);
 
+  const list = useKeepSelectedInPlace(
+    proposals.map((p) => p.id).join(),
+    picked ? selected : undefined,
+  );
+
   if (status === "failed" && generation.failedLimit) {
     return (
       <NoResult
@@ -116,7 +124,7 @@ export function ProposalList({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+    <div ref={list} className="flex min-h-0 flex-1 flex-col overflow-auto">
       <PanelHeader eyebrow={dates} title={places ?? t("title")} />
       <PanelSection
         icon="days"
@@ -173,6 +181,33 @@ export function ProposalList({
       </PanelSection>
     </div>
   );
+}
+
+/**
+ * Proposals that come in above the card the user picked push it down. This
+ * scrolls the list by as much, so the card stays where the user saw it.
+ * Without a pick, the selection follows the top card and nothing scrolls.
+ */
+function useKeepSelectedInPlace(order: string, selected?: string) {
+  const list = useRef<HTMLDivElement>(null);
+  const last = useRef<{ selected?: string; top: number }>(undefined);
+  useLayoutEffect(() => {
+    const el = list.current;
+    const card = el?.querySelector('[aria-pressed="true"]')?.closest("article");
+    if (!el || !card || !selected) {
+      last.current = undefined;
+      return;
+    }
+    // Place in the list content, so the user's own scrolling doesn't count.
+    const top = () =>
+      card.getBoundingClientRect().top -
+      el.getBoundingClientRect().top +
+      el.scrollTop;
+    const prev = last.current;
+    if (prev && prev.selected === selected) el.scrollTop += top() - prev.top;
+    last.current = { selected, top: top() };
+  }, [order, selected]);
+  return list;
 }
 
 function Progress({

@@ -15,8 +15,8 @@ import {
   type RouteInfo,
   Theme,
   timeToHours,
-  type Trip,
   tripTitle,
+  byRank,
 } from "@wayline/domain";
 import type {
   AbortSignalLike,
@@ -48,7 +48,7 @@ import {
   stopCandidates,
 } from "./stages";
 import { linePoints, loopsBack } from "./loops";
-import { byFit, type Fit } from "./order";
+import { fitRank } from "./order";
 import { Stops } from "./stops";
 import { corridorShare } from "./corridor";
 import { NATIONAL, REGIONAL, RouteCatalog } from "./routeCatalog";
@@ -227,6 +227,25 @@ type Pick = {
   homeward?: boolean;
 };
 
+/** What building a proposal needs besides its pick. */
+type ProposalContext = {
+  runId: string;
+  now: Date;
+  request: GenerateRequest;
+  start: number;
+  endStation: number | undefined;
+  direct: Pick | undefined;
+  totalKm: number;
+  urban: Set<number>;
+  /** Open rides with the wind rank by it. */
+  wind?: Ride;
+  routing?: RoutingProvider;
+  signal?: AbortSignalLike;
+};
+
+/** Kept picks go here: built, routed and sent. */
+type Keep = (p: Pick) => Promise<void>;
+
 /** What the checks on a candidate path need. */
 type Check = {
   request: GenerateRequest;
@@ -267,11 +286,14 @@ export class Planner {
       if (signal?.aborted) throw abortError();
     };
     check();
-    this.clock = options.timeLimits === false ? () => 0 : Date.now;
-    const step = <T>(name: string, run: () => T): T => {
+    // Time limits count search time only, not routing the kept picks.
+    let paused = 0;
+    this.clock =
+      options.timeLimits === false ? () => 0 : () => Date.now() - paused;
+    const step = async <T>(name: string, run: () => T | Promise<T>) => {
       const t = performance.now();
       try {
-        return run();
+        return await run();
       } finally {
         if (options.profile) {
           options.profile[name] =
@@ -356,6 +378,32 @@ export class Planner {
     // Trips of one day have no stops, so any node can turn them.
     const fillVias = request.days === 1 ? dayVias(graph) : vias;
     const end = request.kind === "one-way" ? endStation : start;
+    // Each kept pick is routed and sent right away, so the first proposal
+    // shows while the search goes on. Rank keeps the final order.
+    const ctx: ProposalContext = {
+      runId,
+      now,
+      request,
+      start,
+      endStation,
+      direct,
+      totalKm,
+      urban: this.stops.urbanNodes(),
+      ...(open && ride ? { wind: ride } : {}),
+      ...(options.routing ? { routing: options.routing } : {}),
+      ...(signal ? { signal } : {}),
+    };
+    const proposals: Proposal[] = [];
+    const keep = async (p: Pick) => {
+      check();
+      const t = Date.now();
+      const proposal = await step("routing", () =>
+        this.proposal(p, proposals.length, ctx),
+      ).finally(() => (paused += Date.now() - t));
+      check();
+      proposals.push(proposal);
+      onProposal?.(proposal);
+    };
     const follow = (taken: Pick[]) =>
       step("signed", () =>
         this.followRoutes(
@@ -367,24 +415,25 @@ export class Planner {
           fillVias,
           trees,
           progress,
+          keep,
         ),
       );
     // One-day A to B keeps its characters. Other trips get one per flavour.
     let found: { picks: Pick[]; failedLimit: FailedLimit };
     let picks: Pick[];
     if (direct) {
-      found = step("pick", () =>
+      await keep(direct);
+      found = await step("pick", () =>
         this.pick(candidates(costs), costs, request, totalKm, progress),
       );
-      picks = [
-        direct,
-        ...found.picks.filter(
-          (p) => sharedKm(graph, p, direct) < MAX_SHARED_DIRECT * p.km,
-        ),
-      ].slice(0, PROPOSALS);
-      follow(picks);
+      const more = found.picks
+        .filter((p) => sharedKm(graph, p, direct) < MAX_SHARED_DIRECT * p.km)
+        .slice(0, PROPOSALS - 1);
+      for (const p of more) await keep(p);
+      picks = [direct, ...more];
+      await follow(picks);
     } else if (open) {
-      found = step("destinations", () =>
+      found = await step("destinations", () =>
         this.pickDestinations(
           candidates(costs),
           costs,
@@ -394,16 +443,25 @@ export class Planner {
         ),
       );
       picks = found.picks;
+      for (const p of picks) await keep(p);
     } else {
       // Signed routes first, so flavours do not take their corridors.
       const themed: Pick[] = [];
-      if (!ride) follow(themed);
-      found = step("flavours", () =>
-        this.pickFlavours(candidates, request, totalKm, seek, themed, progress),
+      if (!ride) await follow(themed);
+      found = await step("flavours", () =>
+        this.pickFlavours(
+          candidates,
+          request,
+          totalKm,
+          seek,
+          themed,
+          progress,
+          keep,
+        ),
       );
       picks = [...themed, ...found.picks];
     }
-    step("fill", () =>
+    await step("fill", () =>
       this.fill(
         picks,
         start,
@@ -413,141 +471,124 @@ export class Planner {
         totalKm,
         (c, km) => candidates(c, km, fillVias),
         progress,
+        keep,
       ),
     );
-    if (!picks.length) return { ok: false, failedLimit: found.failedLimit };
-    const followed = new Map(
-      picks.map((p) => [
-        p,
-        followedRoute(graph, p.steps, this.catalog, SIGNED.share),
-      ]),
-    );
-    // The direct route, then the best fit.
-    const fit = new Map(
-      picks.map((p) => [
-        p,
-        { ...p, quality: meanScore(graph, p.steps) * (1 - 0.5 * p.shared) },
-      ]),
-    );
-    const order = byFit(totalKm);
-    picks.sort(
-      (a, b) =>
-        Number(b === direct) - Number(a === direct) ||
-        order(fit.get(a) as Fit, fit.get(b) as Fit),
-    );
-    // Rides with the wind first. Close factors keep the search order.
-    if (open && ride) {
-      const wind = (p: Pick) =>
-        Math.round(
-          windFactor(
-            p.nodes.map((n) => graph.coord(n)),
-            totalKm,
-            ride,
-          ) * 10,
-        );
-      picks.sort((a, b) => wind(a) - wind(b));
-    }
-    // Stages are cut during the search, since a path only counts if it cuts.
-    onProgress?.({ phase: "cutting", done: picks.length, total: picks.length });
+    if (!proposals.length) return { ok: false, failedLimit: found.failedLimit };
+    const n = proposals.length;
+    onProgress?.({ phase: "routing", done: n, total: n });
+    return { ok: true, proposals: proposals.sort(byRank) };
+  }
 
-    // All at once. The router shares its tiles between the proposals.
-    const finishAt = performance.now();
-    const routed = picks.map(async (p, i) => {
-      // A homeward ride starts at another station, not a picked place.
-      const placeAt = (node: number) =>
-        this.endpoint(
-          node,
-          node === start
-            ? request.startStation
-            : node === endStation
-              ? request.endStation
-              : undefined,
-        );
-      const trip = buildTrip(graph, this.stops, {
-        id: `draft-${runId}-${i + 1}`,
-        now,
-        request,
-        start: placeAt(p.nodes[0] ?? start),
-        end: placeAt(p.nodes.at(-1) ?? start),
-        steps: p.steps,
-        stops: p.stops,
-      });
-      if (p.homeward) {
-        trip.name = tripTitle(
-          trip.stages[0]?.start.name ?? "",
-          request.startStation?.name ?? trip.stages.at(-1)?.end.name,
-        );
-      }
-      if (!options.routing) return trip;
+  /** Builds, routes and tags the proposal of a pick. index: order kept. */
+  private async proposal(
+    p: Pick,
+    index: number,
+    ctx: ProposalContext,
+  ): Promise<Proposal> {
+    const graph = this.graph;
+    const { request, start, endStation, direct, totalKm } = ctx;
+    const id = `${ctx.runId}-${index + 1}`;
+    // A homeward ride starts at another station, not a picked place.
+    const placeAt = (node: number) =>
+      this.endpoint(
+        node,
+        node === start
+          ? request.startStation
+          : node === endStation
+            ? request.endStation
+            : undefined,
+      );
+    let trip = buildTrip(graph, this.stops, {
+      id: `draft-${id}`,
+      now: ctx.now,
+      request,
+      start: placeAt(p.nodes[0] ?? start),
+      end: placeAt(p.nodes.at(-1) ?? start),
+      steps: p.steps,
+      stops: p.stops,
+    });
+    if (p.homeward) {
+      trip.name = tripTitle(
+        trip.stages[0]?.start.name ?? "",
+        request.startStation?.name ?? trip.stages.at(-1)?.end.name,
+      );
+    }
+    if (ctx.routing) {
       const waypoints = stageWaypoints(
         graph,
         trip,
         splitSteps(p.steps, p.stops),
       );
       try {
-        return await routeTrip(trip, waypoints, options.routing, signal);
+        trip = await routeTrip(trip, waypoints, ctx.routing, ctx.signal);
       } catch {
-        return trip;
+        // Keeps the graph path.
       }
-    });
-
-    const urban = this.stops.urbanNodes();
-    const proposals: Proposal[] = [];
-    for (const [i, p] of picks.entries()) {
-      check();
-      onProgress?.({ phase: "routing", done: i, total: picks.length });
-      const trip = await (routed[i] as Promise<Trip>);
-      check();
-      const from = p.nodes[0] ?? start;
-      const proposal: Proposal = {
-        id: `${runId}-${i + 1}`,
-        trip,
-        score: score(graph, p, totalKm),
-        tags: routeTags(
-          graph,
-          p.steps,
-          trip,
-          urban,
-          request,
-          direct ? undefined : totalKm,
-        ),
-        signedShare: signedShare(graph, p.steps),
-        routeNames: routeNames(graph, p.steps, this.catalog),
-        via: viaNames(graph, this.stops, from, p.steps, [
-          trip.stages[0]?.start.name ?? "",
-          trip.stages.at(-1)?.end.name ?? "",
-        ]),
-      };
-      if (direct) {
-        proposal.character =
-          p === direct
-            ? "direct"
-            : p.km >= LONGER.min * direct.km * 0.95
-              ? "longer"
-              : "scenic";
-      }
-      if (p.flavour) proposal.flavour = p.flavour;
-      if (p.homeward) proposal.homeward = true;
-      const route = followed.get(p);
-      if (route) proposal.followedRoute = route;
-      if (request.kind === "day-loop" && proposal.via[0]) {
-        trip.name = tripTitle(
-          request.startStation?.name ?? trip.stages[0]?.start.name ?? "",
-          undefined,
-          proposal.via[0],
-        );
-      }
-      if (p.steps.some((s) => graph.edge(s.edge).scenery)) {
-        proposal.themes = Object.fromEntries(
-          Theme.options.map((t) => [t, themeValue(graph, p.steps, t)]),
-        );
-      }
-      proposals.push(proposal);
-      onProposal?.(proposal);
     }
-    onProgress?.({ phase: "routing", done: picks.length, total: picks.length });
-    if (options.profile) options.profile.finish = performance.now() - finishAt;
-    return { ok: true, proposals };
+    // Rides with the wind first, then the direct route, then the best fit.
+    // Close wind factors keep the fit order. Ties keep the search order.
+    const wind = ctx.wind
+      ? Math.round(
+          windFactor(
+            p.nodes.map((n) => graph.coord(n)),
+            totalKm,
+            ctx.wind,
+          ) * 10,
+        )
+      : 0;
+    const quality = meanScore(graph, p.steps) * (1 - 0.5 * p.shared);
+    const from = p.nodes[0] ?? start;
+    const proposal: Proposal = {
+      id,
+      trip,
+      score: score(graph, p, totalKm),
+      tags: routeTags(
+        graph,
+        p.steps,
+        trip,
+        ctx.urban,
+        request,
+        direct ? undefined : totalKm,
+      ),
+      signedShare: signedShare(graph, p.steps),
+      routeNames: routeNames(graph, p.steps, this.catalog),
+      via: viaNames(graph, this.stops, from, p.steps, [
+        trip.stages[0]?.start.name ?? "",
+        trip.stages.at(-1)?.end.name ?? "",
+      ]),
+      rank: [
+        wind,
+        p === direct ? 0 : 1,
+        ...fitRank({ km: p.km, weak: p.weak ?? 0, quality }, totalKm),
+        index,
+      ],
+    };
+    if (direct) {
+      proposal.character =
+        p === direct
+          ? "direct"
+          : p.km >= LONGER.min * direct.km * 0.95
+            ? "longer"
+            : "scenic";
+    }
+    if (p.flavour) proposal.flavour = p.flavour;
+    if (p.homeward) proposal.homeward = true;
+    const route = followedRoute(graph, p.steps, this.catalog, SIGNED.share);
+    if (route) proposal.followedRoute = route;
+    if (request.kind === "day-loop" && proposal.via[0]) {
+      trip.name = tripTitle(
+        request.startStation?.name ?? trip.stages[0]?.start.name ?? "",
+        undefined,
+        proposal.via[0],
+      );
+    }
+    if (p.steps.some((s) => graph.edge(s.edge).scenery)) {
+      proposal.themes = Object.fromEntries(
+        Theme.options.map((t) => [t, themeValue(graph, p.steps, t)]),
+      );
+    }
+    return proposal;
   }
 
   /**
@@ -814,14 +855,15 @@ export class Planner {
    * to the least and the most climbing of all. Flavours also differ from the
    * taken proposals and share the slots with them.
    */
-  private pickFlavours(
+  private async pickFlavours(
     candidates: (costs: Costs) => Candidate[],
     request: GenerateRequest,
     totalKm: number,
     seek: boolean,
     taken: Pick[],
     progress: (tries: number) => void,
-  ): { picks: Pick[]; failedLimit: FailedLimit } {
+    keep: Keep,
+  ): Promise<{ picks: Pick[]; failedLimit: FailedLimit }> {
     const graph = this.graph;
     const picks: Pick[] = [];
     const others = () => [...taken, ...picks];
@@ -888,7 +930,10 @@ export class Planner {
         if (better) found = { ...p, shared: shared / p.km, flavour };
         if (found && found.ascent >= target && !found.weak) break;
       }
-      if (found) picks.push(found);
+      if (found) {
+        picks.push(found);
+        await keep(found);
+      }
     }
     progress(tries);
     const rank = (p: Pick) => order.indexOf(p.flavour ?? "best");
@@ -902,7 +947,7 @@ export class Planner {
    * Adds proposals that ride mostly on one signed route. Without an end, they
    * stop at a station near the route.
    */
-  private followRoutes(
+  private async followRoutes(
     picks: Pick[],
     start: number,
     end: number | undefined,
@@ -911,6 +956,7 @@ export class Planner {
     vias: number[],
     trees: Trees,
     progress: (tries: number) => void,
+    keep: Keep,
   ) {
     const graph = this.graph;
     const costs = new Costs(graph, request);
@@ -1015,6 +1061,7 @@ export class Planner {
         picks.push(found);
         for (const s of found.steps) used.add(s.edge);
         added++;
+        await keep(found);
       }
     }
   }
@@ -1023,7 +1070,7 @@ export class Planner {
    * Adds proposals to the picks, up to MAX_PROPOSALS. Tries the inputs as
    * asked first, then wider ones. For each, routes that differ most first.
    */
-  private fill(
+  private async fill(
     picks: Pick[],
     start: number,
     endFixed: boolean,
@@ -1032,6 +1079,7 @@ export class Planner {
     totalKm: number,
     candidates: (costs: Costs, km: number) => Candidate[],
     progress: (tries: number) => void,
+    keep: Keep,
   ) {
     const graph = this.graph;
     let left = FILL_TIME_MS;
@@ -1064,15 +1112,16 @@ export class Planner {
         let mine = 0;
         const stepStart = this.clock();
         const stepMs = Math.min(left, FILL_TIME_MS / FILL_STEPS.length);
-        const add = (p: Pick) => {
+        const add = async (p: Pick) => {
           picks.push(p);
           for (const s of p.steps) costs.penalty[s.edge] = VARIETY_PENALTY;
+          await keep(p);
         };
         // Seeking climbs: the fit that climbs most of a batch.
         let held: Pick | undefined;
         for (const c of list) {
           if (held && mine % SEEK_BATCH === 0) {
-            add(held);
+            await add(held);
             held = undefined;
           }
           if (picks.length >= step.upTo || mine === FILL_TRIES) break;
@@ -1110,10 +1159,10 @@ export class Planner {
             shared: shared / p.km,
             ...(c.homeward && { homeward: true }),
           };
-          if (!seek) add(kept);
+          if (!seek) await add(kept);
           else if (!held || kept.ascent > held.ascent) held = kept;
         }
-        if (held && picks.length < step.upTo) add(held);
+        if (held && picks.length < step.upTo) await add(held);
         left -= this.clock() - stepStart;
       }
     }

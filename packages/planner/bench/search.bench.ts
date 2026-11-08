@@ -101,7 +101,9 @@ async function runTrip(version: string, trip: BenchTrip): Promise<TripResult> {
   };
 }
 
-const STEPS = ["signed", "pick", "destinations", "flavours", "fill", "finish"];
+// routing: building and routing kept picks. Also counted in the step that
+// kept them.
+const STEPS = ["signed", "pick", "destinations", "flavours", "fill", "routing"];
 
 function table(results: TripResult[], before?: BenchResult): string {
   const old = new Map(before?.trips.map((t) => [t.name, t]));
@@ -120,6 +122,7 @@ function table(results: TripResult[], before?: BenchResult): string {
     "Props",
     "Load",
     ...STEPS,
+    "First ms",
     "Total ms",
     "1-to-all",
     "To target",
@@ -132,6 +135,7 @@ function table(results: TripResult[], before?: BenchResult): string {
       `${r.proposals}${o && o.proposals !== r.proposals ? ` (was ${o.proposals})` : ""}`,
       ms(r.load),
       ...STEPS.map((s) => ms(r.steps[s])),
+      ms(r.first) + change(r.first, o?.first),
       ms(r.total) + change(r.total, o?.total),
       String(r.counts.oneToAll) + change(r.counts.oneToAll, o?.counts.oneToAll),
       String(r.counts.toTarget),

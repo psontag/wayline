@@ -1,9 +1,13 @@
+import { byRank, type Proposal } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
-import { byFit, type Fit } from "./order";
+import { type Fit, fitRank } from "./order";
 
-describe("byFit", () => {
+describe("fitRank", () => {
   const sort = (fits: (Fit & { id: string })[]) =>
-    [...fits].sort(byFit(210)).map((f) => f.id);
+    fits
+      .map((f) => ({ id: f.id, rank: fitRank(f, 210) }) as Proposal)
+      .sort(byRank)
+      .map((p) => p.id);
 
   it("puts the closest length first", () => {
     expect(
