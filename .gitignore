@@ -9,7 +9,8 @@ dist/
 .DS_Store
 .claude/worktrees/
 __pycache__/
-pipeline/cache/
+# A folder in the main checkout, a link in worktrees.
+pipeline/cache
 # Built by pnpm data:build
 apps/web/public/data/*
 !apps/web/public/data/mock/
