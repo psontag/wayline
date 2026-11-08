@@ -179,6 +179,17 @@ describe("new trip form", () => {
     expect(withDays(ab, 1).length).toBe("one");
     expect(detour({ ...ab, shape: "loop" }, 3)).toBeUndefined();
   });
+  it("sets days from the Where step", () => {
+    const open = {
+      ...defaults,
+      length: "one" as const,
+      shape: "open" as const,
+    };
+    const three = withDays(open, 3);
+    expect(three).toMatchObject({ length: "multi", shape: "ab" });
+    expect(formDays(three)).toBe(3);
+    expect(formDays(withDays(three, 1))).toBe(1);
+  });
   it("round-trips an open day ride with the wind", () => {
     const values = {
       ...defaults,

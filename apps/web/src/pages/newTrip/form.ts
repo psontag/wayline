@@ -137,12 +137,23 @@ export function detour(
   };
 }
 
-/** Values with the trip shortened to this many days. */
+/** Values with the trip set to this many days. An open ride is one day only. */
 export function withDays(v: NewTripValues, days: number): NewTripValues {
   return days === 1
     ? { ...v, length: "one" }
-    : { ...v, endDate: addDays(v.startDate, days - 1) };
+    : {
+        ...v,
+        length: "multi",
+        shape: v.shape === "open" ? "ab" : v.shape,
+        endDate: addDays(v.startDate, days - 1),
+      };
 }
+
+/** Day counts to pick from: one day up to the longest trip. */
+export const dayOptions = Array.from(
+  { length: limits.days.max },
+  (_, i) => i + 1,
+);
 
 /** Days of the trip in the form. One for a one-day trip. */
 export function formDays(v: NewTripValues): number {
@@ -268,6 +279,9 @@ export function mapPick(
     open: !values.start || (ab && !values.end),
   };
 }
+
+/** The Where step: every click sets the start. */
+export const startPick = { field: "start", open: true } as const;
 
 export const startTimes = times(5, 16);
 export const backByTimes = times(10, 21);

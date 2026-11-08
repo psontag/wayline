@@ -10,7 +10,7 @@ import { placeOptions } from "./places";
 export function NewTripPage() {
   const { t } = useTranslation("newTrip");
   const { network } = useServices();
-  const { kind, request } = useSearch({ from: "/new" });
+  const { kind, request, step } = useSearch({ from: "/new" });
   const places = useQuery({
     queryKey: ["search"],
     queryFn: () => network.search(),
@@ -37,5 +37,12 @@ export function NewTripPage() {
       </p>
     );
   }
-  return <NewTripForm places={options} kind={kind} request={request} />;
+  return (
+    <NewTripForm
+      places={options}
+      kind={kind}
+      request={request}
+      step={step ?? (request ? "trip" : "where")}
+    />
+  );
 }
