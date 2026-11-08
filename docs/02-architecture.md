@@ -103,7 +103,8 @@ The deploy job builds it with `pnpm data:build` and caches the result per month,
 |---|---|
 | `latest.json` | Names the current dataset version |
 | `<version>/manifest.json` | Region, bbox and the list of tiles |
-| `<version>/tiles/<x>_<y>.json` | Route network of one 0.5° tile: nodes, edges with geometry and elevation |
+| `<version>/tiles/<x>_<y>.bin` | Route network of one 0.5° tile: nodes, edges with geometry and elevation. Packed, gzipped. |
+| `<version>/route/<x>_<y>.bin`, `.geo.bin` | All bikeable ways of one 0.25° tile, for the router. Packed, gzipped. |
 | `<version>/places/<x>_<y>.json` | Towns, stations and hotels of one tile. Towns and stations are in the tile of their network node. |
 | `<version>/search.json` | Towns and stations on the network, with short keys. Used for place search. |
 | `<version>/lines/{z}/{x}/{y}.pbf` | Vector tiles of the signed routes, for the map |

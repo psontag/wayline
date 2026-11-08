@@ -312,3 +312,197 @@ def parse_stars(s):
     except ValueError:
         return None
     return v if 0 < v <= 5 else None
+
+
+# --- network tiles ----------------------------------------------------------
+
+TILE_MAGIC = b"WNT1"
+KINDS = ["junction", "town", "station"]
+CLASSES = ["icn", "ncn", "rcn", "lcn", "connector"]
+SCENERY = ["forest", "water", "vineyard", "nature"]
+NO_SCENERY = 0xFFFF
+
+
+def decode_ints(s):
+    """Encoded polyline to ([lon × 1e5, ...], [lat × 1e5, ...])."""
+    lon, lat, i, x, y = [], [], 0, 0, 0
+    while i < len(s):
+        vals = []
+        for _ in range(2):
+            shift = result = 0
+            while True:
+                b = ord(s[i]) - 63
+                i += 1
+                result |= (b & 0x1F) << shift
+                shift += 5
+                if b < 0x20:
+                    break
+            vals.append(~(result >> 1) if result & 1 else result >> 1)
+        y += vals[0]
+        x += vals[1]
+        lon.append(x)
+        lat.append(y)
+    return lon, lat
+
+
+def pack_tile(tile):
+    """A network tile as packed bytes. The format is in pipeline/README.md."""
+    import numpy as np
+
+    nodes, edges = tile["nodes"], tile["edges"]
+    names, name_index = [], {}
+
+    def name(s):
+        if s not in name_index:
+            name_index[s] = len(names)
+            names.append(s)
+        return name_index[s]
+
+    def col(values, dtype, delta=False):
+        a = np.asarray(values, dtype=np.int64)
+        if delta:
+            a = np.diff(a, prepend=0)
+        return a.astype(dtype).tobytes()
+
+    def k(v):
+        return round(v * 1000)
+
+    lon, lat, ele, counts = [], [], [], []
+    for e in edges:
+        x, y = decode_ints(e["geometry"])
+        lon += x
+        lat += y
+        ele += e["elevation"]
+        counts.append(len(x))
+    route_refs = [name(r) for e in edges for r in e["routes"]]
+    node_names = [name(n["name"]) if n.get("name") else -1 for n in nodes]
+    blob = "\n".join(names).encode()
+    scenery = [e.get("scenery") for e in edges]
+    return b"".join([
+        TILE_MAGIC,
+        np.array([len(nodes), len(edges), len(lon), len(route_refs), len(blob)], dtype="<u4").tobytes(),
+        blob,
+        col([n["id"] for n in nodes], "<i4", delta=True),
+        col([round(n["lon"] * 1e5) for n in nodes], "<i4", delta=True),
+        col([round(n["lat"] * 1e5) for n in nodes], "<i4", delta=True),
+        col([KINDS.index(n["kind"]) for n in nodes], "<u1"),
+        col([n["hotelCount"] for n in nodes], "<u2"),
+        col(node_names, "<i4"),
+        col([e["id"] for e in edges], "<i4", delta=True),
+        col([e["from"] for e in edges], "<i4"),
+        col([e["to"] for e in edges], "<i4"),
+        col([round(e["lengthKm"] * 1000) for e in edges], "<u4"),
+        col([k(e["pavedShare"]) for e in edges], "<u2"),
+        *(col([k(e["surface"][s]) for e in edges], "<u2") for s in ("paved", "gravel", "unpaved")),
+        col([CLASSES.index(e["network"]) for e in edges], "<u1"),
+        col([k(e["score"]) for e in edges], "<u2"),
+        col([e["ascent"] for e in edges], "<u2"),
+        col([e["descent"] for e in edges], "<u2"),
+        *(col([k(s[f]) if s else NO_SCENERY for s in scenery], "<u2") for f in SCENERY),
+        col([s["sights"] if s else NO_SCENERY for s in scenery], "<u2"),
+        col([len(e["routes"]) for e in edges], "<u1"),
+        col(counts, "<u4"),
+        col(route_refs, "<u4"),
+        varints(lon),
+        varints(lat),
+        varints(ele),
+    ])  # fmt: skip
+
+
+def varints(values):
+    """Deltas of ints as zigzag varints: 7 bits per byte, low bits first."""
+    out = bytearray()
+    prev = 0
+    for v in values:
+        d = v - prev
+        prev = v
+        z = (d << 1) ^ (d >> 63)
+        while z >= 0x80:
+            out.append((z & 0x7F) | 0x80)
+            z >>= 7
+        out.append(z)
+    return bytes(out)
+
+
+def read_varints(b, pos, count):
+    """(values, next pos) of varints()."""
+    out, prev = [], 0
+    for _ in range(count):
+        z = shift = 0
+        while True:
+            byte = b[pos]
+            pos += 1
+            z |= (byte & 0x7F) << shift
+            shift += 7
+            if byte < 0x80:
+                break
+        prev += (z >> 1) ^ -(z & 1)
+        out.append(prev)
+    return out, pos
+
+
+def load_tile(path):
+    """A network tile, packed (.bin) or JSON."""
+    if path.endswith(".bin"):
+        return read_tile(path)
+    with open(path) as f:
+        return json.load(f)
+
+
+def read_tile(path):
+    """A network tile of pack_tile(), gzipped, as the dict it was made from."""
+    import gzip
+
+    import numpy as np
+
+    with gzip.open(path, "rb") as f:
+        b = f.read()
+    if b[:4] != TILE_MAGIC:
+        raise ValueError(f"{path} is not a network tile")
+    n, m, p, r, size = np.frombuffer(b, "<u4", 5, 4).tolist()
+    names = b[24 : 24 + size].decode().split("\n") if size else []
+    pos = 24 + size
+
+    def take(dtype, count, delta=False):
+        nonlocal pos
+        a = np.frombuffer(b, dtype, count, pos)
+        pos += a.nbytes
+        return (np.cumsum(a, dtype=np.int64) if delta else a).tolist()
+
+    ids, lon, lat = take("<i4", n, True), take("<i4", n, True), take("<i4", n, True)
+    kind, hotels, name_ref = take("<u1", n), take("<u2", n), take("<i4", n)
+    e_id, e_from, e_to, length = take("<i4", m, True), take("<i4", m), take("<i4", m), take("<u4", m)
+    paved_share = take("<u2", m)
+    surface = [take("<u2", m) for _ in range(3)]
+    network, score, ascent, descent = take("<u1", m), take("<u2", m), take("<u2", m), take("<u2", m)
+    scenery = [take("<u2", m) for _ in range(5)]
+    route_count, counts, route_refs = take("<u1", m), take("<u4", m), take("<u4", r)
+    p_lon, pos = read_varints(b, pos, p)
+    p_lat, pos = read_varints(b, pos, p)
+    ele, pos = read_varints(b, pos, p)
+    if pos != len(b):
+        raise ValueError(f"{path} has extra bytes")
+
+    nodes = []
+    for i in range(n):
+        node = {"id": ids[i], "lon": lon[i] / 1e5, "lat": lat[i] / 1e5, "kind": KINDS[kind[i]], "hotelCount": hotels[i]}
+        if name_ref[i] >= 0:
+            node["name"] = names[name_ref[i]]
+        nodes.append(node)
+    edges, at, ref = [], 0, 0
+    for i in range(m):
+        pts = [[p_lon[j] / 1e5, p_lat[j] / 1e5] for j in range(at, at + counts[i])]
+        e = {
+            "id": e_id[i], "from": e_from[i], "to": e_to[i], "lengthKm": length[i] / 1000,
+            "pavedShare": paved_share[i] / 1000,
+            "surface": {s: surface[j][i] / 1000 for j, s in enumerate(("paved", "gravel", "unpaved"))},
+            "network": CLASSES[network[i]], "routes": [names[x] for x in route_refs[ref : ref + route_count[i]]],
+            "score": score[i] / 1000, "ascent": ascent[i], "descent": descent[i],
+            "geometry": encode(pts), "elevation": ele[at : at + counts[i]],
+        }  # fmt: skip
+        if scenery[0][i] != NO_SCENERY:
+            e["scenery"] = {**{f: scenery[j][i] / 1000 for j, f in enumerate(SCENERY)}, "sights": scenery[4][i]}
+        edges.append(e)
+        at += counts[i]
+        ref += route_count[i]
+    return {"nodes": nodes, "edges": edges}

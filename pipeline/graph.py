@@ -159,8 +159,12 @@ def components_csr(offsets, other):
     return comp
 
 
-def build(data):
-    """Route graph from the extract. Takes data["ways"] out of data to free it early."""
+def build(data, route_links=None):
+    """Route graph from the extract. Takes data["ways"] out of data to free it early.
+
+    route_links([[a, b], ...]) gives the way between the ends of each connector, as
+    {"km", "coords", "surface"} or None (see routing.route_pairs). Without it, or for
+    None, a connector is a straight line of CONNECTOR_DETOUR × the distance."""
     ways = data.pop("ways")
     # Best network and names per way.
     way_net = {}
@@ -227,17 +231,24 @@ def build(data):
                 links[(min(x, y), max(x, y))] = d * CONNECTOR_DETOUR  # two dead ends can find each other
                 connectors += 1
                 break
+    first_link = len(s_a)
+    routed = route_links([[node_xy[x].tolist(), node_xy[y].tolist()] for x, y in links]) if route_links and links else [None] * len(links)
+    s_surface = w_surf[s_way]
     if links:
         s_a = np.concatenate([s_a, [k[0] for k in links]])
         s_b = np.concatenate([s_b, [k[1] for k in links]])
         s_way = np.concatenate([s_way, np.full(len(links), connector)])
-        s_km = np.concatenate([s_km, list(links.values())])
+        s_km = np.concatenate([s_km, [r["km"] if r else km for r, km in zip(routed, links.values())]])
+        s_surface = np.concatenate([s_surface, [SURFACES.index(r["surface"]) if r else w_surf[connector] for r in routed]])
+    # Shape of the routed connectors, from their first node to their second.
+    link_coords = {first_link + i: r["coords"] for i, r in enumerate(routed) if r}
     offsets, other, seg_at = csr(s_a, s_b, n)
     comp = components_csr(offsets, other)
     ids, sizes = np.unique(comp, return_counts=True)
     main_comp = ids[np.argmax(sizes)]
     stats.update(
         connectors=connectors,
+        connectors_routed=len(link_coords),
         components_after=len(ids),
         main_component_share=sizes.max() / n,
     )
@@ -275,7 +286,7 @@ def build(data):
     seg = {
         "km": s_km,
         "net": w_net[s_way],
-        "surface": w_surf[s_way],
+        "surface": s_surface,
         "tagged": w_tagged[s_way],
         "score": w_score[s_way],
         "way": s_way,
@@ -283,7 +294,7 @@ def build(data):
     edges = []
     for chain_nodes, chain_segs in chains(offsets, other, seg_at, key):
         e = make_edge(np.array(chain_segs), seg, way_ids, connector)
-        e.update(a=int(nodes[chain_nodes[0]]), b=int(nodes[chain_nodes[-1]]), coords=node_xy[chain_nodes].tolist())
+        e.update(a=int(nodes[chain_nodes[0]]), b=int(nodes[chain_nodes[-1]]), coords=chain_coords(chain_nodes, chain_segs, node_xy, s_a, link_coords))
         route_km = defaultdict(float)
         for wid, km in e.pop("way_km").items():
             for name in way_routes[wid]:
@@ -341,6 +352,17 @@ def chains(offsets, other, seg_at, key):
                 segs.append(seg_at[nxt[0]])
             seen[segs] = True
             yield nodes, segs
+
+
+def chain_coords(chain_nodes, chain_segs, node_xy, s_a, link_coords):
+    """Points of a chain, with the shape of routed connectors."""
+    coords = [node_xy[chain_nodes[0]].tolist()]
+    for i, s in enumerate(chain_segs):
+        shape = link_coords.get(int(s))
+        if shape:
+            coords += shape[1:-1] if s_a[s] == chain_nodes[i] else shape[-2:0:-1]
+        coords.append(node_xy[chain_nodes[i + 1]].tolist())
+    return coords
 
 
 def make_edge(segs, seg, way_ids, connector):

@@ -29,15 +29,59 @@ Output (November 2026):
 | | |
 |---|---|
 | Route network | 151,000 nodes, 203,000 edges, 212,000 km |
-| Tiles | 226 files of 0.5°, 89 MiB (15 MiB gzipped), median 0.26 MiB, largest 2.5 MiB |
+| Tiles | 226 files of 0.5°, about 20 MiB (9 MiB gzipped) |
 | Place tiles | 229 files, 9.8 MiB (2.3 MiB gzipped), largest 143 KiB: 39,300 towns, 5,900 stations, 38,000 hotels |
 | `search.json` | 2.8 MiB (0.7 MiB gzipped): 31,800 towns and 5,900 stations on the network |
 | Route lines | 5,000 files (1,493 empty), 15 MiB, largest 206 KiB |
 | `routes.json` | 1.8 MiB: 16,300 routes |
 
-A 200 km trip loads up to about 110 tiles, 53 MiB (9 MiB gzipped).
+A 200 km trip loads up to about 110 tiles, about 12 MiB (5.5 MiB gzipped).
 
-A trip around Heidelberg needs about 6 tiles, 4.4 MiB (0.7 MiB gzipped).
+## Route network
+
+`graph.py` builds the network from the signed cycle routes.
+
+- A dead end gets a connector to the nearest node of another part within 1 km.
+- `routing.route_pairs` routes each connector on the routing graph with the touring way costs, in a child process. The connector gets the length, shape and main surface of that way.
+- A connector with no way within 4× the straight line (at least 2 km of cost) stays a straight line of 1.3× the distance. In Hessen 92 % of connectors are routed.
+
+## Network tiles
+
+`tiles/<x>_<y>.bin` hold the route network in tiles of 0.5°, gzipped. The manifest lists them under `tiles` with `format: 1`. `export.pack_tile` writes them, `packages/providers/src/networkTile.ts` and `export.read_tile` read them. A tile holds its nodes, every edge that touches one of them, and the far nodes of those edges.
+
+All numbers are little-endian. Coordinates are degrees × 10⁵. Shares are × 1000. "Delta" means each value minus the one before, the first as is.
+
+| Field | Type | Count |
+|---|---|---|
+| `WNT1` | 4 bytes | |
+| Nodes n, edges m, points p, route refs r, name bytes b | u32 | 5 |
+| Names: route and place names, UTF-8, joined by `\n` | bytes | b |
+| Node ids, delta | i32 | n |
+| Lon, delta | i32 | n |
+| Lat, delta | i32 | n |
+| Kind: 0 junction, 1 town, 2 station | u8 | n |
+| Hotels | u16 | n |
+| Name (index in names), −1 for none | i32 | n |
+| Edge ids, delta | i32 | m |
+| From node id | i32 | m |
+| To node id | i32 | m |
+| Length in m | u32 | m |
+| Paved share | u16 | m |
+| Surface shares paved, gravel, unpaved | u16 | 3 × m |
+| Network: 0 icn, 1 ncn, 2 rcn, 3 lcn, 4 connector | u8 | m |
+| Score | u16 | m |
+| Ascent, descent in m | u16 | 2 × m |
+| Scenery forest, water, vineyard, nature (shares) and sights (count), 65535 for none | u16 | 5 × m |
+| Routes per edge | u8 | m |
+| Points per edge | u32 | m |
+| Routes (index in names), edge by edge | u32 | r |
+| Lon of each point, delta | varint | p |
+| Lat of each point, delta | varint | p |
+| Elevation in m of each point, delta | varint | p |
+
+Varint: the value zigzagged (0, −1, 1, −2 … as 0, 1, 2, 3 …), 7 bits per byte, low bits first, high bit set on all but the last byte.
+
+Hessen: 25 tiles, 1.5 MiB (0.7 MiB gzipped). As JSON they were 6.8 MiB (1.1 MiB gzipped).
 
 ## Route lines
 
@@ -180,7 +224,7 @@ Prints how much of the network within 80 km is connected to the station, the tow
 
 ## Test data
 
-`apps/web/public/data/mock/heidelberg/` holds the 6 tiles around Heidelberg (8.0–9.5° E, 49–50° N) and the places in them. Tests use it. To refresh it:
+`apps/web/public/data/mock/heidelberg/` holds the 6 tiles around Heidelberg (8.0–9.5° E, 49–50° N) as JSON, and the places in them. Tests use it. To refresh it:
 
 ```sh
 cd pipeline

@@ -26,6 +26,7 @@ export {
 } from "./osm/hotels";
 export { OsmLodging, toOption } from "./osm/OsmLodging";
 export { openSource } from "./openSource";
+export { decodeNetworkTile } from "./networkTile";
 export {
   TransitousTrains,
   geocodeUrl,

@@ -94,6 +94,9 @@ export interface RouteNetworkSource {
 /** Loads JSON from a URL. The app passes a fetch wrapper. */
 export type FetchJson = (url: string) => Promise<unknown>;
 
+/** Loads the bytes of a URL. Fails if it is missing. */
+export type FetchBytes = (url: string) => Promise<Uint8Array>;
+
 /** A connection from a search, not saved yet. */
 export type TrainOption = Omit<Connection, "direction">;
 

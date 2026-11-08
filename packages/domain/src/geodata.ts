@@ -40,6 +40,8 @@ export type RoutingTiles = {
 };
 
 export type TileIndex = {
+  /** 1: packed tiles, gzipped (pipeline/README.md). Missing: JSON. */
+  format?: 1;
   /** Tile edge in degrees. Tile key "x_y" = floor(lon / size)_floor(lat / size). */
   size: number;
   /** File path relative to the manifest, with "{key}" for the tile key. */
