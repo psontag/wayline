@@ -6,12 +6,11 @@ labels: epic
 
 ## Summary
 
-Plain language. No technical terms.
-
-- **Why:** why this milestone matters
-- **Before:** what you can do today
-- **After:** what you can do when it's done
-- **Solves:** which problem goes away
+<!--
+For the owner, in plain words. What you can't do today, what you can do
+when this milestone is done, and why it matters. A short paragraph or a few
+bullets, no fixed fields.
+-->
 
 ## Screens
 

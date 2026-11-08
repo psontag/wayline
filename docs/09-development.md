@@ -47,6 +47,12 @@ pnpm setup:worktree
 
 - `git` and `gh` run outside the sandbox.
 - `.claude/hooks/guard-bash.js` blocks `python`, `pip` and `sed -i`, and asks before `PROVIDERS=live`.
+- Read-only `git`, `gh` and check commands are allowed without a prompt.
+- Project skills in `.claude/skills/`: `ship` (issue to merged PR) and `verify-ui` (light and dark, desktop and phone in the browser pane).
+
+### Cleanup
+
+`pnpm worktree:prune` lists worktrees and local branches merged into `origin/main`. `--yes` removes them. It keeps the current checkout, worktrees with uncommitted changes and worktrees a process runs in. Route data in a removed worktree moves to the main checkout first.
 
 The Worker config is `apps/api/cloudflare.config.ts`. Build settings, such as the assets folder, are in `apps/api/wrangler.config.ts`. `cf` writes generated files to `.cloudflare/` (git-ignored).
 
@@ -153,7 +159,7 @@ D1 schema changes are SQL migration files in `apps/api/migrations/`.
 
 | Trigger | Steps |
 |---|---|
-| Pull request | Lint, typecheck, test |
+| Pull request | Lint, typecheck, test, format check, build |
 | Push to `main` | Lint, typecheck, test, then deploy (`docs/12-deploy.md`). The deploy rebuilds the route data when the pipeline changed or a new month started. |
 
 ## Later

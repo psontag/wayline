@@ -32,6 +32,10 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm format:check
+      # The deploy job builds on main. On a PR, catch a broken build before merge.
+      - if: github.event_name == 'pull_request'
+        run: pnpm build
 
   # Sets up Cloudflare, builds the route data and deploys. See docs/12-deploy.md.
   deploy:
