@@ -26,6 +26,16 @@ export type TripSummary = {
   preview: LonLat[];
 };
 
+/**
+ * Trip name: "Start – End" one way, "Loop from Start" when it ends where it
+ * starts, "Loop from Start via Town" to tell day loops apart. `reverseTrip`
+ * relies on the " – ".
+ */
+export function tripTitle(from: string, to?: string, via?: string): string {
+  if (to && to !== from) return `${from} – ${to}`;
+  return via ? `Loop from ${from} via ${via}` : `Loop from ${from}`;
+}
+
 export function summarizeTrip(trip: Trip, previewPoints = 64): TripSummary {
   const points = routePoints(trip.stages.flatMap((s) => s.legs));
   const step = Math.max(1, Math.ceil(points.length / previewPoints));

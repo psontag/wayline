@@ -16,6 +16,7 @@ import {
   Theme,
   timeToHours,
   type Trip,
+  tripTitle,
 } from "@wayline/domain";
 import type {
   AbortSignalLike,
@@ -426,7 +427,10 @@ export class Planner {
         stops: p.stops,
       });
       if (p.homeward) {
-        trip.name = `${trip.stages[0]?.start.name ?? ""} – ${request.startStation?.name ?? trip.stages.at(-1)?.end.name ?? ""}`;
+        trip.name = tripTitle(
+          trip.stages[0]?.start.name ?? "",
+          request.startStation?.name ?? trip.stages.at(-1)?.end.name,
+        );
       }
       if (!options.routing) return trip;
       const waypoints = stageWaypoints(
@@ -481,8 +485,11 @@ export class Planner {
       const route = followed.get(p);
       if (route) proposal.followedRoute = route;
       if (request.kind === "day-loop" && proposal.via[0]) {
-        const home = trip.stages[0]?.start.name ?? "";
-        trip.name = `${home} – ${proposal.via[0]} – ${home}`;
+        trip.name = tripTitle(
+          request.startStation?.name ?? trip.stages[0]?.start.name ?? "",
+          undefined,
+          proposal.via[0],
+        );
       }
       if (p.steps.some((s) => graph.edge(s.edge).scenery)) {
         proposal.themes = Object.fromEntries(
@@ -863,7 +870,10 @@ export class Planner {
       let best: number[] = [];
       for (const route of routes) {
         // Long routes near a trip often don't fit it. Leaves time for the rest.
-        if (route.rank === NATIONAL && nationalMisses >= SIGNED.nationalMisses) {
+        if (
+          route.rank === NATIONAL &&
+          nationalMisses >= SIGNED.nationalMisses
+        ) {
           continue;
         }
         const km = kmUnused(graph, route, used);

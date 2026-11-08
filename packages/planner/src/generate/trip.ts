@@ -8,6 +8,7 @@ import {
   type Stop as StopPlace,
   type Trip,
   TRIP_SCHEMA_VERSION,
+  tripTitle,
 } from "@wayline/domain";
 import type { Graph, PathStep } from "../graph/Graph";
 import { pathToLeg } from "../graph/leg";
@@ -116,9 +117,8 @@ function stripStop(s: StopPlace): Place {
 }
 
 /**
- * One-way: "Start – End". Loop: "Start – Stop – Start" with the stop in
- * the middle of the trip. Uses the places the user picked: the stages may
- * start and end at a nearby station instead, for the train links.
+ * "Start – End" or "Loop from Start". Uses the places the user picked: the
+ * stages may start and end at a nearby station instead, for the train links.
  */
 function tripName(
   request: GenerateRequest,
@@ -126,13 +126,11 @@ function tripName(
   ends: StopPlace[],
 ): string {
   const from = request.startStation?.name ?? start.name;
-  const last = ends.at(-1)?.name ?? start.name;
-  if (request.kind === "one-way") {
-    return `${from} – ${request.endStation?.name ?? last}`;
-  }
-  if (ends.length < 2) return `${from} – ${last}`;
-  const middle = ends[Math.floor((ends.length - 1) / 2)]?.name ?? "";
-  return `${from} – ${middle} – ${last}`;
+  if (request.kind !== "one-way") return tripTitle(from);
+  return tripTitle(
+    from,
+    request.endStation?.name ?? ends.at(-1)?.name ?? start.name,
+  );
 }
 
 /** Signed routes by km on the path, longest first. */

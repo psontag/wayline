@@ -352,8 +352,9 @@ Examples in English:
 | Duration | `4 h 15`, `45 min` below 1 h, in 5 min steps |
 | Rain | `1.2 mm` |
 | Date | `Sat 12 Jun` |
+| Trip name | `Würzburg – Bamberg` one way, `Loop from Heidelberg` for loops |
 
-All formatting goes through shared functions in `packages/ui`. They follow the current locale (see `08-translation.md`).
+All formatting goes through shared functions in `packages/ui`. They follow the current locale (see `08-translation.md`). Trip names come from `tripTitle` in `packages/domain` and are stored with the trip. Users can rename a trip freely.
 
 ## Wording
 
