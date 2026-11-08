@@ -223,6 +223,18 @@ uv run check_area.py ../apps/web/public/data/<version> "Heidelberg Hauptbahnhof"
 
 Prints how much of the network within 80 km is connected to the station, the towns with hotels, and the best path to each named town.
 
+## Tests
+
+```sh
+pnpm test:pipeline
+```
+
+- Ruff with bug rules only (`ruff.toml`). The code is not reformatted: a change to `pipeline/*.py` changes the data version.
+- `tests/test_pipeline.py`, about 6 s:
+  - `pack_tile` gives the bytes of `packages/providers/fixtures/17_98.bin`, which the app's tile reader is tested on.
+  - `build.py` on `tests/fixtures/sample-latest.osm.pbf` (Bamberg, 1.6 MB) with a made-up DEM. No downloads, no osmium-tool, no route lines.
+- To recut the sample, from the filtered Germany extract: `osmium extract -s complete_ways -b 10.84,49.86,10.97,49.94 cache/work/germany-filtered.osm.pbf -o tests/fixtures/sample-latest.osm.pbf`.
+
 ## Test data
 
 `apps/web/public/data/mock/heidelberg/` holds the 6 tiles around Heidelberg (8.0–9.5° E, 49–50° N) as JSON, and the places in them. Tests use it. To refresh it:

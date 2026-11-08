@@ -5,20 +5,11 @@ description: Take a Wayline issue from claim to merged PR, following docs/11-tra
 
 # Ship
 
-Board: project 3, owner `psontag`. Status field `PVTSSF_lAHOAHJMTs4BnpPjzhmM2fQ`.
-
-| Status | Option id |
-|---|---|
-| Ready | `c734252b` |
-| In progress | `c364e637` |
-| In review | `c3035081` |
-| Done | `96d799fa` |
-
-Move an item:
+Board: project 3, owner `psontag`. Statuses: Backlog, Ready, In progress, In review, Done.
 
 ```sh
-item=$(gh project item-list 3 --owner psontag --format json -L 500 -q ".items[] | select(.content.number == <n>) | .id")
-gh project item-edit --project-id PVT_kwHOAHJMTs4BnpPj --id "$item" --field-id PVTSSF_lAHOAHJMTs4BnpPjzhmM2fQ --single-select-option-id <option id>
+gh project item-add 3 --owner psontag --url https://github.com/psontag/wayline/issues/<n>   # new issue
+gh project item-edit 3 --owner psontag --url https://github.com/psontag/wayline/issues/<n> --field Status --value "In progress"
 ```
 
 ## Steps
@@ -26,7 +17,7 @@ gh project item-edit --project-id PVT_kwHOAHJMTs4BnpPj --id "$item" --field-id P
 1. **Claim.** `gh issue view <n> --comments`. Comment `Starting on branch <n>-<short-name>.` Move to In progress.
 2. **Branch.** `git fetch -q origin` and `git switch -c <n>-<short-name> origin/main`. In a new worktree, run `pnpm setup:worktree` first.
 3. **Work.** Record decisions as issue comments. Questions for the owner: comment and add `needs-human`.
-4. **Check.** `pnpm check`. For UI changes, run the `verify-ui` skill.
+4. **Check.** `pnpm check`. For UI changes, also `pnpm e2e` and the `verify-ui` skill. For pipeline changes, `pnpm test:pipeline`.
 5. **Commit.** Run `git commit` on its own, not chained after other commands. Message per the writing style in CLAUDE.md.
 6. **Screenshots** (UI only). Commit them on top of `origin/pr-assets` in `pr-<n>/`, from a separate worktree:
 

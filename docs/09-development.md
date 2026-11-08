@@ -110,6 +110,23 @@ Geodata:
 | `providers` | Parsing against recorded fixtures. |
 | `api` | Worker endpoints with fake providers and local D1. |
 | `ui` | Contrast check over token pairs. |
+| `apps/web/e2e` | Playwright, `pnpm e2e`. See below. |
+| `pipeline/tests` | Ruff and pytest, `pnpm test:pipeline`. See `pipeline/README.md`. |
+
+### Browser tests
+
+`pnpm e2e` starts Vite on port 5188 with the Oberfranken mock, fake providers and trips in browser storage. No Worker. Today is fixed to 8 Nov 2026.
+
+| Test | Checks |
+|---|---|
+| Plan a new trip | Start and end, Find routes, proposals, Open trip |
+| Move a stop | Day 1 gets another stop, still there after a reload |
+| Trip list | The sample trip opens. Also on phone. |
+
+- Projects: `desktop` (1280×800) and `phone` (Pixel 7). The new trip and stop flows run on desktop only.
+- Each test saves light and dark screenshots to `apps/web/e2e/out/screenshots/<project>/`. Use them for PRs.
+- Traces of failed tests are in `apps/web/e2e/out/results/`: `pnpm exec playwright show-trace <trace.zip>`.
+- First time: `pnpm exec playwright install chromium`.
 
 ## Search benchmark
 
@@ -159,9 +176,5 @@ D1 schema changes are SQL migration files in `apps/api/migrations/`.
 
 | Trigger | Steps |
 |---|---|
-| Pull request | Lint, typecheck, test, format check, build |
+| Pull request | Lint, typecheck, test, format check, build. In parallel: browser tests (screenshots as the `e2e` artifact), Ruff on the pipeline. The pipeline test only when `pipeline/`, the tile reader or the mock data changed. |
 | Push to `main` | Lint, typecheck, test, then deploy (`docs/12-deploy.md`). The deploy rebuilds the route data when the pipeline changed or a new month started. |
-
-## Later
-
-- Playwright tests for 2–3 main flows
