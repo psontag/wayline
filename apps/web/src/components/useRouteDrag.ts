@@ -14,11 +14,7 @@ type Point = { x: number; y: number };
 const DRAG_PX = 4;
 
 /** Closest point on the line to a screen point, in screen space. */
-export function nearestOnLine(
-  map: MapRef,
-  line: LonLat[],
-  p: Point,
-): LonLat {
+export function nearestOnLine(map: MapRef, line: LonLat[], p: Point): LonLat {
   let best: Point | undefined;
   let bestD = Infinity;
   const points = line.map((c) => map.project(c));
@@ -56,12 +52,18 @@ export function useRouteDrag({
   mapRef,
   lines,
   enabled,
+  pointer,
   onDrop,
 }: {
   mapRef: RefObject<MapRef | null>;
   /** Coordinates per leg. */
   lines: LonLat[][];
   enabled: boolean;
+  /**
+   * Last pointer kind. Browsers send mouse events after a tap too; those
+   * must not show the ghost or start a drag.
+   */
+  pointer: RefObject<"mouse" | "touch">;
   onDrop: (leg: number, at: LonLat) => void;
 }) {
   const [ghost, setGhost] = useState<LonLat>();
@@ -74,7 +76,7 @@ export function useRouteDrag({
     const leg = map ? legOf(event, map) : undefined;
     const line = leg === undefined ? undefined : lines[leg];
     setGhost(
-      enabled && !drag && map && line
+      enabled && pointer.current === "mouse" && !drag && map && line
         ? nearestOnLine(map, line, event.point)
         : undefined,
     );
@@ -83,7 +85,9 @@ export function useRouteDrag({
   const onMouseDown = (event: MapLayerMouseEvent) => {
     const map = mapRef.current;
     const leg = map ? legOf(event, map) : undefined;
-    if (!enabled || !map || leg === undefined) return;
+    if (!enabled || pointer.current !== "mouse" || !map || leg === undefined) {
+      return;
+    }
     // Keeps the map from panning.
     event.preventDefault();
     const start = event.point;
@@ -105,13 +109,22 @@ export function useRouteDrag({
       setDrag(undefined);
       if (moved) onDrop(leg, at);
     };
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Keeps Esc from also closing other things, e.g. a selected via.
+      e.stopPropagation();
+      stop.current?.();
+      setDrag(undefined);
+    };
     stop.current = () => {
       window.removeEventListener("mousemove", move);
       window.removeEventListener("mouseup", up);
+      window.removeEventListener("keydown", key, true);
       stop.current = undefined;
     };
     window.addEventListener("mousemove", move);
     window.addEventListener("mouseup", up);
+    window.addEventListener("keydown", key, true);
   };
 
   return {
