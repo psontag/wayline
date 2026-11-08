@@ -1,9 +1,11 @@
 import {
   addDays,
   findClimbs,
+  type LonLat,
   localTimeToDate,
   ridingHours,
   routePoints,
+  type Stage,
   type Trip,
 } from "@wayline/domain";
 import {
@@ -16,6 +18,7 @@ import {
   Stat,
   SurfaceBar,
   useFormat,
+  ViaRow,
 } from "@wayline/ui";
 import { ChevronLeft, Lock, LockOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -42,6 +45,8 @@ export function DayPanel({
   onHighlightProposed,
   findingDestination,
   onFindingDestination,
+  selectedVia,
+  onSelectVia,
 }: {
   trip: Trip;
   index: number;
@@ -57,6 +62,9 @@ export function DayPanel({
   /** Other train stops to end the last day at show here and on the map. */
   findingDestination: boolean;
   onFindingDestination: (finding: boolean) => void;
+  /** Via point selected here and on the map. */
+  selectedVia?: number;
+  onSelectVia: (index: number | undefined) => void;
 }) {
   const { t } = useTranslation("tripEditor");
   const format = useFormat();
@@ -158,6 +166,17 @@ export function DayPanel({
         summary={t("ride.summary", { share: format.percent(surface.paved) })}
         collapsible
       >
+        {!editor.readOnly && stage.via.length > 0 && (
+          <ViaList
+            stage={stage}
+            selected={selectedVia}
+            onSelect={onSelectVia}
+            onRemove={(coord) => {
+              onSelectVia(undefined);
+              void editor.removeVia(index, coord);
+            }}
+          />
+        )}
         <SurfaceBar shares={surface} caption />
         {weather && (
           <DayWeather
@@ -237,5 +256,45 @@ export function DayPanel({
         </PanelSection>
       )}
     </>
+  );
+}
+
+/** Via points of a day, in route order, with the km where each one is. */
+function ViaList({
+  stage,
+  selected,
+  onSelect,
+  onRemove,
+}: {
+  stage: Stage;
+  selected?: number;
+  onSelect: (index: number | undefined) => void;
+  onRemove: (coord: LonLat) => void;
+}) {
+  const { t } = useTranslation("tripEditor");
+  const format = useFormat();
+  // Via point i is where leg i ends.
+  const at = stage.via.map((_, i) =>
+    stage.legs.slice(0, i + 1).reduce((sum, leg) => sum + leg.distance, 0),
+  );
+  return (
+    <ul aria-label={t("via.list")} className="flex flex-col gap-1">
+      {stage.via.map((via, i) => {
+        const km = at[i] ?? 0;
+        return (
+          <li key={i}>
+            <ViaRow
+              n={i + 1}
+              name={t("via.name", { n: i + 1 })}
+              detail={t("via.at", { distance: format.distance(km) })}
+              selected={i === selected}
+              onSelect={() => onSelect(i === selected ? undefined : i)}
+              removeLabel={t("via.removeLabel", { n: i + 1 })}
+              onRemove={() => onRemove(via.coord)}
+            />
+          </li>
+        );
+      })}
+    </ul>
   );
 }

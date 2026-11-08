@@ -9,6 +9,7 @@ import {
   HoverMarker,
   MapHint,
   useThemeTokens,
+  ViaActions,
   ViaMarker,
 } from "@wayline/ui";
 import type { FeatureCollection, LineString } from "geojson";
@@ -101,6 +102,9 @@ export type RouteEditing = {
   onAddVia: (leg: number, at: LonLat, keep?: boolean) => void;
   onMoveVia: (coord: LonLat, at: LonLat) => void;
   onRemoveVia: (coord: LonLat) => void;
+  /** Via point of the selected stage that shows its actions. */
+  selectedVia?: number;
+  onSelectVia: (index: number | undefined) => void;
   /** Parts of the proposed route that differ, drawn as a soft grey line. */
   proposed: LonLat[][];
   /** Show the proposed route stronger. */
@@ -247,8 +251,19 @@ export function TripMap({
     }),
     [route?.proposed],
   );
-  // A via marker drag can end with a click on it. That must not remove it.
+  // A via marker drag can end with a click on it. That must not select it.
   const draggedVia = useRef(false);
+
+  const selectedVia = route?.selectedVia;
+  const onSelectVia = route?.onSelectVia;
+  useEffect(() => {
+    if (selectedVia === undefined || !onSelectVia) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onSelectVia(undefined);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedVia, onSelectVia]);
 
   // Zoom to the stage when the selection changes, keeping its stop choices
   // and hotels in view. Not while the route is dragged.
@@ -272,6 +287,14 @@ export function TripMap({
   const onClick = (event: MapLayerMouseEvent) => {
     const props = event.features?.[0]?.properties;
     const map = mapRef.current;
+    // Clicks on markers also reach the map. A click on the map itself only
+    // clears the selected via point, so a tap meant to close it adds nothing.
+    if (selectedVia !== undefined && map) {
+      if (event.originalEvent.target === map.getCanvas()) {
+        onSelectVia?.(undefined);
+      }
+      return;
+    }
     if (typeof props?.leg === "number" && route?.tapToAdd && route.enabled) {
       const line = legLines[props.leg];
       if (map && line) {
@@ -447,14 +470,23 @@ export function TripMap({
             style={{ zIndex: 6 }}
           >
             <ViaMarker
-              aria-label={t("map.removeVia", { n: index + 1 })}
+              aria-label={t("map.via", { n: index + 1 })}
+              selected={index === selectedVia}
               disabled={!route.enabled}
               onClick={() =>
-                !draggedVia.current && route.onRemoveVia(via.coord)
+                !draggedVia.current &&
+                route.onSelectVia(index === selectedVia ? undefined : index)
               }
             />
           </Marker>
         ))}
+      {route && selectedVia !== undefined && (
+        <ViaActionsMarker
+          route={route}
+          via={trip.stages[selected]?.via[selectedVia]?.coord}
+          n={selectedVia + 1}
+        />
+      )}
       {ghostAt && (
         <Marker
           longitude={ghostAt[0]}
@@ -470,5 +502,38 @@ export function TripMap({
         </Marker>
       )}
     </AppMap>
+  );
+}
+
+/** Actions of the selected via point, above its marker. */
+function ViaActionsMarker({
+  route,
+  via,
+  n,
+}: {
+  route: RouteEditing;
+  via: LonLat | undefined;
+  n: number;
+}) {
+  const { t } = useTranslation("tripEditor");
+  if (!via) return null;
+  return (
+    <Marker
+      longitude={via[0]}
+      latitude={via[1]}
+      anchor="bottom"
+      // Clears the 44 px button of the via marker.
+      offset={[0, -24]}
+      style={{ zIndex: 7 }}
+    >
+      <ViaActions
+        label={t("via.name", { n })}
+        removeLabel={t("via.remove")}
+        onRemove={() => {
+          route.onSelectVia(undefined);
+          route.onRemoveVia(via);
+        }}
+      />
+    </Marker>
   );
 }

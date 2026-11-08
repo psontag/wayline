@@ -81,7 +81,14 @@
     "network": "Signed cycling routes",
     "proposed": "Proposed route",
     "tapHint": "Tap the route to add a via point",
-    "removeVia": "Via point {{n}}. Click to remove, drag to move."
+    "via": "Via point {{n}}. Click to select, drag to move."
+  },
+  "via": {
+    "list": "Via points",
+    "name": "Via point {{n}}",
+    "at": "At {{distance}}",
+    "remove": "Remove",
+    "removeLabel": "Remove via point {{n}}"
   },
   "note": {
     "nextStage": "Day {{day}} now starts in {{place}} and is {{distance}}.",

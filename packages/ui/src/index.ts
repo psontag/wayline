@@ -179,6 +179,7 @@ export {
   StationMarker,
   HoverMarker,
   StopMarker,
+  ViaActions,
   ViaMarker,
   type AlternativeMarkerProps,
   type ClusterMarkerProps,
@@ -186,6 +187,7 @@ export {
   type HotelMarkerProps,
   type StationMarkerProps,
   type StopMarkerProps,
+  type ViaActionsProps,
   type ViaMarkerProps,
 } from "./components/MapMarker";
 export { DateButton, type DateButtonProps } from "./components/DateButton";
