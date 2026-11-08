@@ -1,4 +1,3 @@
-import { TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { type StatIcon, statIcons } from "../icons";
@@ -7,6 +6,7 @@ import { focusRing } from "./Button";
 import { Badge } from "./Chip";
 import { type RouteColor, routeColorClasses } from "./RouteLabel";
 import { Tooltip } from "./Tooltip";
+import { WarningText } from "./WarningText";
 
 export type DayColor = RouteColor | "stage-a" | "stage-b";
 
@@ -124,12 +124,7 @@ export function DayList({
                 {day.date && (
                   <span className="text-xs text-text-muted">{day.date}</span>
                 )}
-                {day.warning && (
-                  <span className="flex items-center gap-1 text-xs text-warning">
-                    <TriangleAlert className="size-3 shrink-0" aria-hidden />
-                    {day.warning}
-                  </span>
-                )}
+                {day.warning && <WarningText>{day.warning}</WarningText>}
               </span>
               <span className="w-14 shrink-0 self-center text-right font-semibold tabular-nums">
                 {day.distance}

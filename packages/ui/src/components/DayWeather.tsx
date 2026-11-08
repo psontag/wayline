@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { Stat } from "./Stat";
+import { WarningText } from "./WarningText";
 
 export type Wind = {
   kind: "head" | "tail" | "cross";
@@ -17,6 +18,8 @@ export type DayWeatherProps = {
   /** mm, highest hourly value on the ride. */
   rain: number;
   wind?: Wind;
+  /** E.g. "Cold start: −1 °C". One line each, below the stats. */
+  warnings?: string[];
   className?: string;
 };
 
@@ -26,6 +29,7 @@ export function DayWeather({
   feelsLike,
   rain,
   wind,
+  warnings = [],
   className,
 }: DayWeatherProps) {
   const { t } = useTranslation("ui");
@@ -73,6 +77,11 @@ export function DayWeather({
           })}
         />
       )}
+      {warnings.map((warning) => (
+        <WarningText key={warning} className="w-full">
+          {warning}
+        </WarningText>
+      ))}
     </div>
   );
 }

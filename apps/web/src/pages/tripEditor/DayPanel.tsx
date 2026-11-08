@@ -24,7 +24,7 @@ import { BookingLink } from "./BookingLink";
 import { DestinationSection } from "./DestinationSection";
 import { HotelChoices } from "./HotelChoices";
 import { StageChange } from "./StageChange";
-import { stageWind } from "./stageWeather";
+import { dayWarnings, stageWind } from "./stageWeather";
 import { hasMovableDestination } from "./stopChoices";
 import { StopPicker } from "./StopPicker";
 import { TrainOptions, useHasTrains } from "./TrainOptions";
@@ -165,6 +165,7 @@ export function DayPanel({
             feelsLike={weather.feelsLike.min}
             rain={weather.maxPrecipitation}
             wind={stageWind(weather)}
+            warnings={dayWarnings(t, format, trip, index, weather)}
           />
         )}
         <ClimbList

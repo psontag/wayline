@@ -125,6 +125,10 @@
     "accessNote": "Friends also need to be on the Wayline login list.",
     "done": "Done"
   },
+  "warning": {
+    "cold": "Cold start: {{temperature}}",
+    "dark": "Arrives {{arrival}}, sunset {{sunset}}"
+  },
   "timeline": {
     "summary": "{{rain}} · {{wind}}",
     "reason": "{{rain}}, {{wind}}",

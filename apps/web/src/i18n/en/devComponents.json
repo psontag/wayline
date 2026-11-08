@@ -113,6 +113,8 @@
     "sectionDays": "Days",
     "daysHint": "Pick a day to edit it",
     "hotelName": "Hotel Bauerngirgl",
+    "coldStart": "Cold start: −1 °C",
+    "lateArrival": "Arrives 16:20, sunset 16:40",
     "sectionStop": "Stop",
     "changed": "Changed",
     "changedDetail": "4 km longer than proposed",

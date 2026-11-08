@@ -6,6 +6,7 @@ import {
   bestStart,
   hourlyAlongStage,
   rideSummary,
+  rideWarnings,
   weatherAlongStage,
   windRotation,
 } from "./weather";
@@ -124,6 +125,41 @@ describe("rideSummary", () => {
     expect(summary.rain).toEqual({ kind: "none" });
     expect(summary.headwind).toEqual({ kind: "none" });
     expect(summary.wind).toBe("tail");
+  });
+});
+
+describe("rideWarnings", () => {
+  const daylight = {
+    date,
+    sunrise: `${date}T07:20`,
+    sunset: `${date}T16:40`,
+  };
+  // 4 h riding plus breaks: 4 h 30.
+  const warnings = (start: string, byHour: (hour: number) => Weather) =>
+    rideWarnings(
+      ride(forecast(byHour))(start)!,
+      { start, stats, avgSpeed: 18 },
+      daylight,
+    );
+
+  it("warns about a cold start", () => {
+    expect(warnings("09:00", (h) => ({ temperature: h - 10 })).cold).toBe(-1);
+    expect(warnings("09:00", () => ({ temperature: 3 })).cold).toBeUndefined();
+  });
+
+  it("warns when the arrival is less than an hour before sunset", () => {
+    expect(warnings("09:00", () => ({})).dark).toBeUndefined();
+    expect(warnings("11:30", () => ({})).dark).toEqual({
+      arrival: "16:00",
+      sunset: "16:40",
+    });
+  });
+
+  it("does not warn about the dark without daylight times", () => {
+    const weather = ride(forecast(() => ({})))("12:00")!;
+    expect(
+      rideWarnings(weather, { start: "12:00", stats, avgSpeed: 18 }).dark,
+    ).toBeUndefined();
   });
 });
 
