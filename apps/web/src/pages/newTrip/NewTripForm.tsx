@@ -5,6 +5,7 @@ import {
   dayShares,
   type GenerateRequest,
   localTimeToDate,
+  type LonLat,
   type Place,
   type TripKind,
 } from "@wayline/domain";
@@ -31,6 +32,7 @@ import {
   detour,
   formDays,
   fromRequest,
+  mapPick,
   isFormError,
   lengths,
   missingPlaces,
@@ -44,6 +46,7 @@ import {
 } from "./form";
 import { NewTripMap } from "./NewTripMap";
 import { PlaceField } from "./PlaceField";
+import { nearestPlace } from "./places";
 
 const budgets = ["low", "mid", "high"] as const;
 
@@ -93,12 +96,25 @@ export function NewTripForm({
           [s.values.shape, s.values.start, s.values.end] as const
         }
       >
-        {([shape, start, end]) => (
-          // Phones: a small map, so the form keeps most of the screen.
-          <div className="relative h-1/4 shrink-0 md:h-auto md:min-w-0 md:flex-1">
-            <NewTripMap start={start} end={shape === "ab" ? end : null} />
-          </div>
-        )}
+        {([shape, start, end]) => {
+          const next = mapPick({ shape, start, end });
+          const pick = (at: LonLat, nearKm: number) => {
+            const place = nearestPlace(places, at, nearKm);
+            if (place) form.setFieldValue(next.field, place);
+            return place;
+          };
+          return (
+            // Phones: a small map, so the form keeps most of the screen.
+            <div className="relative h-1/4 shrink-0 md:h-auto md:min-w-0 md:flex-1">
+              <NewTripMap
+                start={start}
+                end={shape === "ab" ? end : null}
+                {...(next.open && { next: next.field })}
+                onPick={pick}
+              />
+            </div>
+          );
+        }}
       </form.Subscribe>
 
       <form

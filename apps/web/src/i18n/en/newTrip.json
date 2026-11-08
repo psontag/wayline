@@ -90,6 +90,8 @@
   "map": {
     "label": "Map of the cycling routes and the trip's start and end",
     "network": "Signed cycling routes",
+    "pickStart": "Pick the start on the map",
+    "pickEnd": "Pick the end on the map",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out"
   },

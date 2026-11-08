@@ -1,5 +1,6 @@
 import {
   distanceKm,
+  type LonLat,
   type Place,
   type SearchEntry,
   type SearchIndex,
@@ -39,6 +40,28 @@ export function nearbyStation(
     if (km <= STATION_KM && (!best || km < best.km)) best = { station, km };
   }
   return best;
+}
+
+/** A map click picks a place at most this far away. */
+export const PICK_KM = 10;
+
+/**
+ * The place a click on the map means. The most important place within
+ * nearKm, as the map labels it, else the nearest one within PICK_KM. The
+ * list comes from placeOptions, most important first.
+ */
+export function nearestPlace(
+  list: Place[],
+  at: LonLat,
+  nearKm = 0,
+): Place | undefined {
+  let best: { place: Place; km: number } | undefined;
+  for (const place of list) {
+    const km = distanceKm(place.coord, at);
+    if (km <= nearKm) return place;
+    if (km <= PICK_KM && (!best || km < best.km)) best = { place, km };
+  }
+  return best?.place;
 }
 
 export function placeKey(place: Place): string {

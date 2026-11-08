@@ -233,5 +233,19 @@ export const times = (from: number, to: number) =>
     return `${h}:${m}`;
   });
 
+/**
+ * The field a click on the map sets: the start, then the end of an A to B
+ * trip. After that, clicks move the end. open: a place is still missing.
+ */
+export function mapPick(
+  values: Pick<NewTripValues, "shape" | "start" | "end">,
+): { field: "start" | "end"; open: boolean } {
+  const ab = values.shape === "ab";
+  return {
+    field: ab && values.start ? "end" : "start",
+    open: !values.start || (ab && !values.end),
+  };
+}
+
 export const startTimes = times(5, 16);
 export const backByTimes = times(10, 21);
