@@ -84,4 +84,18 @@ describe("createPlannerApi", () => {
     if (!result.ok) throw new Error(result.failedLimit);
     expect(result.proposals.length).toBeGreaterThanOrEqual(2);
   });
+
+  it("loads the network once when prepare and generate overlap", async () => {
+    const reads = new Map<string, number>();
+    const api = createPlannerApi((url) => {
+      reads.set(url, (reads.get(url) ?? 0) + 1);
+      return readMockFile(url);
+    });
+    const prepared = api.prepare(request, "/data");
+    const result = await api.generate(request, "/data");
+    await prepared;
+    expect(result.ok).toBe(true);
+    expect(reads.get("/data/network.json")).toBe(1);
+    expect(reads.get("/data/places.json")).toBe(1);
+  });
 });

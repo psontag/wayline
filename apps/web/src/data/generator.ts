@@ -35,6 +35,12 @@ export function createTripGenerator({
   let cancelRunning: (() => void) | undefined;
 
   return {
+    prepare(request) {
+      const w = (worker ??= connect());
+      void (async () => w.api.prepare(request, await dataUrl))().catch(
+        () => undefined,
+      );
+    },
     generate(request, { onProgress, onProposal, signal, wind } = {}) {
       cancelRunning?.();
       if (signal?.aborted) return Promise.reject(abortError());

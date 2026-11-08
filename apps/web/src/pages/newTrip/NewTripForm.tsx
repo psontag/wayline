@@ -1,4 +1,4 @@
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import {
   addDays,
@@ -50,6 +50,7 @@ import {
 import { NewTripMap } from "./NewTripMap";
 import { PlaceField } from "./PlaceField";
 import { nearestPlace } from "./places";
+import { usePrepare } from "./usePrepare";
 
 const budgets = ["low", "mid", "high"] as const;
 
@@ -82,6 +83,7 @@ export function NewTripForm({
     onSubmit: ({ value }) =>
       navigate({ to: "/proposals", search: { request: toRequest(value) } }),
   });
+  usePrepare(useStore(form.store, (s) => s.values));
 
   /** The first error of a field, once the user changed it or submitted. */
   const errorOf = (meta: { isTouched: boolean; errors: unknown[] }) => {
