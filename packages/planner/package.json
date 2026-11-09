@@ -17,7 +17,7 @@
     "flatqueue": "3.1.0"
   },
   "devDependencies": {
-    "@types/node": "24.19.1",
+    "@types/node": "26.6.5",
     "@wayline/router": "workspace:*"
   }
 }
