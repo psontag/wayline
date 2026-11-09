@@ -47,8 +47,18 @@ def gtfs(cache):
         fetch(GTFS.format(f), os.path.join(cache, "gtfs", f"{f}.zip"), GTFS_MAX_AGE_DAYS)
 
 
+GE250 = "https://daten.gdz.bkg.bund.de/produkte/sonstige/ge250/aktuell/ge250.utm32s.shape.zip"
+
+
+def ge250(cache):
+    """BKG areas with the tourism regions (areas.py)."""
+    os.makedirs(os.path.join(cache, "ge250"), exist_ok=True)
+    fetch(GE250, os.path.join(cache, "ge250", "ge250.utm32s.shape.zip"))
+
+
 def main(cache, area=AREA):
     gtfs(cache)
+    ge250(cache)
     os.makedirs(os.path.join(cache, "osm"), exist_ok=True)
     os.makedirs(os.path.join(cache, "dem"), exist_ok=True)
     path = area if area == AREA else f"germany/{area}"

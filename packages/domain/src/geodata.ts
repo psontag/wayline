@@ -19,6 +19,8 @@ export type Manifest = {
     reach?: { station: string; name: string; path: string }[];
     /** Stations along the signed routes. Built by pipeline/route_stations.py. */
     routeStations?: string;
+    /** Tourism regions with their stations and routes. Built by pipeline/areas.py. */
+    areas?: string;
   };
   /** Only in tiled datasets. */
   tiles?: TileIndex;
@@ -59,6 +61,30 @@ export type ReachFile = {
   out: Record<ReachDay, Record<string, ReachRow>>;
   /** From each station to home. */
   back: Record<ReachDay, Record<string, ReachRow>>;
+};
+
+/** areas.json: the official tourism regions (Reisegebiete), covering Germany. */
+export type AreasFile = {
+  version: string;
+  attribution: string;
+  areas: Area[];
+};
+
+export type Area = {
+  /** BKG key, e.g. "J16". */
+  id: string;
+  /** Short display name. */
+  name: string;
+  officialName: string;
+  /** [lon, lat] well inside the largest piece, for the map label. */
+  label: [number, number];
+  bbox: BBox;
+  /** Polygons, largest first. Each is an outer ring, then holes. Encoded polylines. */
+  outline: string[][];
+  /** Station ids inside, and at the border within 2 km. */
+  stations: string[];
+  /** Signed routes (clean names, as in route-stations.json) with 10 km or more here. Most km first. */
+  routes: [string, number][];
 };
 
 /** route-stations.json: signed routes of 50 km or more, without local ones. */
