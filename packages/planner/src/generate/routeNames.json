@@ -1,0 +1,39 @@
+{
+  "clean": [
+    ["Main-Radweg, Abschnitte 3 bis 9", "Main-Radweg"],
+    ["Main-Radweg, Abschnitt 10 \"Wertheim bis Miltenberg\"", "Main-Radweg"],
+    ["Neckartal-Radweg Teil 4", "Neckartal-Radweg"],
+    ["[D10] Elberadweg linkselbisch [Abschnitt B]", "Elberadweg"],
+    ["[D11] Ostsee-Oberbayern 08 [Thüringen Nord]", "Ostsee-Oberbayern"],
+    ["D-Route 6 - Donauroute [Regensburg - Passau]", "Donauroute"],
+    ["D2 Ostseeküsten-Radweg - Abschnitt Fehmarn", "Ostseeküsten-Radweg"],
+    ["Donauradweg - Abschnitt Deutschland 2", "Donauradweg"],
+    [
+      "Deutscher Limes-Radweg 2. Abschnitt Holzhausen",
+      "Deutscher Limes-Radweg"
+    ],
+    ["Innradweg - Bayern", "Innradweg"],
+    ["BahnRadRoute Weser - Lippe (Hauptroute)", "BahnRadRoute Weser - Lippe"],
+    ["Grafschafter Fietsentour, Hauptroute", "Grafschafter Fietsentour"],
+    ["EuroVelo 15 - Rheinradweg - Teilstrecke Köln - Moers", "EuroVelo 15"],
+    ["Eurovelo 7 - Sun Route - part Germany", "EuroVelo 7"],
+    ["EV4 Germany, Bamberg - Bayreuth", "EuroVelo 4"],
+    ["3-Länder-Radweg", "3-Länder-Radweg"],
+    ["Alb-Donau-Kreis Tour 10", "Alb-Donau-Kreis Tour 10"],
+    ["GeoRadweg Altmühltal Route 1", "GeoRadweg Altmühltal Route 1"]
+  ],
+  "drop": [
+    "(41) Netphen - (43) Netphen-Dreis-Tiefenbach",
+    "Köln (50) - Wesseling (75)",
+    "10-11",
+    "R20",
+    "*-*",
+    "Radverkehrsnetz NRW, Kreis Soest",
+    "Radroutennetz Gifhorn",
+    "Lokales Radwegenetz Rhein-Neckar-Kreis Ost",
+    "D-Netz Route 3",
+    "legacy: Radverkehrsnetz BW, Landkreis Göppingen",
+    "BahnRadRoute Hellweg-Weser (Zubringer Bahnhof Brake)",
+    "Jubiläumsradweg 50 Jahre Landkreis Ludwigsburg"
+  ]
+}

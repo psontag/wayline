@@ -17,6 +17,8 @@ export type Manifest = {
     routes?: string;
     /** Train reach per home station. Built by pipeline/reach.py. */
     reach?: { station: string; name: string; path: string }[];
+    /** Stations along the signed routes. Built by pipeline/route_stations.py. */
+    routeStations?: string;
   };
   /** Only in tiled datasets. */
   tiles?: TileIndex;
@@ -57,6 +59,40 @@ export type ReachFile = {
   out: Record<ReachDay, Record<string, ReachRow>>;
   /** From each station to home. */
   back: Record<ReachDay, Record<string, ReachRow>>;
+};
+
+/** route-stations.json: signed routes of 50 km or more, without local ones. */
+export type RouteStationsFile = {
+  version: string;
+  routes: RouteStations[];
+};
+
+/** A signed route by its clean name, as in the planner's route catalog. */
+export type RouteStations = {
+  name: string;
+  network: NetworkClass;
+  /** Pieces too far apart to ride as one. Longest first. */
+  parts: RoutePart[];
+};
+
+/** One line along a route, from its south-west end. */
+export type RoutePart = {
+  lengthKm: number;
+  /** Meters, mean of both ways. */
+  ascent: number;
+  /** Share of km. sights: share of km near a sight. Missing in mock data. */
+  scenery?: {
+    forest: number;
+    water: number;
+    vineyard: number;
+    nature: number;
+    sights: number;
+  };
+  bbox: BBox;
+  /** Encoded polyline, simplified for the map. */
+  line: string;
+  /** Station ids within 2 km, by km along the line. */
+  stations: [string, number][];
 };
 
 /** Binary tiles, gzipped. The format is in pipeline/README.md. */

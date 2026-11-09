@@ -14,6 +14,8 @@ export const NATIONAL = CLASS_RANK.icn;
 /** Rank of regional routes. Routes below it come last. */
 export const REGIONAL = CLASS_RANK.rcn;
 
+// pipeline/route_stations.py has a copy of these rules. Change both, and the cases in routeNames.json.
+
 /** Signed, but nothing a rider knows as a route. */
 const NOT_A_ROUTE = [
   // Junction to junction: "(41) Netphen - (43) Siegen", "10-11".
