@@ -48,8 +48,8 @@ import { nearestLeg, type ViaPreview, type ViaTarget } from "./routeEdits";
 import { type SpotAnchor, usePointMenu } from "./usePointMenu";
 import type { MapStation } from "./stations";
 import { TripMarkers } from "./TripMarkers";
-import type { WeatherField } from "./weatherGrid";
-import { WeatherLayers } from "./WeatherLayers";
+import type { WeatherField } from "../../components/map/weatherGrid";
+import { WeatherLayers } from "../../components/map/WeatherLayers";
 import { type LiveVia, useViaPlacing, useViaPreview } from "./useViaPlacing";
 
 export type { MapPadding };

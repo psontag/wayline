@@ -124,6 +124,26 @@ describe("shelfRoutes", () => {
     expect(first?.stretch?.km).toBe(50);
   });
 
+  it("rides with the wind when the trains take about as long", () => {
+    // a to e: 60 + 50. e to a: 50 + 75, 15 min more.
+    const reach = reachFile({ a: 60, e: 50 }, { a: 75, e: 50 });
+    // The line runs north. Wind from the north: south is tailwind.
+    const wind = (line: [number, number][]) =>
+      (line.at(-1)?.[1] ?? 0) > (line[0]?.[1] ?? 0) ? 1 : -1;
+    const [plain] = shelfRoutes({ file, reach, ...ask, km: 200 });
+    expect(plain?.stretch?.from.place.name).toBe("A");
+    const [windy] = shelfRoutes({ file, reach, ...ask, km: 200, wind });
+    expect(windy?.stretch?.from.place.name).toBe("E");
+  });
+
+  it("keeps the faster trains when the wind way is much slower", () => {
+    const reach = reachFile({ a: 60, e: 50 }, { a: 120, e: 50 });
+    const wind = (line: [number, number][]) =>
+      (line.at(-1)?.[1] ?? 0) > (line[0]?.[1] ?? 0) ? 1 : -1;
+    const [route] = shelfRoutes({ file, reach, ...ask, km: 200, wind });
+    expect(route?.stretch?.from.place.name).toBe("A");
+  });
+
   it("leaves out stations over the max train time", () => {
     const reach = reachFile({ a: 200, b: 60 }, { a: 200, b: 60 });
     const [route] = shelfRoutes({ file, reach, ...ask, km: 50 });

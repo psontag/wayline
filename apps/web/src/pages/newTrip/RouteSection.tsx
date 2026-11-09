@@ -6,13 +6,20 @@ import {
   Stat,
   useFormat,
 } from "@wayline/ui";
+import { localTimeToDate } from "@wayline/domain";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ShelfRoute, ShelfStop } from "./routeShelf";
+import type { LineWind } from "./whereWeather";
 
 /** Rows before "Show all". */
 const FIRST_ROWS = 6;
+
+/** "Sat and Sun". */
+function dateList(format: ReturnType<typeof useFormat>, dates: string[]) {
+  return format.list(dates.map((d) => format.weekday(localTimeToDate(d))));
+}
 
 /** Where step: signed routes with stations in reach, and the stretch to ride. */
 export function RouteSection({
@@ -24,9 +31,15 @@ export function RouteSection({
   onSelect,
   onHover,
   onRide,
+  rain,
+  wind,
 }: {
   /** Null: no route or train data. Undefined: loading. */
   routes: ShelfRoute[] | null | undefined;
+  /** Wet days on a route's stretch. Missing without a forecast. */
+  rain?: (route: ShelfRoute) => string[];
+  /** Wind on a route's stretch. Missing without a forecast. */
+  wind?: (route: ShelfRoute) => LineWind | undefined;
   maxHours: number;
   days: number;
   kmPerDay: number | undefined;
@@ -80,15 +93,22 @@ export function RouteSection({
           value={selected}
           onValueChange={onSelect}
           onHoverChange={onHover}
-          options={shown.map((r) => ({
-            id: r.name,
-            title: r.name,
-            detail: [
-              format.distance(r.lengthKm * 1000),
-              ...r.tags.map((tag) => t(`shelf.tag.${tag}`)),
-              t("shelf.stations", { count: r.stations, hours: maxHours }),
-            ].join(" · "),
-          }))}
+          options={shown.map((r) => {
+            const wet = rain?.(r) ?? [];
+            return {
+              id: r.name,
+              title: r.name,
+              muted: wet.length > 0,
+              detail: [
+                ...(wet.length
+                  ? [t("shelf.rainOn", { days: dateList(format, wet) })]
+                  : []),
+                format.distance(r.lengthKm * 1000),
+                ...r.tags.map((tag) => t(`shelf.tag.${tag}`)),
+                t("shelf.stations", { count: r.stations, hours: maxHours }),
+              ].join(" · "),
+            };
+          })}
           footer={
             routes.length > FIRST_ROWS && (
               <MoreRow
@@ -110,6 +130,8 @@ export function RouteSection({
           days={days}
           kmPerDay={kmPerDay}
           onRide={() => onRide(current)}
+          rain={rain?.(current)}
+          wind={wind?.(current)}
         />
       )}
     </PanelSection>
@@ -121,11 +143,15 @@ function StretchDetail({
   days,
   kmPerDay,
   onRide,
+  rain,
+  wind,
 }: {
   route: ShelfRoute;
   days: number;
   kmPerDay: number | undefined;
   onRide: () => void;
+  rain: string[] | undefined;
+  wind: LineWind | undefined;
 }) {
   const { t } = useTranslation("newTrip");
   const format = useFormat();
@@ -175,6 +201,33 @@ function StretchDetail({
             value={t("shelf.backValue", { train: train(s.to) })}
           />
         </span>
+        {rain && wind && (
+          <span className="flex flex-wrap gap-x-3 gap-y-1">
+            <Stat
+              size="sm"
+              icon={rain.length ? "rain" : "dry"}
+              label={t("shelf.rain")}
+              value={
+                rain.length
+                  ? t("shelf.rainOn", { days: dateList(format, rain) })
+                  : t("shelf.dry")
+              }
+            />
+            <Stat
+              size="sm"
+              icon="wind"
+              label={t("shelf.wind")}
+              value={
+                wind.kind === "calm"
+                  ? t("shelf.windKind.calm")
+                  : t("shelf.windValue", {
+                      kind: t(`shelf.windKind.${wind.kind}`),
+                      speed: format.speed(wind.speed),
+                    })
+              }
+            />
+          </span>
+        )}
       </div>
       <Button type="button" variant="primary" onClick={onRide}>
         {t("shelf.ride", { count: days, route: route.name })}

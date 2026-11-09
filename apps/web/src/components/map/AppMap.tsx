@@ -187,7 +187,12 @@ export function AppMap({
   const hideLabels = useHiddenPlaceLabels(mapRef, hiddenLabels);
   const onStyle = () => {
     const layers = mapRef.current?.getStyle()?.layers ?? [];
-    setLabelLayerId(layers.find((layer) => layer.type === "symbol")?.id);
+    // Base map labels come from vector tiles. Own symbol layers, like wind
+    // arrows, may already be on the map.
+    setLabelLayerId(
+      layers.find((layer) => layer.type === "symbol" && "source-layer" in layer)
+        ?.id,
+    );
     hideLabels();
   };
 

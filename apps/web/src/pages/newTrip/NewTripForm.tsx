@@ -54,10 +54,13 @@ import { PlaceField } from "./PlaceField";
 import { defaultReachFilter } from "./reach";
 import type { ReachStation } from "./ReachLayer";
 import { RouteSection } from "./RouteSection";
-import type { ShelfRoute } from "./routeShelf";
+import { partLine, type ShelfRoute } from "./routeShelf";
 import { TrainSection } from "./TrainSection";
 import { useReach } from "./useReach";
 import { useRouteShelf } from "./useRouteShelf";
+import { useWhereWeather } from "./useWhereWeather";
+import { WeatherSection } from "./WeatherSection";
+import { dayField, lineWind, wetDays, type WhereWeather } from "./whereWeather";
 import type { NewTripStep } from "./search";
 import { WherePanel } from "./WherePanel";
 import { nearestPlace } from "./places";
@@ -105,19 +108,56 @@ export function NewTripForm({
   const toWhere = () => void goTo("where");
   const [reachFilter, setReachFilter] = useState(defaultReachFilter);
   const reach = useReach(places, values.startDate, reachFilter);
-  const shelf = useRouteShelf(places, reach.file, reachFilter, values);
+  const weather = useWhereWeather(
+    reach.stations,
+    now,
+    values.startDate,
+    formDays(values),
+  );
+  const wx = weather.weather;
+  const shelf = useRouteShelf(
+    places,
+    reach.file,
+    reachFilter,
+    values,
+    weather.wind,
+  );
+  const [pickedMapDate, setMapDate] = useState<string>();
+  const mapDate = wx?.days.some((d) => d.date === pickedMapDate)
+    ? pickedMapDate
+    : wx?.days[0]?.date;
+  const mapField = useMemo(
+    () => (wx && mapDate ? dayField(wx, mapDate) : undefined),
+    [wx, mapDate],
+  );
+  const stretchRain =
+    wx &&
+    ((r: ShelfRoute) => {
+      const line = stretchLine(r);
+      return line ? wetDays(wx, line) : [];
+    });
+  const stretchWind =
+    wx &&
+    ((r: ShelfRoute) => {
+      const line = stretchLine(r);
+      return line ? lineWind(wx, line) : undefined;
+    });
   const [selectedRoute, setSelectedRoute] = useState(request?.route);
   const [hoveredRoute, setHoveredRoute] = useState<string>();
   const shownRoute = shelf?.find(
     (r) => r.name === (hoveredRoute ?? selectedRoute),
   );
   const stretch = shelf?.find((r) => r.name === selectedRoute)?.stretch;
+  const rainStations = useMemo(
+    () => withRain(reach.stations, wx),
+    [reach.stations, wx],
+  );
   const mapStations = useMemo(
     () =>
-      reach.stations && shownRoute
-        ? fadeOffRoute(reach.stations, shownRoute)
-        : reach.stations,
-    [reach.stations, shownRoute],
+      rainStations && shownRoute
+        ? fadeOffRoute(rainStations, shownRoute)
+        : rainStations,
+    [rainStations, shownRoute],
   );
   const pickStation = (station: Place) => {
     form.setFieldValue("start", station);
@@ -204,8 +244,10 @@ export function NewTripForm({
                     shelf: {
                       route: shownRoute,
                       selected: shownRoute.name === selectedRoute,
+                      wet: !!stretchRain?.(shownRoute).length,
                     },
                   })}
+                {...(where && mapField && { weather: mapField })}
               />
             </div>
           );
@@ -244,6 +286,20 @@ export function NewTripForm({
                   onSelect={setSelectedRoute}
                   onHover={setHoveredRoute}
                   onRide={ride}
+                  {...(stretchRain && { rain: stretchRain })}
+                  {...(stretchWind && { wind: stretchWind })}
+                />
+              )}
+              {reach.stations !== null && (
+                <WeatherSection
+                  weather={wx}
+                  loading={weather.loading}
+                  past={weather.past}
+                  today={now}
+                  days={days}
+                  mapDate={mapDate}
+                  onMapDate={setMapDate}
+                  dry={dryCount(rainStations)}
                 />
               )}
             </WherePanel>
@@ -646,6 +702,35 @@ export function NewTripForm({
 }
 
 /** Stations off the route fade, so its stations stand out. */
+/** Marks stations with a wet day. */
+function withRain(
+  stations: ReachStation[] | null | undefined,
+  weather: WhereWeather | undefined,
+): ReachStation[] | null | undefined {
+  if (!stations || !weather) return stations;
+  return stations.map((s) => ({
+    ...s,
+    wet: wetDays(weather, [s.place.coord]).length > 0,
+  }));
+}
+
+/** Stations within the train time that are dry on every day. */
+function dryCount(stations: ReachStation[] | null | undefined) {
+  const shown = stations?.filter((s) => !s.over && s.wet !== undefined);
+  if (!shown?.length) return undefined;
+  return {
+    count: shown.filter((s) => !s.wet).length,
+    total: shown.length,
+  };
+}
+
+/** The line of a route's stretch, from its start to its end. */
+function stretchLine(route: ShelfRoute) {
+  const s = route.stretch;
+  const part = s && route.parts[s.part];
+  return part && partLine(part, s.from.km, s.to.km);
+}
+
 function fadeOffRoute(
   stations: ReachStation[],
   route: ShelfRoute,
