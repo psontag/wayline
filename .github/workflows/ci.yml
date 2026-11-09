@@ -109,7 +109,7 @@ jobs:
           path: |
             apps/web/public/data/latest.json
             apps/web/public/data/de-*
-          key: data-${{ steps.month.outputs.month }}-${{ hashFiles('pipeline/*.py', 'pipeline/requirements.txt') }}
+          key: data-${{ steps.month.outputs.month }}-${{ hashFiles('pipeline/*.py', 'pipeline/requirements.txt', 'pipeline/build.sh', 'scripts/setup-worktree.js') }}
       - if: steps.data.outputs.cache-hit != 'true'
         uses: astral-sh/setup-uv@v10.2.0
       - if: steps.data.outputs.cache-hit != 'true'
