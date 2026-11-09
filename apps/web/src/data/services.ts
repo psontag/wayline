@@ -4,6 +4,7 @@ import {
   type LonLat,
   type ReachFile,
   type RouteInfo,
+  type RouteStationsFile,
   type RouteTable,
   SiteInfo,
   WaylineError,
@@ -52,6 +53,8 @@ export type Services = {
   lines: () => Promise<RouteLines | null>;
   /** Train times from a home station. Null if the data has none for it. */
   reach: (home: string) => Promise<ReachFile | null>;
+  /** Stations along the signed routes. Null if the data has none. */
+  routeStations: () => Promise<RouteStationsFile | null>;
   /** Whether a hotel website works, and its image. Null without a server. */
   site: (url: string) => Promise<SiteInfo | null>;
 };
@@ -136,6 +139,14 @@ export function createServices(): Services {
       const entry = files.reach?.find((r) => sameStation(r.name, home));
       if (!entry) return null;
       return (await fetchJson(`${base}/${entry.path}`)) as ReachFile;
+    },
+    async routeStations() {
+      const base = await url;
+      const { files } = await network.manifest();
+      if (!files.routeStations) return null;
+      return (await fetchJson(
+        `${base}/${files.routeStations}`,
+      )) as RouteStationsFile;
     },
     site: async (siteUrl) =>
       onServer

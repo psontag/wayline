@@ -55,6 +55,12 @@ describe("shortRequest", () => {
     expect(withDays(toWuerzburg, 1).hotelBudget).toBeUndefined();
   });
 
+  it("says nothing on a stretch of a signed route", () => {
+    expect(
+      shortRequest({ ...toWuerzburg, route: "Main-Radweg" }),
+    ).toBeUndefined();
+  });
+
   it("says nothing without an end or when the days fit", () => {
     expect(shortRequest(request)).toBeUndefined();
     expect(shortRequest({ ...toWuerzburg, days: 2, kmPerDay: 60 })).toBe(

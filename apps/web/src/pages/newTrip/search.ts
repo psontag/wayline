@@ -7,7 +7,7 @@ export type NewTripSearch = {
   kind?: TripKind;
   /** Fills the form, e.g. when coming back from the proposals. */
   request?: GenerateRequest;
-  /** Default: Trip with a request, else Where. */
+  /** Default: Trip with a request, else Where. A request for a signed route opens Where. */
   step?: NewTripStep;
 };
 

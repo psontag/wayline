@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { distanceKm, type LonLat, type Place } from "@wayline/domain";
 import { EndpointMarker, MapHint } from "@wayline/ui";
 import { MousePointerClick } from "lucide-react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   type MapLayerMouseEvent,
@@ -13,6 +13,8 @@ import { AppMap, type MapPadding } from "../../components/map/AppMap";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useServices } from "../../data/ServicesProvider";
 import { REACH_LAYER, ReachLayer, type ReachStation } from "./ReachLayer";
+import { RouteShelfLayer } from "./RouteShelfLayer";
+import { partLine, type ShelfRoute } from "./routeShelf";
 
 const compactPadding: MapPadding = { top: 24, right: 80, bottom: 24, left: 32 };
 
@@ -44,6 +46,7 @@ export function NewTripMap({
   next,
   onPick,
   reach,
+  shelf,
 }: {
   start: Place | null;
   end: Place | null;
@@ -51,6 +54,8 @@ export function NewTripMap({
   next?: "start" | "end";
   /** A click on the map, with how far PICK_PX reaches there. */
   onPick?: (at: LonLat, nearKm: number) => Place | undefined;
+  /** A signed route from the route shelf, with its stretch when selected. */
+  shelf?: { route: ShelfRoute; selected: boolean };
   /** Stations by train time. A click on one picks it. */
   reach?: {
     stations: ReachStation[];
@@ -65,6 +70,12 @@ export function NewTripMap({
   const isPhone = useIsPhone();
   const mapRef = useRef<MapRef>(null);
   const places = [start, end].filter((p): p is Place => p !== null);
+  const selectedRoute = shelf?.selected ? shelf.route : undefined;
+  const stretchFit = useMemo(() => {
+    const s = selectedRoute?.stretch;
+    const part = s && selectedRoute.parts[s.part];
+    return part && partLine(part, s.from.km, s.to.km);
+  }, [selectedRoute]);
 
   // A start picked on the map stays where the user looked, so they can pick
   // the end next to it. Everything else moves the map to the places.
@@ -101,7 +112,9 @@ export function NewTripMap({
   return (
     <AppMap
       label={t("map.label")}
-      fit={places.length ? places.map((p) => p.coord) : regionFit}
+      fit={
+        stretchFit ?? (places.length ? places.map((p) => p.coord) : regionFit)
+      }
       fitKey={fromMap ? "" : key || reach?.fitKey}
       mapRef={mapRef}
       network="full"
@@ -126,6 +139,9 @@ export function NewTripMap({
         )
       }
     >
+      {shelf && (
+        <RouteShelfLayer route={shelf.route} selected={shelf.selected} />
+      )}
       {reach && (
         <ReachLayer
           stations={reach.stations}

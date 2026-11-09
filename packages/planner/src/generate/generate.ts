@@ -526,8 +526,10 @@ export class Planner {
         // Keeps the graph path.
       }
     }
-    // Rides with the wind first, then the direct route, then the best fit.
-    // Close wind factors keep the fit order. Ties keep the search order.
+    // Rides with the wind first, then the asked route, then the direct route,
+    // then the best fit. Close wind factors keep the fit order. Ties keep the
+    // search order.
+    const route = followedRoute(graph, p.steps, this.catalog, SIGNED.share);
     const wind = ctx.wind
       ? Math.round(
           windFactor(
@@ -559,6 +561,7 @@ export class Planner {
       ]),
       rank: [
         wind,
+        request.route && route !== request.route ? 1 : 0,
         p === direct ? 0 : 1,
         ...fitRank({ km: p.km, weak: p.weak ?? 0, quality }, totalKm),
         index,
@@ -574,7 +577,6 @@ export class Planner {
     }
     if (p.flavour) proposal.flavour = p.flavour;
     if (p.homeward) proposal.homeward = true;
-    const route = followedRoute(graph, p.steps, this.catalog, SIGNED.share);
     if (route) proposal.followedRoute = route;
     if (request.kind === "day-loop" && proposal.via[0]) {
       trip.name = tripTitle(
@@ -1006,8 +1008,9 @@ export class Planner {
       if (added === SIGNED.picks || !inTime()) break;
       if (picks.length >= MAX_PROPOSALS) break;
       progress(MAX_TRIES);
-      // Local routes last. Then routes mostly in reach, since those fit a trip.
-      // Then the most important, then the most km no proposal rides yet.
+      // The asked route first. Local routes last. Then routes mostly in reach,
+      // since those fit a trip. Then the most important, then the most km no
+      // proposal rides yet.
       let on: SignedRoute | undefined;
       let best: number[] = [];
       for (const route of routes) {
@@ -1022,6 +1025,7 @@ export class Planner {
         if (km < SIGNED.share * totalKm) continue;
         const inReach = kmUnused(graph, route, NONE);
         const order = [
+          route.name === request.route ? 0 : 1,
           route.rank > REGIONAL ? 1 : 0,
           inReach > IN_REACH * this.catalog.km(route.name) ? 0 : 1,
           route.rank,

@@ -34,5 +34,10 @@ export function useReach(
     }
     return out;
   }, [file.data, places, startDate, filter]);
-  return { home, attribution: file.data?.attribution ?? "", stations };
+  return {
+    home,
+    attribution: file.data?.attribution ?? "",
+    stations,
+    file: file.data,
+  };
 }

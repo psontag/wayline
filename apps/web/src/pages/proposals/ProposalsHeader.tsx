@@ -116,7 +116,7 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
         </ul>
       )}
       <Button asChild size="sm">
-        <Link to="/new" search={request ? { request } : {}}>
+        <Link to="/new" search={request ? { request, step: "trip" } : {}}>
           {t("edit")}
         </Link>
       </Button>

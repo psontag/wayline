@@ -307,6 +307,7 @@ Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of
 | `days` | `List` | Days, proposals, files: lists of items |
 | `trains` | `TrainFront` | Trains, Getting there, Getting home |
 | `ride` | `Route` | Ride |
+| `routes` | `Signpost` | Signed routes |
 | `stop` | `MapPin` | Stop, start, end |
 | `hotel` | `BedDouble` | Hotel |
 
@@ -332,7 +333,8 @@ Click a day card, a route on the map or a day chip to open a day.
 | Panel | Header | Sections |
 |---|---|---|
 | Proposals | Places, dates | Proposals |
-| New trip | New trip | Trip, Start and end, When, Ride, Hotel (several days) |
+| New trip, Where | Where to ride | Dates, Train from home, Signed routes |
+| New trip, Trip | New trip | Trip, Start and end, When, Ride, Hotel (several days) |
 | Import | Import GPX | Days, then once files are added: Trip, Dates, Hotel (several days) |
 
 ## Enforcement

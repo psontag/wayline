@@ -329,11 +329,13 @@ export function withDays(
 
 /**
  * A to B much shorter than the planned days, with the days that fit.
- * Undefined for other trips.
+ * Undefined for other trips, and for a stretch of a signed route: the
+ * route is the detour.
  */
 export function shortRequest(request: GenerateRequest) {
   const { startStation, endStation } = request;
   if (request.kind !== "one-way" || !startStation || !endStation) return;
+  if (request.route) return;
   const days = (request.dayShares ?? []).reduce(
     (sum, share) => sum + share,
     request.days - (request.dayShares?.length ?? 0),
