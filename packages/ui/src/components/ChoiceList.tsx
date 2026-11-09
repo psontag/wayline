@@ -14,6 +14,8 @@ export type ChoiceOption = {
   tag?: string;
   /** Actions at the end of the row, e.g. links or a save button. */
   end?: ReactNode;
+  /** Less fitting, e.g. rain on the dates. The title is muted. */
+  muted?: boolean;
 };
 
 export type ChoiceListProps = {
@@ -67,7 +69,14 @@ export function ChoiceList({
           >
             <span className="size-3.5 shrink-0 rounded-full border border-text-muted group-data-[state=checked]:border-4 group-data-[state=checked]:border-selected-border" />
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-sm font-bold">{o.title}</span>
+              <span
+                className={cn(
+                  "truncate text-sm font-bold",
+                  o.muted && "text-text-muted",
+                )}
+              >
+                {o.title}
+              </span>
               {o.detail && (
                 <span className="flex flex-wrap items-center gap-x-3 text-xs text-text-muted tabular-nums">
                   {o.detail}

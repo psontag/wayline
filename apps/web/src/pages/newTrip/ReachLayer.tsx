@@ -14,6 +14,8 @@ export type ReachStation = {
   reach: Reach;
   /** Longer than the max train time. Shown faded. */
   over: boolean;
+  /** Wet on a day of the trip. Shown faded. */
+  wet?: boolean;
 };
 
 /** Stations colored by train time from home. */
@@ -38,6 +40,7 @@ export function ReachLayer({
           i,
           band: reachBand(s.reach.minutes),
           over: s.over,
+          wet: !!s.wet,
         },
         geometry: { type: "Point", coordinates: s.place.coord },
       })),
@@ -57,7 +60,16 @@ export function ReachLayer({
         <MapLayer
           id={REACH_LAYER}
           type="circle"
-          layout={{ "circle-sort-key": ["case", ["get", "over"], 0, 1] }}
+          layout={{
+            "circle-sort-key": [
+              "case",
+              ["get", "over"],
+              0,
+              ["get", "wet"],
+              1,
+              2,
+            ],
+          }}
           paint={{
             "circle-radius": [
               "interpolate",
@@ -82,7 +94,14 @@ export function ReachLayer({
                 tokens.reach3,
               ],
             ],
-            "circle-opacity": ["case", ["get", "over"], 0.35, 1],
+            "circle-opacity": [
+              "case",
+              ["get", "over"],
+              0.35,
+              ["get", "wet"],
+              0.4,
+              1,
+            ],
             "circle-stroke-color": tokens.surface,
             "circle-stroke-width": ["case", ["get", "over"], 0, 1.5],
           }}

@@ -14,6 +14,10 @@ import { bestReach, type Reach, type ReachFilter, reachDay } from "./reach";
 
 /** A stretch may be this much shorter or longer than the trip. */
 const FIT = 0.15;
+/** Wind may pick a stretch with up to this much more train time. */
+export const WIND_SLACK_MIN = 30;
+/** Stretches checked for wind, fastest first. Each one costs a line cut. */
+const WIND_CANDIDATES = 12;
 
 export type ShelfStop = { place: Place; km: number; reach: Reach };
 
@@ -54,6 +58,7 @@ export function shelfRoutes({
   startDate,
   days,
   km,
+  wind,
 }: {
   file: RouteStationsFile;
   reach: ReachFile;
@@ -64,6 +69,8 @@ export function shelfRoutes({
   days: number;
   /** Km of the whole trip. */
   km: number;
+  /** Wind effort of riding a line, from the forecast. Lower is better. */
+  wind?: (line: LonLat[]) => number;
 }): ShelfRoute[] {
   const out = reach.out[reachDay(startDate)];
   const back = reach.back[reachDay(addDays(startDate, days - 1))];
@@ -77,7 +84,7 @@ export function shelfRoutes({
   for (const route of file.routes) {
     let count = 0;
     let reachKm = 0;
-    let stretch: Stretch | undefined;
+    const candidates: Stretch[] = [];
     const seen = new Set<string>();
     route.parts.forEach((part, index) => {
       const starts: ShelfStop[] = [];
@@ -96,12 +103,16 @@ export function shelfRoutes({
       }
       const [first, last] = [starts[0], starts.at(-1)];
       if (first && last) reachKm += last.km - first.km;
-      const best = bestStretch(starts, ends, km);
-      if (best && (!stretch || isBetter(best, stretch, km))) {
-        stretch = { ...best, part: index };
-      }
+      candidates.push(...stretches(starts, ends, km, index));
     });
     if (!count) continue;
+    const stretch = pickStretch(
+      candidates,
+      km,
+      wind &&
+        ((s) =>
+          wind(partLine(route.parts[s.part] as RoutePart, s.from.km, s.to.km))),
+    );
     routes.push({
       name: route.name,
       network: route.network,
@@ -121,37 +132,58 @@ export function shelfRoutes({
   );
 }
 
-/** Least train time out and back, for a stretch close to km. Either way along the route. */
-function bestStretch(
+/** Stretches close to km on one part, either way along the route. */
+function stretches(
   starts: ShelfStop[],
   ends: ShelfStop[],
   km: number,
-): Omit<Stretch, "part"> | undefined {
-  let best: Omit<Stretch, "part"> | undefined;
+  part: number,
+): Stretch[] {
+  const out: Stretch[] = [];
   for (const from of starts) {
     for (const to of ends) {
       const length = Math.abs(to.km - from.km);
       if (Math.abs(length - km) > FIT * km) continue;
       if (from.place.osmId === to.place.osmId) continue;
-      const s = {
+      out.push({
+        part,
         from,
         to,
         km: length,
         trainMinutes: from.reach.minutes + to.reach.minutes,
-      };
-      if (!best || isBetter(s, best, km)) best = s;
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * Least train time out and back. With wind, the stretch with the least
+ * wind effort among those up to WIND_SLACK_MIN slower by train.
+ */
+export function pickStretch(
+  candidates: Stretch[],
+  km: number,
+  wind?: (s: Stretch) => number,
+): Stretch | undefined {
+  const sorted = [...candidates].sort(
+    (a, b) =>
+      a.trainMinutes - b.trainMinutes ||
+      Math.abs(a.km - km) - Math.abs(b.km - km),
+  );
+  const first = sorted[0];
+  if (!first || !wind) return first;
+  let best = first;
+  let bestEffort = wind(first);
+  for (const s of sorted.slice(1, WIND_CANDIDATES)) {
+    if (s.trainMinutes > first.trainMinutes + WIND_SLACK_MIN) break;
+    const effort = wind(s);
+    if (effort < bestEffort) {
+      best = s;
+      bestEffort = effort;
     }
   }
   return best;
-}
-
-function isBetter(
-  a: Omit<Stretch, "part">,
-  b: Omit<Stretch, "part">,
-  km: number,
-): boolean {
-  if (a.trainMinutes !== b.trainMinutes) return a.trainMinutes < b.trainMinutes;
-  return Math.abs(a.km - km) < Math.abs(b.km - km);
 }
 
 function routeTags(parts: RoutePart[]): SceneryTag[] {

@@ -1,7 +1,7 @@
 import { useThemeTokens, WIND_SPEED_STEPS } from "@wayline/ui";
 import { useEffect, useMemo, useState } from "react";
 import { Source, useMap } from "react-map-gl/maplibre";
-import { MapLayer } from "../../components/map/AppMap";
+import { MapLayer } from "./AppMap";
 import { rainImage, type WeatherField, windArrows } from "./weatherGrid";
 
 const ARROW = "wind-arrow";

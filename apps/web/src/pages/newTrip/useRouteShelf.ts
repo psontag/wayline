@@ -1,5 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { dayShares, type Place, type ReachFile } from "@wayline/domain";
+import {
+  dayShares,
+  type LonLat,
+  type Place,
+  type ReachFile,
+} from "@wayline/domain";
 import { useMemo } from "react";
 import { useServices } from "../../data/ServicesProvider";
 import { formDays, type NewTripValues } from "./form";
@@ -24,6 +29,8 @@ export function useRouteShelf(
   reach: ReachFile | null | undefined,
   filter: ReachFilter,
   values: NewTripValues,
+  /** Wind effort of riding a line. Breaks near ties in train time. */
+  wind?: (line: LonLat[]) => number,
 ): ShelfRoute[] | null | undefined {
   const services = useServices();
   const file = useQuery({
@@ -52,6 +59,7 @@ export function useRouteShelf(
       startDate,
       days,
       km,
+      ...(wind && { wind }),
     });
-  }, [file.data, reach, stations, filter, startDate, days, km]);
+  }, [file.data, reach, stations, filter, startDate, days, km, wind]);
 }

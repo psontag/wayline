@@ -15,9 +15,12 @@ const lineLayout = { "line-cap": "round", "line-join": "round" } as const;
 export function RouteShelfLayer({
   route,
   selected,
+  wet,
 }: {
   route: ShelfRoute;
   selected: boolean;
+  /** Rain on the stretch on a day of the trip. Shown faded. */
+  wet?: boolean;
 }) {
   const tokens = useThemeTokens();
   const whole = useMemo(
@@ -71,13 +74,21 @@ export function RouteShelfLayer({
           id="shelf-stretch-casing"
           type="line"
           layout={lineLayout}
-          paint={{ "line-color": tokens.routeCasing, "line-width": 9 }}
+          paint={{
+            "line-color": tokens.routeCasing,
+            "line-width": 9,
+            "line-opacity": wet ? 0.5 : 1,
+          }}
         />
         <MapLayer
           id="shelf-stretch-line"
           type="line"
           layout={lineLayout}
-          paint={{ "line-color": tokens.route, "line-width": 5 }}
+          paint={{
+            "line-color": tokens.route,
+            "line-width": 5,
+            "line-opacity": wet ? 0.5 : 1,
+          }}
         />
       </Source>
     </>

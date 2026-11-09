@@ -66,7 +66,30 @@
     "back": "Train home",
     "backValue": "Home {{train}}",
     "ride_one": "Ride {{count}} day of {{route}}",
-    "ride_other": "Ride {{count}} days of {{route}}"
+    "ride_other": "Ride {{count}} days of {{route}}",
+    "rain": "Rain",
+    "rainOn": "Rain {{days}}",
+    "dry": "Dry",
+    "wind": "Wind",
+    "windValue": "{{kind}}, {{speed}}",
+    "windKind": {
+      "head": "Mostly headwind",
+      "tail": "Mostly tailwind",
+      "cross": "Mostly crosswind",
+      "calm": "Little wind"
+    }
+  },
+  "weather": {
+    "title": "Weather",
+    "loading": "Loading the forecast",
+    "unavailable": "Weather not available for these dates.",
+    "past": "No forecast yet. It covers the next 16 days.",
+    "dry": "{{count}} of {{total}} stations dry",
+    "mapDay": "Day on the map",
+    "legend": "Blue: rain from 9:00 to 18:00. Arrows: wind. Stations and stretches with a wet day are faded.",
+    "rough": "More than 10 days out, the forecast is rough.",
+    "partial_one": "No forecast yet for the last day.",
+    "partial_other": "No forecast yet for the last {{count}} days."
   },
   "loading": "Loading places",
   "loadFailed": "Could not load the places",

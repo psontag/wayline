@@ -48,6 +48,7 @@ export function createFormat(language: string) {
     day: "numeric",
     month: "short",
   });
+  const weekday = new Intl.DateTimeFormat(locale, { weekday: "short" });
   const time = new Intl.DateTimeFormat(locale, {
     hour: "2-digit",
     minute: "2-digit",
@@ -79,6 +80,8 @@ export function createFormat(language: string) {
         .map((p) => (p.type === "literal" ? p.value.replace(",", "") : p.value))
         .join(""),
     /** 14:30 */
+    /** Sat */
+    weekday: (d: Date) => weekday.format(d),
     time: (d: Date) => time.format(d),
     /** 14:30 from hours as a decimal, e.g. 14.5. */
     clock: (h: number) => {

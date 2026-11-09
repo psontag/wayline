@@ -57,7 +57,7 @@ import { useIsPhone } from "../../components/useIsPhone";
 import { toHotel, useTripEditor } from "./useTripEditor";
 import { useUndoKeys } from "./useUndoKeys";
 import { type PanelView, useMapLayers, usePanelView } from "./mapView";
-import { fieldAt, gridOf } from "./weatherGrid";
+import { fieldAt, gridOf } from "../../components/map/weatherGrid";
 import { WeatherPanel } from "./WeatherPanel";
 
 export function TripEditorPage() {

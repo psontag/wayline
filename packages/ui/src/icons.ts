@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Clock,
   CloudRain,
+  CloudSun,
   Euro,
   List,
   MapPin,
@@ -49,6 +50,7 @@ export const sectionIcons = {
   routes: Signpost,
   stop: MapPin,
   hotel: BedDouble,
+  weather: CloudSun,
 };
 
 export type SectionIcon = keyof typeof sectionIcons;

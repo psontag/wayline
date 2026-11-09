@@ -10,6 +10,8 @@ import {
   Marker,
 } from "react-map-gl/maplibre";
 import { AppMap, type MapPadding } from "../../components/map/AppMap";
+import { WeatherLayers } from "../../components/map/WeatherLayers";
+import type { WeatherField } from "../../components/map/weatherGrid";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useServices } from "../../data/ServicesProvider";
 import { REACH_LAYER, ReachLayer, type ReachStation } from "./ReachLayer";
@@ -47,6 +49,7 @@ export function NewTripMap({
   onPick,
   reach,
   shelf,
+  weather,
 }: {
   start: Place | null;
   end: Place | null;
@@ -55,7 +58,9 @@ export function NewTripMap({
   /** A click on the map, with how far PICK_PX reaches there. */
   onPick?: (at: LonLat, nearKm: number) => Place | undefined;
   /** A signed route from the route shelf, with its stretch when selected. */
-  shelf?: { route: ShelfRoute; selected: boolean };
+  shelf?: { route: ShelfRoute; selected: boolean; wet?: boolean };
+  /** Rain and wind of one day. */
+  weather?: WeatherField;
   /** Stations by train time. A click on one picks it. */
   reach?: {
     stations: ReachStation[];
@@ -139,8 +144,13 @@ export function NewTripMap({
         )
       }
     >
+      {weather && <WeatherLayers field={weather} rain wind />}
       {shelf && (
-        <RouteShelfLayer route={shelf.route} selected={shelf.selected} />
+        <RouteShelfLayer
+          route={shelf.route}
+          selected={shelf.selected}
+          wet={shelf.wet}
+        />
       )}
       {reach && (
         <ReachLayer
