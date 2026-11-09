@@ -21,6 +21,7 @@ export function WherePanel({
   onStartDate,
   onDays,
   onChoosePlace,
+  lead,
   children,
 }: {
   now: string;
@@ -29,6 +30,8 @@ export function WherePanel({
   onStartDate: (date: string) => void;
   onDays: (days: number) => void;
   onChoosePlace: () => void;
+  /** Sections above the dates, e.g. the areas on phones. */
+  lead?: ReactNode;
   /** More sections, e.g. the train reach. */
   children?: ReactNode;
 }) {
@@ -42,6 +45,7 @@ export function WherePanel({
     <div className="flex min-h-0 w-full flex-col border-border bg-surface max-md:flex-1 max-md:border-t md:max-w-panel md:border-l">
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <PanelHeader eyebrow={t("step.where")} title={t("where.title")} />
+        {lead}
 
         <PanelSection
           icon="dates"

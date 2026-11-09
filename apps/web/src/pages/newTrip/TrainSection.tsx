@@ -1,6 +1,7 @@
 import {
   FormField,
   PanelSection,
+  type ReachBand,
   ReachLegend,
   SegmentedControl,
   Switch,
@@ -8,7 +9,7 @@ import {
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { DEFAULT_HOME_STATION, sameStation } from "../../data/homeStation";
-import { type ReachFilter, reachChanges, reachHours } from "./reach";
+import { bandHours, type ReachFilter, reachChanges, reachHours } from "./reach";
 
 /** Where step: train time from home, and its filters. */
 export function TrainSection({
@@ -81,10 +82,11 @@ export function TrainSection({
         hint={t("reach.fastHint")}
       />
       <ReachLegend
-        bands={reachHours.map((h) => ({
-          band: h,
+        bands={bandHours.map((h, i) => ({
+          band: (i + 1) as ReachBand,
           label: t("reach.upTo", { count: h }),
         }))}
+        over={t("reach.over", { count: bandHours.at(-1) })}
         reservation={{
           mark: t("reach.mark"),
           name: t("reach.reservation"),

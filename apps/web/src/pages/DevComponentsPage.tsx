@@ -77,7 +77,10 @@ import {
   ProposalCard,
   ProposalCardSkeleton,
   ReachLabel,
+  type ReachBand,
   ReachLegend,
+  ReachTime,
+  PickList,
   RouteLabel,
   routeColors,
   FloatingButton,
@@ -1217,15 +1220,36 @@ function ProposalDemos() {
           }}
         />
         <ReachLegend
-          bands={([1, 2, 3] as const).map((band) => ({
-            band,
-            label: t("demo.reachBand", { count: band }),
+          bands={([1, 2, 3, 4, 6] as const).map((hours, i) => ({
+            band: (i + 1) as ReachBand,
+            label: t("demo.reachBand", { count: hours }),
           }))}
+          over={t("demo.reachOver")}
           reservation={{
             mark: t("demo.reachMark"),
             name: t("demo.reachName"),
             label: t("demo.reachHint"),
           }}
+        />
+      </div>
+      <div className="max-w-panel">
+        <PickList
+          aria-label={t("demo.areas")}
+          onPick={() => {}}
+          options={(
+            [
+              ["kraichgau", t("demo.areaKraichgau"), 40, 1],
+              ["pfalz", t("demo.areaPfalz"), 65, 2],
+              ["tauber", t("demo.areaTauber"), 170, 3],
+              ["allgaeu", t("demo.areaAllgaeu"), 235, 4],
+              ["harz", t("demo.areaHarz"), 310, 5],
+            ] as const
+          ).map(([id, title, minutes, band]) => ({
+            id,
+            title,
+            detail: t("demo.reachChanges"),
+            end: <ReachTime time={format.duration(minutes / 60)} band={band} />,
+          }))}
         />
       </div>
       <Card padding="none">

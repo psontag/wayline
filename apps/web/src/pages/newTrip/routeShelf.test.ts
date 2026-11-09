@@ -145,7 +145,7 @@ describe("shelfRoutes", () => {
   });
 
   it("leaves out stations over the max train time", () => {
-    const reach = reachFile({ a: 200, b: 60 }, { a: 200, b: 60 });
+    const reach = reachFile({ a: 300, b: 60 }, { a: 300, b: 60 });
     const [route] = shelfRoutes({ file, reach, ...ask, km: 50 });
     expect(route?.stations).toBe(1);
     expect(route?.stretch).toBeUndefined();

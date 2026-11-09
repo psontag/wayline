@@ -49,7 +49,11 @@ import {
   type TripShape,
   withDays,
 } from "./form";
+import { useIsPhone } from "../../components/useIsPhone";
+import { areasInReach } from "./areas";
+import { AreasSection } from "./AreasSection";
 import { NewTripMap } from "./NewTripMap";
+import { useAreas } from "./useAreas";
 import { PlaceField } from "./PlaceField";
 import { defaultReachFilter } from "./reach";
 import type { ReachStation } from "./ReachLayer";
@@ -102,6 +106,7 @@ export function NewTripForm({
   const values = useStore(form.store, (s) => s.values);
   usePrepare(values);
   const where = step === "where";
+  const isPhone = useIsPhone();
   const goTo = (next: NewTripStep) =>
     navigate({ to: "/new", search: (prev) => ({ ...prev, step: next }) });
   const toTrip = () => void goTo("trip");
@@ -142,23 +147,51 @@ export function NewTripForm({
       const line = stretchLine(r);
       return line ? lineWind(wx, line) : undefined;
     });
+  const areaData = useAreas(reach.file, values.startDate, reachFilter);
+  const [areaId, setAreaId] = useState<string>();
+  const [hoveredArea, setHoveredArea] = useState<string>();
+  const pickedArea = areaData.areas?.find((a) => a.area.id === areaId);
+  const listAreas = useMemo(
+    () => areaData.areas && areasInReach(areaData.areas),
+    [areaData.areas],
+  );
+  // With areas, the shelf shows only the routes of the picked area.
+  const areaShelf = useMemo(() => {
+    if (!pickedArea || !shelf) return shelf;
+    const names = new Set(pickedArea.area.routes.map(([name]) => name));
+    return shelf.filter((r) => names.has(r.name));
+  }, [shelf, pickedArea]);
   const [selectedRoute, setSelectedRoute] = useState(request?.route);
   const [hoveredRoute, setHoveredRoute] = useState<string>();
-  const shownRoute = shelf?.find(
+  const shownRoute = areaShelf?.find(
     (r) => r.name === (hoveredRoute ?? selectedRoute),
   );
-  const stretch = shelf?.find((r) => r.name === selectedRoute)?.stretch;
+  const stretch = areaShelf?.find((r) => r.name === selectedRoute)?.stretch;
   const rainStations = useMemo(
     () => withRain(reach.stations, wx),
     [reach.stations, wx],
   );
+  // With areas, stations show only once an area is picked.
+  const areaStations = useMemo(() => {
+    if (!areaData.areas || !rainStations) return rainStations;
+    if (!pickedArea) return [];
+    const ids = new Set(pickedArea.area.stations);
+    return rainStations
+      .filter((s) => s.place.osmId && ids.has(s.place.osmId))
+      .sort((a, b) => a.reach.minutes - b.reach.minutes);
+  }, [areaData.areas, rainStations, pickedArea]);
   const mapStations = useMemo(
     () =>
-      rainStations && shownRoute
-        ? fadeOffRoute(rainStations, shownRoute)
-        : rainStations,
-    [rainStations, shownRoute],
+      areaStations && shownRoute
+        ? fadeOffRoute(areaStations, shownRoute)
+        : areaStations,
+    [areaStations, shownRoute],
   );
+  const pickArea = (id: string | undefined) => {
+    setAreaId(id);
+    setHoveredArea(undefined);
+    setSelectedRoute(undefined);
+  };
   const pickStation = (station: Place) => {
     form.setFieldValue("start", station);
     toTrip();
@@ -183,6 +216,18 @@ export function NewTripForm({
     form.setFieldValue("shape", next.shape);
     form.setFieldValue("endDate", next.endDate);
   };
+
+  const areasSection = areaData.areas !== null && (
+    <AreasSection
+      areas={listAreas ?? undefined}
+      maxHours={reachFilter.maxHours}
+      picked={pickedArea}
+      stations={areaStations ?? []}
+      onPick={pickArea}
+      onHover={setHoveredArea}
+      onPickStation={pickStation}
+    />
+  );
 
   /** The first error of a field, once the user changed it or submitted. */
   const errorOf = (meta: { isTouched: boolean; errors: unknown[] }) => {
@@ -248,6 +293,16 @@ export function NewTripForm({
                     },
                   })}
                 {...(where && mapField && { weather: mapField })}
+                {...(where &&
+                  areaData.areas && {
+                    areas: {
+                      areas: areaData.areas,
+                      attribution: areaData.attribution,
+                      ...(pickedArea && { picked: pickedArea.area }),
+                      ...(hoveredArea && { hovered: hoveredArea }),
+                      onPick: pickArea,
+                    },
+                  })}
               />
             </div>
           );
@@ -269,6 +324,7 @@ export function NewTripForm({
               }}
               onDays={setDays}
               onChoosePlace={toTrip}
+              {...(isPhone && { lead: areasSection })}
             >
               <TrainSection
                 home={reach.home}
@@ -276,9 +332,10 @@ export function NewTripForm({
                 filter={reachFilter}
                 onFilter={setReachFilter}
               />
+              {!isPhone && areasSection}
               {reach.stations !== null && (
                 <RouteSection
-                  routes={shelf}
+                  routes={areaShelf}
                   maxHours={reachFilter.maxHours}
                   days={days}
                   kmPerDay={values.kmPerDay}

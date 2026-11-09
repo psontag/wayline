@@ -1,20 +1,24 @@
 import type { ReachDay, ReachFile, ReachRow } from "@wayline/domain";
+import type { ReachBand } from "@wayline/ui";
 
 export type ReachFilter = {
   /** Longest train ride, in hours. */
-  maxHours: 1 | 2 | 3;
+  maxHours: 2 | 3 | 4 | 6;
   maxChanges: 1 | 2;
   /** IC and ICE with a bike reservation. Off: regional trains only. */
   fast: boolean;
 };
 
 export const defaultReachFilter: ReachFilter = {
-  maxHours: 2,
+  maxHours: 4,
   maxChanges: 1,
   fast: true,
 };
 
-export const reachHours = [1, 2, 3] as const;
+export const reachHours = [2, 3, 4, 6] as const;
+
+/** Upper end of each band, in hours. */
+export const bandHours = [1, 2, 3, 4, 6] as const;
 export const reachChanges = [1, 2] as const;
 
 export type Reach = {
@@ -47,12 +51,10 @@ export function bestReach(
   return best;
 }
 
-/** Time band: 1 up to 1 h, 2 up to 2 h, 3 up to 3 h, 4 longer. */
-export function reachBand(minutes: number): 1 | 2 | 3 | 4 {
-  if (minutes <= 60) return 1;
-  if (minutes <= 120) return 2;
-  if (minutes <= 180) return 3;
-  return 4;
+/** Time band: 1 up to 1 h, … 5 up to 6 h. Undefined: longer. */
+export function reachBand(minutes: number): ReachBand | undefined {
+  const i = bandHours.findIndex((h) => minutes <= h * 60);
+  return i < 0 ? undefined : ((i + 1) as ReachBand);
 }
 
 /** Times from home on the first day, by station id. */

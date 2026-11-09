@@ -38,7 +38,7 @@ export function ReachLayer({
         id: i,
         properties: {
           i,
-          band: reachBand(s.reach.minutes),
+          band: reachBand(s.reach.minutes) ?? 0,
           over: s.over,
           wet: !!s.wet,
         },
@@ -91,7 +91,13 @@ export function ReachLayer({
                 tokens.reach1,
                 2,
                 tokens.reach2,
+                3,
                 tokens.reach3,
+                4,
+                tokens.reach4,
+                5,
+                tokens.reach5,
+                tokens.textMuted,
               ],
             ],
             "circle-opacity": [
@@ -102,7 +108,13 @@ export function ReachLayer({
               0.4,
               1,
             ],
-            "circle-stroke-color": tokens.surface,
+            // Light bands need a dark ring to stand out from the map.
+            "circle-stroke-color": [
+              "case",
+              [">=", ["get", "band"], 4],
+              tokens.text,
+              tokens.surface,
+            ],
             "circle-stroke-width": ["case", ["get", "over"], 0, 1.5],
           }}
         />

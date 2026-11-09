@@ -12,7 +12,7 @@
     "dayCount_one": "{{count}} day",
     "dayCount_other": "{{count}} days",
     "range": "{{first}} – {{last}}",
-    "hint": "Pick a start on the map.",
+    "hint": "Pick an area, then a station.",
     "choosePlace": "Choose a place"
   },
   "reach": {
@@ -33,7 +33,21 @@
     "reservation": "Bike reservation",
     "reservationHint": "IC or ICE: book a bike space before you go.",
     "unavailable": "Train times are only there from {{station}} for now. Your home station is {{home}}.",
-    "noData": "This map data has no train times yet."
+    "noData": "This map data has no train times yet.",
+    "over": "over {{count}} h"
+  },
+  "areas": {
+    "title": "Areas",
+    "loading": "Loading the areas",
+    "inReach_one": "{{count}} in reach",
+    "inReach_other": "{{count}} in reach",
+    "none_one": "No area within {{count}} h by train.",
+    "none_other": "No area within {{count}} h by train.",
+    "more": "Show all {{count}}",
+    "fewer": "Show fewer",
+    "all": "All areas",
+    "stations": "Stations in {{area}}",
+    "noStations": "No station here has a train from home."
   },
   "shelf": {
     "title": "Signed routes",
@@ -183,6 +197,7 @@
   "map": {
     "label": "Map of the cycling routes and the trip's start and end",
     "network": "Signed cycling routes",
+    "pickArea": "Pick an area on the map",
     "pickStart": "Pick the start on the map",
     "pickEnd": "Pick the end on the map",
     "zoomIn": "Zoom in",
