@@ -113,6 +113,8 @@ The deploy job builds it with `pnpm data:build` and caches the result per month,
 | `<version>/search.json` | Towns and stations on the network, with short keys. Used for place search. |
 | `<version>/lines/{z}/{x}/{y}.pbf` | Vector tiles of the signed routes, for the map |
 | `<version>/routes.json` | Name, class, length and bbox of each signed route |
+| `<version>/route-stations.json` | Signed routes of 50 km or more: main line, length, ascent, scenery and the stations along it |
+| `<version>/reach/<station>.json` | Train times from a home station to every station and back |
 
 The browser loads only the network and place tiles near a trip (`TiledNetworkSource` in `packages/providers`). Place search loads `search.json`. The map loads the line tiles in view (`NetworkLayer` in `apps/web`). Node and edge ids are stable within one version. The pipeline is described in `pipeline/README.md`.
 

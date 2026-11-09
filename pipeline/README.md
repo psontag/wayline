@@ -24,6 +24,7 @@ pnpm data:build
 | Scenery extract | 4.4 | 5.4 GB |
 | Route extract | 2 | 5.5 GB |
 | Graph, export and lines | 2.3 | 4.6 GB |
+| Route stations | 0.1 | 0.5 GB |
 
 Output (November 2026):
 
@@ -36,6 +37,7 @@ Output (November 2026):
 | Route lines | 5,000 files (1,493 empty), 15 MiB, largest 206 KiB |
 | `routes.json` | 1.8 MiB: 16,300 routes |
 | `reach/<station>.json` | 1.2 MiB (0.3 MiB gzipped) per home station, 11 s: 4,800 stations within 7 h of Karlsruhe |
+| `route-stations.json` | 0.6 MiB (0.3 MiB gzipped), 7 s: 547 routes in 570 parts, 10,000 stations |
 
 A 200 km trip loads up to about 110 tiles, about 12 MiB (6 MiB gzipped).
 
@@ -96,6 +98,19 @@ The map draws the signed routes from vector tiles, not from the network tiles.
 - `routes.json`: id, name, class, length and bbox of each route. Routes are keyed by name, so the relations of one route (e.g. one per state) count as one.
 - A route's class is the best class of its OSM relations.
 - `uv run lines.py <data_dir>` rebuilds them for a built dataset. Without the OSM relations, a route's class is the one with the most km. The Oberfranken mock is built this way.
+
+## Route stations
+
+`route_stations.py` writes `route-stations.json`: the stations along each signed route, for the route shelf on New trip. Format in `RouteStationsFile` in `packages/domain/src/geodata.ts`.
+
+- Routes are grouped by the clean names of `packages/planner/src/generate/routeCatalog.ts`, so the sections of a route count as one. `clean_name` is a copy, tested on the same cases (`routeNames.json`).
+- Only international, national and regional routes of 50 km or more.
+- Main line: per connected piece of a route, the shortest path between its two nodes farthest apart in a straight line. So a route on both banks of a river follows one bank. A loop gives half of it.
+- Pieces of 5 km or more with ends within 5 km are joined, the gap counted as km. Pieces further apart become parts of their own, e.g. EuroVelo 15 has three.
+- Each part starts at its south-west end. Stations within 2 km of the line get the km at their nearest point on it.
+- Length, ascent (mean of both ways) and scenery shares come from the edges of the line.
+- The line is simplified to 300 m for the map. Regional route lines only show from zoom 8, too close for the Where step.
+- `uv run route_stations.py <data_dir>` adds it to a built dataset.
 
 ## Scenery
 
@@ -229,6 +244,7 @@ Format in `ReachFile` in `packages/domain/src/geodata.ts`. Per station id: minut
 | `lines.py` | Writes the vector tiles of the signed routes and `routes.json` |
 | `routing.py` | Writes the routing tiles |
 | `reach.py` | Writes the train times from home stations |
+| `route_stations.py` | Writes the stations along the signed routes |
 | `region.py` | States, DEM tiles and tile size |
 | `check_area.py` | Checks the data around a station |
 | `subset.py` | Copies the tiles of a bbox into a small dataset |

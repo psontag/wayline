@@ -5,8 +5,8 @@ Usage: python build.py [--cache DIR] [--out DIR] [--area germany|<state>]
 Reads the downloads from the cache (see download.py) and writes
 <out>/<version>/ with manifest.json, search.json, tiles/<x>_<y>.json,
 places/<x>_<y>.json, the route lines (lines.py), the routing tiles
-route/<x>_<y>.bin (routing.py) and the train reach reach/<station>.json
-(reach.py), plus <out>/latest.json
+route/<x>_<y>.bin (routing.py), the train reach reach/<station>.json
+(reach.py) and route-stations.json (route_stations.py), plus <out>/latest.json
 that names the newest version.
 """
 
@@ -27,6 +27,7 @@ import extract as E
 import graph as G
 import lines as L
 import reach as RE
+import route_stations as RS
 import region
 import routing as R
 import scenery as S
@@ -242,6 +243,8 @@ def main():
     t.step("write")
     lines = L.build(out, L.route_networks(data["routes"]))
     t.step("lines")
+    route_stations = RS.write_into(out) if lines["routes"] else None
+    t.step("route stations")
 
     mb = 1024 * 1024
     s = sorted(sizes.values())
@@ -251,6 +254,8 @@ def main():
     print(f"search.json: {search_size / mb:.2f} MiB")
     print(f"tiles: {len(s)} files, {unpacked_mib:.1f} MiB ({sum(s) / mb:.1f} MiB gzipped), median {s[len(s) // 2] / mb:.2f} MiB, max {s[-1] / mb:.2f} MiB gzipped")
     print(f"lines: {lines['routes']} routes, {lines['files']} files ({lines['empty']} empty), {lines['bytes'] / mb:.1f} MiB, max {lines['max'] / 1024:.0f} KiB")
+    if route_stations:
+        print(f"route stations: {route_stations['routes']} routes, {route_stations['parts']} parts, {route_stations['stations']} stations, {route_stations['bytes'] / 1024:.0f} KiB")
     print("scenery:", S.stats(network["edges"]))
     print("routing:", routing_stats)
     print(f"total: {time.time() - t.start:.0f} s")

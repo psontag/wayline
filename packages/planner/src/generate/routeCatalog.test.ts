@@ -1,48 +1,15 @@
 import type { NetworkEdge, RouteInfo } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
 import { cleanRouteName, RouteCatalog } from "./routeCatalog";
+import names from "./routeNames.json";
 
+// Shared with pipeline/route_stations.py.
 describe("cleanRouteName", () => {
-  it.each([
-    ["Main-Radweg, Abschnitte 3 bis 9", "Main-Radweg"],
-    ['Main-Radweg, Abschnitt 10 "Wertheim bis Miltenberg"', "Main-Radweg"],
-    ["Neckartal-Radweg Teil 4", "Neckartal-Radweg"],
-    ["[D10] Elberadweg linkselbisch [Abschnitt B]", "Elberadweg"],
-    ["[D11] Ostsee-Oberbayern 08 [Thüringen Nord]", "Ostsee-Oberbayern"],
-    ["D-Route 6 - Donauroute [Regensburg - Passau]", "Donauroute"],
-    ["D2 Ostseeküsten-Radweg - Abschnitt Fehmarn", "Ostseeküsten-Radweg"],
-    ["Donauradweg - Abschnitt Deutschland 2", "Donauradweg"],
-    [
-      "Deutscher Limes-Radweg 2. Abschnitt Holzhausen",
-      "Deutscher Limes-Radweg",
-    ],
-    ["Innradweg - Bayern", "Innradweg"],
-    ["BahnRadRoute Weser - Lippe (Hauptroute)", "BahnRadRoute Weser - Lippe"],
-    ["Grafschafter Fietsentour, Hauptroute", "Grafschafter Fietsentour"],
-    ["EuroVelo 15 - Rheinradweg - Teilstrecke Köln - Moers", "EuroVelo 15"],
-    ["Eurovelo 7 - Sun Route - part Germany", "EuroVelo 7"],
-    ["EV4 Germany, Bamberg - Bayreuth", "EuroVelo 4"],
-    ["3-Länder-Radweg", "3-Länder-Radweg"],
-    ["Alb-Donau-Kreis Tour 10", "Alb-Donau-Kreis Tour 10"],
-    ["GeoRadweg Altmühltal Route 1", "GeoRadweg Altmühltal Route 1"],
-  ])("cleans %s", (name, clean) => {
+  it.each(names.clean)("cleans %s", (name, clean) => {
     expect(cleanRouteName(name)).toBe(clean);
   });
 
-  it.each([
-    "(41) Netphen - (43) Netphen-Dreis-Tiefenbach",
-    "Köln (50) - Wesseling (75)",
-    "10-11",
-    "R20",
-    "*-*",
-    "Radverkehrsnetz NRW, Kreis Soest",
-    "Radroutennetz Gifhorn",
-    "Lokales Radwegenetz Rhein-Neckar-Kreis Ost",
-    "D-Netz Route 3",
-    "legacy: Radverkehrsnetz BW, Landkreis Göppingen",
-    "BahnRadRoute Hellweg-Weser (Zubringer Bahnhof Brake)",
-    "Jubiläumsradweg 50 Jahre Landkreis Ludwigsburg",
-  ])("drops %s", (name) => {
+  it.each(names.drop)("drops %s", (name) => {
     expect(cleanRouteName(name)).toBeUndefined();
   });
 });

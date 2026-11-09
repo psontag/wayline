@@ -161,6 +161,7 @@ The live API answers one trip at a time. Train times from home to every station 
 
 - MapLibre GL JS with OpenFreeMap tiles. Free, no key.
 - Overlay of signed cycling routes as vector tiles in the static assets (`pipeline/lines.py`).
+- Stations along each signed route, with a simplified line for low zoom, in `route-stations.json` (`pipeline/route_stations.py`). Regional route lines only show from zoom 8.
 
 ## Cloudflare free plan
 
