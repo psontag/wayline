@@ -13,6 +13,7 @@ All limits are for free plans. Check them again before relying on them. They cha
 | Ratings, prices, booking | Booking.com search link | Free | Browser (link only) |
 | Train connections | db.transport.rest, bahn.de link | Free | Browser |
 | Train times from home | gtfs.de timetables (CC BY 4.0) | Free | Pipeline |
+| Areas | BKG GE250 tourism regions (dl-de/by-2.0) | Free | Pipeline |
 | Map tiles | OpenFreeMap | Free | Browser |
 | Hosting | Cloudflare | Free | — |
 
@@ -156,6 +157,16 @@ The live API answers one trip at a time. Train times from home to every station 
 - Some regional lines are missing, for example RB 27 at Königswinter.
 - No bike data. Long-distance trains count as "bike reservation needed".
 - The app loads `reach/<station>.json` from the manifest for the home station. The Where step uses the out times of the first day's day type. The credit shows in the map attribution while the layer is on.
+- Journeys up to 12 hours, so every area of Germany has a time with at most 2 changes. Only the Ostfriesische Inseln (ferry) have none.
+
+## Areas: BKG Reisegebiete
+
+The Where step splits Germany into the official tourism regions ("Reisegebiete"), from BKG "Gebietseinheiten 1:250 000" (GE250), layer RG250. `pipeline/areas.py` writes `areas.json`.
+
+- Download: `daten.gdz.bkg.bund.de/produkte/sonstige/ge250/aktuell/ge250.utm32s.shape.zip` (38 MB). Shapefile in ETRS89 / UTM 32N. Updated about once a year.
+- 146 areas, Berlin, Bremen and Hamburg included. Keys `SN_RG`, names `RG`.
+- License: Datenlizenz Deutschland – Namensnennung 2.0. Credit "© BKG (year of download) dl-de/by-2-0" with a link to the sources list, and say that the outlines are simplified. The text is in `areas.json` (`attribution`).
+- Train time per area: the fastest station of the area in the reach file.
 
 ## Map
 

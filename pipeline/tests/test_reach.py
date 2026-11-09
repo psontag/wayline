@@ -81,12 +81,13 @@ def test_out_window_and_longest_journey(tmp_path):
         ("early", [("1", "06:50"), ("2", "07:00")]),  # before 07:00, left out
         ("late", [("1", "14:50"), ("2", "15:15")]),  # leaves by 15:00, a half day
         ("after", [("1", "15:10"), ("3", "15:20")]),  # after 15:00, left out
-        ("long", [("1", "08:00"), ("4", "15:01")]),  # over 7 hours, left out
+        ("long", [("1", "08:00"), ("4", "18:00")]),  # 10 hours, kept
+        ("over", [("1", "08:00"), ("3", "20:01")]),  # over 12 hours, left out
     ]
     out = build(tmp_path, rv, [])["out"]["weekday"]
     assert out["n2"] == [25, 25, 25, 25, 25, 25, 0]
     assert "n3" not in out
-    assert "n4" not in out
+    assert out["n4"] == [600, 600, 600, 600, 600, 600, 0]
 
 
 def test_long_distance_trains_in_the_regional_feed_need_a_reservation(tmp_path):

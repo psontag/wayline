@@ -9,7 +9,7 @@ pnpm data:build
 ```
 
 - Needs [uv](https://docs.astral.sh/uv/), Python 3.12, [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`, `apt install osmium-tool`) and [tippecanoe](https://github.com/felt/tippecanoe) 2.79 or newer (`brew install tippecanoe`; the Ubuntu package is too old, so build it from source as in `.github/workflows/ci.yml`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
-- Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): the Geofabrik extract of Germany (4.5 GB), Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB) and the gtfs.de timetables (12 MB, again after 7 days).
+- Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): the Geofabrik extract of Germany (4.5 GB), Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB) the gtfs.de timetables (12 MB, again after 7 days) and the BKG GE250 areas (38 MB).
 - In a worktree, `pipeline/cache` is a link to the main checkout (`pnpm setup:worktree`). After the build, the new dataset moves to the main checkout and is linked back.
 - Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `de-<date of the extracts>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
 - First filters the OSM file with osmium-tool to what the pipeline reads (`OSM_FILTER` in `build.py`): 4.5 to 1.5 GB.
@@ -25,6 +25,7 @@ pnpm data:build
 | Route extract | 2 | 5.5 GB |
 | Graph, export and lines | 2.3 | 4.6 GB |
 | Route stations | 0.1 | 0.5 GB |
+| Areas | 0.1 | 0.3 GB |
 
 Output (November 2026):
 
@@ -36,8 +37,9 @@ Output (November 2026):
 | `search.json` | 2.8 MiB (0.7 MiB gzipped): 31,800 towns and 5,900 stations on the network |
 | Route lines | 5,000 files (1,493 empty), 15 MiB, largest 206 KiB |
 | `routes.json` | 1.8 MiB: 16,300 routes |
-| `reach/<station>.json` | 1.2 MiB (0.3 MiB gzipped) per home station, 11 s: 4,800 stations within 7 h of Karlsruhe |
+| `reach/<station>.json` | 1.3 MiB (0.35 MiB gzipped) per home station, 11 s: 5,200 stations within 12 h of Karlsruhe |
 | `route-stations.json` | 0.6 MiB (0.3 MiB gzipped), 7 s: 547 routes in 570 parts, 10,000 stations |
+| `areas.json` | 0.5 MiB (0.36 MiB gzipped), 3 s: 146 areas, 5,900 stations |
 
 A 200 km trip loads up to about 110 tiles, about 12 MiB (6 MiB gzipped).
 
@@ -111,6 +113,25 @@ The map draws the signed routes from vector tiles, not from the network tiles.
 - Length and scenery shares come from the edges of the line. Ascent comes from the elevation along it, counting only rises of more than 10 m, the mean of both ways. The edges' own ascent adds up DEM noise: Neckartal-Radweg 10 m per km instead of 4.
 - The line is simplified to 300 m for the map. Regional route lines only show from zoom 8, too close for the Where step.
 - `uv run route_stations.py <data_dir>` adds it to a built dataset.
+
+## Train reach
+
+`reach.py` writes `reach/<station>.json`: train times from home to every station and back. Source and windows in `docs/03-data-sources.md`.
+
+- Journeys up to 12 hours and 2 changes.
+- Saturday, from Karlsruhe, the fastest station per area: with at most 1 change, 9 areas have no time (Erzgebirge, Vogtland, Nordsee, Holsteinische Schweiz, Ostfriesische Inseln, Lahntal, Bliesgau, Rhön (Bayern), Inn-Salzach). With 2 changes only the Ostfriesische Inseln have none: they need a ferry.
+- 950 of 5,900 stations have no time. Most need 3 changes, 425 are not in the timetables.
+
+## Areas
+
+`areas.py` writes `areas.json`: the 146 tourism regions of BKG GE250 (RG250) with their stations and signed routes, for the Where step. Format in `AreasFile` in `packages/domain/src/geodata.ts`.
+
+- Reads the shapefile from the zip and converts UTM 32N to lon/lat itself (Krüger series), so no GIS library is needed.
+- Outlines are simplified to 100 m. Each border between two junctions is simplified once, so neighbours still fit without gaps. Islands under 1 km² are left out.
+- Short names for long or odd official names (`SHORT`). Both Rhön areas get their state.
+- Stations: inside the simplified outline, or the nearest area within 2 km for stations at the border or coast.
+- Routes: lines from `route-stations.json`, counted in 0.5 km steps. A route counts with 10 km or more in the area.
+- `uv run areas.py <data_dir>` adds it to a built dataset.
 
 ## Scenery
 

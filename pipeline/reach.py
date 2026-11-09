@@ -42,7 +42,7 @@ DAY_TYPES = {"weekday": (1, 2, 3), "saturday": (5,), "sunday": (6,)}
 # Departures from home, minutes after midnight. Until 15:00 for a half day on the bike.
 OUT_WINDOW = (7 * 60, 15 * 60)
 HOME_WINDOW = (15 * 60, 22 * 60)  # arrivals at home
-MAX_MINUTES = 7 * 60  # longer journeys are left out
+MAX_MINUTES = 12 * 60  # longer journeys are left out. Covers all of Germany.
 MAX_CHANGES = 2
 CHANGE_MINUTES = 5  # to change trains with a bike
 MATCH_M = 300  # our station to a timetable station, by distance alone
