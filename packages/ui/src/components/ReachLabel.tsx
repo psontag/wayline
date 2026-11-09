@@ -2,14 +2,45 @@ import { cn } from "../lib/cn";
 import { focusRing } from "./Button";
 import { Tooltip } from "./Tooltip";
 
-/** Train time bands: up to 1 h, 2 h and 3 h. */
-export type ReachBand = 1 | 2 | 3;
+/** Train time bands: up to 1, 2, 3, 4 and 6 h. */
+export type ReachBand = 1 | 2 | 3 | 4 | 5;
 
 export const reachBandClasses: Record<ReachBand, string> = {
   1: "bg-reach-1",
   2: "bg-reach-2",
   3: "bg-reach-3",
+  4: "bg-reach-4",
+  5: "bg-reach-5",
 };
+
+/** Swatch of a band. No band: over the longest band. */
+function BandSwatch({ band }: { band: ReachBand | undefined }) {
+  return (
+    <span
+      className={cn(
+        "size-2.5 shrink-0 rounded-sm",
+        band ? reachBandClasses[band] : "border border-border bg-surface",
+      )}
+    />
+  );
+}
+
+/** Train time with the color of its band, e.g. in a list of areas. */
+export function ReachTime({
+  time,
+  band,
+}: {
+  time: string;
+  /** Undefined: over the longest band. */
+  band: ReachBand | undefined;
+}) {
+  return (
+    <span className="flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap text-text tabular-nums">
+      <BandSwatch band={band} />
+      {time}
+    </span>
+  );
+}
 
 /** Small "R": the train needs a bike reservation. */
 export type Reservation = {
@@ -58,9 +89,12 @@ export function ReachLabel({
 /** Key for the reach colors, and what R means. */
 export function ReachLegend({
   bands,
+  over,
   reservation,
 }: {
   bands: { band: ReachBand; label: string }[];
+  /** Label for times over the longest band. */
+  over?: string;
   /** Mark, its short name and what it means. */
   reservation: Reservation & { name: string };
 }) {
@@ -68,15 +102,16 @@ export function ReachLegend({
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
       {bands.map(({ band, label }) => (
         <span key={band} className="flex items-center gap-1.5">
-          <span
-            className={cn(
-              "size-2.5 rounded-full border border-surface",
-              reachBandClasses[band],
-            )}
-          />
+          <BandSwatch band={band} />
           {label}
         </span>
       ))}
+      {over && (
+        <span className="flex items-center gap-1.5">
+          <BandSwatch band={undefined} />
+          {over}
+        </span>
+      )}
       <Tooltip label={reservation.label}>
         <button
           type="button"

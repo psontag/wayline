@@ -7,6 +7,7 @@ import {
   CloudSun,
   Euro,
   List,
+  Map as MapIcon,
   MapPin,
   MoveHorizontal,
   Route,
@@ -51,6 +52,7 @@ export const sectionIcons = {
   stop: MapPin,
   hotel: BedDouble,
   weather: CloudSun,
+  areas: MapIcon,
 };
 
 export type SectionIcon = keyof typeof sectionIcons;

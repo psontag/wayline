@@ -8,6 +8,7 @@ const colorTokens = {
   textMuted: "text-muted",
   border: "border",
   accent: "accent",
+  selectedBorder: "selected-border",
   route: "route",
   routeCasing: "route-casing",
   routeDimmed: "route-dimmed",
@@ -41,6 +42,8 @@ const colorTokens = {
   reach1: "reach-1",
   reach2: "reach-2",
   reach3: "reach-3",
+  reach4: "reach-4",
+  reach5: "reach-5",
 } as const;
 
 export type ThemeTokens = Record<keyof typeof colorTokens, string>;

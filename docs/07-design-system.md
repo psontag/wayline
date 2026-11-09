@@ -32,7 +32,7 @@ Color tokens are semantic. They name the purpose, not the color.
 | `rain` | Rain bars in the weather timeline |
 | `wind-head`, `wind-cross`, `wind-tail` | Share of head, cross and tail wind in the wind bar |
 | `wind-speed-1` to `wind-speed-4` | Wind speed, cyan to deep indigo: wind markers on the map and wind arrows in the weather charts. Below 10, 10–20, 20–30, 30+ km/h |
-| `reach-1`, `reach-2`, `reach-3` | Train time from home on the Where map: up to 1 h, 2 h, 3 h. Violet, strong to light, so blue means rain. Stations over the limit use `text-muted`, faded. |
+| `reach-1` … `reach-5` | Train time from home on the Where map: up to 1, 2, 3, 4 and 6 h. Violet, strong to light (light to dark in dark mode), so blue means rain. Areas over 6 h use the land color. Areas and stations over the max time are faded. |
 | `night` | Dark hours in the weather timeline |
 
 Map tokens:
@@ -91,9 +91,11 @@ Color values:
 | `wind-speed-2` | `#1D7F8C` | `#4CC4B9` |
 | `wind-speed-3` | `#2F4AA6` | `#8B9CF5` |
 | `wind-speed-4` | `#2B1A6B` | `#C0A8FF` |
-| `reach-1` | `#5B3FB8` | `#B7A2F5` |
-| `reach-2` | `#8E73D9` | `#8466D6` |
-| `reach-3` | `#C7B8EE` | `#4E3D86` |
+| `reach-1` | `#4B2FA6` | `#C9B8FA` |
+| `reach-2` | `#6E52C8` | `#A68EEE` |
+| `reach-3` | `#9A82DE` | `#8466D6` |
+| `reach-4` | `#C2B3EE` | `#5E4AA6` |
+| `reach-5` | `#E2DAF7` | `#3E3270` |
 | `night` | `#E4E7EC` | `#0B0D11` |
 | `route`, `route-selected` | `#FF9A73` | `#FFA67F` |
 | `route-casing` | `#B4532A` | `#101216` |
@@ -311,6 +313,7 @@ Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of
 | `stop` | `MapPin` | Stop, start, end |
 | `hotel` | `BedDouble` | Hotel |
 | `weather` | `CloudSun` | Weather on the Where step |
+| `areas` | `Map` | Areas on the Where step |
 
 ### Components
 
@@ -319,6 +322,7 @@ Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of
 | `PanelHeader` | Top of the panel. Title with menu, or a sticky row with back and sibling switch above the title. Optional line above the title, stats and a notice. |
 | `PanelSection` | Header, notice and body. `icon` is required. |
 | `StatTile`, `ChoiceList`, `StopChoices`, `DayCard`, `LinkRow` | Content patterns above |
+| `PickList` | Framed rows that each act on click, e.g. open an area. `ChoiceList` is for picking one of several. |
 
 ### Example: trip editor
 

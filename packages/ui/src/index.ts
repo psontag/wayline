@@ -74,6 +74,7 @@ export {
   type ReachBand,
   reachBandClasses,
   ReachLegend,
+  ReachTime,
   type Reservation,
   ReservationMark,
 } from "./components/ReachLabel";
@@ -247,6 +248,11 @@ export {
   type ChoiceListProps,
   type ChoiceOption,
 } from "./components/ChoiceList";
+export {
+  PickList,
+  type PickListProps,
+  type PickOption,
+} from "./components/PickList";
 export { DayCard, type DayCardProps } from "./components/DayCard";
 export { PanelHeader, type PanelHeaderProps } from "./components/PanelHeader";
 export {

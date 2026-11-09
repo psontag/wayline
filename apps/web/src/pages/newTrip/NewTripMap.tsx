@@ -1,5 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { distanceKm, type LonLat, type Place } from "@wayline/domain";
+import {
+  type Area,
+  type BBox,
+  distanceKm,
+  type LonLat,
+  type Place,
+} from "@wayline/domain";
 import { EndpointMarker, MapHint } from "@wayline/ui";
 import { MousePointerClick } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -14,6 +20,8 @@ import { WeatherLayers } from "../../components/map/WeatherLayers";
 import type { WeatherField } from "../../components/map/weatherGrid";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useServices } from "../../data/ServicesProvider";
+import { AREA_LAYER, AreaLayer } from "./AreaLayer";
+import type { AreaReach } from "./areas";
 import { REACH_LAYER, ReachLayer, type ReachStation } from "./ReachLayer";
 import { RouteShelfLayer } from "./RouteShelfLayer";
 import { partLine, type ShelfRoute } from "./routeShelf";
@@ -26,19 +34,21 @@ const PICK_PX = 30;
 /** Over a station: the click picks it, not the nearest place. */
 const STATION_CURSOR = "pointer";
 
+function bboxCorners([w, s, e, n]: BBox): LonLat[] {
+  return [
+    [w, s],
+    [e, n],
+  ];
+}
+
 /** Corners of the area with route data. */
 function useDataRegion() {
   const { network } = useServices();
   return useQuery({
     queryKey: ["newTrip", "dataRegion"],
     staleTime: Infinity,
-    queryFn: async (): Promise<LonLat[]> => {
-      const [w, s, e, n] = (await network.manifest()).region.bbox;
-      return [
-        [w, s],
-        [e, n],
-      ];
-    },
+    queryFn: async (): Promise<LonLat[]> =>
+      bboxCorners((await network.manifest()).region.bbox),
   });
 }
 
@@ -50,6 +60,7 @@ export function NewTripMap({
   reach,
   shelf,
   weather,
+  areas,
 }: {
   start: Place | null;
   end: Place | null;
@@ -69,6 +80,16 @@ export function NewTripMap({
     fitKey: string;
     onPick: (station: Place) => void;
   };
+  /** Areas by train time. A click on one picks it. */
+  areas?: {
+    areas: AreaReach[];
+    attribution: string;
+    /** The map zooms to it. */
+    picked?: Area;
+    /** Highlighted, e.g. from the list. */
+    hovered?: string;
+    onPick: (id: string) => void;
+  };
 }) {
   const { t } = useTranslation("newTrip");
   const region = useDataRegion();
@@ -86,12 +107,22 @@ export function NewTripMap({
   // the end next to it. Everything else moves the map to the places.
   const [picked, setPicked] = useState<string>();
   const [hovered, setHovered] = useState<number>();
+  const [hoveredArea, setHoveredArea] = useState<string>();
   const key = places.map((p) => p.coord.join()).join(" ");
   const fromMap = places.length === 1 && key === picked;
+  const pickedArea = areas?.picked;
 
   const reachStation = (event: MapLayerMouseEvent) => {
-    const i: unknown = event.features?.[0]?.properties?.i;
-    return typeof i === "number" ? reach?.stations[i] : undefined;
+    const feature = event.features?.[0];
+    const i: unknown = feature?.properties?.i;
+    return feature?.layer.id === REACH_LAYER && typeof i === "number"
+      ? reach?.stations[i]
+      : undefined;
+  };
+  const areaId = (event: MapLayerMouseEvent) => {
+    const feature = event.features?.find((f) => f.layer.id === AREA_LAYER);
+    const id: unknown = feature?.properties?.id;
+    return typeof id === "string" ? id : undefined;
   };
 
   const picking = onPick && {
@@ -99,6 +130,12 @@ export function NewTripMap({
     onClick: (event: MapLayerMouseEvent) => {
       const station = reachStation(event);
       if (station) return reach?.onPick(station.place);
+      // A click on another area opens it. In the picked one it picks a place.
+      const area = areaId(event);
+      if (areas && (!pickedArea || (area && area !== pickedArea.id))) {
+        if (area) areas.onPick(area);
+        return;
+      }
       const { x, y } = event.point;
       const near = event.target.unproject([x + PICK_PX, y]);
       const at: LonLat = [event.lngLat.lng, event.lngLat.lat];
@@ -110,7 +147,14 @@ export function NewTripMap({
   const inReach = reach?.stations
     .filter((s) => !s.over)
     .map((s) => s.place.coord);
-  const regionFit = inReach?.length ? inReach : (region.data ?? []);
+  // With areas: all of Germany, or the picked area.
+  const regionFit = pickedArea
+    ? bboxCorners(pickedArea.bbox)
+    : !areas && inReach?.length
+      ? inReach
+      : (region.data ?? []);
+  const regionKey = areas ? `area:${pickedArea?.id ?? ""}` : reach?.fitKey;
+  const overArea = hoveredArea !== undefined && hoveredArea !== pickedArea?.id;
 
   // Wait for the region, so the map opens on it instead of moving there.
   if (region.isPending) return null;
@@ -120,30 +164,54 @@ export function NewTripMap({
       fit={
         stretchFit ?? (places.length ? places.map((p) => p.coord) : regionFit)
       }
-      fitKey={fromMap ? "" : key || reach?.fitKey}
+      fitKey={fromMap ? "" : key || regionKey}
       mapRef={mapRef}
-      network="full"
+      network={areas && !pickedArea ? "off" : "full"}
       hiddenLabels={places.map((p) => p.name)}
       {...(isPhone && { padding: compactPadding, controls: false })}
       {...picking}
-      {...(reach && {
-        interactiveLayerIds: [REACH_LAYER],
-        ...(hovered !== undefined && { cursor: STATION_CURSOR }),
+      {...((reach || areas) && {
+        interactiveLayerIds: [
+          ...(reach ? [REACH_LAYER] : []),
+          ...(areas ? [AREA_LAYER] : []),
+        ],
+        ...((hovered !== undefined || overArea) && { cursor: STATION_CURSOR }),
         onMouseMove: (event: MapLayerMouseEvent) => {
-          const i: unknown = event.features?.[0]?.properties?.i;
+          const i: unknown =
+            reachStation(event) && event.features?.[0]?.properties?.i;
           setHovered(typeof i === "number" ? i : undefined);
+          setHoveredArea(areaId(event));
         },
-        onMouseLeave: () => setHovered(undefined),
+        onMouseLeave: () => {
+          setHovered(undefined);
+          setHoveredArea(undefined);
+        },
       })}
       hint={
         onPick &&
         next && (
           <MapHint icon={<MousePointerClick aria-hidden />}>
-            {t(next === "start" ? "map.pickStart" : "map.pickEnd")}
+            {t(
+              areas && !pickedArea
+                ? "map.pickArea"
+                : next === "start"
+                  ? "map.pickStart"
+                  : "map.pickEnd",
+            )}
           </MapHint>
         )
       }
     >
+      {areas && (
+        <AreaLayer
+          areas={areas.areas}
+          attribution={areas.attribution}
+          {...(pickedArea && { picked: pickedArea.id })}
+          {...((areas.hovered ?? hoveredArea) && {
+            hovered: areas.hovered ?? hoveredArea,
+          })}
+        />
+      )}
       {weather && <WeatherLayers field={weather} rain wind />}
       {shelf && (
         <RouteShelfLayer

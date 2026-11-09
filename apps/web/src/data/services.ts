@@ -1,5 +1,6 @@
 import { AreaCache, bboxAround, FakeRouting, Graph } from "@wayline/planner";
 import {
+  type AreasFile,
   type BBox,
   type LonLat,
   type ReachFile,
@@ -55,6 +56,8 @@ export type Services = {
   reach: (home: string) => Promise<ReachFile | null>;
   /** Stations along the signed routes. Null if the data has none. */
   routeStations: () => Promise<RouteStationsFile | null>;
+  /** Tourism regions with their stations and routes. Null if the data has none. */
+  areas: () => Promise<AreasFile | null>;
   /** Whether a hotel website works, and its image. Null without a server. */
   site: (url: string) => Promise<SiteInfo | null>;
 };
@@ -147,6 +150,12 @@ export function createServices(): Services {
       return (await fetchJson(
         `${base}/${files.routeStations}`,
       )) as RouteStationsFile;
+    },
+    async areas() {
+      const base = await url;
+      const { files } = await network.manifest();
+      if (!files.areas) return null;
+      return (await fetchJson(`${base}/${files.areas}`)) as AreasFile;
     },
     site: async (siteUrl) =>
       onServer

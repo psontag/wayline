@@ -41,9 +41,9 @@ describe("reach", () => {
   });
 
   it("bands times by the hour", () => {
-    expect([45, 60, 61, 120, 180, 181].map(reachBand)).toEqual([
-      1, 1, 2, 2, 3, 4,
-    ]);
+    expect(
+      [45, 60, 61, 120, 180, 181, 240, 241, 360, 361].map(reachBand),
+    ).toEqual([1, 1, 2, 2, 3, 4, 4, 5, 5, undefined]);
   });
 
   it("matches station names", () => {
