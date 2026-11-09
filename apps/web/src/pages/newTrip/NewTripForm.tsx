@@ -26,7 +26,7 @@ import {
   useFormat,
 } from "@wayline/ui";
 import { ArrowRight, ChevronLeft } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   backByTimes,
@@ -52,8 +52,12 @@ import {
 import { NewTripMap } from "./NewTripMap";
 import { PlaceField } from "./PlaceField";
 import { defaultReachFilter } from "./reach";
+import type { ReachStation } from "./ReachLayer";
+import { RouteSection } from "./RouteSection";
+import type { ShelfRoute } from "./routeShelf";
 import { TrainSection } from "./TrainSection";
 import { useReach } from "./useReach";
+import { useRouteShelf } from "./useRouteShelf";
 import type { NewTripStep } from "./search";
 import { WherePanel } from "./WherePanel";
 import { nearestPlace } from "./places";
@@ -92,21 +96,46 @@ export function NewTripForm({
     onSubmit: ({ value }) =>
       navigate({ to: "/proposals", search: { request: toRequest(value) } }),
   });
-  usePrepare(useStore(form.store, (s) => s.values));
+  const values = useStore(form.store, (s) => s.values);
+  usePrepare(values);
   const where = step === "where";
   const goTo = (next: NewTripStep) =>
     navigate({ to: "/new", search: (prev) => ({ ...prev, step: next }) });
   const toTrip = () => void goTo("trip");
   const toWhere = () => void goTo("where");
   const [reachFilter, setReachFilter] = useState(defaultReachFilter);
-  const reach = useReach(
-    places,
-    useStore(form.store, (s) => s.values.startDate),
-    reachFilter,
+  const reach = useReach(places, values.startDate, reachFilter);
+  const shelf = useRouteShelf(places, reach.file, reachFilter, values);
+  const [selectedRoute, setSelectedRoute] = useState(request?.route);
+  const [hoveredRoute, setHoveredRoute] = useState<string>();
+  const shownRoute = shelf?.find(
+    (r) => r.name === (hoveredRoute ?? selectedRoute),
+  );
+  const stretch = shelf?.find((r) => r.name === selectedRoute)?.stretch;
+  const mapStations = useMemo(
+    () =>
+      reach.stations && shownRoute
+        ? fadeOffRoute(reach.stations, shownRoute)
+        : reach.stations,
+    [reach.stations, shownRoute],
   );
   const pickStation = (station: Place) => {
     form.setFieldValue("start", station);
     toTrip();
+  };
+  const ride = (route: ShelfRoute) => {
+    const s = route.stretch;
+    if (!s) return;
+    const next = {
+      ...form.state.values,
+      shape: "ab" as const,
+      start: s.from.place,
+      end: s.to.place,
+    };
+    void navigate({
+      to: "/proposals",
+      search: { request: { ...toRequest(next), route: route.name } },
+    });
   };
   const setDays = (days: number) => {
     const next = withDays(form.state.values, days);
@@ -151,17 +180,30 @@ export function NewTripForm({
               )}
             >
               <NewTripMap
-                start={where ? null : start}
-                end={!where && shape === "ab" ? end : null}
+                start={where ? (stretch?.from.place ?? null) : start}
+                end={
+                  where
+                    ? (stretch?.to.place ?? null)
+                    : shape === "ab"
+                      ? end
+                      : null
+                }
                 {...(next.open && { next: next.field })}
                 onPick={pick}
                 {...(where &&
-                  reach.stations && {
+                  mapStations && {
                     reach: {
-                      stations: reach.stations,
+                      stations: mapStations,
                       attribution: reach.attribution,
                       fitKey: `${reachFilter.maxHours}`,
                       onPick: pickStation,
+                    },
+                  })}
+                {...(where &&
+                  shownRoute && {
+                    shelf: {
+                      route: shownRoute,
+                      selected: shownRoute.name === selectedRoute,
                     },
                   })}
               />
@@ -192,6 +234,18 @@ export function NewTripForm({
                 filter={reachFilter}
                 onFilter={setReachFilter}
               />
+              {reach.stations !== null && (
+                <RouteSection
+                  routes={shelf}
+                  maxHours={reachFilter.maxHours}
+                  days={days}
+                  kmPerDay={values.kmPerDay}
+                  selected={selectedRoute}
+                  onSelect={setSelectedRoute}
+                  onHover={setHoveredRoute}
+                  onRide={ride}
+                />
+              )}
             </WherePanel>
           )}
         </form.Subscribe>
@@ -588,6 +642,17 @@ export function NewTripForm({
         </div>
       </form>
     </div>
+  );
+}
+
+/** Stations off the route fade, so its stations stand out. */
+function fadeOffRoute(
+  stations: ReachStation[],
+  route: ShelfRoute,
+): ReachStation[] {
+  const on = new Set(route.parts.flatMap((p) => p.stations.map(([id]) => id)));
+  return stations.map((s) =>
+    s.place.osmId && on.has(s.place.osmId) ? s : { ...s, over: true },
   );
 }
 

@@ -258,6 +258,8 @@ export const GenerateRequest = z
     dayShares: z.array(z.number().min(0).max(1)).optional(),
     /** Day trips: plan with the wind forecast. */
     withWind: z.boolean().optional(),
+    /** Signed route to follow, by its clean name. Tried first, and ranks first. */
+    route: z.string().optional(),
   })
   .refine((r) => r.region || r.startStation, {
     message: "Needs a region or a start station",

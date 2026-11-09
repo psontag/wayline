@@ -46,6 +46,7 @@ export const sectionIcons = {
   days: List,
   trains: TrainFront,
   ride: Route,
+  routes: Signpost,
   stop: MapPin,
   hotel: BedDouble,
 };

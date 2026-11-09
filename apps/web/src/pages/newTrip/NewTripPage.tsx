@@ -42,7 +42,7 @@ export function NewTripPage() {
       places={options}
       kind={kind}
       request={request}
-      step={step ?? (request ? "trip" : "where")}
+      step={step ?? (request && !request.route ? "trip" : "where")}
     />
   );
 }

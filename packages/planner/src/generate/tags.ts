@@ -107,3 +107,40 @@ export function routeTags(
   if (over) tags.push("moreClimbing");
   return tags;
 }
+
+export type SceneryTag = Extract<
+  RouteTag,
+  "nature" | "water" | "wine" | "sights" | "flat" | "hilly" | "climbs"
+>;
+
+/**
+ * Landscape and terrain tags from scenery shares of a whole route, as
+ * route-stations.json has them. Same thresholds as routeTags. Nature takes
+ * the larger of forest and half the nature share, about as themeValue does
+ * per edge.
+ */
+export function sceneryTags(
+  scenery:
+    | {
+        forest: number;
+        water: number;
+        vineyard: number;
+        nature: number;
+        sights: number;
+      }
+    | undefined,
+  ascentPerKm: number,
+): SceneryTag[] {
+  const tags: SceneryTag[] = [];
+  if (scenery) {
+    if (Math.max(scenery.forest, 0.5 * scenery.nature) >= MIN_SHARE.nature)
+      tags.push("nature");
+    if (scenery.water >= MIN_SHARE.water) tags.push("water");
+    if (scenery.vineyard >= MIN_SHARE.wine) tags.push("wine");
+    if (scenery.sights >= MIN_SHARE.sights) tags.push("sights");
+  }
+  if (ascentPerKm <= FLAT_MAX) tags.push("flat");
+  else if (ascentPerKm >= CLIMBS_MIN) tags.push("climbs");
+  else if (ascentPerKm >= HILLY_MIN) tags.push("hilly");
+  return tags;
+}

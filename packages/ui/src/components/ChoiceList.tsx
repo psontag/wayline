@@ -24,6 +24,8 @@ export type ChoiceListProps = {
   "aria-label": string;
   /** Last row, e.g. a button to show more. */
   footer?: ReactNode;
+  /** The row under the pointer, to highlight it on the map. */
+  onHoverChange?: (id: string | undefined) => void;
 };
 
 /** Pick one of several, in a framed list. The current row is highlighted. */
@@ -34,6 +36,7 @@ export function ChoiceList({
   disabled,
   "aria-label": label,
   footer,
+  onHoverChange,
 }: ChoiceListProps) {
   return (
     <RadioGroup.Root
@@ -46,6 +49,8 @@ export function ChoiceList({
       {options.map((o) => (
         <div
           key={o.id}
+          onPointerEnter={onHoverChange && (() => onHoverChange(o.id))}
+          onPointerLeave={onHoverChange && (() => onHoverChange(undefined))}
           className={cn(
             "flex items-center gap-1 pr-2",
             o.id === value
