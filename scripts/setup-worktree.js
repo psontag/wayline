@@ -20,18 +20,18 @@ import {
   statSync,
   symlinkSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 
 const root = execFileSync("git", ["rev-parse", "--show-toplevel"], {
   encoding: "utf8",
 }).trim();
+// Absolute: from a subfolder, git prints this path relative to the cwd.
 const main = dirname(
-  resolve(
-    root,
-    execFileSync("git", ["rev-parse", "--git-common-dir"], {
-      encoding: "utf8",
-    }).trim(),
-  ),
+  execFileSync(
+    "git",
+    ["rev-parse", "--path-format=absolute", "--git-common-dir"],
+    { encoding: "utf8" },
+  ).trim(),
 );
 if (main === root) {
   console.log("This is the main checkout. Nothing to link.");
