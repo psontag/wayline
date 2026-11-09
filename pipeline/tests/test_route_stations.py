@@ -28,7 +28,7 @@ def edge(i, a, b, pa, pb, routes, ascent=0):
     km = R.dist_km(pa, pb)
     return {
         "id": i, "from": a, "to": b, "lengthKm": km, "network": "rcn", "routes": routes,
-        "ascent": ascent, "descent": 0, "geometry": X.encode([pa, pb]),
+        "ascent": ascent, "descent": 0, "geometry": X.encode([pa, pb]), "elevation": [100, 100],
         "scenery": {"forest": 0.5, "water": 1.0, "vineyard": 0.0, "nature": 0.0, "sights": 1},
     }  # fmt: skip
 
@@ -80,6 +80,13 @@ def test_far_apart_pieces_are_parts():
     far = river("Fluss-Radweg Teil 2", [50.0, 50.3, 50.6], first_id=10, first_node=10)
     [route] = R.build(near + far, [], TABLE)
     assert len(route["parts"]) == 2
+
+
+def test_climb_skips_small_rises():
+    # Noise of 8 m, then a real climb of 50 m and back down.
+    ele = [100, 108, 100, 108, 100, 150, 140, 100]
+    assert R.climb(ele) == 50
+    assert R.climb(ele[::-1]) == 50
 
 
 def test_close_pieces_join_with_the_gap():

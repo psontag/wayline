@@ -108,7 +108,7 @@ The map draws the signed routes from vector tiles, not from the network tiles.
 - Main line: per connected piece of a route, the shortest path between its two nodes farthest apart in a straight line. So a route on both banks of a river follows one bank. A loop gives half of it.
 - Pieces of 5 km or more with ends within 5 km are joined, the gap counted as km. Pieces further apart become parts of their own, e.g. EuroVelo 15 has three.
 - Each part starts at its south-west end. Stations within 2 km of the line get the km at their nearest point on it.
-- Length, ascent (mean of both ways) and scenery shares come from the edges of the line.
+- Length and scenery shares come from the edges of the line. Ascent comes from the elevation along it, counting only rises of more than 10 m, the mean of both ways. The edges' own ascent adds up DEM noise: Neckartal-Radweg 10 m per km instead of 4.
 - The line is simplified to 300 m for the map. Regional route lines only show from zoom 8, too close for the Where step.
 - `uv run route_stations.py <data_dir>` adds it to a built dataset.
 

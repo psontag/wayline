@@ -31,6 +31,8 @@ JOIN_KM = 5.0
 MIN_PART_KM = 5.0
 # Simplified line for the map: points kept when more than this off the line.
 LINE_TOLERANCE_KM = 0.3
+# Rises of less than this are DEM noise, as in the routing tiles.
+ASCENT_BAND_M = 10
 
 # Same rules as routeCatalog.ts. Tested on the same cases.
 NOT_A_ROUTE = [
@@ -239,9 +241,33 @@ def densify(pts, step_km=0.2):
     return out
 
 
+def climb(ele, band=ASCENT_BAND_M):
+    """Meters up along a profile, counting only rises of more than band."""
+    up, low, high, climbing = 0, ele[0], ele[0], False
+    for e in ele[1:]:
+        if climbing:
+            if e > high:
+                up, high = up + e - high, e
+            elif high - e > band:
+                climbing, low = False, e
+        elif e < low:
+            low = e
+        elif e - low > band:
+            climbing, up, high = True, up + e - low, e
+    return up
+
+
 def stats(path):
-    """Ascent (mean of both ways) and km-weighted scenery of a path."""
-    ascent = sum((e["ascent"] + e["descent"]) / 2 for e, _ in path)
+    """Ascent (mean of both ways) and km-weighted scenery of a path.
+
+    Ascent comes from the elevation profile with a dead band, like the
+    routing tiles. The edges' own ascent adds up DEM noise: 10 m per km on
+    the Neckar instead of 4."""
+    ele = []
+    for e, forward in path:
+        pts = e["elevation"] if forward else e["elevation"][::-1]
+        ele += pts if not ele else pts[1:]
+    ascent = (climb(ele) + climb(ele[::-1])) / 2 if ele else 0
     scenery = defaultdict(float)
     seen_km = 0.0
     for e, _ in path:
