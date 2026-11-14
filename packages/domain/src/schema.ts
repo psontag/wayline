@@ -362,7 +362,12 @@ export const FailedLimit = z.enum([
 export type FailedLimit = z.infer<typeof FailedLimit>;
 
 export const GenerateResult = z.discriminatedUnion("ok", [
-  z.object({ ok: z.literal(true), proposals: z.array(Proposal) }),
+  z.object({
+    ok: z.literal(true),
+    proposals: z.array(Proposal),
+    /** A to B: km of the best path from start to end. */
+    directKm: z.number().nonnegative().optional(),
+  }),
   z.object({ ok: z.literal(false), failedLimit: FailedLimit }),
 ]);
 export type GenerateResult = z.infer<typeof GenerateResult>;

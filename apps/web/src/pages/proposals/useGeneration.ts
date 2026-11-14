@@ -20,6 +20,8 @@ export type Generation = {
   searched: number;
   proposals: Proposal[];
   failedLimit?: FailedLimit;
+  /** A to B: km of the best path from start to end, once found. */
+  directKm?: number;
   /** With several requests: which one runs now. */
   run?: { index: number; count: number };
 };
@@ -153,8 +155,10 @@ export function useGeneration(
                 proposals: merge(s.proposals, [tag(i, proposal)]),
               })),
           });
+          let directKm: number | undefined;
           if (result.ok) {
             ok = true;
+            directKm = many ? undefined : result.directKm;
             done = merge(
               done,
               result.proposals.map((p) => tag(i, p)),
@@ -162,7 +166,11 @@ export function useGeneration(
           } else {
             failedLimit = result.failedLimit;
           }
-          update((s) => ({ ...s, proposals: done }));
+          update((s) => ({
+            ...s,
+            proposals: done,
+            ...(directKm !== undefined && { directKm }),
+          }));
         }
         return { ok, done, failedLimit };
       };

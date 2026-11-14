@@ -13,6 +13,7 @@ import {
   routePoints,
   type RouteTag,
   shortTrip,
+  shortTripKm,
   type StageWeather,
   type Trip,
   tripStats,
@@ -330,19 +331,18 @@ export function withDays(
 /**
  * A to B much shorter than the planned days, with the days that fit.
  * Undefined for other trips, and for a stretch of a signed route: the
- * route is the detour.
+ * route is the detour. directKm: the km by bike once the search knows
+ * it, else the straight line tells.
  */
-export function shortRequest(request: GenerateRequest) {
+export function shortRequest(request: GenerateRequest, directKm?: number) {
   const { startStation, endStation } = request;
   if (request.kind !== "one-way" || !startStation || !endStation) return;
   if (request.route) return;
   const days = plannedDays(request);
-  const short = shortTrip(
-    startStation.coord,
-    endStation.coord,
-    days,
-    request.kmPerDay,
-  );
+  const short =
+    directKm === undefined
+      ? shortTrip(startStation.coord, endStation.coord, days, request.kmPerDay)
+      : shortTripKm(directKm, days, request.kmPerDay);
   if (!short || short.days >= request.days) return;
   return { ...short, plannedKm: days * request.kmPerDay };
 }

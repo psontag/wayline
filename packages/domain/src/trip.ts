@@ -62,6 +62,16 @@ export function shortTrip(
   minKmPerDay = 20,
 ): ShortTrip | undefined {
   const km = distanceKm(from, to) * ROUTE_FACTOR;
+  return shortTripKm(km, days, kmPerDay, minKmPerDay);
+}
+
+/** The same from the km by bike, when known. */
+export function shortTripKm(
+  km: number,
+  days: number,
+  kmPerDay: number,
+  minKmPerDay = 20,
+): ShortTrip | undefined {
   if (!(km < SHORT_SHARE * days * kmPerDay)) return undefined;
   const round = (v: number) => Math.round(v / 5) * 5;
   return {
