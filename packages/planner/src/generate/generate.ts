@@ -351,6 +351,12 @@ export class Planner {
         }
       }
     }
+    // A to B by bike, for the UI to say when the days don't fit.
+    let directKm = direct?.km;
+    if (directKm === undefined && request.kind === "one-way" && endStation) {
+      const steps = chainPath(graph, [start, endStation], costs);
+      if (steps) directKm = pathKm(graph, steps);
+    }
 
     const total =
       MAX_TRIES + FILL_INPUTS.length * FILL_STEPS.length * FILL_TRIES;
@@ -494,7 +500,11 @@ export class Planner {
     if (!proposals.length) return { ok: false, failedLimit: found.failedLimit };
     const n = proposals.length;
     onProgress?.({ phase: "routing", done: n, total: n });
-    return { ok: true, proposals: proposals.sort(byRank) };
+    return {
+      ok: true,
+      proposals: proposals.sort(byRank),
+      ...(directKm !== undefined && { directKm: Math.round(directKm) }),
+    };
   }
 
   /** Builds, routes and tags the proposal of a pick. index: order kept. */

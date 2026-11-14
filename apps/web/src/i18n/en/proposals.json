@@ -53,7 +53,7 @@
     "keep_other": "Keep {{count}} days"
   },
   "long": {
-    "text": "The shortest route from {{from}} to {{to}} is about {{distance}}, but you plan {{total}}. The days come out longer than asked."
+    "text": "The routes from {{from}} to {{to}} are {{distance}} or more, but you plan {{total}}. The days come out longer than asked."
   },
   "cancelled": {
     "title": "Search cancelled",

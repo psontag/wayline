@@ -56,6 +56,12 @@ describe("shortRequest", () => {
     expect(withDays(toWuerzburg, 1).hotelBudget).toBeUndefined();
   });
 
+  it("uses the km by bike once the search knows them", () => {
+    // The straight line says 90 km, the way along the river 160 km.
+    expect(shortRequest(toWuerzburg, 160)).toBeUndefined();
+    expect(shortRequest(toWuerzburg, 120)).toMatchObject({ km: 120, days: 2 });
+  });
+
   it("says nothing on a stretch of a signed route", () => {
     expect(
       shortRequest({ ...toWuerzburg, route: "Main-Radweg" }),

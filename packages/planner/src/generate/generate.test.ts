@@ -123,6 +123,9 @@ describe("Planner on the Oberfranken network", () => {
     const result = await planner.generate(request);
     if (!result.ok) throw new Error(result.failedLimit);
     expect(result.proposals.length).toBeGreaterThanOrEqual(2);
+    // The way by bike, for the "fewer days" hint.
+    expect(result.directKm).toBeGreaterThan(40);
+    expect(result.directKm).toBeLessThan(80);
     for (const p of result.proposals) {
       console.log(describeProposal(p));
       // The fill may widen the km per day.

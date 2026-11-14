@@ -111,7 +111,9 @@ export function ProposalList({
   // Dry on every route says nothing about the route.
   const allDry = rain.every((r) => r?.kind === "dry");
   const [kept, setKept] = useState(false);
-  const shortTrip = kept ? undefined : shortRequest(request);
+  const shortTrip = kept
+    ? undefined
+    : shortRequest(request, generation.directKm);
   const longTrip =
     kept || status !== "done" ? undefined : longRequest(request, proposals);
   const daysHint = shortTrip
