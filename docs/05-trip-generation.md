@@ -65,7 +65,7 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
    - Variety: raise the cost of used edges and search again (penalty method).
    - Loops: start → A → B → start. A and B are towns at about 1/3 of the length, at least 12 % of the length away from the start in a straight line, and 40–120° apart as seen from the start.
    - The leg from A to B avoids edges near the start (cost × 8).
-   - Time limit of about 2 s.
+   - Time limit of about 1.5 s.
 4. **Filter** by length (within 12 % of the target), ascent and surface, using edge data. Drop loops whose middle part (20–80 % of the length) comes within 4 % of the length, or 4 km, of the start. Drop paths that ride back along themselves: parts within 1.5 km of an earlier part more than 10 km back may add up to 4 % of the length (min 4 km). A short touch, like a river bend, is fine.
    After cutting stages, drop a path when a day comes back within 5 km of a point it passed at least 20 km earlier that day, for more than 10 % of the day (max 8 km). Day loops are exempt.
 5. **Cut into stages.** See below. Each stage becomes one leg per piece, so an edit routes only the legs it touches. A piece ends after 10 km, or earlier (min 1 km) once the path is more than 10 % longer than the straight line from the piece start.
@@ -102,7 +102,7 @@ Search:
 - Keeps the path with the most km on the route, with at most 40 % shared km and at most 60 % in the same corridor as another proposal. It must pass the same filters as all others.
 - Skips a route when a proposal already follows it.
 - A request with `route` (from the route shelf) tries that route first. Proposals that follow it rank first, after rides with the wind.
-- Limit: about 2.5 s, 12 routes, 30 candidates per route and length. A length is given up after 8 candidates in a row that don't fit.
+- Limit: about 1.5 s, 12 routes, 30 candidates per route and length. A length is given up after 8 candidates in a row that don't fit.
 
 ## Seeking climbs
 
@@ -138,8 +138,8 @@ For each, a route must pass the first of these steps that still applies:
 - Same corridor: km within about 2 km of another route, without the parts near both ends. Shared km miss parallel roads, this does not. See `corridor.ts`.
 - Via gap: at most 12 % of the trip on short trips.
 - Trips of one day have no stops, so any node can be a via, up to about 2000.
-- Limit: about 2.5 s, split over the steps. Each step tries up to 60 candidates. The first list of candidates is not counted.
-- All flavours together stop after 4 s, so the fill gets its share on large areas.
+- Limit: about 1.5 s, split over the steps. Each step tries up to 60 candidates. The first list of candidates is not counted.
+- All flavours together stop after 2.5 s, so the fill gets its share on large areas.
 
 Routes that fit the inputs come first. Mountain areas with few routes can still get fewer than 5.
 
@@ -280,7 +280,7 @@ Each flavour searches with its own edge costs.
 
 - Search order: best first, then the rest. The list is sorted by fit afterwards.
 - Flat and hilly are searched last, so they can be held to the least and the most climbing.
-- Each flavour raises the cost of edges of earlier proposals ×2, once per edge (penalty method), and tries candidates best first. After the first proposal, each flavour gets about 60 candidates or 1.5 s.
+- Each flavour raises the cost of edges of earlier proposals ×2, once per edge (penalty method), and tries candidates best first. After the first proposal, each flavour gets about 60 candidates or 1 s.
 - If a flavour's first path has stops with fewer than 3 hotels, it tries up to 15 more candidates and keeps the one with the fewest such stops.
 - A flavour is dropped when its path shares more than 40 % of its km with an earlier proposal, or when it adds nothing over best:
 

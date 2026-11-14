@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { readFile } from "node:fs/promises";
-import type { FetchJson } from "../types";
+import type { FetchBytes, FetchJson } from "../types";
 
 // Reads the committed mock files from disk. Only for tests in Node.
 const root = new URL("../../../../apps/web/public/data/", import.meta.url);
@@ -18,3 +18,7 @@ export const readDataFile: FetchJson = async (url) => {
   const path = url.replace(/^\/data\//, "");
   return JSON.parse(await readFile(new URL(path, root), "utf8"));
 };
+
+/** Reads binary files under /data/, e.g. packed network tiles. */
+export const readDataBytes: FetchBytes = async (url) =>
+  new Uint8Array(await readFile(new URL(url.replace(/^\/data\//, ""), root)));
