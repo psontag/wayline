@@ -1,6 +1,6 @@
 import type { Place } from "@wayline/domain";
 import { describe, expect, it } from "vitest";
-import { areaRequests } from "./areaTrips";
+import { areaRegion, areaRequests, spreadStarts } from "./areaTrips";
 import { defaultValues } from "./form";
 
 const station = (name: string, lon: number): Place => ({
@@ -40,5 +40,56 @@ describe("areaRequests", () => {
     const [request] = areaRequests(one, stations, stations[0], "oneWay");
     expect(request?.kind).toBe("one-way");
     expect(request?.days).toBe(1);
+  });
+});
+
+describe("spreadStarts", () => {
+  it("skips stations close to one already taken", () => {
+    const near = [
+      station("Hbf", 8.4),
+      station("West", 8.45),
+      station("Far", 8.8),
+      station("Farther", 9.2),
+    ];
+    expect(spreadStarts(near, 3).map((s) => s.name)).toEqual([
+      "Hbf",
+      "Far",
+      "Farther",
+    ]);
+  });
+
+  it("falls back to close stations when too few are apart", () => {
+    const near = [station("Hbf", 8.4), station("West", 8.45)];
+    expect(spreadStarts(near, 2).map((s) => s.name)).toEqual(["Hbf", "West"]);
+  });
+});
+
+describe("areaRegion", () => {
+  const [request] = areaRequests(values, stations, stations[0], "loop");
+
+  it("adds a margin around an area big enough for the trip", () => {
+    const [w, s, e, n] = areaRegion([8, 48, 9.5, 49.2], request!);
+    expect((8 - w) * 111.2 * Math.cos((48.6 * Math.PI) / 180)).toBeCloseTo(
+      10,
+      0,
+    );
+    expect((48 - s) * 111.2).toBeCloseTo(10, 0);
+    expect((n - 49.2) * 111.2).toBeCloseTo(10, 0);
+    expect(e).toBeGreaterThan(9.5);
+  });
+
+  it("grows a small area to fit the trip", () => {
+    const [w, s, e, n] = areaRegion([8.4, 48.9, 8.5, 49], request!);
+    // A loop of 210 km needs about 70 km across.
+    expect((n - s) * 111.2).toBeGreaterThanOrEqual(70);
+    expect((e - w) * 111.2 * Math.cos((49 * Math.PI) / 180)).toBeGreaterThan(
+      70,
+    );
+  });
+
+  it("is set on area requests with a bbox", () => {
+    const bbox: [number, number, number, number] = [8, 48, 9, 49];
+    const [r] = areaRequests(values, stations, undefined, "loop", bbox);
+    expect(r?.region).toBeDefined();
   });
 });

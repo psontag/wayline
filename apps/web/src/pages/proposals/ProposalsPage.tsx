@@ -17,6 +17,7 @@ import { useDebouncedHover } from "../../components/useDebouncedHover";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useDayWind } from "../../data/queries";
 import { useFailedText } from "../../errors";
+import { useAreaShape } from "../newTrip/useAreas";
 import { ProposalList } from "./ProposalList";
 import { ProposalsHeader } from "./ProposalsHeader";
 import { ProposalsMap } from "./ProposalsMap";
@@ -78,7 +79,8 @@ function Proposals({ request }: { request: GenerateRequest }) {
   const dayWind = useDayWind(windOn ? home : undefined, request.startDate);
   // Null makes the generation wait for the forecast.
   const wind = windOn ? (dayWind.isPending ? null : dayWind.data) : undefined;
-  const generation = useGeneration(request, wind, also);
+  const areaOutline = useAreaShape(area);
+  const generation = useGeneration(request, wind, also, areaOutline);
   // Wind in the middle of the ride, shown at the start.
   const middle =
     wind?.length &&

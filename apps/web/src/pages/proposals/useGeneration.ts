@@ -6,8 +6,10 @@ import {
   type HourlyWind,
   type Proposal,
 } from "@wayline/domain";
+import type { MultiPolygon } from "geojson";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServices } from "../../data/ServicesProvider";
+import { areaShare } from "./areaShare";
 
 export type Generation = {
   status: "running" | "done" | "failed" | "cancelled" | "error";
@@ -37,9 +39,19 @@ const MAX_FINISHED = 10;
 /** With more than one request, only this many proposals stay: the best. */
 const MAX_KEPT = 3;
 
-/** The best proposals of several runs, highest score first. */
-export function bestOf(proposals: Proposal[]): Proposal[] {
-  return [...proposals].sort((a, b) => b.score - a.score).slice(0, MAX_KEPT);
+/**
+ * The best proposals of several runs, highest score first. With inside,
+ * the share of each route in the picked area, routes mostly in the area
+ * come first, in steps of a quarter.
+ */
+export function bestOf(
+  proposals: Proposal[],
+  inside?: (p: Proposal) => number,
+): Proposal[] {
+  const band = (p: Proposal) => (inside ? Math.floor(inside(p) * 4) : 0);
+  return [...proposals]
+    .sort((a, b) => band(b) - band(a) || b.score - a.score)
+    .slice(0, MAX_KEPT);
 }
 
 /** Adds found proposals to the shown ones. many: several requests. */
@@ -47,22 +59,38 @@ export function mergeProposals(
   old: Proposal[],
   found: Proposal[],
   many: boolean,
+  inside?: (p: Proposal) => number,
 ): Proposal[] {
   const all = [...old, ...found];
-  return many ? bestOf(all) : all.sort(byRank);
+  return many ? bestOf(all, inside) : all.sort(byRank);
 }
 
 /**
  * Runs the trip generator for a request, then for each of `also`, one after
  * another. Proposals come in one by one. wind: hourly wind to plan with.
- * Null waits for it.
+ * Null waits for it. area: the picked area, to keep routes inside it first.
  */
 export function useGeneration(
   request: GenerateRequest | undefined,
   wind?: HourlyWind[] | null,
   also: GenerateRequest[] = [],
+  area?: MultiPolygon,
 ) {
   const { generator } = useServices();
+  // Read when proposals come in: the area may load after the run started.
+  const inside = useRef<(p: Proposal) => number>(undefined);
+  useEffect(() => {
+    if (!area) return;
+    const shares = new Map<string, number>();
+    inside.current = (p) => {
+      let share = shares.get(p.id);
+      if (share === undefined) {
+        share = areaShare(p, area);
+        shares.set(p.id, share);
+      }
+      return share;
+    };
+  }, [area]);
   const key =
     request && wind !== null
       ? JSON.stringify({
@@ -100,7 +128,7 @@ export function useGeneration(
       const tag = (i: number, p: Proposal) =>
         many ? { ...p, id: `${i}-${p.id}` } : p;
       const merge = (old: Proposal[], found: Proposal[]) =>
-        mergeProposals(old, found, many);
+        mergeProposals(old, found, many, inside.current);
       const runAll = async () => {
         let done: Proposal[] = [];
         let failedLimit: FailedLimit | undefined;

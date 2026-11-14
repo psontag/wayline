@@ -257,6 +257,7 @@ export function NewTripForm({
       areaPlaces,
       areaStart,
       areaShape,
+      pickedArea?.area.bbox,
     );
     if (!first) return;
     void navigate({

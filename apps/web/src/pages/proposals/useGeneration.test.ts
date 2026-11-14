@@ -22,4 +22,15 @@ describe("mergeProposals", () => {
     );
     expect(shown.map((p) => p.id)).toEqual(["b", "c", "d"]);
   });
+
+  it("puts routes mostly in the area first", () => {
+    const inside = (p: Proposal) => (p.id === "d" ? 0.9 : 0.3);
+    const shown = mergeProposals(
+      [proposal("a", 0, 1), proposal("b", 1, 4)],
+      [proposal("c", 0, 3), proposal("d", 1, 2)],
+      true,
+      inside,
+    );
+    expect(shown.map((p) => p.id)).toEqual(["d", "b", "c"]);
+  });
 });
