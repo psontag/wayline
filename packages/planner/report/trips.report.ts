@@ -251,7 +251,8 @@ it("reports", { timeout: 900_000 }, async () => {
           linePoints(s.legs.flatMap((leg) => decodeLine(leg.geometry))),
         ).toFixed(0),
       );
-      return `${i + 1} ${km.toFixed(0)} km ${up.toFixed(0)} m, loops ${loops.join("/")} km, via ${p.via.slice(0, 3).join(", ")} [${[p.followedRoute, ...(p.tags ?? [])].filter(Boolean).join(", ")}]`;
+      const stops = p.trip.stages.slice(0, -1).map((s) => s.end.name);
+      return `${i + 1} ${p.trip.name}: ${km.toFixed(0)} km ${up.toFixed(0)} m, loops ${loops.join("/")} km, via ${p.via.slice(0, 3).join(", ")}${stops.length ? `, stops ${stops.join(" / ")}` : ""} [${[p.followedRoute, ...(p.tags ?? [])].filter(Boolean).join(", ")}]`;
     });
     console.log(
       `\n${name}: ${proposals.length} proposals, ${(ms / 1000).toFixed(1)} s, same road ${(road * 100).toFixed(0)} %, same corridor ${(corridor * 100).toFixed(0)} %`,
