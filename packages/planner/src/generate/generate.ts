@@ -94,7 +94,7 @@ const FILL_STEPS = [
  * Fill: time limit in ms, without building the first list. Each step gets its
  * share, so a strict step that finds little does not use up the time.
  */
-const FILL_TIME_MS = 2500;
+const FILL_TIME_MS = 1500;
 /** Fill: candidates to try per input and step. */
 const FILL_TRIES = 60;
 /** Width of a corridor cell in km. See corridorShare. */
@@ -122,7 +122,7 @@ const SIGNED = {
   tries: 30,
   misses: 8,
   nationalMisses: 3,
-  timeMs: 2500,
+  timeMs: 1500,
 };
 /** A signed route counts this far from the start and end, as a share of the trip. */
 const SIGNED_REACH = 1.45;
@@ -136,11 +136,11 @@ const SEEK_TARGET = 0.85;
 /** Day trips need no hotels, so any node can be a via, up to about this many. */
 const MAX_DAY_VIAS = 2000;
 /** All flavours together, in ms. Keeps time for the fill on large areas. */
-const FLAVOURS_TIME_MS = 4000;
+const FLAVOURS_TIME_MS = 2500;
 /** Candidates to try before giving up. */
 const MAX_TRIES = 300;
 /** Search time limit in ms. Stops early once at least one proposal fits. */
-const TIME_LIMIT_MS = 2000;
+const TIME_LIMIT_MS = 1500;
 /** Max share of a proposal on edges of earlier proposals. */
 const MAX_SHARED = 0.4;
 /** Candidates to try per flavour, once some flavour has a proposal. */
@@ -152,7 +152,7 @@ const CLIMB_TRIES = 40;
 /** Fill when seeking climbs: fits to compare, keeping the one that climbs most. */
 const SEEK_BATCH = 15;
 /** Search time per flavour in ms, once some flavour has a proposal. */
-const FLAVOUR_TIME_MS = 1500;
+const FLAVOUR_TIME_MS = 1000;
 /**
  * A scenery flavour must have at least the min share and this much more
  * than the best proposal.

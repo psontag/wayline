@@ -8,7 +8,7 @@ import {
   type Proposal,
 } from "@wayline/domain";
 import { TiledNetworkSource } from "@wayline/providers";
-import { readDataFile } from "@wayline/providers/testing";
+import { readDataBytes, readDataFile } from "@wayline/providers/testing";
 import { it } from "vitest";
 import { corridorShare } from "../src/generate/corridor";
 import { Planners } from "../src/generate/generate";
@@ -168,7 +168,11 @@ it("reports", { timeout: 900_000 }, async () => {
     await readFile(new URL("latest.json", root), "utf8"),
   );
   const planners = new Planners(
-    new TiledNetworkSource(readDataFile, `/data/${latest.version}`),
+    new TiledNetworkSource(
+      readDataFile,
+      `/data/${latest.version}`,
+      readDataBytes,
+    ),
   );
   const html: string[] = [];
   const tagged = new Map<string, number>();

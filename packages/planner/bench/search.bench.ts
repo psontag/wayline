@@ -3,7 +3,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { TiledNetworkSource } from "@wayline/providers";
-import { readDataFile } from "@wayline/providers/testing";
+import { readDataBytes, readDataFile } from "@wayline/providers/testing";
 import { afterAll, describe, it } from "vitest";
 import { Planners } from "../src/generate/generate";
 import { resetSearchCounts, searchCounts } from "../src/graph/dijkstra";
@@ -57,7 +57,7 @@ async function dataVersion(): Promise<string> {
 async function runTrip(version: string, trip: BenchTrip): Promise<TripResult> {
   // New source and planners per trip: the first run loads like a new worker.
   const planners = new Planners(
-    new TiledNetworkSource(readDataFile, `/data/${version}`),
+    new TiledNetworkSource(readDataFile, `/data/${version}`, readDataBytes),
   );
   const routing = options.routing
     ? await fileRouting(new URL(`${version}/`, root))
