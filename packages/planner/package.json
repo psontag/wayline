@@ -13,11 +13,11 @@
     "@wayline/cache": "workspace:*",
     "@wayline/domain": "workspace:*",
     "@wayline/providers": "workspace:*",
-    "flatbush": "4.6.2",
+    "flatbush": "4.7.0",
     "flatqueue": "3.1.0"
   },
   "devDependencies": {
-    "@types/node": "24.19.1",
+    "@types/node": "26.6.6",
     "@wayline/router": "workspace:*"
   }
 }
