@@ -10,7 +10,7 @@ import { placeOptions } from "./places";
 export function NewTripPage() {
   const { t } = useTranslation("newTrip");
   const { network } = useServices();
-  const { kind, request, step } = useSearch({ from: "/new" });
+  const { kind, request, step, area } = useSearch({ from: "/new" });
   const places = useQuery({
     queryKey: ["search"],
     queryFn: () => network.search(),
@@ -43,6 +43,7 @@ export function NewTripPage() {
       kind={kind}
       request={request}
       step={step ?? (request && !request.route ? "trip" : "where")}
+      areaId={area}
     />
   );
 }

@@ -20,21 +20,28 @@ import { ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 /** Places and dates of the search, e.g. "Würzburg → Bamberg". */
-export function useRequestSummary(request: GenerateRequest | undefined) {
+export function useRequestSummary(
+  request: GenerateRequest | undefined,
+  also: GenerateRequest[] = [],
+) {
   const { t } = useTranslation("proposals");
   const format = useFormat();
   if (!request) return {};
   const from = request.startStation?.name;
   const to = request.endStation?.name;
+  const starts = new Set([request, ...also].map((r) => r.startStation?.name))
+    .size;
   const places =
-    request.kind !== "one-way"
-      ? from && t("request.loopFrom", { from })
-      : isOpenRide(request)
-        ? from && t("request.anywhereFrom", { from })
-        : from &&
-          (to
-            ? t("request.places", { from, to })
-            : t("request.anyEnd", { from }));
+    starts > 1
+      ? t("request.starts", { count: starts })
+      : request.kind !== "one-way"
+        ? from && t("request.loopFrom", { from })
+        : isOpenRide(request)
+          ? from && t("request.anywhereFrom", { from })
+          : from &&
+            (to
+              ? t("request.places", { from, to })
+              : t("request.anyEnd", { from }));
 
   const date = (iso: string) => localTimeToDate(`${iso}T00:00`);
   const start = request.startDate;
@@ -53,14 +60,29 @@ export function useRequestSummary(request: GenerateRequest | undefined) {
 }
 
 /** Bar with the search inputs and a way back to change them. */
-export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
+export function ProposalsHeader({
+  request,
+  also = [],
+  area,
+}: {
+  request?: GenerateRequest;
+  /** More requests, from other starts or with another kind. */
+  also?: GenerateRequest[] | undefined;
+  /** Back opens the Area step of this area. */
+  area?: string | undefined;
+}) {
   const { t } = useTranslation("proposals");
   const format = useFormat();
-  const { places, dates } = useRequestSummary(request);
+  const { places, dates } = useRequestSummary(request, also);
+  const mixed = also.some((r) => r.kind !== request?.kind);
 
   const chips: { text: string; icon?: StatIcon }[] = request
     ? [
-        { text: t(`request.kind.${request.kind}`) },
+        {
+          text: mixed
+            ? t("request.loopOrOneWay")
+            : t(`request.kind.${request.kind}`),
+        },
         ...(places ? [{ text: places }] : []),
         ...(dates ? [{ icon: "dates" as const, text: dates }] : []),
         ...(request.dayShares?.some((share) => share < 1)
@@ -88,7 +110,13 @@ export function ProposalsHeader({ request }: { request?: GenerateRequest }) {
   return (
     <PageBar>
       <TextLink asChild className="font-semibold">
-        <Link to="/new" search={request ? { request } : {}}>
+        <Link
+          to="/new"
+          search={{
+            ...(request && { request }),
+            ...(area && { step: "area" as const, area }),
+          }}
+        >
           <ChevronLeft aria-hidden />
           {t("newTrip")}
         </Link>

@@ -1,9 +1,40 @@
 {
   "title": "New trip",
   "step": {
-    "where": "Step 1 of 2",
-    "trip": "Step 2 of 2",
+    "where": "Step 1 of 3",
+    "area": "Step 2 of 3",
+    "trip": "Step 3 of 3",
     "back": "Where"
+  },
+  "area": {
+    "weather": "Weather",
+    "rain": {
+      "dry": "Dry on your days",
+      "showers": "Showers on your days",
+      "wet": "Wet on your days",
+      "unknown": "No forecast for your days"
+    },
+    "fastest": "{{station}} in {{time}}",
+    "stationCount_one": "{{count}} station with a train from home",
+    "stationCount_other": "{{count}} stations with a train from home",
+    "start": "Start",
+    "anyStation": "Any station",
+    "anyHint": "Wayline tries the fastest stations",
+    "kmLabel": "Km a day",
+    "kmPerDay": "{{distance}} a day",
+    "shape": {
+      "any": "Any",
+      "loop": "Loop",
+      "oneWay": "One way"
+    },
+    "shapeLower": {
+      "any": "loop or one way",
+      "loop": "loop",
+      "oneWay": "one way"
+    },
+    "more": "More settings",
+    "footer": "{{days}} · {{shape}}",
+    "showTrips": "Show trips"
   },
   "where": {
     "title": "Where to ride",

@@ -66,6 +66,10 @@ export type ProposalListProps = {
   /** Why saving the selected proposal failed. */
   openError?: string;
   onRelax: (request: GenerateRequest) => void;
+  /** With several starts: where a proposal starts, and the train there. */
+  startOf?: (proposal: Proposal) => string | undefined;
+  /** More requests, run after request. */
+  also?: GenerateRequest[];
 };
 
 /** Side panel: progress or result line, then the proposal cards. */
@@ -81,9 +85,11 @@ export function ProposalList({
   opening,
   openError,
   onRelax,
+  startOf,
+  also,
 }: ProposalListProps) {
   const { t } = useTranslation("proposals");
-  const { places, dates } = useRequestSummary(request);
+  const { places, dates } = useRequestSummary(request, also);
   const { status, proposals } = generation;
   const weather = useTripsWeather(proposals.map((p) => p.trip));
   const windDays = proposals.map((p, i) => {
@@ -177,6 +183,7 @@ export function ProposalList({
             onOpen={() => onOpen(p)}
             opening={opening === p.id}
             openError={p.id === selected ? openError : undefined}
+            start={startOf?.(p)}
           />
         ))}
         {status === "running" && <ProposalCardSkeleton />}
@@ -228,6 +235,12 @@ function Progress({
         })
       : t(`progress.${phase}`);
   const steps = [
+    generation.run &&
+      generation.run.count > 1 &&
+      t("progress.start", {
+        current: generation.run.index + 1,
+        total: generation.run.count,
+      }),
     loaded && t("progress.loaded"),
     searched > 0 && t("progress.searched", { count: searched }),
     (phase === "cutting" || phase === "routing") && t("progress.cut"),
@@ -325,9 +338,12 @@ function ProposalItem({
   onOpen,
   opening,
   openError,
+  start,
 }: {
   proposal: Proposal;
   number: number;
+  /** Where it starts, e.g. "From Neustadt · 1 h 05 by train". */
+  start: string | undefined;
   /** Undefined while loading or without a forecast. */
   windDays: WindDay[] | undefined;
   /** The trip has no chosen end: named after where it goes. */
@@ -464,13 +480,16 @@ function ProposalItem({
       number={number}
       color={routeColorAt(number - 1)}
       title={name}
-      subtitle={
+      subtitle={[
+        start,
         via.length
           ? t(proposal.homeward ? "card.trainOutVia" : "card.via", {
               stops: format.list(via),
             })
-          : ""
-      }
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" · ")}
       tags={cardTags}
       stats={[
         {

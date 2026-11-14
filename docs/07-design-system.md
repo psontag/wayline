@@ -343,6 +343,7 @@ Click a day card, a route on the map or a day chip to open a day.
 |---|---|---|
 | Proposals | Places, dates | Proposals |
 | New trip, Where | Where to ride | Days, Train from home, Areas, Signed routes |
+| New trip, Area | All areas, area name, train time | Weather, Train from home, Start, Trip, Signed routes |
 | New trip, Trip | New trip | Trip, Start and end, When, Ride, Hotel (several days) |
 | Import | Import GPX | Days, then once files are added: Trip, Dates, Hotel (several days) |
 

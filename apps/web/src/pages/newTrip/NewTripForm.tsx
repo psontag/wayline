@@ -73,6 +73,8 @@ import {
   withAreaRain,
 } from "./whereWeather";
 import { DaysSection } from "./DaysSection";
+import { AreaPanel } from "./AreaPanel";
+import { areaRequests, type AreaShape, formShape } from "./areaTrips";
 import type { AreaColor } from "./AreaLayer";
 import type { NewTripStep } from "./search";
 import { WherePanel } from "./WherePanel";
@@ -92,11 +94,14 @@ export function NewTripForm({
   kind,
   request,
   step,
+  areaId,
 }: {
   places: Place[];
   kind?: TripKind;
   request?: GenerateRequest;
   step: NewTripStep;
+  /** The area of the Area step. */
+  areaId?: string | undefined;
 }) {
   const { t } = useTranslation("newTrip");
   const format = useFormat();
@@ -114,7 +119,9 @@ export function NewTripForm({
   });
   const values = useStore(form.store, (s) => s.values);
   usePrepare(values);
-  const where = step === "where";
+  const atArea = step === "area";
+  // Where and Area share the map with areas and stations.
+  const where = step === "where" || atArea;
   const isPhone = useIsPhone();
   const goTo = (next: NewTripStep) =>
     navigate({ to: "/new", search: (prev) => ({ ...prev, step: next }) });
@@ -167,8 +174,10 @@ export function NewTripForm({
       ),
     [areaData.areas, weather.weather, now, values.startDate, tripDays],
   );
-  const [areaId, setAreaId] = useState<string>();
   const [hoveredArea, setHoveredArea] = useState<string>();
+  // Area step: the start, undefined for any station, and the trip shape.
+  const [areaStart, setAreaStart] = useState<Place>();
+  const [areaShape, setAreaShape] = useState<AreaShape>("any");
   const pickedArea = rainAreas?.find((a) => a.area.id === areaId);
   const listAreas = useMemo(
     () => rainAreas && dryFirst(areasInReach(rainAreas)),
@@ -211,12 +220,48 @@ export function NewTripForm({
     [areaStations, shownRoute],
   );
   const pickArea = (id: string | undefined) => {
-    setAreaId(id);
     setHoveredArea(undefined);
     setSelectedRoute(undefined);
+    setAreaStart(undefined);
+    void navigate({
+      to: "/new",
+      search: (prev) => ({
+        ...prev,
+        step: id ? "area" : "where",
+        area: id,
+      }),
+    });
   };
   const pickStation = (station: Place) => {
+    if (atArea) return setAreaStart(station);
     form.setFieldValue("start", station);
+    toTrip();
+  };
+  const areaPlaces = (areaStations ?? []).map((s) => s.place);
+  const showTrips = () => {
+    const [first, ...also] = areaRequests(
+      form.state.values,
+      areaPlaces,
+      areaStart,
+      areaShape,
+    );
+    if (!first) return;
+    void navigate({
+      to: "/proposals",
+      search: {
+        request: first,
+        ...(also.length && { also }),
+        ...(areaId && { area: areaId }),
+      },
+    });
+  };
+  const moreSettings = () => {
+    const start = areaStart ?? areaPlaces[0];
+    if (start) form.setFieldValue("start", start);
+    if (areaShape !== "any") {
+      form.setFieldValue("shape", formShape(areaShape, values.length));
+      form.setFieldValue("end", null);
+    }
     toTrip();
   };
   const ride = (route: ShelfRoute) => {
@@ -244,17 +289,30 @@ export function NewTripForm({
     <AreasSection
       areas={listAreas ?? undefined}
       maxHours={reachFilter.maxHours}
-      picked={pickedArea}
-      stations={areaStations ?? []}
       onPick={pickArea}
       onHover={setHoveredArea}
-      onPickStation={pickStation}
       trip={[
         daysOut(now, values.startDate),
         daysOut(now, values.startDate) + tripDays,
       ]}
     />
   );
+
+  const routeSection = (days: number) =>
+    reach.stations !== null && (
+      <RouteSection
+        routes={areaShelf}
+        maxHours={reachFilter.maxHours}
+        days={days}
+        kmPerDay={values.kmPerDay}
+        selected={selectedRoute}
+        onSelect={setSelectedRoute}
+        onHover={setHoveredRoute}
+        onRide={ride}
+        {...(stretchRain && { rain: stretchRain })}
+        {...(stretchWind && { wind: stretchWind })}
+      />
+    );
 
   /** The first error of a field, once the user changed it or submitted. */
   const errorOf = (meta: { isTouched: boolean; errors: unknown[] }) => {
@@ -277,6 +335,10 @@ export function NewTripForm({
           const next = where ? startPick : mapPick({ shape, start, end });
           const pick = (at: LonLat, nearKm: number) => {
             const place = nearestPlace(places, at, nearKm);
+            if (place && atArea) {
+              if (place.kind === "station") setAreaStart(place);
+              return place;
+            }
             if (place) form.setFieldValue(next.field, place);
             if (place && where) toTrip();
             return place;
@@ -292,7 +354,9 @@ export function NewTripForm({
               )}
             >
               <NewTripMap
-                start={where ? (stretch?.from.place ?? null) : start}
+                start={
+                  where ? (stretch?.from.place ?? areaStart ?? null) : start
+                }
                 end={
                   where
                     ? (stretch?.to.place ?? null)
@@ -337,7 +401,29 @@ export function NewTripForm({
         }}
       </form.Subscribe>
 
-      {where && (
+      {atArea && pickedArea && (
+        <AreaPanel
+          area={pickedArea}
+          stations={areaStations ?? []}
+          trip={[
+            daysOut(now, values.startDate),
+            daysOut(now, values.startDate) + tripDays,
+          ]}
+          days={tripDays}
+          start={areaStart}
+          onStart={setAreaStart}
+          shape={areaShape}
+          onShape={setAreaShape}
+          kmPerDay={values.kmPerDay}
+          onKmPerDay={(km) => form.setFieldValue("kmPerDay", km)}
+          onBack={() => pickArea(undefined)}
+          onMore={moreSettings}
+          onShowTrips={showTrips}
+          routes={routeSection(tripDays)}
+        />
+      )}
+
+      {where && !(atArea && pickedArea) && (
         <form.Subscribe
           selector={(s) => [s.values.startDate, formDays(s.values)] as const}
         >
@@ -366,20 +452,7 @@ export function NewTripForm({
                 onFilter={setReachFilter}
               />
               {!isPhone && areasSection}
-              {reach.stations !== null && (
-                <RouteSection
-                  routes={areaShelf}
-                  maxHours={reachFilter.maxHours}
-                  days={days}
-                  kmPerDay={values.kmPerDay}
-                  selected={selectedRoute}
-                  onSelect={setSelectedRoute}
-                  onHover={setHoveredRoute}
-                  onRide={ride}
-                  {...(stretchRain && { rain: stretchRain })}
-                  {...(stretchWind && { wind: stretchWind })}
-                />
-              )}
+              {routeSection(days)}
             </WherePanel>
           )}
         </form.Subscribe>

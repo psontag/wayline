@@ -8,7 +8,8 @@ import {
   timeToHours,
   windAt,
 } from "@wayline/domain";
-import { Button, MessagePanel } from "@wayline/ui";
+import { Button, MessagePanel, useFormat } from "@wayline/ui";
+import { useTrainTime } from "./useTrainTime";
 import { Route } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -53,14 +54,31 @@ export function ProposalsPage() {
 
 function Proposals({ request }: { request: GenerateRequest }) {
   const { t } = useTranslation("proposals");
-  const { selected } = useSearch({ from: "/proposals" });
+  const { selected, also, area } = useSearch({ from: "/proposals" });
   const navigate = useNavigate({ from: "/proposals" });
+  const format = useFormat();
+  const trainTime = useTrainTime(request.startDate);
+  const requests = [request, ...(also ?? [])];
+  // Ids are "<request index>-<id>" with several requests.
+  const startOf =
+    also &&
+    ((p: Proposal) => {
+      const place = requests[Number(p.id.split("-")[0])]?.startStation;
+      if (!place) return undefined;
+      const minutes = trainTime(place);
+      return minutes === undefined
+        ? t("card.from", { place: place.name })
+        : t("card.fromTrain", {
+            place: place.name,
+            time: format.duration(minutes / 60),
+          });
+    });
   const home = request.startStation?.coord;
   const windOn = plansWithWind(request) && !!home;
   const dayWind = useDayWind(windOn ? home : undefined, request.startDate);
   // Null makes the generation wait for the forecast.
   const wind = windOn ? (dayWind.isPending ? null : dayWind.data) : undefined;
-  const generation = useGeneration(request, wind);
+  const generation = useGeneration(request, wind, also);
   // Wind in the middle of the ride, shown at the start.
   const middle =
     wind?.length &&
@@ -140,7 +158,7 @@ function Proposals({ request }: { request: GenerateRequest }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ProposalsHeader request={request} />
+      <ProposalsHeader request={request} also={also} area={area} />
       {/* Phones: the map stays on top while the list scrolls below it. */}
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="relative h-2/5 shrink-0 lg:h-auto lg:min-h-0 lg:min-w-0 lg:flex-1">
@@ -172,6 +190,8 @@ function Proposals({ request }: { request: GenerateRequest }) {
                 : undefined
             }
             onRelax={(next) => void navigate({ search: { request: next } })}
+            {...(startOf && { startOf })}
+            {...(also && { also })}
           />
         </aside>
       </div>
