@@ -6,6 +6,14 @@
     "trip": "Step 3 of 3",
     "back": "Where"
   },
+  "suggest": {
+    "title": "Suggestions",
+    "summary": "{{days}} with dry areas",
+    "dry_one": "{{count}} dry area",
+    "dry_other": "{{count}} dry areas",
+    "rough": "Partly more than 10 days out, so it may change.",
+    "none": "No area within your max train time is dry on enough days in a row. Try fewer days or a longer train time."
+  },
   "area": {
     "weather": "Weather",
     "rain": {

@@ -318,6 +318,7 @@ Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of
 | `hotel` | `BedDouble` | Hotel |
 | `weather` | `CloudSun` | Weather on the Where step |
 | `areas` | `Map` | Areas on the Where step |
+| `suggestions` | `Sparkles` | Suggested trip windows on the Where step |
 
 ### Components
 
@@ -342,7 +343,7 @@ Click a day card, a route on the map or a day chip to open a day.
 | Panel | Header | Sections |
 |---|---|---|
 | Proposals | Places, dates | Proposals |
-| New trip, Where | Where to ride | Days, Train from home, Areas, Signed routes |
+| New trip, Where | Where to ride | Days, Suggestions, Train from home, Areas, Signed routes |
 | New trip, Area | All areas, area name, train time | Weather, Train from home, Start, Trip, Signed routes |
 | New trip, Trip | New trip | Trip, Start and end, When, Ride, Hotel (several days) |
 | Import | Import GPX | Days, then once files are added: Trip, Dates, Hotel (several days) |
