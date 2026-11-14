@@ -68,6 +68,9 @@
   --color-route-highlight: #15181d;
   --color-network: #6f9b79;
   --color-rain: #3d84d6;
+  --color-weather-dry: #69b994;
+  --color-weather-showers: #adcbee;
+  --color-weather-wet: #3d84d6;
   --color-wind-head: #c2412d;
   --color-wind-cross: #b7791f;
   --color-wind-tail: #2f9e6b;
@@ -250,6 +253,9 @@
       --color-route-highlight: #ffffff;
       --color-network: #4e6b57;
       --color-rain: #6ab0f5;
+      --color-weather-dry: #499976;
+      --color-weather-showers: #3a5979;
+      --color-weather-wet: #6ab0f5;
       --color-wind-head: #ff8f7d;
       --color-wind-cross: #f2cf7e;
       --color-wind-tail: #5ccb97;
@@ -322,6 +328,9 @@
     --color-route-highlight: #15181d;
     --color-network: #6f9b79;
     --color-rain: #3d84d6;
+    --color-weather-dry: #69b994;
+    --color-weather-showers: #adcbee;
+    --color-weather-wet: #3d84d6;
     --color-wind-head: #c2412d;
     --color-wind-cross: #b7791f;
     --color-wind-tail: #2f9e6b;
@@ -394,6 +403,9 @@
     --color-route-highlight: #ffffff;
     --color-network: #4e6b57;
     --color-rain: #6ab0f5;
+    --color-weather-dry: #499976;
+    --color-weather-showers: #3a5979;
+    --color-weather-wet: #6ab0f5;
     --color-wind-head: #ff8f7d;
     --color-wind-cross: #f2cf7e;
     --color-wind-tail: #5ccb97;

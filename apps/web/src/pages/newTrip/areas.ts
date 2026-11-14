@@ -1,6 +1,7 @@
 import { type Area, decodeLine, type ReachRow } from "@wayline/domain";
 import type { MultiPolygon } from "geojson";
 import { bestReach, type Reach, type ReachFilter } from "./reach";
+import type { Rain } from "./whereWeather";
 
 export type AreaReach = {
   area: Area;
@@ -8,6 +9,10 @@ export type AreaReach = {
   reach?: Reach;
   /** Over the max train time, or no train. Shown faded. */
   over: boolean;
+  /** Rain on each forecast day from today. Missing without a forecast. */
+  days?: (Rain | undefined)[];
+  /** The worst rain on the trip days. */
+  rain?: Rain;
 };
 
 /** Each area with the train time to its fastest station. */

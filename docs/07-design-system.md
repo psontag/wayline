@@ -30,6 +30,7 @@ Color tokens are semantic. They name the purpose, not the color.
 | `grade-1`, `grade-2`, `grade-3` | Climbs in the elevation profile: under 4 %, 4–7 %, over 7 %. Plum, so a climb never looks like the route or a selection. |
 | `proposed` | The proposed route of a changed day, on the map and in the elevation profile. Always used faded. |
 | `rain` | Rain bars in the weather timeline |
+| `weather-dry`, `weather-showers`, `weather-wet` | Rain on a day over the riding hours: below 0.5 mm, below 3 mm, from 3 mm. Days strips and areas by weather on the Where step. |
 | `wind-head`, `wind-cross`, `wind-tail` | Share of head, cross and tail wind in the wind bar |
 | `wind-speed-1` to `wind-speed-4` | Wind speed, cyan to deep indigo: wind markers on the map and wind arrows in the weather charts. Below 10, 10–20, 20–30, 30+ km/h |
 | `reach-1` … `reach-5` | Train time from home on the Where map: up to 1, 2, 3, 4 and 6 h. Violet, strong to light (light to dark in dark mode), so blue means rain. Areas over 6 h use the land color. Areas and stations over the max time are faded. |
@@ -84,6 +85,9 @@ Color values:
 | `grade-3` | `#7A2F66` | `#DC8FC4` |
 | `proposed` | `#5A616C` | `#A0A7B3` |
 | `rain` | `#3D84D6` | `#6AB0F5` |
+| `weather-dry` | `#69B994` | `#499976` |
+| `weather-showers` | `#ADCBEE` | `#3A5979` |
+| `weather-wet` | `#3D84D6` | `#6AB0F5` |
 | `wind-head` | `#C2412D` | `#FF8F7D` |
 | `wind-cross` | `#B7791F` | `#F2CF7E` |
 | `wind-tail` | `#2F9E6B` | `#5CCB97` |
@@ -338,7 +342,7 @@ Click a day card, a route on the map or a day chip to open a day.
 | Panel | Header | Sections |
 |---|---|---|
 | Proposals | Places, dates | Proposals |
-| New trip, Where | Where to ride | Dates, Train from home, Signed routes |
+| New trip, Where | Where to ride | Days, Train from home, Areas, Signed routes |
 | New trip, Trip | New trip | Trip, Start and end, When, Ride, Hotel (several days) |
 | Import | Import GPX | Days, then once files are added: Trip, Dates, Hotel (several days) |
 

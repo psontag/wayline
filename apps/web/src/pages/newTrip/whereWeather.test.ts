@@ -1,14 +1,22 @@
-import type { LonLat, WeatherSample } from "@wayline/domain";
+import {
+  type Area,
+  encodeLine,
+  type LonLat,
+  type WeatherSample,
+} from "@wayline/domain";
 import type { Forecast } from "@wayline/providers";
 import { describe, expect, it } from "vitest";
 import { type Grid, gridOf } from "../../components/map/weatherGrid";
 import {
-  dayField,
+  areaCells,
   lineWind,
   pastForecast,
+  rainDays,
   rainOf,
+  tripWeather,
   wetDays,
   whereWeather,
+  worstRain,
 } from "./whereWeather";
 
 const DAY1 = "2026-11-14";
@@ -61,7 +69,7 @@ describe("pastForecast", () => {
 });
 
 describe("whereWeather", () => {
-  const weather = whereWeather(grid, forecasts(), DAY1, 3);
+  const weather = whereWeather(grid, forecasts(), DAY1);
 
   it("keeps the days with a forecast, riding hours only", () => {
     expect(weather.days.map((d) => d.date)).toEqual([DAY1, DAY2]);
@@ -71,16 +79,44 @@ describe("whereWeather", () => {
     );
   });
 
+  it("picks out the trip days", () => {
+    const trip = tripWeather(weather, DAY2, 3);
+    expect(trip.days.map((d) => d.date)).toEqual([DAY2]);
+  });
+
   it("finds the wet days at a place", () => {
     expect(wetDays(weather, [[8.9, 49]])).toEqual([DAY1]);
     expect(wetDays(weather, [[8.1, 49]])).toEqual([]);
   });
 
-  it("makes a map field for one day", () => {
-    const field = dayField(weather, DAY2);
-    expect(field?.rain.every((r) => r === 0)).toBe(true);
-    expect(field?.speed[0]).toBeCloseTo(20);
-    expect(dayField(weather, "2026-12-01")).toBeUndefined();
+  it("gives an area the worst cell inside it on each day", () => {
+    const area = (outline: LonLat[]): Area => ({
+      id: "a",
+      name: "A",
+      officialName: "A",
+      label: outline[0] as LonLat,
+      bbox: [8, 48.5, 9.5, 49.5],
+      outline: [[encodeLine(outline)]],
+      stations: [],
+      routes: [],
+    });
+    const east = area([
+      [8.6, 48.6],
+      [9.4, 48.6],
+      [9.4, 49.4],
+      [8.6, 49.4],
+    ]);
+    const days = rainDays(weather, areaCells(grid, east), DAY1);
+    expect(days.slice(0, 3)).toEqual(["wet", "dry", undefined]);
+    expect(worstRain(days)).toBe("wet");
+    // Too small for a cell center: the nearest cell.
+    const tiny = area([
+      [8.01, 49.01],
+      [8.02, 49.01],
+      [8.02, 49.02],
+    ]);
+    expect(areaCells(grid, tiny)).toHaveLength(1);
+    expect(rainDays(weather, areaCells(grid, tiny), DAY1)[0]).toBe("dry");
   });
 
   it("knows tailwind from headwind along a line", () => {

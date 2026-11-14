@@ -50,7 +50,7 @@ import {
   withDays,
 } from "./form";
 import { useIsPhone } from "../../components/useIsPhone";
-import { areasInReach } from "./areas";
+import { type AreaReach, areasInReach } from "./areas";
 import { AreasSection } from "./AreasSection";
 import { NewTripMap } from "./NewTripMap";
 import { useAreas } from "./useAreas";
@@ -63,8 +63,17 @@ import { TrainSection } from "./TrainSection";
 import { useReach } from "./useReach";
 import { useRouteShelf } from "./useRouteShelf";
 import { useWhereWeather } from "./useWhereWeather";
-import { WeatherSection } from "./WeatherSection";
-import { dayField, lineWind, wetDays, type WhereWeather } from "./whereWeather";
+import {
+  dayCounts,
+  daysOut,
+  dryFirst,
+  lineWind,
+  wetDays,
+  type WhereWeather,
+  withAreaRain,
+} from "./whereWeather";
+import { DaysSection } from "./DaysSection";
+import type { AreaColor } from "./AreaLayer";
 import type { NewTripStep } from "./search";
 import { WherePanel } from "./WherePanel";
 import { nearestPlace } from "./places";
@@ -113,13 +122,18 @@ export function NewTripForm({
   const toWhere = () => void goTo("where");
   const [reachFilter, setReachFilter] = useState(defaultReachFilter);
   const reach = useReach(places, values.startDate, reachFilter);
+  const areaData = useAreas(reach.file, values.startDate, reachFilter);
+  const weatherPoints = useMemo(
+    () => forecastPoints(areaData.areas, reach.stations),
+    [areaData.areas, reach.stations],
+  );
   const weather = useWhereWeather(
-    reach.stations,
+    weatherPoints,
     now,
     values.startDate,
     formDays(values),
   );
-  const wx = weather.weather;
+  const wx = weather.trip;
   const shelf = useRouteShelf(
     places,
     reach.file,
@@ -127,14 +141,7 @@ export function NewTripForm({
     values,
     weather.wind,
   );
-  const [pickedMapDate, setMapDate] = useState<string>();
-  const mapDate = wx?.days.some((d) => d.date === pickedMapDate)
-    ? pickedMapDate
-    : wx?.days[0]?.date;
-  const mapField = useMemo(
-    () => (wx && mapDate ? dayField(wx, mapDate) : undefined),
-    [wx, mapDate],
-  );
+  const [areaColor, setAreaColor] = useState<AreaColor>("reach");
   const stretchRain =
     wx &&
     ((r: ShelfRoute) => {
@@ -147,13 +154,29 @@ export function NewTripForm({
       const line = stretchLine(r);
       return line ? lineWind(wx, line) : undefined;
     });
-  const areaData = useAreas(reach.file, values.startDate, reachFilter);
+  const tripDays = formDays(values);
+  const rainAreas = useMemo(
+    () =>
+      areaData.areas &&
+      withAreaRain(
+        areaData.areas,
+        weather.weather,
+        now,
+        values.startDate,
+        tripDays,
+      ),
+    [areaData.areas, weather.weather, now, values.startDate, tripDays],
+  );
   const [areaId, setAreaId] = useState<string>();
   const [hoveredArea, setHoveredArea] = useState<string>();
-  const pickedArea = areaData.areas?.find((a) => a.area.id === areaId);
+  const pickedArea = rainAreas?.find((a) => a.area.id === areaId);
   const listAreas = useMemo(
-    () => areaData.areas && areasInReach(areaData.areas),
-    [areaData.areas],
+    () => rainAreas && dryFirst(areasInReach(rainAreas)),
+    [rainAreas],
+  );
+  const counts = useMemo(
+    () => (weather.weather && listAreas ? dayCounts(listAreas) : undefined),
+    [weather.weather, listAreas],
   );
   // With areas, the shelf shows only the routes of the picked area.
   const areaShelf = useMemo(() => {
@@ -226,6 +249,10 @@ export function NewTripForm({
       onPick={pickArea}
       onHover={setHoveredArea}
       onPickStation={pickStation}
+      trip={[
+        daysOut(now, values.startDate),
+        daysOut(now, values.startDate) + tripDays,
+      ]}
     />
   );
 
@@ -292,12 +319,13 @@ export function NewTripForm({
                       wet: !!stretchRain?.(shownRoute).length,
                     },
                   })}
-                {...(where && mapField && { weather: mapField })}
                 {...(where &&
-                  areaData.areas && {
+                  rainAreas && {
                     areas: {
-                      areas: areaData.areas,
+                      areas: rainAreas,
                       attribution: areaData.attribution,
+                      color: areaColor,
+                      ...(weather.weather && { onColor: setAreaColor }),
                       ...(pickedArea && { picked: pickedArea.area }),
                       ...(hoveredArea && { hovered: hoveredArea }),
                       onPick: pickArea,
@@ -315,17 +343,22 @@ export function NewTripForm({
         >
           {([startDate, days]) => (
             <WherePanel
-              now={now}
-              startDate={startDate}
-              days={days}
-              onStartDate={(date) => {
-                form.setFieldValue("startDate", date);
-                form.setFieldValue("endDate", addDays(date, days - 1));
-              }}
-              onDays={setDays}
               onChoosePlace={toTrip}
               {...(isPhone && { lead: areasSection })}
             >
+              <DaysSection
+                now={now}
+                startDate={startDate}
+                days={days}
+                onStartDate={(date) => {
+                  form.setFieldValue("startDate", date);
+                  form.setFieldValue("endDate", addDays(date, days - 1));
+                }}
+                onDays={setDays}
+                counts={counts}
+                loading={weather.loading}
+                failed={weather.failed}
+              />
               <TrainSection
                 home={reach.home}
                 available={reach.stations !== null}
@@ -345,18 +378,6 @@ export function NewTripForm({
                   onRide={ride}
                   {...(stretchRain && { rain: stretchRain })}
                   {...(stretchWind && { wind: stretchWind })}
-                />
-              )}
-              {reach.stations !== null && (
-                <WeatherSection
-                  weather={wx}
-                  loading={weather.loading}
-                  past={weather.past}
-                  today={now}
-                  days={days}
-                  mapDate={mapDate}
-                  onMapDate={setMapDate}
-                  dry={dryCount(rainStations)}
                 />
               )}
             </WherePanel>
@@ -771,14 +792,35 @@ function withRain(
   }));
 }
 
-/** Stations within the train time that are dry on every day. */
-function dryCount(stations: ReachStation[] | null | undefined) {
-  const shown = stations?.filter((s) => !s.over && s.wet !== undefined);
-  if (!shown?.length) return undefined;
-  return {
-    count: shown.filter((s) => !s.wet).length,
-    total: shown.length,
-  };
+/** Without areas, the forecast covers the stations up to this far by train. */
+const GRID_MINUTES = 180;
+
+/**
+ * Where to fetch the forecast: the areas within the max time, or without
+ * areas the stations within GRID_MINUTES. Undefined while loading.
+ */
+function forecastPoints(
+  areas: AreaReach[] | null | undefined,
+  stations: ReachStation[] | null | undefined,
+): LonLat[] | undefined {
+  const points =
+    areas === null
+      ? stations
+          ?.filter((s) => s.reach.minutes <= GRID_MINUTES)
+          .map((s) => s.place.coord)
+      : areas
+          ?.filter((a) => !a.over)
+          .flatMap(
+            ({
+              area: {
+                bbox: [w, s, e, n],
+              },
+            }): LonLat[] => [
+              [w, s],
+              [e, n],
+            ],
+          );
+  return points?.length ? points : undefined;
 }
 
 /** The line of a route's stretch, from its start to its end. */

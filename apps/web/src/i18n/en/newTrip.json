@@ -7,11 +7,14 @@
   },
   "where": {
     "title": "Where to ride",
-    "dates": "Dates",
     "days": "Days",
     "dayCount_one": "{{count}} day",
     "dayCount_other": "{{count}} days",
     "range": "{{first}} – {{last}}",
+    "forecast": "Forecast for the next 16 days",
+    "dayRain": "{{date}}: {{dry}} dry, {{showers}} showers, {{wet}} wet",
+    "length": "Trip length",
+    "otherDates": "Other dates",
     "hint": "Pick an area, then a station.",
     "choosePlace": "Choose a place"
   },
@@ -47,7 +50,15 @@
     "fewer": "Show fewer",
     "all": "All areas",
     "stations": "Stations in {{area}}",
-    "noStations": "No station here has a train from home."
+    "noStations": "No station here has a train from home.",
+    "dry": "{{count}} of {{total}} dry",
+    "rain": "Forecast for {{area}}. On your days: {{rain}}."
+  },
+  "rain": {
+    "dry": "Dry",
+    "showers": "Showers",
+    "wet": "Wet",
+    "unknown": "No forecast"
   },
   "shelf": {
     "title": "Signed routes",
@@ -94,16 +105,9 @@
     }
   },
   "weather": {
-    "title": "Weather",
     "loading": "Loading the forecast",
-    "unavailable": "Weather not available for these dates.",
-    "past": "No forecast yet. It covers the next 16 days.",
-    "dry": "{{count}} of {{total}} stations dry",
-    "mapDay": "Day on the map",
-    "legend": "Blue: rain from 9:00 to 18:00. Arrows: wind. Stations and stretches with a wet day are faded.",
-    "rough": "More than 10 days out, the forecast is rough.",
-    "partial_one": "No forecast yet for the last day.",
-    "partial_other": "No forecast yet for the last {{count}} days."
+    "unavailable": "Weather not available right now.",
+    "past": "No forecast yet for your days. Pick a day above to move the trip."
   },
   "loading": "Loading places",
   "loadFailed": "Could not load the places",
@@ -200,6 +204,10 @@
     "pickArea": "Pick an area on the map",
     "pickStart": "Pick the start on the map",
     "pickEnd": "Pick the end on the map",
+    "colorBy": "Color areas by",
+    "byReach": "Train time",
+    "byWeather": "Weather",
+    "overMax": "Over max time",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out"
   },

@@ -272,3 +272,12 @@ export {
   type PointMenuItem,
   type PointMenuProps,
 } from "./components/PointMenu";
+export { type ForecastDay, ForecastDays } from "./components/ForecastDays";
+export {
+  RainDot,
+  type RainKind,
+  RainLegend,
+  RainStrip,
+  type RainStripDay,
+} from "./components/RainStrip";
+export { MapColorSwitch } from "./components/MapColorSwitch";

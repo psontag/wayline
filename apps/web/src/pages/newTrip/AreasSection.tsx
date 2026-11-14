@@ -4,9 +4,13 @@ import {
   MoreRow,
   PanelSection,
   PickList,
+  type PickOption,
+  RainDot,
+  RainStrip,
   ReachTime,
   useFormat,
 } from "@wayline/ui";
+import { ROUGH_AFTER_DAYS } from "./whereWeather";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,9 +30,12 @@ export function AreasSection({
   onPick,
   onHover,
   onPickStation,
+  trip,
 }: {
-  /** Areas within the max time, fastest first. Undefined: loading. */
+  /** Areas within the max time, dry first, then fastest. Undefined: loading. */
   areas: AreaReach[] | undefined;
+  /** The trip days as forecast days from today, from and up to. */
+  trip: [number, number];
   maxHours: number;
   picked: AreaReach | undefined;
   /** Stations of the picked area with a train, fastest first. */
@@ -82,11 +89,19 @@ export function AreasSection({
       </PanelSection>
     );
   }
+  const withRain = areas.filter((a) => a.rain);
   return (
     <PanelSection
       icon="areas"
       title={t("areas.title")}
-      summary={t("areas.inReach", { count: areas.length })}
+      summary={
+        withRain.length
+          ? t("areas.dry", {
+              count: withRain.filter((a) => a.rain === "dry").length,
+              total: withRain.length,
+            })
+          : t("areas.inReach", { count: areas.length })
+      }
     >
       {areas.length ? (
         <Rows
@@ -95,6 +110,23 @@ export function AreasSection({
             id: a.area.id,
             title: a.area.name,
             ...(a.reach && { reach: a.reach }),
+            ...(a.days && {
+              start: <RainDot rain={a.rain} />,
+              muted: a.rain === "wet",
+              below: (
+                <RainStrip
+                  aria-label={t("areas.rain", {
+                    area: a.area.name,
+                    rain: t(`rain.${a.rain ?? "unknown"}`),
+                  })}
+                  days={a.days.map((rain, i) => ({
+                    ...(rain && { rain }),
+                    rough: i > ROUGH_AFTER_DAYS,
+                    selected: i >= trip[0] && i < trip[1],
+                  }))}
+                />
+              ),
+            }),
           }))}
           onPick={onPick}
           onHover={onHover}
@@ -116,7 +148,10 @@ function Rows({
   onHover,
 }: {
   label: string;
-  rows: { id: string; title: string; reach?: Reach }[];
+  rows: ({ id: string; title: string; reach?: Reach } & Pick<
+    PickOption,
+    "start" | "below" | "muted"
+  >)[];
   onPick: (id: string) => void;
   onHover?: (id: string | undefined) => void;
 }) {
@@ -129,9 +164,10 @@ function Rows({
       aria-label={label}
       onPick={onPick}
       {...(onHover && { onHoverChange: onHover })}
-      options={shown.map(({ id, title, reach }) => ({
+      options={shown.map(({ id, title, reach, ...rest }) => ({
         id,
         title,
+        ...rest,
         ...(reach && {
           detail: [
             t("reach.changes", { count: reach.changes }),
