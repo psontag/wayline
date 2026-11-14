@@ -107,14 +107,16 @@ const VIA_GAP_SHARE = 0.12;
  * Proposals that follow a signed route. picks: slots they get. share: part of
  * the proposal on the route, and of the trip the route must have unused in
  * reach. sizes: trip lengths to try, as shares of the asked km per day; the
- * length check adds 12 % to them. corridor: km near another proposal. cost: edge cost on the route. routes, vias, tries:
- * limits per search, per route, per route and size. misses: tries without a
- * fit before a size is given up.
+ * length check adds 12 % to them. askedAscent: max ascent factor for the
+ * asked route when nothing fits. corridor: km near another proposal. cost:
+ * edge cost on the route. routes, vias, tries: limits per search, per route,
+ * per route and size. misses: tries without a fit before a size is given up.
  */
 const SIGNED = {
   picks: 4,
   share: 0.5,
   sizes: [1, 1.2],
+  askedAscent: 1.3,
   corridor: 0.6,
   cost: 0.2,
   routes: 12,
@@ -1024,12 +1026,20 @@ export class Planner {
           SIGNED_REACH * totalKm
         : (fromStart.km[n] ?? Infinity) <= SIGNED_REACH_NO_END * totalKm,
     );
-    const sizes = SIGNED.sizes.map((size) => {
+    const sizeOf = (size: number, ascent: number) => {
       const km = size * totalKm;
-      const asked = { ...request, kmPerDay: size * request.kmPerDay };
+      const asked = {
+        ...request,
+        kmPerDay: size * request.kmPerDay,
+        maxAscentPerDay: ascent * request.maxAscentPerDay,
+      };
       const ck = this.checker([{ quality: 0, nodes: [start] }], asked, km);
-      return { km, ck };
-    });
+      return { km, ck, steep: ascent > 1 };
+    };
+    const sizes = SIGNED.sizes.map((size) => sizeOf(size, 1));
+    const steeper = request.route
+      ? SIGNED.sizes.map((size) => sizeOf(size, SIGNED.askedAscent))
+      : [];
     const line = routeLine(graph, start);
     const endsKm = Math.max(CORRIDOR_ENDS.minKm, CORRIDOR_ENDS.share * totalKm);
     const startedAt = this.clock();
@@ -1089,10 +1099,13 @@ export class Planner {
         vias,
         SIGNED.vias,
       );
-      // Keeps the path with the most km on the route.
+      // Keeps the path with the most km on the route. The asked route may
+      // climb more when nothing fits the limit.
       let found: Pick | undefined;
       let longest = 0;
-      for (const { km, ck } of sizes) {
+      const asked = route.name === request.route;
+      for (const { km, ck, steep } of asked ? [...sizes, ...steeper] : sizes) {
+        if (steep && found) break;
         const fits = list.filter((c) => Math.abs(c.km - km) < 0.1 * km);
         let tried = 0;
         let fitted = false;

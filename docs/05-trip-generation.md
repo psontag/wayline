@@ -102,6 +102,7 @@ Search:
 - Keeps the path with the most km on the route, with at most 40 % shared km and at most 60 % in the same corridor as another proposal. It must pass the same filters as all others.
 - Skips a route when a proposal already follows it.
 - A request with `route` (from the route shelf) tries that route first. Proposals that follow it rank first, after rides with the wind.
+- If no path on that route fits the max ascent, it tries again with 30 % more. The proposal then has the More climbing tag.
 - Limit: about 1.5 s, 12 routes, 30 candidates per route and length. A length is given up after 8 candidates in a row that don't fit.
 
 ## Seeking climbs

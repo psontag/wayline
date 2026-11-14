@@ -35,6 +35,7 @@ type Trip = [
   number,
   number,
   number,
+  string?,
 ];
 const trips: Trip[] = [
   ["Loop Heidelberg 3×70", "multi-day-loop", heidelberg, undefined, 3, 70, 900],
@@ -122,6 +123,27 @@ const trips: Trip[] = [
     45,
     500,
   ],
+  // A stretch from the route shelf.
+  [
+    "Limes Lorch to Rodenbach 3×70",
+    "one-way",
+    place("Lorch (Württ)", [9.69556, 48.79793]),
+    place("Rodenbach", [9.01153, 50.14674]),
+    3,
+    70,
+    900,
+    "Deutscher Limes-Radweg",
+  ],
+  [
+    "Limes Lorch to Rodenbach 4×70",
+    "one-way",
+    place("Lorch (Württ)", [9.69556, 48.79793]),
+    place("Rodenbach", [9.01153, 50.14674]),
+    4,
+    70,
+    900,
+    "Deutscher Limes-Radweg",
+  ],
 ];
 
 const COLORS = [
@@ -185,6 +207,7 @@ it("reports", { timeout: 900_000 }, async () => {
     days,
     kmPerDay,
     maxAscentPerDay,
+    route,
   ] of trips) {
     // REPORT_ONLY=Würzburg runs only the trips whose name contains it.
     if (process.env.REPORT_ONLY && !name.includes(process.env.REPORT_ONLY)) {
@@ -197,6 +220,7 @@ it("reports", { timeout: 900_000 }, async () => {
       days,
       kmPerDay,
       maxAscentPerDay,
+      ...(route ? { route } : {}),
       hotelBudget: "mid",
       startTime: "09:00",
     };
