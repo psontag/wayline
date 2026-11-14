@@ -336,10 +336,7 @@ export function shortRequest(request: GenerateRequest) {
   const { startStation, endStation } = request;
   if (request.kind !== "one-way" || !startStation || !endStation) return;
   if (request.route) return;
-  const days = (request.dayShares ?? []).reduce(
-    (sum, share) => sum + share,
-    request.days - (request.dayShares?.length ?? 0),
-  );
+  const days = plannedDays(request);
   const short = shortTrip(
     startStation.coord,
     endStation.coord,
@@ -348,6 +345,37 @@ export function shortRequest(request: GenerateRequest) {
   );
   if (!short || short.days >= request.days) return;
   return { ...short, plannedKm: days * request.kmPerDay };
+}
+
+/** Days of the request, short days counted as parts of a day. */
+function plannedDays(request: GenerateRequest): number {
+  return (request.dayShares ?? []).reduce(
+    (sum, share) => sum + share,
+    request.days - (request.dayShares?.length ?? 0),
+  );
+}
+
+/** Above this share of the planned km, the days come out too long. */
+const LONG_SHARE = 1.2;
+
+/**
+ * Multi-day A to B whose shortest proposal is much longer than planned,
+ * with the days that fit. The straight line can't tell: rivers and hills
+ * make the way much longer.
+ */
+export function longRequest(request: GenerateRequest, proposals: Proposal[]) {
+  if (request.kind !== "one-way" || !request.endStation) return;
+  if (request.days < 2 || proposals.length === 0) return;
+  const meters = (p: Proposal) =>
+    p.trip.stages.reduce((sum, stage) => sum + stage.stats.distance, 0);
+  const km = Math.min(...proposals.map(meters)) / 1000;
+  const plannedKm = plannedDays(request) * request.kmPerDay;
+  if (km <= LONG_SHARE * plannedKm) return;
+  return {
+    km: Math.round(km / 5) * 5,
+    plannedKm,
+    days: request.days + Math.ceil((km - plannedKm) / request.kmPerDay),
+  };
 }
 
 /** Up to two changes that relax the failed limit. Main one first. */

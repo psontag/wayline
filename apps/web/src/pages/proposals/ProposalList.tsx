@@ -38,6 +38,7 @@ import {
   proposalStats,
   type RainTag,
   rainTag,
+  longRequest,
   relaxOptions,
   shortRequest,
   shownRouteTags,
@@ -111,6 +112,11 @@ export function ProposalList({
   const allDry = rain.every((r) => r?.kind === "dry");
   const [kept, setKept] = useState(false);
   const shortTrip = kept ? undefined : shortRequest(request);
+  const longTrip =
+    kept || status !== "done" ? undefined : longRequest(request, proposals);
+  const daysHint = shortTrip
+    ? { ...shortTrip, text: "short.text" as const }
+    : longTrip && { ...longTrip, text: "long.text" as const };
 
   const list = useKeepSelectedInPlace(
     proposals.map((p) => p.id).join(),
@@ -145,17 +151,17 @@ export function ProposalList({
               : t("done.count", { count: proposals.length })
         }
         notice={
-          status === "running" || status === "cancelled" || shortTrip ? (
+          status === "running" || status === "cancelled" || daysHint ? (
             <div className="flex flex-col gap-3">
               {status === "running" ? (
                 <Progress generation={generation} />
               ) : status === "cancelled" ? (
                 <CancelledNotice retry={generation.retry} />
               ) : null}
-              {shortTrip && (
-                <ShortTripNotice
+              {daysHint && (
+                <DaysNotice
                   request={request}
-                  short={shortTrip}
+                  hint={daysHint}
                   onRelax={onRelax}
                   onKeep={() => setKept(true)}
                 />
@@ -265,15 +271,20 @@ function Progress({
   );
 }
 
-/** A to B is much shorter than planned: offer fewer days. */
-function ShortTripNotice({
+/** A to B is much shorter or longer than planned: offer the days that fit. */
+function DaysNotice({
   request,
-  short,
+  hint,
   onRelax,
   onKeep,
 }: {
   request: GenerateRequest;
-  short: NonNullable<ReturnType<typeof shortRequest>>;
+  hint: {
+    km: number;
+    plannedKm: number;
+    days: number;
+    text: "short.text" | "long.text";
+  };
   onRelax: (request: GenerateRequest) => void;
   onKeep: () => void;
 }) {
@@ -281,15 +292,15 @@ function ShortTripNotice({
   const format = useFormat();
   return (
     <Suggestion
-      text={t("short.text", {
+      text={t(hint.text, {
         from: request.startStation?.name ?? "",
         to: request.endStation?.name ?? "",
-        distance: format.distance(short.km * 1000),
-        total: format.distance(short.plannedKm * 1000),
+        distance: format.distance(hint.km * 1000),
+        total: format.distance(hint.plannedKm * 1000),
       })}
     >
-      <Button size="sm" onClick={() => onRelax(withDays(request, short.days))}>
-        {t("short.fewer", { count: short.days })}
+      <Button size="sm" onClick={() => onRelax(withDays(request, hint.days))}>
+        {t("short.fewer", { count: hint.days })}
       </Button>
       <Button size="sm" variant="ghost" onClick={onKeep}>
         {t("short.keep", { count: request.days })}
@@ -467,7 +478,10 @@ function ProposalItem({
               },
         ]
       : []),
-    ...tags.map(tagOf),
+    // Shorter than asked already says shortest.
+    ...tags
+      .filter((tag) => tag !== "shortest" || !routeTags.includes("shorter"))
+      .map(tagOf),
     ...routeTags.filter((tag) => !isOffInput(tag)).map(tagOf),
     ...routeNames
       .slice(0, 2)
