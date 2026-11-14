@@ -29,4 +29,5 @@ When the canvas changes, copy the changed files here.
 | `wind-proposals/index.html` | Options for wind-aware trips (#135). Plain HTML. Live page: https://claude.ai/artifact/2frmGoLdX5oPQYLJvcQsnM (private). |
 | `trip-journal/index.html` | Journal screen with all trips on one map (#165). Plain HTML. Live page: https://claude.ai/artifact/GgwzW8QofeeV1qFZ29onTv (private). |
 | `where-areas/index.html` | Where step with areas: Germany by train time up to 6 h, 16-day strip, suggested windows (#352). Plain HTML. Live page: https://claude.ai/artifact/8dSNxengX35rpnPaqL3J2x (private). |
+| `where-weather/index.html` | Where step: four ways to show weather on the area map, and flows from an area to proposals (#352, phase 7). Real area outlines and train times, made-up weather. Plain HTML. Live page: https://claude.ai/artifact/BG2ArHc7RLV2Aheezrgwig (private). |
 | `trip-panel/` | Side panel of the trip editor (#164): options A to C and the click dummy of C (`Prototype.dc.html`). Needs the canvas runtime. Live canvas: https://claude.ai/artifact/FEJvVqgHbqwASZejCccgAx (private). |
