@@ -185,6 +185,8 @@ Stops must be towns with hotels. For a route of length L and n days:
    - on loops: a stop closer to the start than 15 km (or 10 % of the length)
 3. Keep up to 3 alternatives per stop: towns with hotels that make the stage about 10 or 20 % shorter or longer, clearly apart from each other and from the stop. Fewer if the path has none.
 
+A stop at a village takes the name of a town or city within 2 km when most hotels within 2 km are closer to that town: Möhrig becomes Öhringen. Trip names use the town of a station: "Loop from Heidelberg", not "Loop from Heidelberg Hauptbahnhof".
+
 ### Day shares
 
 A full riding day is 09:00 to 17:00. The first day starts at the start time, the last day ends by the back-by time. Their share of a full day is the hours left divided by 8, from 0.25 to 1. Days in between are full.

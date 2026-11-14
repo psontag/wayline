@@ -139,7 +139,7 @@ describe("open day ride", () => {
       expect(stage.end.name).toBe("Heidelberg Hauptbahnhof");
       // Starts south, so the wind pushes it home.
       expect(turn(heading(p), 180)).toBeLessThan(90);
-      expect(p.trip.name).toBe(`${stage.start.name} – Heidelberg Hauptbahnhof`);
+      expect(p.trip.name).toBe(`${stage.start.name} – Heidelberg`);
     }
   });
 });
