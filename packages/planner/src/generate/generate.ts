@@ -15,6 +15,7 @@ import {
   type RouteInfo,
   Theme,
   timeToHours,
+  outAndBackTitle,
   tripTitle,
   byRank,
 } from "@wayline/domain";
@@ -126,6 +127,11 @@ const SIGNED = {
   nationalMisses: 3,
   timeMs: 1500,
 };
+/**
+ * Out and back day rides. tolerance: share the way to the turning town may
+ * differ from half the length. turn: degrees between their directions.
+ */
+const OUT_AND_BACK = { tolerance: 0.1, turn: 35 };
 /** A signed route counts this far from the start and end, as a share of the trip. */
 const SIGNED_REACH = 1.45;
 /** The same without an end, from the start only. */
@@ -229,6 +235,8 @@ type Pick = Path & {
   weak?: number;
   flavour?: Flavour;
   homeward?: boolean;
+  /** Day loop that turns at this town and comes back the same way. */
+  turn?: number;
 };
 
 /** What building a proposal needs besides its pick. */
@@ -505,6 +513,11 @@ export class Planner {
         keep,
       ),
     );
+    if (request.kind === "day-loop" && !picks.length) {
+      await step("outAndBack", () =>
+        this.outAndBack(picks, start, request, totalKm, keep),
+      );
+    }
     if (!proposals.length) return { ok: false, failedLimit: found.failedLimit };
     const n = proposals.length;
     onProgress?.({ phase: "routing", done: n, total: n });
@@ -613,7 +626,12 @@ export class Planner {
     if (p.flavour) proposal.flavour = p.flavour;
     if (p.homeward) proposal.homeward = true;
     if (route) proposal.followedRoute = route;
-    if (request.kind === "day-loop" && proposal.via[0]) {
+    if (p.turn !== undefined) {
+      const town = this.stops.town(p.turn).name;
+      proposal.via = [town, ...proposal.via.filter((v) => v !== town)];
+      proposal.tags = ["outAndBack", ...(proposal.tags ?? [])];
+      trip.name = outAndBackTitle(trip.stages[0]?.start.name ?? "", town);
+    } else if (request.kind === "day-loop" && proposal.via[0]) {
       trip.name = tripTitle(
         request.startStation?.name ?? trip.stages[0]?.start.name ?? "",
         undefined,
@@ -1135,6 +1153,60 @@ export class Planner {
         added++;
         await keep(found);
       }
+    }
+  }
+
+  /**
+   * Day loops where no loop fits, as in mountain valleys: rides to a town
+   * about half the length away and back the same way.
+   */
+  private async outAndBack(
+    picks: Pick[],
+    start: number,
+    request: GenerateRequest,
+    totalKm: number,
+    keep: Keep,
+  ) {
+    const graph = this.graph;
+    const costs = new Costs(graph, request);
+    const fromStart = costs.from(graph, start);
+    const home = graph.coord(start);
+    const half = totalKm / 2;
+    const perKm = (n: number) =>
+      (fromStart.cost[n] ?? Infinity) / (fromStart.km[n] ?? 1);
+    const towns = this.stops
+      .townNodes()
+      .filter(
+        (n) =>
+          Math.abs((fromStart.km[n] ?? Infinity) - half) <=
+          OUT_AND_BACK.tolerance * half,
+      )
+      .sort((a, b) => perKm(a) - perKm(b));
+    const headings: number[] = [];
+    for (const town of towns) {
+      if (picks.length >= PROPOSALS) break;
+      const heading = bearing(home, graph.coord(town));
+      if (headings.some((h) => turn(h, heading) < OUT_AND_BACK.turn)) continue;
+      const out = chainPath(graph, [start, town], costs);
+      if (!out) continue;
+      const back = [...out]
+        .reverse()
+        .map((s) => ({ edge: s.edge, forward: !s.forward }));
+      const steps = [...out, ...back];
+      const ascent = pathAscent(graph, start, steps);
+      if (ascent > request.maxAscentPerDay) continue;
+      headings.push(heading);
+      const p: Pick = {
+        nodes: [start, town, start],
+        steps,
+        stops: [],
+        km: pathKm(graph, steps),
+        ascent,
+        shared: 0,
+        turn: town,
+      };
+      picks.push(p);
+      await keep(p);
     }
   }
 

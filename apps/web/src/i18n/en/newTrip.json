@@ -205,7 +205,7 @@
   },
   "wind": {
     "label": "With the wind",
-    "hint": "Picks directions with a tailwind from the forecast, up to 16 days ahead."
+    "hint": "Picks directions with a tailwind from the forecast, up to 16 days ahead. It does not look for climbs, so routes may climb much less than your max ascent."
   },
   "distance": "Distance",
   "kmPerDay": "Km per day",

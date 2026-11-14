@@ -292,6 +292,7 @@ export const RouteTag = z.enum([
   "longer",
   "shorter",
   "moreClimbing",
+  "outAndBack",
 ]);
 export type RouteTag = z.infer<typeof RouteTag>;
 

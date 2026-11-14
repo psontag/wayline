@@ -169,6 +169,7 @@ The planner sets these when a route is done. Scenery and ways come from the grap
 | Lots of climbing | `climbs` | ≥ 12 m per km. Replaces Hilly. |
 | Longer, Shorter | `longer`, `shorter` | ≥ 10 % off the target km. Not on one day from A to B, which has a character. |
 | More climbing | `moreClimbing` | A stage over its max ascent by more than 5 % |
+| Out and back | `outAndBack` | A day loop that turns at a town and comes back the same way |
 
 The app adds the rest. See `06-ui.md`.
 
@@ -211,7 +212,7 @@ The Web Worker reports phases:
 | Mode | How |
 |---|---|
 | One day A to B | Graph search. Each proposal has a character: direct, longer or scenic. No flavours. |
-| Day loop | Graph search for a loop of the given length, without stops. |
+| Day loop | Graph search for a loop of the given length, without stops. If no loop fits, as in mountain valleys, out and back rides: to a town about half the length away and back the same way, up to 5, at least 35° apart. |
 | Open day ride | One-way, one day, no end. Graph search to any station. See below. |
 
 ## Open day ride
