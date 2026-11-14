@@ -87,6 +87,12 @@ import {
   FloatingTitle,
   DayWeather,
   LinkRow,
+  ForecastDays,
+  MapColorSwitch,
+  RainDot,
+  type RainKind,
+  RainLegend,
+  RainStrip,
 } from "@wayline/ui";
 import {
   Mountain,
@@ -108,6 +114,27 @@ import { WaylineError } from "@wayline/domain";
 import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorPanel, NotFoundScreen } from "../components/ErrorPanel";
+
+const demoColor = "weather";
+
+const demoRain: RainKind[] = [
+  "dry",
+  "dry",
+  "showers",
+  "wet",
+  "wet",
+  "showers",
+  "dry",
+  "dry",
+  "dry",
+  "showers",
+  "dry",
+  "dry",
+  "wet",
+  "dry",
+  "showers",
+  "dry",
+];
 
 const stages = [
   {
@@ -1244,13 +1271,70 @@ function ProposalDemos() {
               ["allgaeu", t("demo.areaAllgaeu"), 235, 4],
               ["harz", t("demo.areaHarz"), 310, 5],
             ] as const
-          ).map(([id, title, minutes, band]) => ({
+          ).map(([id, title, minutes, band], row) => ({
             id,
             title,
             detail: t("demo.reachChanges"),
             end: <ReachTime time={format.duration(minutes / 60)} band={band} />,
+            start: <RainDot rain={demoRain[(row * 3) % 16]} />,
+            muted: demoRain[(row * 3) % 16] === "wet",
+            below: (
+              <RainStrip
+                aria-label={t("demo.rainStrip")}
+                days={demoRain.map((_, i) => ({
+                  rain: demoRain[(i + row * 3) % 16] ?? "dry",
+                  rough: i > 10,
+                  selected: i >= 2 && i < 5,
+                }))}
+              />
+            ),
           }))}
         />
+      </div>
+      <div className="flex max-w-panel flex-col gap-3">
+        <ForecastDays
+          aria-label={t("demo.forecastDays")}
+          onPick={() => {}}
+          days={demoRain.map((_, i) => ({
+            weekday: ["S", "S", "M", "T", "W", "T", "F"][i % 7] ?? "",
+            day: String(14 + i),
+            label: t("demo.forecastDays"),
+            counts: {
+              dry: 10 + ((i * 7) % 20),
+              showers: (i * 5) % 9,
+              wet: i % 4,
+            },
+            rough: i > 10,
+            weekend: i % 7 < 2,
+            selected: i >= 2 && i < 5,
+          }))}
+        />
+        <RainStrip
+          size="md"
+          aria-label={t("demo.rainStrip")}
+          days={demoRain.map((rain, i) => ({ rain, rough: i > 10 }))}
+        />
+        <div className="self-start">
+          <MapColorSwitch
+            aria-label={t("demo.colorBy")}
+            options={[
+              { value: "reach", label: t("demo.byReach") },
+              { value: "weather", label: t("demo.byWeather") },
+            ]}
+            value={demoColor}
+            onValueChange={() => {}}
+            legend={
+              <RainLegend
+                labels={{
+                  dry: t("demo.dry"),
+                  showers: t("demo.showers"),
+                  wet: t("demo.wet"),
+                }}
+                over={t("demo.reachOver")}
+              />
+            }
+          />
+        </div>
       </div>
       <Card padding="none">
         <MessagePanel

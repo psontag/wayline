@@ -9,6 +9,12 @@ export type PickOption = {
   detail?: ReactNode;
   /** At the end of the row, e.g. a train time. */
   end?: ReactNode;
+  /** Before the title, e.g. a weather dot. */
+  start?: ReactNode;
+  /** Under the row, full width, e.g. a rain strip. */
+  below?: ReactNode;
+  /** Title in muted text, e.g. a wet area. */
+  muted?: boolean;
 };
 
 export type PickListProps = {
@@ -42,21 +48,32 @@ export function PickList({
               onFocus={onHoverChange && (() => onHoverChange(o.id))}
               onBlur={onHoverChange && (() => onHoverChange(undefined))}
               className={cn(
-                "flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-hover",
+                "flex w-full flex-col gap-1.5 px-3 py-2 text-left hover:bg-hover",
                 focusRing,
               )}
             >
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-sm font-bold text-text">
-                  {o.title}
-                </span>
-                {o.detail && (
-                  <span className="truncate text-xs text-text-muted tabular-nums">
-                    {o.detail}
+              <span className="flex w-full items-center gap-2">
+                {o.start}
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span
+                    className={cn(
+                      "truncate text-sm",
+                      o.muted
+                        ? "font-semibold text-text-muted"
+                        : "font-bold text-text",
+                    )}
+                  >
+                    {o.title}
                   </span>
-                )}
+                  {o.detail && (
+                    <span className="truncate text-xs text-text-muted tabular-nums">
+                      {o.detail}
+                    </span>
+                  )}
+                </span>
+                {o.end}
               </span>
-              {o.end}
+              {o.below}
             </button>
           </li>
         ))}

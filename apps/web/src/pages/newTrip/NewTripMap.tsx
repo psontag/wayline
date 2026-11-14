@@ -6,7 +6,12 @@ import {
   type LonLat,
   type Place,
 } from "@wayline/domain";
-import { EndpointMarker, MapHint } from "@wayline/ui";
+import {
+  EndpointMarker,
+  MapColorSwitch,
+  MapHint,
+  RainLegend,
+} from "@wayline/ui";
 import { MousePointerClick } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,11 +21,9 @@ import {
   Marker,
 } from "react-map-gl/maplibre";
 import { AppMap, type MapPadding } from "../../components/map/AppMap";
-import { WeatherLayers } from "../../components/map/WeatherLayers";
-import type { WeatherField } from "../../components/map/weatherGrid";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useServices } from "../../data/ServicesProvider";
-import { AREA_LAYER, AreaLayer } from "./AreaLayer";
+import { AREA_LAYER, type AreaColor, AreaLayer } from "./AreaLayer";
 import type { AreaReach } from "./areas";
 import { REACH_LAYER, ReachLayer, type ReachStation } from "./ReachLayer";
 import { RouteShelfLayer } from "./RouteShelfLayer";
@@ -59,7 +62,6 @@ export function NewTripMap({
   onPick,
   reach,
   shelf,
-  weather,
   areas,
 }: {
   start: Place | null;
@@ -70,8 +72,6 @@ export function NewTripMap({
   onPick?: (at: LonLat, nearKm: number) => Place | undefined;
   /** A signed route from the route shelf, with its stretch when selected. */
   shelf?: { route: ShelfRoute; selected: boolean; wet?: boolean };
-  /** Rain and wind of one day. */
-  weather?: WeatherField;
   /** Stations by train time. A click on one picks it. */
   reach?: {
     stations: ReachStation[];
@@ -80,10 +80,13 @@ export function NewTripMap({
     fitKey: string;
     onPick: (station: Place) => void;
   };
-  /** Areas by train time. A click on one picks it. */
+  /** Areas by train time or weather. A click on one picks it. */
   areas?: {
     areas: AreaReach[];
     attribution: string;
+    color: AreaColor;
+    /** Shows the switch between train time and weather. */
+    onColor?: (color: AreaColor) => void;
     /** The map zooms to it. */
     picked?: Area;
     /** Highlighted, e.g. from the list. */
@@ -156,6 +159,31 @@ export function NewTripMap({
   const regionKey = areas ? `area:${pickedArea?.id ?? ""}` : reach?.fitKey;
   const overArea = hoveredArea !== undefined && hoveredArea !== pickedArea?.id;
 
+  const onColor = !pickedArea && areas?.onColor;
+  const colorSwitch = onColor && (
+    <MapColorSwitch
+      aria-label={t("map.colorBy")}
+      options={[
+        { value: "reach", label: t("map.byReach") },
+        { value: "weather", label: t("map.byWeather") },
+      ]}
+      value={areas.color}
+      onValueChange={(v) => onColor(v as AreaColor)}
+      {...(areas.color === "weather" && {
+        legend: (
+          <RainLegend
+            labels={{
+              dry: t("rain.dry"),
+              showers: t("rain.showers"),
+              wet: t("rain.wet"),
+            }}
+            over={t("map.overMax")}
+          />
+        ),
+      })}
+    />
+  );
+
   // Wait for the region, so the map opens on it instead of moving there.
   if (region.isPending) return null;
   return (
@@ -187,6 +215,12 @@ export function NewTripMap({
           setHoveredArea(undefined);
         },
       })}
+      {...(colorSwitch && {
+        overlay: (
+          // Under the hint, clear of the attribution.
+          <div className="absolute top-14 left-3 z-panel">{colorSwitch}</div>
+        ),
+      })}
       hint={
         onPick &&
         next && (
@@ -206,13 +240,13 @@ export function NewTripMap({
         <AreaLayer
           areas={areas.areas}
           attribution={areas.attribution}
+          color={areas.onColor ? areas.color : "reach"}
           {...(pickedArea && { picked: pickedArea.id })}
           {...((areas.hovered ?? hoveredArea) && {
             hovered: areas.hovered ?? hoveredArea,
           })}
         />
       )}
-      {weather && <WeatherLayers field={weather} rain wind />}
       {shelf && (
         <RouteShelfLayer
           route={shelf.route}

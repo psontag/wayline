@@ -24,15 +24,20 @@ function shapeOf(area: Area): MultiPolygon {
   return shape;
 }
 
-/** Tourism regions colored by train time from home. A click on one picks it. */
+/** What colors the areas: train time from home, or rain on the trip days. */
+export type AreaColor = "reach" | "weather";
+
+/** Tourism regions colored by train time or weather. A click on one picks it. */
 export function AreaLayer({
   areas,
   attribution,
+  color = "reach",
   picked,
   hovered,
 }: {
   areas: AreaReach[];
   attribution: string;
+  color?: AreaColor;
   /** Id of the picked area. The others fade and lose their labels. */
   picked?: string;
   /** Id of the area under the pointer, on the map or in the list. */
@@ -43,12 +48,13 @@ export function AreaLayer({
   const shapesData = useMemo(
     (): FeatureCollection<MultiPolygon> => ({
       type: "FeatureCollection",
-      features: areas.map(({ area, reach, over }) => ({
+      features: areas.map(({ area, reach, over, rain }) => ({
         type: "Feature",
         properties: {
           id: area.id,
           band: (reach && reachBand(reach.minutes)) ?? 0,
           over,
+          rain: rain ?? "",
         },
         geometry: shapeOf(area),
       })),
@@ -87,30 +93,44 @@ export function AreaLayer({
           id={AREA_LAYER}
           type="fill"
           paint={{
-            "fill-color": [
-              "match",
-              ["get", "band"],
-              1,
-              tokens.reach1,
-              2,
-              tokens.reach2,
-              3,
-              tokens.reach3,
-              4,
-              tokens.reach4,
-              5,
-              tokens.reach5,
-              tokens.textMuted,
-            ],
-            // Over 6 h: no fill, the base map shows through.
+            "fill-color":
+              color === "weather"
+                ? [
+                    "match",
+                    ["get", "rain"],
+                    "dry",
+                    tokens.weatherDry,
+                    "showers",
+                    tokens.weatherShowers,
+                    "wet",
+                    tokens.weatherWet,
+                    tokens.textMuted,
+                  ]
+                : [
+                    "match",
+                    ["get", "band"],
+                    1,
+                    tokens.reach1,
+                    2,
+                    tokens.reach2,
+                    3,
+                    tokens.reach3,
+                    4,
+                    tokens.reach4,
+                    5,
+                    tokens.reach5,
+                    tokens.textMuted,
+                  ],
+            // Over 6 h: no fill, the base map shows through. By weather,
+            // areas over the max time are grey.
             "fill-opacity": [
               "case",
               ["==", ["get", "band"], 0],
               0,
               ...(picked ? [isPicked, 0.2, true, 0.08] : []),
               ["get", "over"],
-              0.2,
-              0.6,
+              color === "weather" ? 0.12 : 0.2,
+              color === "weather" ? 0.7 : 0.6,
             ] as ExpressionSpecification,
           }}
         />
