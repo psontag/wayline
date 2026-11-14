@@ -5,7 +5,6 @@ import {
   FERRY_COST,
   TOURING,
   TURN_COST,
-  bitsOf,
   surfaceOf,
   wayFactor,
 } from "./cost";
@@ -43,17 +42,19 @@ export type RouteOptions = {
 type Tile = {
   slot: number;
   s: SearchTile;
+  /** The key as numbers. */
+  kx: number;
+  ky: number;
   owned: Uint8Array;
   /** Entries of local node i: adjStart[i] to adjStart[i + 1]. */
   adjStart: Int32Array;
   adjTo: Int32Array;
   adjEdge: Int32Array;
   adjForward: Uint8Array;
+  /** Filled when the search first reaches an entry. 0: not yet. Costs are at least 1. */
   adjCost: Float64Array;
-  /** Of the straight line from → to. Shape points don't change routes much. */
+  /** The same for bearings. NaN: not yet. */
   adjBearing: Float64Array;
-  adjSigned: Uint8Array;
-  adjFerry: Uint8Array;
   geometry?: Promise<GeometryTile | undefined>;
   /** Bounding box of each edge with its shape: min lon, min lat, max lon, max lat. */
   boxes?: Int32Array;
@@ -96,6 +97,9 @@ export class Router {
   private keys: Set<string>;
   private tiles = new Map<string, Promise<Tile | undefined>>();
   private slots: Tile[] = [];
+  /** Way factor by bits × 2¹⁶ + estimates. Few pairs repeat across many edges. */
+  private factors = new Map<number, number>();
+  private ferry: number;
 
   constructor(
     private index: RoutingTiles,
@@ -103,6 +107,7 @@ export class Router {
     private profile: CostProfile = TOURING,
   ) {
     this.keys = new Set(index.keys);
+    this.ferry = index.highways.indexOf("ferry");
   }
 
   /** Same arithmetic as tile_of in pipeline/routing.py. */
@@ -137,20 +142,24 @@ export class Router {
     return tile;
   }
 
-  /** Whether edge e can be ridden in a direction. */
+  /** Whether edge e can be ridden in a direction. Bits as in bitsOf. */
   private static open(s: SearchTile, e: number, forward: boolean) {
-    const b = bitsOf(at(s.bits, e));
-    return (forward ? b.forward : b.backward) === 1;
+    return ((at(s.bits, e) >> (forward ? 12 : 13)) & 1) === 1;
+  }
+
+  private factor(bits: number, estimates: number) {
+    const key = bits * 65536 + estimates;
+    let f = this.factors.get(key);
+    if (f === undefined) {
+      f = wayFactor(bits, this.index.highways, this.profile, estimates);
+      this.factors.set(key, f);
+    }
+    return f;
   }
 
   /** Cost of riding all of edge e in a direction. */
   private edgeCost(s: SearchTile, e: number, forward: boolean) {
-    const factor = wayFactor(
-      at(s.bits, e),
-      this.index.highways,
-      this.profile,
-      at(s.estimates, e),
-    );
+    const factor = this.factor(at(s.bits, e), at(s.estimates, e));
     const down = (forward ? at(s.downF, e) : at(s.downB, e)) / 10;
     return Math.max(
       1,
@@ -158,12 +167,62 @@ export class Router {
     );
   }
 
+  // Entry costs, bearings and flags are computed when the search reaches
+  // them. A search touches only a small part of the loaded tiles.
+
+  /** Cost of adjacency entry i. */
+  private entryCost(tile: Tile, i: number) {
+    let c = at(tile.adjCost, i);
+    if (c === 0) {
+      c = this.edgeCost(tile.s, at(tile.adjEdge, i), tile.adjForward[i] === 1);
+      tile.adjCost[i] = c;
+    }
+    return c;
+  }
+
+  /** Of the straight line along entry i. Shape points don't change routes much. */
+  private static bearing(tile: Tile, i: number) {
+    const known = at(tile.adjBearing, i);
+    if (!Number.isNaN(known)) return known;
+    const s = tile.s;
+    const e = at(tile.adjEdge, i);
+    const forward = tile.adjForward[i] === 1;
+    const a = forward ? at(s.from, e) : at(s.to, e);
+    const b = forward ? at(s.to, e) : at(s.from, e);
+    const bearing = Math.atan2(
+      at(s.lat, b) - at(s.lat, a),
+      (at(s.lon, b) - at(s.lon, a)) *
+        Math.cos((at(s.lat, a) / COORD) * (Math.PI / 180)),
+    );
+    tile.adjBearing[i] = bearing;
+    return bearing;
+  }
+
+  /** No turn cost on signed routes makes them a bit more magnetic, as in BRouter. */
+  private noTurnCost(tile: Tile, i: number) {
+    // Bits as in bitsOf, read directly: this runs for every entry reached.
+    return (
+      this.profile.cycleRoutes &&
+      ((at(tile.s.bits, at(tile.adjEdge, i)) >> 11) & 1) === 1
+    );
+  }
+
+  private isFerry(tile: Tile, i: number) {
+    return (at(tile.s.bits, at(tile.adjEdge, i)) & 31) === this.ferry;
+  }
+
   private adjacency(s: SearchTile): Tile {
     const n = s.ids.length;
     const m = s.from.length;
+    const [kx, ky] = s.key.split("_").map(Number) as [number, number];
+    const per = COORD * this.index.size;
     const owned = new Uint8Array(n);
     for (let i = 0; i < n; i++)
-      owned[i] = this.keyOf(at(s.lon, i), at(s.lat, i)) === s.key ? 1 : 0;
+      owned[i] =
+        Math.floor(at(s.lon, i) / per) === kx &&
+        Math.floor(at(s.lat, i) / per) === ky
+          ? 1
+          : 0;
     const usable = (e: number, forward: boolean) => {
       const node = forward ? at(s.from, e) : at(s.to, e);
       return owned[node] === 1 && Router.open(s, e, forward);
@@ -180,42 +239,28 @@ export class Router {
     const tile: Tile = {
       slot: this.slots.length,
       s,
+      kx,
+      ky,
       owned,
       adjStart,
       adjTo: new Int32Array(size),
       adjEdge: new Int32Array(size),
       adjForward: new Uint8Array(size),
       adjCost: new Float64Array(size),
-      adjBearing: new Float64Array(size),
-      adjSigned: new Uint8Array(size),
-      adjFerry: new Uint8Array(size),
+      adjBearing: new Float64Array(size).fill(Number.NaN),
     };
-    const ferry = this.index.highways.indexOf("ferry");
     const fill = adjStart.slice(0, n);
-    for (let e = 0; e < m; e++) {
-      const bits = at(s.bits, e);
-      const isFerry = bitsOf(bits).highway === ferry ? 1 : 0;
-      // No turn cost on signed routes makes them a bit more magnetic, as in BRouter.
-      const signed = this.profile.cycleRoutes ? bitsOf(bits).signed : 0;
-      for (const forward of [true, false]) {
+    for (let e = 0; e < m; e++)
+      for (let k = 0; k < 2; k++) {
+        const forward = k === 0;
         if (!usable(e, forward)) continue;
         const a = forward ? at(s.from, e) : at(s.to, e);
-        const b = forward ? at(s.to, e) : at(s.from, e);
         const i = at(fill, a);
         fill[a] = i + 1;
-        tile.adjTo[i] = b;
+        tile.adjTo[i] = forward ? at(s.to, e) : at(s.from, e);
         tile.adjEdge[i] = e;
         tile.adjForward[i] = forward ? 1 : 0;
-        tile.adjCost[i] = this.edgeCost(s, e, forward);
-        tile.adjBearing[i] = Math.atan2(
-          at(s.lat, b) - at(s.lat, a),
-          (at(s.lon, b) - at(s.lon, a)) *
-            Math.cos((at(s.lat, a) / COORD) * (Math.PI / 180)),
-        );
-        tile.adjSigned[i] = signed;
-        tile.adjFerry[i] = isFerry;
       }
-    }
     this.slots.push(tile);
     return tile;
   }
@@ -282,65 +327,69 @@ export class Router {
       const t = at(s.to, e);
       let x = at(s.lon, f);
       let y = at(s.lat, f);
-      let [x0, y0, x1, y1] = [x, y, x, y];
-      const grow = (px: number, py: number) => {
-        x0 = Math.min(x0, px);
-        y0 = Math.min(y0, py);
-        x1 = Math.max(x1, px);
-        y1 = Math.max(y1, py);
-      };
-      grow(at(s.lon, t), at(s.lat, t));
+      const tx = at(s.lon, t);
+      const ty = at(s.lat, t);
+      let x0 = Math.min(x, tx);
+      let y0 = Math.min(y, ty);
+      let x1 = Math.max(x, tx);
+      let y1 = Math.max(y, ty);
       if (g)
         for (let j = at(g.start, e); j < at(g.start, e + 1); j++) {
           x += at(g.dlon, j);
           y += at(g.dlat, j);
-          grow(x, y);
+          if (x < x0) x0 = x;
+          else if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          else if (y > y1) y1 = y;
         }
-      boxes.set([x0, y0, x1, y1], 4 * e);
+      boxes[4 * e] = x0;
+      boxes[4 * e + 1] = y0;
+      boxes[4 * e + 2] = x1;
+      boxes[4 * e + 3] = y1;
     }
     tile.boxes = boxes;
     return boxes;
   }
 
+  /** Grid column or row of a coordinate in degrees, clamped to the tile. */
+  private cellOf(v: number, k: number) {
+    const c = Math.floor((v / this.index.size - k) * GRID);
+    return c < 0 ? 0 : c > GRID - 1 ? GRID - 1 : c;
+  }
+
   /** Grid cell of a point in a tile, clamped to the tile. */
   private cell(tile: Tile, lon: number, lat: number): [number, number] {
-    const size = this.index.size;
-    const [kx, ky] = tile.s.key.split("_").map(Number) as [number, number];
-    const c = (v: number) =>
-      Math.min(GRID - 1, Math.max(0, Math.floor(v * GRID)));
-    return [c(lon / size - kx), c(lat / size - ky)];
+    return [this.cellOf(lon, tile.kx), this.cellOf(lat, tile.ky)];
   }
 
   /** Edges by grid cell, by their boxes. Edges outside the tile go to the border cells. */
   private grid(tile: Tile, boxes: Int32Array) {
     if (tile.grid) return tile.grid;
     const m = tile.s.from.length;
-    const cells = (e: number, visit: (cell: number) => void) => {
-      const [x0, y0] = this.cell(
-        tile,
-        at(boxes, 4 * e) / COORD,
-        at(boxes, 4 * e + 1) / COORD,
-      );
-      const [x1, y1] = this.cell(
-        tile,
-        at(boxes, 4 * e + 2) / COORD,
-        at(boxes, 4 * e + 3) / COORD,
-      );
-      for (let y = y0; y <= y1; y++)
-        for (let x = x0; x <= x1; x++) visit(y * GRID + x);
-    };
+    // Cell range of each edge: x0, y0, x1, y1.
+    const range = new Int32Array(4 * m);
+    for (let e = 0; e < m; e++)
+      for (let j = 0; j < 4; j++)
+        range[4 * e + j] = this.cellOf(
+          at(boxes, 4 * e + j) / COORD,
+          j % 2 === 0 ? tile.kx : tile.ky,
+        );
     const start = new Int32Array(GRID * GRID + 1);
     for (let e = 0; e < m; e++)
-      cells(e, (c) => (start[c + 1] = at(start, c + 1) + 1));
+      for (let y = at(range, 4 * e + 1); y <= at(range, 4 * e + 3); y++)
+        for (let x = at(range, 4 * e); x <= at(range, 4 * e + 2); x++)
+          start[y * GRID + x + 1] = at(start, y * GRID + x + 1) + 1;
     for (let i = 0; i < GRID * GRID; i++)
       start[i + 1] = at(start, i + 1) + at(start, i);
     const fill = start.slice(0, GRID * GRID);
     const edges = new Int32Array(at(start, GRID * GRID));
     for (let e = 0; e < m; e++)
-      cells(e, (c) => {
-        edges[at(fill, c)] = e;
-        fill[c] = at(fill, c) + 1;
-      });
+      for (let y = at(range, 4 * e + 1); y <= at(range, 4 * e + 3); y++)
+        for (let x = at(range, 4 * e); x <= at(range, 4 * e + 2); x++) {
+          const c = y * GRID + x;
+          edges[at(fill, c)] = e;
+          fill[c] = at(fill, c) + 1;
+        }
     tile.grid = { start, edges };
     return tile.grid;
   }
@@ -522,18 +571,18 @@ export class Router {
       const inBearing =
         prev === undefined
           ? undefined
-          : at(this.slot(prev).adjBearing, prev % SLOT);
+          : Router.bearing(this.slot(prev), prev % SLOT);
       const onFerry =
-        prev !== undefined && this.slot(prev).adjFerry[prev % SLOT] === 1;
+        prev !== undefined && this.isFerry(this.slot(prev), prev % SLOT);
       const end = at(tile.adjStart, local + 1);
       for (let i = at(tile.adjStart, local); i < end; i++) {
         const bn = at(tile.adjTo, i);
         const v = at(s.ids, bn);
         if (done.has(v)) continue;
-        let c = cu + at(tile.adjCost, i);
-        if (inBearing !== undefined && !tile.adjSigned[i])
-          c += TURN_COST * (1 - Math.cos(at(tile.adjBearing, i) - inBearing));
-        if (tile.adjFerry[i] && !onFerry) c += FERRY_COST;
+        let c = cu + this.entryCost(tile, i);
+        if (inBearing !== undefined && !this.noTurnCost(tile, i))
+          c += TURN_COST * (1 - Math.cos(Router.bearing(tile, i) - inBearing));
+        if (!onFerry && this.isFerry(tile, i)) c += FERRY_COST;
         if (c < (cost.get(v) ?? Infinity)) {
           cost.set(v, c);
           where.set(v, tile.slot * SLOT + bn);
