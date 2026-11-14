@@ -199,6 +199,7 @@ The Web Worker reports phases:
 
 - Each kept proposal is cut, routed and sent right away. The search goes on after that.
 - Time limits pause while a proposal is routed.
+- The worker keeps distance searches from each node between runs in the same area, for the last setting of max ascent per km, up to 64 MB per area. A second search after changing the dates or the number of days is faster.
 - Each proposal has a rank. The UI sorts by it, so the final order does not depend on when a proposal came.
 - The user can cancel.
 - If nothing fits, say which limit failed and offer to relax it.

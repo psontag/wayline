@@ -13,6 +13,7 @@ import {
 } from "@wayline/providers";
 import { readDataFile } from "@wayline/providers/testing";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { resetSearchCounts, searchCounts } from "../graph/dijkstra";
 import { straightLeg } from "../graph/leg";
 import { Planners, requestBBox } from "./generate";
 
@@ -272,5 +273,23 @@ describe("Planner on the Heidelberg tiles", () => {
     expect(end.coord).toEqual(end.station?.coord);
     // The name keeps the towns the user picked.
     expect(direct!.trip.name).toBe("Heidelberg – Weinheim");
+  });
+
+  it("reuses distance searches in the next run", async () => {
+    const ride: GenerateRequest = { ...request, kind: "one-way", days: 1 };
+    const planner = await new Planners(source()).for(ride);
+    const run = async () => {
+      resetSearchCounts();
+      const result = await planner.generate(ride);
+      if (!result.ok) throw new Error(result.failedLimit);
+      return {
+        searches: searchCounts.oneToAll,
+        km: result.proposals.map((p) => p.trip.stages[0]!.stats.distance),
+      };
+    };
+    const first = await run();
+    const second = await run();
+    expect(second.km).toEqual(first.km);
+    expect(second.searches).toBeLessThan(first.searches);
   });
 });
