@@ -42,6 +42,18 @@ describe("searchPlaces", () => {
     expect(near!.km).toBeLessThan(2);
   });
 
+  it("shows a town name once, and the main station before villages", () => {
+    const shown = searchPlaces(places, "bamberg");
+    expect(shown.map((p) => `${p.kind} ${p.name}`).slice(0, 2)).toEqual([
+      "town Bamberg",
+      "station Bamberg",
+    ]);
+    const towns = shown.filter(
+      (p) => p.kind === "town" && p.name === "Bamberg",
+    );
+    expect(towns).toHaveLength(1);
+  });
+
   it("ignores case and accents", () => {
     expect(searchPlaces(places, "BAMBERG")[0]!.name).toBe("Bamberg");
     expect(searchPlaces(places, "goßweinstein")[0]!.name).toBe("Gößweinstein");

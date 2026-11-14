@@ -55,7 +55,9 @@
     "length": "Trip length",
     "otherDates": "Other dates",
     "hint": "Pick an area, then a station.",
-    "choosePlace": "Choose a place"
+    "choosePlace": "Choose a place",
+    "ride_one": "Ride {{count}} day",
+    "ride_other": "Ride {{count}} days"
   },
   "reach": {
     "title": "Train from home",

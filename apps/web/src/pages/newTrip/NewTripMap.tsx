@@ -33,6 +33,8 @@ const compactPadding: MapPadding = { top: 24, right: 80, bottom: 24, left: 32 };
 
 /** A click means a place whose label is about this close, in pixels. */
 const PICK_PX = 30;
+/** Zoom for a single place: about 100 km around it. */
+const ONE_PLACE_ZOOM = 8;
 
 /** Over a station: the click picks it, not the nearest place. */
 const STATION_CURSOR = "pointer";
@@ -193,6 +195,9 @@ export function NewTripMap({
         stretchFit ?? (places.length ? places.map((p) => p.coord) : regionFit)
       }
       fitKey={fromMap ? "" : key || regionKey}
+      // One place: keep its surroundings in view, so the end can be picked.
+      {...(!stretchFit &&
+        places.length === 1 && { fitMaxZoom: ONE_PLACE_ZOOM })}
       mapRef={mapRef}
       network={areas && !pickedArea ? "off" : "full"}
       hiddenLabels={places.map((p) => p.name)}
