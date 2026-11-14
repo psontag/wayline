@@ -42,6 +42,16 @@ export function bestOf(proposals: Proposal[]): Proposal[] {
   return [...proposals].sort((a, b) => b.score - a.score).slice(0, MAX_KEPT);
 }
 
+/** Adds found proposals to the shown ones. many: several requests. */
+export function mergeProposals(
+  old: Proposal[],
+  found: Proposal[],
+  many: boolean,
+): Proposal[] {
+  const all = [...old, ...found];
+  return many ? bestOf(all) : all.sort(byRank);
+}
+
 /**
  * Runs the trip generator for a request, then for each of `also`, one after
  * another. Proposals come in one by one. wind: hourly wind to plan with.
@@ -90,7 +100,7 @@ export function useGeneration(
       const tag = (i: number, p: Proposal) =>
         many ? { ...p, id: `${i}-${p.id}` } : p;
       const merge = (old: Proposal[], found: Proposal[]) =>
-        many ? bestOf([...old, ...found]) : found.sort(byRank);
+        mergeProposals(old, found, many);
       const runAll = async () => {
         let done: Proposal[] = [];
         let failedLimit: FailedLimit | undefined;
