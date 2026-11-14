@@ -6,10 +6,13 @@ import { useTranslation } from "react-i18next";
 /** Step 1 of New trip: days, train, areas. The map picks the start. */
 export function WherePanel({
   onChoosePlace,
+  ride,
   lead,
   children,
 }: {
   onChoosePlace: () => void;
+  /** A picked signed route: the footer rides it instead. */
+  ride?: { label: string; hint: string; onRide: () => void };
   /** Sections above the rest, e.g. the areas on phones. */
   lead?: ReactNode;
   /** The sections: days, train from home, areas, … */
@@ -25,9 +28,11 @@ export function WherePanel({
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-4">
-        <span className="text-xs text-text-muted">{t("where.hint")}</span>
-        <Button type="button" onClick={onChoosePlace}>
-          {t("where.choosePlace")}
+        <span className="text-xs text-text-muted">
+          {ride ? ride.hint : t("where.hint")}
+        </span>
+        <Button type="button" onClick={ride ? ride.onRide : onChoosePlace}>
+          {ride ? ride.label : t("where.choosePlace")}
           <ArrowRight aria-hidden />
         </Button>
       </div>

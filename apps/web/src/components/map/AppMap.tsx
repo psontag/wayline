@@ -93,6 +93,8 @@ export type AppMapProps = {
   fit: LonLat[];
   /** Fit again when this changes. Defaults to the fit points themselves. */
   fitKey?: unknown;
+  /** Closest zoom when fitting, e.g. lower to keep a single point's area in view. */
+  fitMaxZoom?: number;
   /** Points to show on load, if they differ from fit. */
   initialFit?: LonLat[];
   /** Space around fit points, e.g. for a sheet over the map. */
@@ -157,6 +159,7 @@ export function AppMap({
   label,
   fit,
   fitKey,
+  fitMaxZoom = 12,
   initialFit,
   padding = defaultPadding,
   network = "quiet",
@@ -200,20 +203,24 @@ export function AppMap({
   // Fit when the key changes, not on load: initialViewState does that.
   const key = JSON.stringify([fitKey === undefined ? fit : fitKey, maximized]);
   const fitted = useRef(key);
-  const latest = useRef({ fit, padding });
+  const latest = useRef({ fit, padding, fitMaxZoom });
   useEffect(() => {
-    latest.current = { fit, padding: maximized ? maximizedPadding : padding };
+    latest.current = {
+      fit,
+      padding: maximized ? maximizedPadding : padding,
+      fitMaxZoom,
+    };
   });
   useEffect(() => {
     if (fitted.current === key) return;
     fitted.current = key;
-    const { fit, padding } = latest.current;
+    const { fit, padding, fitMaxZoom } = latest.current;
     // The map may not have seen its new size yet after maximising.
     mapRef.current?.resize();
     if (!fit.length) return;
     mapRef.current?.fitBounds(boundsOf(fit), {
       padding,
-      maxZoom: 12,
+      maxZoom: fitMaxZoom,
       duration: matchMedia("(prefers-reduced-motion: reduce)").matches
         ? 0
         : 600,
@@ -243,7 +250,7 @@ export function AppMap({
           bounds: (initialFit ?? fit).length
             ? boundsOf(initialFit ?? fit)
             : regionBounds,
-          fitBoundsOptions: { padding, maxZoom: 12 },
+          fitBoundsOptions: { padding, maxZoom: fitMaxZoom },
         }}
         minZoom={5}
         maxZoom={18}
