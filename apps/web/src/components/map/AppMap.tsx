@@ -47,8 +47,9 @@ export const mapStyles = {
 const regionBounds: LngLatBoundsLike = [10.45, 49.59, 12.26, 50.52];
 
 // Marker labels sit right of the point, and the legend sits bottom left.
+// The hint sits top left, and stop pins rise above their point.
 const defaultPadding: MapPadding = {
-  top: 56,
+  top: 96,
   right: 120,
   bottom: 72,
   left: 56,

@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import {
   comparisonTags,
   labelPoints,
+  longRequest,
   progressValue,
   rainTag,
   relaxOptions,
@@ -66,6 +67,33 @@ describe("shortRequest", () => {
     expect(shortRequest({ ...toWuerzburg, days: 2, kmPerDay: 60 })).toBe(
       undefined,
     );
+  });
+});
+
+describe("longRequest", () => {
+  const toBamberg: GenerateRequest = {
+    ...request,
+    endStation: { name: "Bamberg", kind: "station", coord: [10.9, 49.9] },
+  };
+  const ofKm = (km: number) =>
+    ({
+      trip: {
+        stages: [{ stats: { distance: km * 1000 } }],
+      },
+    }) as unknown as Proposal;
+
+  it("offers more days when the shortest route is much longer", () => {
+    expect(longRequest(toBamberg, [ofKm(295), ofKm(277)])).toEqual({
+      km: 275,
+      plannedKm: 210,
+      days: 4,
+    });
+  });
+
+  it("says nothing when the days fit or without an end", () => {
+    expect(longRequest(toBamberg, [ofKm(240)])).toBeUndefined();
+    expect(longRequest(request, [ofKm(400)])).toBeUndefined();
+    expect(longRequest(toBamberg, [])).toBeUndefined();
   });
 });
 
