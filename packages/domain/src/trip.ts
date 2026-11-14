@@ -36,6 +36,11 @@ export function tripTitle(from: string, to?: string, via?: string): string {
   return via ? `Loop from ${from} via ${via}` : `Loop from ${from}`;
 }
 
+/** Name of a day ride that turns at a town and comes back the same way. */
+export function outAndBackTitle(from: string, turn: string): string {
+  return `${from} to ${turn} and back`;
+}
+
 /** Bike routes are about this much longer than the straight line. */
 const ROUTE_FACTOR = 1.3;
 /** Below this share of the planned km, A to B needs detours to fill the days. */

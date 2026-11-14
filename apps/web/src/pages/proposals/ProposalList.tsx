@@ -420,7 +420,10 @@ function ProposalItem({
       ? format.speed(windDays[0].wind.avgSpeed)
       : undefined;
   const isOffInput = (tag: RouteTag) =>
-    tag === "longer" || tag === "shorter" || tag === "moreClimbing";
+    tag === "outAndBack" ||
+    tag === "longer" ||
+    tag === "shorter" ||
+    tag === "moreClimbing";
   const tagOf = (
     key: RouteTag | ComparisonTag | "rain" | "dry" | "tailwind",
   ) => ({

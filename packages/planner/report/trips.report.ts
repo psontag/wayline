@@ -229,6 +229,7 @@ it("reports", { timeout: 900_000 }, async () => {
     const result = await planner.generate(request);
     const ms = performance.now() - t;
     const proposals = result.ok ? result.proposals : [];
+    if (!result.ok) console.log(`${name}: failed on ${result.failedLimit}`);
     const lines = proposals.map(lineOf);
     let road = 0;
     let corridor = 0;

@@ -225,12 +225,12 @@ describe("shownRouteTags", () => {
     expect(shown.get("c")).toEqual(["shorter", "moreClimbing"]);
   });
 
-  it("always shows More climbing", () => {
+  it("always shows More climbing and Out and back", () => {
     const shown = shownRouteTags([
-      tagged("a", ["moreClimbing"]),
-      tagged("b", ["moreClimbing"]),
+      tagged("a", ["nature", "moreClimbing", "outAndBack"]),
+      tagged("b", ["nature", "moreClimbing", "outAndBack"]),
     ]);
-    expect(shown.get("a")).toEqual(["moreClimbing"]);
+    expect(shown.get("a")).toEqual(["moreClimbing", "outAndBack"]);
   });
 
   it("keeps all tags of a single proposal", () => {

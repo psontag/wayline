@@ -131,12 +131,20 @@ export function comparisonTags(
 }
 
 /** Tags that say a proposal leaves the inputs. Shown first. */
-const OFF_INPUT: readonly RouteTag[] = ["longer", "shorter", "moreClimbing"];
+const OFF_INPUT: readonly RouteTag[] = [
+  "outAndBack",
+  "longer",
+  "shorter",
+  "moreClimbing",
+];
+/** Tags that always show, even when most proposals have them. */
+const ALWAYS: readonly RouteTag[] = ["outAndBack", "moreClimbing"];
 
 /**
  * Route tags to show, by proposal id: leaving the inputs first, then the
  * rarest in the list. A tag most proposals have says little, so it goes.
- * More climbing breaks a limit, so it always shows.
+ * More climbing breaks a limit and Out and back is not a loop, so they
+ * always show.
  */
 export function shownRouteTags(proposals: Proposal[]): Map<string, RouteTag[]> {
   const counts = new Map<RouteTag, number>();
@@ -151,7 +159,7 @@ export function shownRouteTags(proposals: Proposal[]): Map<string, RouteTag[]> {
       (p.tags ?? [])
         .filter(
           (tag) =>
-            tag === "moreClimbing" ||
+            ALWAYS.includes(tag) ||
             proposals.length < 2 ||
             (counts.get(tag) ?? 0) <= proposals.length / 2,
         )
