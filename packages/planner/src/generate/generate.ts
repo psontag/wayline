@@ -263,6 +263,11 @@ export class Planner {
   private stops: Stops;
   private catalog: RouteCatalog;
   private runs = 0;
+  /**
+   * Trees of the last base costs, kept between runs. One set only: up to 3
+   * planners stay in memory, each set up to 64 MB.
+   */
+  private trees?: { key: string; trees: Trees };
   /** ms for the time limits. Stands still without time limits. */
   private clock: () => number = Date.now;
 
@@ -273,6 +278,18 @@ export class Planner {
   ) {
     this.stops = new Stops(graph, places);
     this.catalog = new RouteCatalog(graph.edges, routes);
+  }
+
+  /**
+   * Trees for the base costs of a request. Those depend only on the region
+   * and the allowed climb per km, so tuning other settings reuses them.
+   */
+  private treesFor(request: GenerateRequest, costs: Costs): Trees {
+    const key = `${request.region?.join() ?? ""}|${request.maxAscentPerDay / request.kmPerDay}`;
+    if (this.trees?.key !== key) {
+      this.trees = { key, trees: new Trees(this.graph, costs.base) };
+    }
+    return this.trees.trees;
   }
 
   async generate(
@@ -349,7 +366,7 @@ export class Planner {
         ? { wind: options.wind, startHour: timeToHours(request.startTime) }
         : undefined;
     // Trees from the end stations, shared by all candidate lists.
-    const trees = new Trees(graph, costs);
+    const trees = this.treesFor(request, costs);
     const candidates = (c: Costs, km = totalKm, via = vias) => {
       const list =
         request.kind === "one-way"

@@ -204,30 +204,46 @@ export class Costs {
 /** Cheapest cost and km from one node to every node. */
 export type Tree = { cost: Float32Array; km: Float32Array };
 
+/** Memory for the trees of one cost profile, in bytes. */
+const TREES_BYTES = 64e6;
+
 /**
- * Trees from nodes, each searched once and kept. All candidate lists of a
- * search share them, so they use the costs as asked, without flavour or
- * penalties. Float32 halves the memory: a one-way trip keeps up to about
- * 50 trees, an open ride a few hundred on a small area.
+ * Trees from nodes, each searched once and kept, also for later searches
+ * with the same base costs. All candidate lists share them, so they use the
+ * costs as asked, without flavour or penalties. Float32 halves the memory:
+ * a one-way trip keeps up to about 50 trees, an open ride a few hundred on a
+ * small area. Over the memory limit, the least recently used tree goes.
  */
 export class Trees {
   private trees = new Map<number, Tree>();
+  private limit: number;
 
   constructor(
     private graph: Graph,
-    private costs: Costs,
-  ) {}
+    private base: Float64Array,
+  ) {
+    this.limit = Math.max(
+      50,
+      Math.floor(TREES_BYTES / (8 * Math.max(1, graph.nodes.length))),
+    );
+  }
 
   from(node: number): Tree {
     let tree = this.trees.get(node);
-    if (!tree) {
+    if (tree) {
+      this.trees.delete(node);
+    } else {
       const r = dijkstra(this.graph, node, {
-        cost: { base: this.costs.base },
+        cost: { base: this.base },
         reuse: true,
       });
       tree = { cost: Float32Array.from(r.cost), km: Float32Array.from(r.km) };
-      this.trees.set(node, tree);
+      if (this.trees.size >= this.limit) {
+        const oldest = this.trees.keys().next().value;
+        if (oldest !== undefined) this.trees.delete(oldest);
+      }
     }
+    this.trees.set(node, tree);
     return tree;
   }
 }
