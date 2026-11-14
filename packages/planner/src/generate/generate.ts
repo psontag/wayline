@@ -137,6 +137,8 @@ const SEEK_TARGET = 0.85;
 const MAX_DAY_VIAS = 2000;
 /** All flavours together, in ms. Keeps time for the fill on large areas. */
 const FLAVOURS_TIME_MS = 2500;
+/** Time limits below fire after this many times their ms. */
+const TIME_SAFETY = 3;
 /** Candidates to try before giving up. */
 const MAX_TRIES = 300;
 /** Search time limit in ms. Stops early once at least one proposal fits. */
@@ -303,10 +305,14 @@ export class Planner {
       if (signal?.aborted) throw abortError();
     };
     check();
-    // Time limits count search time only, not routing the kept picks.
+    // Time limits count search time only, not routing the kept picks. They
+    // are a safety net for slow devices: the clock runs slow, so a normal
+    // machine, even a busy one, stops by tries and gets the same result.
     let paused = 0;
     this.clock =
-      options.timeLimits === false ? () => 0 : () => Date.now() - paused;
+      options.timeLimits === false
+        ? () => 0
+        : () => (Date.now() - paused) / TIME_SAFETY;
     const step = async <T>(name: string, run: () => T | Promise<T>) => {
       const t = performance.now();
       try {
