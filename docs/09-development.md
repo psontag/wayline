@@ -147,6 +147,10 @@ BENCH_TIME_LIMITS=0 BENCH_OUT=before.json pnpm bench
 BENCH_TIME_LIMITS=0 BENCH_BASE=before.json pnpm bench
 ```
 
+`BENCH_RUNS=1` shows the first search after page load, with cold routing tiles.
+
+In CI: add the `perf` label to a PR. `.github/workflows/bench.yml` runs the benchmark without time limits on the base and the PR and writes the table to the job summary. It uses the route data the deploy job cached on main and skips with a notice when there is none.
+
 ## Environments
 
 | Environment | Deployed from | Data |

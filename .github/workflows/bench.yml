@@ -1,0 +1,69 @@
+# Search benchmark on PRs with the perf label: the PR next to its base.
+# See "Search benchmark" in docs/09-development.md.
+name: Bench
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bench:
+    if: contains(github.event.pull_request.labels.*.name, 'perf')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # The route data the deploy job saves on main. Building it here would
+      # mean an 8 GB download.
+      - id: data
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: |
+            apps/web/public/data/latest.json
+            apps/web/public/data/de-*
+          key: data-none
+          restore-keys: data-
+      - if: steps.data.outputs.cache-matched-key == ''
+        run: echo "::notice::No route data in the cache yet. Skipped the benchmark."
+
+      # Without time limits, so the work counts are exact on any machine.
+      - name: Benchmark the base
+        if: steps.data.outputs.cache-matched-key != ''
+        env:
+          BENCH_TIME_LIMITS: "0"
+          BENCH_OUT: ${{ runner.temp }}/base.json
+        run: |
+          git fetch -q --depth=1 origin "$GITHUB_BASE_REF"
+          git worktree add -q "$RUNNER_TEMP/base" FETCH_HEAD
+          ln -s "$PWD"/apps/web/public/data/latest.json "$PWD"/apps/web/public/data/de-* "$RUNNER_TEMP/base/apps/web/public/data/"
+          cd "$RUNNER_TEMP/base"
+          pnpm install --frozen-lockfile
+          pnpm bench
+
+      - name: Benchmark the PR
+        if: steps.data.outputs.cache-matched-key != ''
+        env:
+          BENCH_TIME_LIMITS: "0"
+          BENCH_BASE: ${{ runner.temp }}/base.json
+        run: |
+          pnpm bench | tee "$RUNNER_TEMP/bench.txt"
+          {
+            echo "## Search benchmark"
+            echo
+            echo "PR compared to its base. Work counts are exact, times are noisy."
+            echo
+            grep '^|' "$RUNNER_TEMP/bench.txt"
+          } >> "$GITHUB_STEP_SUMMARY"
