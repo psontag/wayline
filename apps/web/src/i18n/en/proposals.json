@@ -10,6 +10,9 @@
       "multi-day-loop": "Multi-day loop",
       "day-loop": "Day loop"
     },
+    "loopOrOneWay": "Loop or one way",
+    "starts_one": "From {{count}} station",
+    "starts_other": "From {{count}} stations",
     "places": "{{from}} → {{to}}",
     "anyEnd": "{{from}} → any station",
     "loopFrom": "From {{from}}",
@@ -26,6 +29,7 @@
     "withWind": "With the wind"
   },
   "progress": {
+    "start": "Start {{current}} of {{total}}",
     "loading": "Loading the route network",
     "searching": "Searching paths",
     "cutting": "Cutting stages",
@@ -94,6 +98,8 @@
     "routeTo": "{{route}} to {{place}}",
     "homeward": "Home from {{place}}",
     "via": "Via {{stops}}",
+    "from": "From {{place}}",
+    "fromTrain": "From {{place}}, {{time}} by train",
     "trainOutVia": "Train out · via {{stops}}",
     "open": "Open trip",
     "opening": "Opening",

@@ -1,6 +1,4 @@
-import type { Place } from "@wayline/domain";
 import {
-  Button,
   MoreRow,
   PanelSection,
   PickList,
@@ -11,25 +9,20 @@ import {
   useFormat,
 } from "@wayline/ui";
 import { ROUGH_AFTER_DAYS } from "./whereWeather";
-import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AreaReach } from "./areas";
 import { type Reach, reachBand } from "./reach";
-import type { ReachStation } from "./ReachLayer";
 
 /** Rows before "Show all". */
 const FIRST_ROWS = 7;
 
-/** Where step: areas within the max train time, or the stations of one. */
+/** Where step: areas within the max train time. A click opens one. */
 export function AreasSection({
   areas,
   maxHours,
-  picked,
-  stations,
   onPick,
   onHover,
-  onPickStation,
   trip,
 }: {
   /** Areas within the max time, dry first, then fastest. Undefined: loading. */
@@ -37,13 +30,8 @@ export function AreasSection({
   /** The trip days as forecast days from today, from and up to. */
   trip: [number, number];
   maxHours: number;
-  picked: AreaReach | undefined;
-  /** Stations of the picked area with a train, fastest first. */
-  stations: ReachStation[];
-  /** Undefined: back to all areas. */
-  onPick: (id: string | undefined) => void;
+  onPick: (id: string) => void;
   onHover: (id: string | undefined) => void;
-  onPickStation: (station: Place) => void;
 }) {
   const { t } = useTranslation("newTrip");
   if (!areas) {
@@ -52,40 +40,6 @@ export function AreasSection({
         <p className="text-sm text-text-muted" role="status">
           {t("areas.loading")}
         </p>
-      </PanelSection>
-    );
-  }
-  if (picked) {
-    return (
-      <PanelSection
-        icon="areas"
-        title={t("areas.title")}
-        summary={picked.area.name}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <Button size="sm" variant="ghost" onClick={() => onPick(undefined)}>
-            <ArrowLeft aria-hidden />
-            {t("areas.all")}
-          </Button>
-        </div>
-        {stations.length ? (
-          <Rows
-            label={t("areas.stations", { area: picked.area.name })}
-            rows={stations.map((s) => ({
-              id: s.place.osmId ?? s.place.name,
-              title: s.place.name,
-              reach: s.reach,
-            }))}
-            onPick={(id) => {
-              const station = stations.find(
-                (s) => (s.place.osmId ?? s.place.name) === id,
-              );
-              if (station) onPickStation(station.place);
-            }}
-          />
-        ) : (
-          <p className="text-sm text-text-muted">{t("areas.noStations")}</p>
-        )}
       </PanelSection>
     );
   }
