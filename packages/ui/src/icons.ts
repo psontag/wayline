@@ -12,6 +12,7 @@ import {
   MoveHorizontal,
   Route,
   Signpost,
+  Sparkles,
   Star,
   Sunset,
   Thermometer,
@@ -53,6 +54,7 @@ export const sectionIcons = {
   hotel: BedDouble,
   weather: CloudSun,
   areas: MapIcon,
+  suggestions: Sparkles,
 };
 
 export type SectionIcon = keyof typeof sectionIcons;

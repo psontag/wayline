@@ -73,6 +73,8 @@ import {
   withAreaRain,
 } from "./whereWeather";
 import { DaysSection } from "./DaysSection";
+import { SuggestionsSection } from "./SuggestionsSection";
+import { tripWindows } from "./tripWindows";
 import { AreaPanel } from "./AreaPanel";
 import { areaRequests, type AreaShape, formShape } from "./areaTrips";
 import type { AreaColor } from "./AreaLayer";
@@ -187,6 +189,17 @@ export function NewTripForm({
     () => (weather.weather && listAreas ? dayCounts(listAreas) : undefined),
     [weather.weather, listAreas],
   );
+  const windows = useMemo(
+    () =>
+      weather.weather && listAreas
+        ? tripWindows(listAreas, tripDays)
+        : undefined,
+    [weather.weather, listAreas, tripDays],
+  );
+  const setStartDate = (date: string, days: number) => {
+    form.setFieldValue("startDate", date);
+    form.setFieldValue("endDate", addDays(date, days - 1));
+  };
   // With areas, the shelf shows only the routes of the picked area.
   const areaShelf = useMemo(() => {
     if (!pickedArea || !shelf) return shelf;
@@ -436,15 +449,25 @@ export function NewTripForm({
                 now={now}
                 startDate={startDate}
                 days={days}
-                onStartDate={(date) => {
-                  form.setFieldValue("startDate", date);
-                  form.setFieldValue("endDate", addDays(date, days - 1));
-                }}
+                onStartDate={(date) => setStartDate(date, days)}
                 onDays={setDays}
                 counts={counts}
                 loading={weather.loading}
                 failed={weather.failed}
               />
+              {windows && (
+                <SuggestionsSection
+                  now={now}
+                  windows={windows}
+                  days={days}
+                  startDate={startDate}
+                  onWindow={(date) => setStartDate(date, days)}
+                  onArea={(date, id) => {
+                    setStartDate(date, days);
+                    pickArea(id);
+                  }}
+                />
+              )}
               <TrainSection
                 home={reach.home}
                 available={reach.stations !== null}
