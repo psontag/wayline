@@ -280,6 +280,9 @@ export class Planner {
    * planners stay in memory, each set up to 64 MB.
    */
   private trees?: { key: string; trees: Trees };
+  /** Proposals this run looks for at least, and at most. */
+  private few = PROPOSALS;
+  private most = MAX_PROPOSALS;
   /** ms for the time limits. Stands still without time limits. */
   private clock: () => number = Date.now;
 
@@ -315,6 +318,8 @@ export class Planner {
       if (signal?.aborted) throw abortError();
     };
     check();
+    this.most = Math.min(MAX_PROPOSALS, request.maxProposals ?? Infinity);
+    this.few = Math.min(PROPOSALS, this.most);
     // Time limits count search time only, not routing the kept picks. They
     // are a safety net for slow devices: the clock runs slow, so a normal
     // machine, even a busy one, stops by tries and gets the same result.
@@ -435,6 +440,7 @@ export class Planner {
     const proposals: Proposal[] = [];
     const keep = async (p: Pick) => {
       check();
+      if (proposals.length >= this.most) return;
       const t = Date.now();
       const proposal = await step("routing", () =>
         this.proposal(p, proposals.length, ctx),
@@ -467,7 +473,7 @@ export class Planner {
       );
       const more = found.picks
         .filter((p) => sharedKm(graph, p, direct) < MAX_SHARED_DIRECT * p.km)
-        .slice(0, PROPOSALS - 1);
+        .slice(0, this.few - 1);
       for (const p of more) await keep(p);
       picks = [direct, ...more];
       await follow(picks);
@@ -819,7 +825,7 @@ export class Planner {
       : [(n: number[]) => n.slice(1), (n: number[]) => n.slice(1, -1)];
     for (const keyNodes of passes) {
       for (const c of candidates) {
-        if (picks.length === PROPOSALS || tried.size === MAX_TRIES) break;
+        if (picks.length >= this.few || tried.size === MAX_TRIES) break;
         if (picks.length && this.clock() - startedAt > TIME_LIMIT_MS) break;
         if (tried.has(c)) continue;
         const mine = keyNodes(c.nodes);
@@ -884,7 +890,7 @@ export class Planner {
 
     for (const minTurn of [MIN_TURN_DEG, 0]) {
       for (const c of candidates) {
-        if (picks.length === PROPOSALS || tried.size === MAX_TRIES) break;
+        if (picks.length >= this.few || tried.size === MAX_TRIES) break;
         if (picks.length && this.clock() - startedAt > TIME_LIMIT_MS) break;
         if (tried.has(c)) continue;
         if (c.homeward && picks.some((p) => p.homeward)) continue;
@@ -949,7 +955,7 @@ export class Planner {
     ];
     for (const flavour of search) {
       const startedAt = this.clock();
-      if (others().length >= MAX_PROPOSALS) break;
+      if (others().length >= this.most) break;
       if (picks.length && startedAt - flavoursStart > FLAVOURS_TIME_MS) break;
       const climbing = flavour === "hilly" || (seek && flavour !== "flat");
       const costs = new Costs(graph, request, flavour, climbing);
@@ -1067,7 +1073,7 @@ export class Planner {
     let nationalMisses = 0;
     for (let i = 0; i < SIGNED.routes; i++) {
       if (added === SIGNED.picks || !inTime()) break;
-      if (picks.length >= MAX_PROPOSALS) break;
+      if (picks.length >= this.most) break;
       progress(MAX_TRIES);
       // The asked route first. Local routes last. Then routes mostly in reach,
       // since those fit a trip. Then the most important, then the most km no
@@ -1184,7 +1190,7 @@ export class Planner {
       .sort((a, b) => perKm(a) - perKm(b));
     const headings: number[] = [];
     for (const town of towns) {
-      if (picks.length >= PROPOSALS) break;
+      if (picks.length >= this.few) break;
       const heading = bearing(home, graph.coord(town));
       if (headings.some((h) => turn(h, heading) < OUT_AND_BACK.turn)) continue;
       const out = chainPath(graph, [start, town], costs);
@@ -1236,7 +1242,7 @@ export class Planner {
     let tries = 0;
 
     for (const input of FILL_INPUTS) {
-      if (picks.length >= MAX_PROPOSALS || left <= 0) return;
+      if (picks.length >= this.most || left <= 0) return;
       const km = totalKm * input.km;
       const asked = {
         ...request,
@@ -1268,7 +1274,11 @@ export class Planner {
             await add(held);
             held = undefined;
           }
-          if (picks.length >= step.upTo || mine === FILL_TRIES) break;
+          if (
+            picks.length >= Math.min(step.upTo, this.most) ||
+            mine === FILL_TRIES
+          )
+            break;
           if (this.clock() - stepStart > stepMs) break;
           if (c.homeward && picks.some((p) => p.homeward)) continue;
           const via = mids(c.nodes);
@@ -1303,7 +1313,8 @@ export class Planner {
           if (!seek) await add(kept);
           else if (!held || kept.ascent > held.ascent) held = kept;
         }
-        if (held && picks.length < step.upTo) await add(held);
+        if (held && picks.length < Math.min(step.upTo, this.most))
+          await add(held);
         left -= this.clock() - stepStart;
       }
     }

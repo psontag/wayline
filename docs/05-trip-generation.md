@@ -16,7 +16,7 @@ Every proposal searches and routes with the `touring` profile.
 
 ## Output
 
-5–8 proposals where the network allows it. Each is a full trip with stages, hotels at stops, stats, tags and, if dated, weather. Proposals should differ from each other, not be small variations of one route.
+5–8 proposals where the network allows it, or at most `maxProposals` when the request has it. Each is a full trip with stages, hotels at stops, stats, tags and, if dated, weather. Proposals should differ from each other, not be small variations of one route.
 
 Multi-day trips and loops start with one proposal per flavour (see below). One day from A to B starts with proposals with a character. An open day ride starts with proposals to different destinations. The fill step then adds more.
 

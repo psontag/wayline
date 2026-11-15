@@ -137,7 +137,9 @@ export function useGeneration(
         let ok = false;
         for (const [i, request] of requests.entries()) {
           update((s) => ({ ...s, run: { index: i, count: requests.length } }));
-          const result = await generator.generate(request, {
+          // Only the best few of all runs stay, so each run stops sooner.
+          const asked = many ? { ...request, maxProposals: MAX_KEPT } : request;
+          const result = await generator.generate(asked, {
             signal: ac.signal,
             ...(wind ? { wind } : {}),
             onProgress: (progress) =>
