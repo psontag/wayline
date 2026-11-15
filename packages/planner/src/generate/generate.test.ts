@@ -152,6 +152,12 @@ describe("Planner on the Oberfranken network", () => {
     }
   });
 
+  it("stops at maxProposals", async () => {
+    const result = await planner.generate({ ...oneWay, maxProposals: 2 });
+    if (!result.ok) throw new Error(result.failedLimit);
+    expect(result.proposals).toHaveLength(2);
+  });
+
   it("reports progress", async () => {
     const phases: string[] = [];
     await planner.generate(loop, { onProgress: (p) => phases.push(p.phase) });

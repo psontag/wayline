@@ -260,6 +260,8 @@ export const GenerateRequest = z
     withWind: z.boolean().optional(),
     /** Signed route to follow, by its clean name. Tried first, and ranks first. */
     route: z.string().optional(),
+    /** Fewer proposals than usual, e.g. when several requests share one list. */
+    maxProposals: z.number().int().min(1).optional(),
   })
   .refine((r) => r.region || r.startStation, {
     message: "Needs a region or a start station",
