@@ -173,11 +173,6 @@ export {
 export { WindBar, type WindBarShares } from "./components/WindBar";
 export { type WindDateOption, WindDateStrip } from "./components/WindDateStrip";
 export {
-  RouteChoices,
-  type RouteChoice,
-  type RouteChoicesProps,
-} from "./components/RouteChoices";
-export {
   StopChoices,
   type StopChoice,
   type StopChoicesProps,

@@ -31,7 +31,7 @@ import { StageChange } from "./StageChange";
 import { dayWarnings, stageWind } from "./stageWeather";
 import { hasMovableDestination } from "./stopChoices";
 import { type StopHover, StopPicker } from "./StopPicker";
-import { OtherWaysSection, type OtherWaysState } from "./OtherWaysSection";
+import type { OtherWaysState } from "./otherWays";
 import { TrainOptions, useHasTrains } from "./TrainOptions";
 import type { TripEditorState } from "./useTripEditor";
 
@@ -72,7 +72,7 @@ export function DayPanel({
   /** The stop choice under the pointer, previewed on the map. */
   stopHover: StopHover;
   /** Other routes to the stop, here and on the map. */
-  otherWays?: OtherWaysState;
+  otherWays: OtherWaysState;
   /** Via point selected here and on the map. */
   selectedVia?: number;
   onSelectVia: (index: number | undefined) => void;
@@ -205,17 +205,10 @@ export function DayPanel({
           highlighted={highlightedClimb}
         />
       </PanelSection>
-      {!editor.readOnly && otherWays && (
-        <OtherWaysSection
-          stage={stage}
-          state={otherWays}
-          disabled={!editor.canEdit}
-        />
-      )}
       {!isLast && (
         <PanelSection
           icon="stop"
-          title={t("section.stop")}
+          title={t("section.choices")}
           summary={
             locked
               ? t("stop.summaryLocked", { place: stage.end.name })
@@ -245,6 +238,7 @@ export function DayPanel({
               index={index}
               editor={editor}
               hover={stopHover}
+              ways={otherWays}
             />
           )}
         </PanelSection>
@@ -260,14 +254,16 @@ export function DayPanel({
           <BookingLink trip={trip} index={index} />
         </PanelSection>
       )}
-      {isLast && !editor.readOnly && hasMovableDestination(trip) && (
+      {isLast && !editor.readOnly && (
         <DestinationSection
           trip={trip}
           index={index}
           editor={editor}
+          movable={hasMovableDestination(trip)}
           finding={findingDestination}
           onFindingChange={onFindingDestination}
           hover={stopHover}
+          ways={otherWays}
         />
       )}
       {isLast && home && (

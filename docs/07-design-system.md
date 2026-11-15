@@ -44,7 +44,7 @@ Map tokens:
 | `route-dimmed` | Unselected routes in the legend |
 | `route-selected` | Selected stage |
 | `stage-a`, `stage-b` | Days in the trip editor alternate between these two, in the list and on the map |
-| `route-1` … `route-8` | One color per proposal on the proposals map, by list order. Other ways of a day use `route-2`, `route-3` and `route-5`, so they don't look like the day colors. |
+| `route-1` … `route-8` | One color per proposal on the proposals map, by list order. Other ways of a day use `route-2`, `route-3` and `route-5`, on the map and as swatches in the stop table, so they don't look like the day colors. |
 | `on-route` | Text on a route color |
 | `route-outline` | Casing of the highlighted proposal |
 | `hillshade-shadow`, `hillshade-highlight` | Terrain shading on the maps |
@@ -313,7 +313,6 @@ Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of
 | `days` | `List` | Days, proposals, files: lists of items |
 | `trains` | `TrainFront` | Trains, Getting there, Getting home |
 | `ride` | `Route` | Ride |
-| `ways` | `Split` | Other ways |
 | `routes` | `Signpost` | Signed routes |
 | `stop` | `MapPin` | Stop, start, end |
 | `hotel` | `BedDouble` | Hotel |
@@ -335,7 +334,7 @@ Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of
 | Level | Header | Sections |
 |---|---|---|
 | Trip | Trip name, trip menu | Dates, Trip, Days, Trains |
-| Day | All days, day chips | Getting there (first day), Ride, Stop, Hotel, Getting home (last day) |
+| Day | All days, day chips | Getting there (first day), Ride, Where and which way, Hotel, Getting home (last day) |
 
 Click a day card, a route on the map or a day chip to open a day.
 

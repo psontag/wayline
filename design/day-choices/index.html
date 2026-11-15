@@ -1,0 +1,264 @@
+<title>Wayline day choices</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: reading column; each option is a side panel mockup at real size next to its map, then pros and cons. Wayline tokens. */
+:root{
+  --bg:#F6F7F9;--surface:#FFFFFF;--text:#15181D;--muted:#5A616C;--border:#E1E4EA;--hover:#EEF0F3;
+  --accent:#FFB088;--on-accent:#3B1503;--selected:#FFEDE3;--sel-border:#B4532A;
+  --success:#2F9E6B;--danger:#C2412D;
+  --stage-a:#FFC7AE;--stage-b:#C9BDE6;--casing:#B4532A;
+  --r2:#3FB37A;--r3:#4F9FF0;--r5:#EE7FB4;
+  --map:#EEF1EC;--water:#BFD6EA;--forest:#DCE7D8;--road:#E2E5EA;
+  --font:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101216;--surface:#171A20;--text:#EDEFF3;--muted:#A0A7B3;--border:#2A2F38;--hover:#222730;
+  --accent:#FFB088;--on-accent:#2A0F02;--selected:#2D211B;--sel-border:#FFB088;
+  --success:#5CCB97;--danger:#FF8F7D;
+  --stage-a:#C98C72;--stage-b:#8F82B8;--casing:#101216;
+  --r2:#62D197;--r3:#6DB4FF;--r5:#FF93C6;
+  --map:#1A1E22;--water:#1C3046;--forest:#1F2A22;--road:#2A2F38;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101216;--surface:#171A20;--text:#EDEFF3;--muted:#A0A7B3;--border:#2A2F38;--hover:#222730;
+  --accent:#FFB088;--on-accent:#2A0F02;--selected:#2D211B;--sel-border:#FFB088;
+  --success:#5CCB97;--danger:#FF8F7D;
+  --stage-a:#C98C72;--stage-b:#8F82B8;--casing:#101216;
+  --r2:#62D197;--r3:#6DB4FF;--r5:#FF93C6;
+  --map:#1A1E22;--water:#1C3046;--forest:#1F2A22;--road:#2A2F38;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 64px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:64px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.15;font-weight:800;letter-spacing:-0.02em;margin:0;text-wrap:balance}
+h2{font-size:24px;font-weight:800;letter-spacing:-0.01em;margin:0;text-wrap:balance;line-height:1.25}
+h3{font-size:13px;margin:0;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+p,ul{margin:0}
+ul{padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.lede{font-size:17px;color:var(--muted)}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sel-border)}
+section{display:flex;flex-direction:column;gap:20px}
+.opt{display:grid;grid-template-columns:minmax(0,1fr) 340px minmax(0,0.9fr);gap:20px;align-items:start}
+@media (max-width:1000px){.opt{grid-template-columns:minmax(0,1fr) 340px}.pc{grid-column:1/-1}}
+@media (max-width:720px){.opt{grid-template-columns:1fr}}
+.mapbox{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--map)}
+.mapbox svg{display:block;width:100%;height:auto}
+/* panel mockup at app size */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:12px;line-height:1.35;overflow:hidden;max-width:100%}
+.sh{display:flex;align-items:center;gap:8px;padding:10px 12px 6px}
+.sh .ic{width:16px;height:16px;border-radius:4px;background:var(--selected);flex:none}
+.sh b{font-size:13px}
+.sh .sum{margin-left:auto;color:var(--muted);font-size:11px}
+.sb{padding:0 12px 12px;display:flex;flex-direction:column;gap:6px}
+.hint{color:var(--muted);font-size:11px}
+.btn{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;background:var(--surface);white-space:nowrap}
+.row{display:grid;grid-template-columns:14px 1fr auto auto auto;gap:6px;align-items:center;padding:5px 6px;border-radius:4px}
+.row.head{color:var(--muted);font-size:10px;font-weight:600;padding-bottom:0}
+.row.now{background:var(--selected);font-weight:700}
+.row.hov{background:var(--hover)}
+.row .n{min-width:0}
+.row .n small{display:block;color:var(--muted);font-weight:400;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.row .v small{display:block;color:var(--muted);font-size:10px}
+.sw{width:10px;height:10px;border-radius:3px}
+.pin{width:10px;height:10px;border-radius:50%;border:2px dashed var(--muted)}
+.check{font-size:11px}
+.grp{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 6px 0}
+.seg{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px}
+.seg span{flex:1;text-align:center;padding:3px 0;border-radius:4px;font-weight:600;font-size:11px;color:var(--muted)}
+.seg span.on{background:var(--surface);color:var(--text);box-shadow:0 0 0 1px var(--border)}
+.chips{display:flex;gap:4px;flex-wrap:wrap;padding-left:20px}
+.chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:999px;padding:1px 7px;font-size:10px;color:var(--muted)}
+.chip.on{border-color:var(--sel-border);color:var(--text);background:var(--selected)}
+.chip i{width:7px;height:7px;border-radius:2px;display:block}
+.pc{display:flex;flex-direction:column;gap:14px;font-size:14px}
+.pc .pros li::marker{content:"+  ";color:var(--success);font-weight:800}
+.pc .cons li::marker{content:"–  ";color:var(--danger);font-weight:800}
+.rec{border:1px solid var(--sel-border);background:var(--selected);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;max-width:80ch}
+.t{font-family:var(--font);font-size:9px;fill:var(--muted);font-weight:600}
+.tb{font-family:var(--font);font-size:10px;fill:var(--text);font-weight:800}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="base" viewBox="0 0 440 260">
+      <rect width="440" height="260" fill="var(--map)"/>
+      <path d="M0,40 C40,20 90,30 110,60 C100,90 40,100 0,95Z" fill="var(--forest)"/>
+      <path d="M180,190 C230,180 300,200 320,240 L320,260 L170,260Z" fill="var(--forest)"/>
+      <path d="M0,150 C60,140 100,120 160,130 S260,150 330,140 S400,110 440,100" fill="none" stroke="var(--water)" stroke-width="4"/>
+      <path d="M0,200 L440,60 M80,260 L250,0" stroke="var(--road)" stroke-width="2" fill="none"/>
+      <text class="t" x="60" y="62">Schweinfurt</text>
+      <text class="t" x="190" y="62">Haßfurt</text>
+      <text class="t" x="150" y="222">Geiselwind</text>
+      <text class="t" x="300" y="98">Bamberg</text>
+    </symbol>
+    <symbol id="day" viewBox="0 0 440 260">
+      <path d="M30,140 C80,170 160,150 220,160 S330,150 380,140" fill="none" stroke="var(--stage-b)" stroke-width="5"/>
+      <circle cx="30" cy="140" r="9" fill="var(--text)"/><text x="27" y="143" font-family="var(--font)" font-size="9" font-weight="800" fill="var(--surface)">1</text>
+      <circle cx="380" cy="140" r="11" fill="var(--accent)" stroke="var(--casing)" stroke-width="2"/><text x="376" y="144" font-family="var(--font)" font-size="10" font-weight="800" fill="var(--on-accent)">2</text>
+      <text class="tb" x="352" y="168">Strullendorf</text>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<header class="prose">
+  <div class="eyebrow">Mockup · Day panel</div>
+  <h1>Stop and other ways in one place</h1>
+  <p class="lede">Today a day has two sections: Stop (where the day ends) and Other ways (how you get there). Both answer the same question: how should this day go? Three ways to merge them, all shown on day 2 of Bamberg – Coburg.</p>
+</header>
+
+<!-- 1 -->
+<section>
+  <div class="prose">
+    <div class="eyebrow">Option 1</div>
+    <h2>One list of choices</h2>
+    <p>One section, "Where and which way". One table with every choice in the same columns. Towns (dashed pin) change where the day ends. Ways (color swatch) change the path to the same stop. "Find other ways" adds the ways to the list. Hover previews any row, click picks it.</p>
+  </div>
+  <div class="opt">
+    <div class="mapbox">
+      <svg viewBox="0 0 440 260" role="img" aria-label="Map with the current day faded and the way via Schweinfurt drawn strong, the way via Geiselwind faint">
+        <use href="#base"/>
+        <path d="M30,140 C80,170 160,150 220,160 S330,150 380,140" fill="none" stroke="var(--stage-b)" stroke-width="5" opacity=".35"/>
+        <path d="M30,140 C50,190 120,230 200,225 S340,190 380,140" fill="none" stroke="var(--r3)" stroke-width="4" opacity=".4"/>
+        <path d="M30,140 C40,90 70,60 120,55 S260,60 300,90 S370,120 380,140" fill="none" stroke="var(--casing)" stroke-width="8"/>
+        <path d="M30,140 C40,90 70,60 120,55 S260,60 300,90 S370,120 380,140" fill="none" stroke="var(--r2)" stroke-width="5"/>
+        <circle cx="30" cy="140" r="9" fill="var(--text)"/><text x="27" y="143" font-family="var(--font)" font-size="9" font-weight="800" fill="var(--surface)">1</text>
+        <circle cx="380" cy="140" r="11" fill="var(--accent)" stroke="var(--casing)" stroke-width="2"/><text x="376" y="144" font-family="var(--font)" font-size="10" font-weight="800" fill="var(--on-accent)">2</text>
+        <circle cx="300" cy="105" r="6" fill="var(--surface)" stroke="var(--muted)" stroke-width="2" stroke-dasharray="2 2"/>
+        <text class="tb" x="352" y="168">Strullendorf</text>
+      </svg>
+    </div>
+    <div class="panel">
+      <div class="sh"><span class="ic"></span><b>Where and which way</b><span class="sum">Strullendorf</span></div>
+      <div class="sb">
+        <div class="row head"><span></span><span>Choice</span><span class="v">Today</span><span class="v">Tmrw</span><span class="v">Hotels</span></div>
+        <div class="row now"><span class="check">✓</span><span class="n">Strullendorf<small>Now · via Volkach</small></span><span class="v">74 km<small>294 m</small></span><span class="v">60 km</span><span class="v">7</span></div>
+        <div class="row"><span class="pin"></span><span class="n">Bug<small>End in a village</small></span><span class="v">82 km<small>302 m</small></span><span class="v">54 km</span><span class="v">55</span></div>
+        <div class="row"><span class="pin"></span><span class="n">Hallstadt<small>End in a town</small></span><span class="v">88 km<small>310 m</small></span><span class="v">45 km</span><span class="v">62</span></div>
+        <div class="row hov"><span class="sw" style="background:var(--r2)"></span><span class="n">via Schweinfurt, Haßfurt<small>Rivers &amp; lakes · Quiet</small></span><span class="v">87 km<small>222 m</small></span><span class="v">60 km</span><span class="v">7</span></div>
+        <div class="row"><span class="sw" style="background:var(--r3)"></span><span class="n">Scenic · via Geiselwind<small>Rivers &amp; lakes · Wine</small></span><span class="v">93 km<small>639 m</small></span><span class="v">60 km</span><span class="v">7</span></div>
+        <span class="hint">Hover to see it on the map. Hotels within 5 km.</span>
+      </div>
+    </div>
+    <div class="pc">
+      <div><h3>Pros</h3><ul class="pros">
+        <li>One table, one way to compare: every row says what today and tomorrow become.</li>
+        <li>Sorted by today's km, so "a bit longer" choices of both kinds sit together.</li>
+        <li>Least new UI: the stop table grows a few rows.</li>
+      </ul></div>
+      <div><h3>Cons</h3><ul class="cons">
+        <li>Two kinds of row in one list. The icon has to carry the difference.</li>
+        <li>No way to combine both: another stop <em>and</em> another way.</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section>
+  <div class="prose">
+    <div class="eyebrow">Option 2</div>
+    <h2>One section, two tabs</h2>
+    <p>Same section, with a switch at the top: "End" lists other towns, "Way" lists other routes to the stop. Each tab keeps its own columns. The way tab searches when you open it.</p>
+  </div>
+  <div class="opt">
+    <div class="mapbox">
+      <svg viewBox="0 0 440 260" role="img" aria-label="Map with both other ways drawn">
+        <use href="#base"/>
+        <path d="M30,140 C40,90 70,60 120,55 S260,60 300,90 S370,120 380,140" fill="none" stroke="var(--r2)" stroke-width="4" opacity=".7"/>
+        <path d="M30,140 C50,190 120,230 200,225 S340,190 380,140" fill="none" stroke="var(--r3)" stroke-width="4" opacity=".7"/>
+        <use href="#day"/>
+      </svg>
+    </div>
+    <div class="panel">
+      <div class="sh"><span class="ic"></span><b>Stop and way</b><span class="sum">Strullendorf</span></div>
+      <div class="sb">
+        <div class="seg"><span>End</span><span class="on">Way</span></div>
+        <div class="row head" style="grid-template-columns:14px 1fr auto auto"><span></span><span>Way</span><span class="v">Today</span><span class="v">Change</span></div>
+        <div class="row now" style="grid-template-columns:14px 1fr auto auto"><span class="check">✓</span><span class="n">Now · via Volkach<small>Quiet</small></span><span class="v">74 km<small>294 m</small></span><span class="v">–</span></div>
+        <div class="row" style="grid-template-columns:14px 1fr auto auto"><span class="sw" style="background:var(--r2)"></span><span class="n">via Schweinfurt, Haßfurt<small>Rivers &amp; lakes · Quiet</small></span><span class="v">87 km<small>222 m</small></span><span class="v">+13 km</span></div>
+        <div class="row" style="grid-template-columns:14px 1fr auto auto"><span class="sw" style="background:var(--r3)"></span><span class="n">Scenic · via Geiselwind<small>Rivers &amp; lakes · Wine</small></span><span class="v">93 km<small>639 m</small></span><span class="v">+18 km</span></div>
+        <span class="hint">Other routes to Strullendorf. Hover to see one.</span>
+      </div>
+    </div>
+    <div class="pc">
+      <div><h3>Pros</h3><ul class="pros">
+        <li>Clear: one tab per question, each with the columns that fit it.</li>
+        <li>The slow search starts only when you want ways.</li>
+      </ul></div>
+      <div><h3>Cons</h3><ul class="cons">
+        <li>Still two lists, just stacked. You can't compare a town with a way at a glance.</li>
+        <li>Hidden: you have to know the Way tab is there.</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section>
+  <div class="prose">
+    <div class="eyebrow">Option 3</div>
+    <h2>Stops with their ways</h2>
+    <p>The stop table stays. The chosen stop gets a row of way chips under it: "Now", "via Schweinfurt", "Scenic". Pick a stop, then optionally a way to it. Picking another town and opening its chips searches ways to that town.</p>
+  </div>
+  <div class="opt">
+    <div class="mapbox">
+      <svg viewBox="0 0 440 260" role="img" aria-label="Map with the way via Geiselwind selected for Strullendorf">
+        <use href="#base"/>
+        <path d="M30,140 C80,170 160,150 220,160 S330,150 380,140" fill="none" stroke="var(--stage-b)" stroke-width="5" opacity=".35"/>
+        <path d="M30,140 C40,90 70,60 120,55 S260,60 300,90 S370,120 380,140" fill="none" stroke="var(--r2)" stroke-width="4" opacity=".4"/>
+        <path d="M30,140 C50,190 120,230 200,225 S340,190 380,140" fill="none" stroke="var(--casing)" stroke-width="8"/>
+        <path d="M30,140 C50,190 120,230 200,225 S340,190 380,140" fill="none" stroke="var(--r3)" stroke-width="5"/>
+        <circle cx="30" cy="140" r="9" fill="var(--text)"/><text x="27" y="143" font-family="var(--font)" font-size="9" font-weight="800" fill="var(--surface)">1</text>
+        <circle cx="380" cy="140" r="11" fill="var(--accent)" stroke="var(--casing)" stroke-width="2"/><text x="376" y="144" font-family="var(--font)" font-size="10" font-weight="800" fill="var(--on-accent)">2</text>
+        <text class="tb" x="352" y="168">Strullendorf</text>
+      </svg>
+    </div>
+    <div class="panel">
+      <div class="sh"><span class="ic"></span><b>Stop</b><span class="sum">Strullendorf</span></div>
+      <div class="sb">
+        <div class="row head"><span></span><span>Stop</span><span class="v">Today</span><span class="v">Tmrw</span><span class="v">Hotels</span></div>
+        <div class="row now"><span class="check">✓</span><span class="n">Strullendorf<small>Village</small></span><span class="v">74 km<small>294 m</small></span><span class="v">60 km</span><span class="v">7</span></div>
+        <div class="chips">
+          <span class="chip">Now · 74 km</span>
+          <span class="chip"><i style="background:var(--r2)"></i>via Schweinfurt · 87 km</span>
+          <span class="chip on"><i style="background:var(--r3)"></i>Scenic · 93 km</span>
+        </div>
+        <div class="row"><span></span><span class="n">Bug<small>Village</small></span><span class="v">82 km<small>302 m</small></span><span class="v">54 km</span><span class="v">55</span></div>
+        <div class="row"><span></span><span class="n">Hallstadt<small>Town</small></span><span class="v">88 km<small>310 m</small></span><span class="v">45 km</span><span class="v">62</span></div>
+        <div class="row"><span></span><span class="n">Kemmern<small>Village</small></span><span class="v">92 km<small>314 m</small></span><span class="v">42 km</span><span class="v">11</span></div>
+      </div>
+    </div>
+    <div class="pc">
+      <div><h3>Pros</h3><ul class="pros">
+        <li>Matches the order you decide in: first where to sleep, then how to get there.</li>
+        <li>Can combine both: another town and another way to it.</li>
+      </ul></div>
+      <div><h3>Cons</h3><ul class="cons">
+        <li>Ways to another town need a new search each time, about 10 s.</li>
+        <li>Chips in a table row get tight on phones.</li>
+        <li>Most work of the three.</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="rec">
+    <div class="eyebrow">Recommendation</div>
+    <h2>Option 1: one list of choices</h2>
+    <ul>
+      <li>It's what "combine them" means most directly: one place, one table, one hover-and-click behaviour.</li>
+      <li>Every row answers the same question with the same numbers, so towns and ways compare side by side.</li>
+      <li>It reuses what's built: the stop table, the routed ways, the hover preview. Option 3 can grow out of it later.</li>
+    </ul>
+  </div>
+</section>
+
+</div>

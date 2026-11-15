@@ -45,8 +45,7 @@ import {
   useMapHotels,
   useStopOptions,
 } from "./stopChoices";
-import { useOtherWays } from "./otherWays";
-import type { OtherWaysState } from "./OtherWaysSection";
+import { type OtherWaysState, useOtherWays } from "./otherWays";
 import { ShareDialog } from "./ShareDialog";
 import { TripActions } from "./TripHeader";
 import { proposedSection } from "./proposedSection";

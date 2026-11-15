@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
@@ -17,10 +18,25 @@ export type StopChoice = {
   /** Hotels near the stop. Missing while unknown. */
   hotels?: number;
   size?: "village" | "town" | "city";
+  /**
+   * Another way to the same stop, not another stop: its number, for the
+   * swatch in the color of its map line.
+   */
+  way?: number;
+  /** Second line, e.g. what a way is like. Without it, the town size. */
+  detail?: string;
 };
+
+/**
+ * Swatches of the ways, the same as their lines on the map. Not route-1 or
+ * route-4: they look like the day colors.
+ */
+const WAY_SWATCH = ["bg-route-2", "bg-route-3", "bg-route-5"] as const;
 
 export type StopChoicesProps = {
   choices: StopChoice[];
+  /** Under the table, e.g. a button to find more choices. */
+  footer?: ReactNode;
   onSelect?: (id: string) => void;
   /** The choice under the pointer or in focus, e.g. to preview it. */
   onHover?: (id: string | undefined) => void;
@@ -34,9 +50,10 @@ export type StopChoicesProps = {
   hotelsRadius?: number;
 };
 
-/** The stop and its alternatives, with what each changes. */
+/** The stop, other stops and other ways, with what each changes. */
 export function StopChoices({
   choices,
+  footer,
   onSelect,
   onHover,
   hoveredId,
@@ -46,6 +63,7 @@ export function StopChoices({
   const { t } = useTranslation("ui");
   const format = useFormat();
   const cell = "px-1.5 py-1.5 text-right whitespace-nowrap";
+  const withWays = choices.some((c) => c.way !== undefined);
 
   return (
     <div className="flex w-full flex-col gap-1.5">
@@ -53,7 +71,7 @@ export function StopChoices({
         <thead>
           <tr className="text-2xs text-text-muted">
             <th className="px-1.5 pb-1 text-left font-semibold">
-              {t("stopChoices.stop")}
+              {t(withWays ? "stopChoices.choice" : "stopChoices.stop")}
             </th>
             <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
               {t("stopChoices.today")}
@@ -100,6 +118,15 @@ export function StopChoices({
                   <div className="flex items-center gap-1">
                     {c.current ? (
                       <Check className="size-3.5 shrink-0" aria-hidden />
+                    ) : c.way !== undefined ? (
+                      <span className="flex size-3.5 shrink-0 items-center justify-center">
+                        <span
+                          className={cn(
+                            "size-2.5 rounded-sm",
+                            WAY_SWATCH[c.way % WAY_SWATCH.length],
+                          )}
+                        />
+                      </span>
                     ) : (
                       <span className="size-3.5 shrink-0" />
                     )}
@@ -113,9 +140,12 @@ export function StopChoices({
                           }}
                           onFocus={() => hover(true)}
                           onBlur={() => hover(false)}
-                          aria-label={t("stopChoices.choose", {
-                            name: c.name,
-                          })}
+                          aria-label={t(
+                            c.way === undefined
+                              ? "stopChoices.choose"
+                              : "stopChoices.ride",
+                            { name: c.name },
+                          )}
                           className={cn(
                             "truncate rounded-sm text-left font-semibold",
                             focusRing,
@@ -126,9 +156,10 @@ export function StopChoices({
                       ) : (
                         <span className="truncate">{c.name}</span>
                       )}
-                      {c.size && (
-                        <span className="text-2xs font-normal text-text-muted">
-                          {t(`stopChoices.size.${c.size}`)}
+                      {(c.detail || c.size) && (
+                        <span className="truncate text-2xs font-normal text-text-muted">
+                          {c.detail ||
+                            (c.size && t(`stopChoices.size.${c.size}`))}
                         </span>
                       )}
                     </div>
@@ -153,6 +184,7 @@ export function StopChoices({
           })}
         </tbody>
       </table>
+      {footer}
       {hotelsRadius !== undefined && (
         <p className="px-1.5 text-2xs text-text-muted">
           {t("stopChoices.hotelsNote", {

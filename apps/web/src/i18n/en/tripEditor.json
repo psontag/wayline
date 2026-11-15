@@ -227,20 +227,16 @@
     "gettingThere": "Getting there",
     "gettingHome": "Getting home",
     "ride": "Ride",
-    "otherWays": "Other ways",
-    "stop": "Stop",
-    "hotel": "Hotel",
-    "destination": "Destination"
+    "choices": "Where and which way",
+    "hotel": "Hotel"
   },
   "otherWays": {
-    "hint": "Other routes to {{place}}.",
+    "hint": "Other routes to the same stop.",
     "find": "Find other ways",
     "searching": "Looking for other ways…",
     "failed": "The search stopped with an error.",
     "retry": "Try again",
     "none": "No other ways found. The route here is the only good one.",
-    "summary_one": "1 found",
-    "summary_other": "{{count}} found",
     "via": "via {{places}}",
     "way": "Other way"
   },

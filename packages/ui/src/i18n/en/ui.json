@@ -115,13 +115,10 @@
       "local": "Local route"
     }
   },
-  "routeChoices": {
-    "choose": "Ride {{name}}",
-    "more": "+{{value}}",
-    "less": "−{{value}}"
-  },
   "stopChoices": {
     "stop": "Stop",
+    "choice": "Choice",
+    "ride": "Ride {{name}}",
     "today": "Today",
     "ascent": "Ascent",
     "tomorrow": "Tomorrow",
