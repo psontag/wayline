@@ -19,7 +19,7 @@
     "@wayline/router": "workspace:*",
     "@wayline/ui": "workspace:*",
     "comlink": "4.4.2",
-    "hono": "4.13.14",
+    "hono": "4.13.16",
     "i18next": "26.5.12",
     "idb-keyval": "6.3.0",
     "lucide-react": "1.66.0",
