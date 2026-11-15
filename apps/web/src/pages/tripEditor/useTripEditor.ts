@@ -5,6 +5,7 @@ import {
   type LonLat,
   type Place,
   reverseTrip,
+  type Stage,
   type Trip,
 } from "@wayline/domain";
 import type { HotelOption } from "@wayline/providers";
@@ -19,6 +20,7 @@ import {
   moveStop,
   setHotel,
   setLocked,
+  setStageRoute,
   toggleSavedHotel,
   toggleTrain,
 } from "./edits";
@@ -231,6 +233,12 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     },
     setHotel(index: number, hotel: Hotel) {
       if (canEdit) commit(setHotel(trip, index, hotel));
+    },
+    /** Rides the stage another way, e.g. one of its other ways. */
+    setRoute(index: number, route: Pick<Stage, "via" | "legs">) {
+      if (!canEdit) return;
+      const next = setStageRoute(trip, index, route);
+      commit(next, routeNote(index)(next));
     },
     toggleTrain(train: Connection) {
       if (canEdit) commit(toggleTrain(trip, train));

@@ -45,6 +45,8 @@ import {
   useMapHotels,
   useStopOptions,
 } from "./stopChoices";
+import { useOtherWays } from "./otherWays";
+import type { OtherWaysState } from "./OtherWaysSection";
 import { ShareDialog } from "./ShareDialog";
 import { TripActions } from "./TripHeader";
 import { proposedSection } from "./proposedSection";
@@ -126,6 +128,9 @@ function TripEditor({
   const [findingDestination, setFindingDestination] = useState(false);
   // Stop choice under the pointer, in the stop table or on the map.
   const [stopHover, setStopHover] = useState<{ day: number; name: string }>();
+  // Day whose other ways were asked for, and the one under the pointer.
+  const [waysDay, setWaysDay] = useState<number>();
+  const [wayHover, setWayHover] = useState<string>();
   const [viaSelection, setViaSelection] = useState<{
     day: number;
     coord: LonLat;
@@ -268,6 +273,27 @@ function TripEditor({
     setStopHover(undefined);
     setFindingDestination(false);
     void editor.moveStop(selected, place);
+  };
+  const waysOn = dayOpen && waysDay === selected;
+  const ways = useOtherWays(trip, selected, waysOn);
+  const foundWays = waysOn ? (ways.data ?? []) : [];
+  const otherWays: OtherWaysState = {
+    on: waysOn,
+    onSearch: () => {
+      setWaysDay(selected);
+      if (ways.isError) void ways.refetch();
+    },
+    loading: waysOn && ways.isFetching,
+    failed: waysOn && ways.isError,
+    ways: foundWays,
+    ...(wayHover &&
+      foundWays.some((w) => w.id === wayHover) && { hovered: wayHover }),
+    onHover: setWayHover,
+    onPick: (way) => {
+      setWayHover(undefined);
+      setWaysDay(undefined);
+      editor.setRoute(selected, way.route);
+    },
   };
   const hoveredStop =
     dayOpen && stopHover?.day === selected ? stopHover.name : undefined;
@@ -451,6 +477,8 @@ function TripEditor({
     />
   );
   const mapLayers = {
+    otherWays: otherWays.ways,
+    ...(otherWays.hovered && { hoveredWay: otherWays.hovered }),
     stations: layers.stations ? stations : [],
     network: layers.network ? ("quiet" as const) : ("off" as const),
     weather: weatherField && {
@@ -483,6 +511,7 @@ function TripEditor({
         ...(hoveredStop && { name: hoveredStop }),
         onHover: hoverStop,
       }}
+      otherWays={otherWays}
       selectedVia={selectedVia}
       onSelectVia={selectVia}
       chart={isPhone ? chart : undefined}

@@ -55,7 +55,10 @@ export type PhoneTripEditorProps = {
   /** Elevation or weather, in the sheet. */
   chart: ReactNode;
   /** Layers the user can turn on and off, and the weather. */
-  mapLayers: Pick<TripMapProps, "stations" | "network" | "weather" | "layers">;
+  mapLayers: Pick<
+    TripMapProps,
+    "stations" | "network" | "weather" | "layers" | "otherWays" | "hoveredWay"
+  >;
   /** Route edits of the selected stage. */
   route?: RouteEditing;
   /** The note after an edit. */

@@ -31,6 +31,7 @@ import { StageChange } from "./StageChange";
 import { dayWarnings, stageWind } from "./stageWeather";
 import { hasMovableDestination } from "./stopChoices";
 import { type StopHover, StopPicker } from "./StopPicker";
+import { OtherWaysSection, type OtherWaysState } from "./OtherWaysSection";
 import { TrainOptions, useHasTrains } from "./TrainOptions";
 import type { TripEditorState } from "./useTripEditor";
 
@@ -47,6 +48,7 @@ export function DayPanel({
   findingDestination,
   onFindingDestination,
   stopHover,
+  otherWays,
   selectedVia,
   onSelectVia,
   chart,
@@ -69,6 +71,8 @@ export function DayPanel({
   onFindingDestination: (finding: boolean) => void;
   /** The stop choice under the pointer, previewed on the map. */
   stopHover: StopHover;
+  /** Other routes to the stop, here and on the map. */
+  otherWays?: OtherWaysState;
   /** Via point selected here and on the map. */
   selectedVia?: number;
   onSelectVia: (index: number | undefined) => void;
@@ -201,6 +205,13 @@ export function DayPanel({
           highlighted={highlightedClimb}
         />
       </PanelSection>
+      {!editor.readOnly && otherWays && (
+        <OtherWaysSection
+          stage={stage}
+          state={otherWays}
+          disabled={!editor.canEdit}
+        />
+      )}
       {!isLast && (
         <PanelSection
           icon="stop"

@@ -74,6 +74,9 @@ export type MapAlternative = {
   beds?: number;
 };
 
+// Stable, so the memo of the map data keeps.
+const NO_WAYS: { id: string; line: LonLat[] }[] = [];
+
 export type StopPreview = {
   name: string;
   /** Missing until the choice is routed. */
@@ -96,6 +99,10 @@ export type TripMapProps = {
   onHoverAlternative?: (name: string | undefined) => void;
   /** The hovered stop choice: the day and the next day as they would be. */
   stopPreview?: StopPreview;
+  /** Other routes for the selected day, in the colors of their list. */
+  otherWays?: { id: string; line: LonLat[] }[];
+  /** The other way to show strong, e.g. the one under the pointer. */
+  hoveredWay?: string;
   /** Hotels near the end stop of the selected day. */
   hotels?: MapHotel[];
   selectedHotelId?: string;
@@ -160,6 +167,8 @@ export function TripMap({
   onPickAlternative,
   onHoverAlternative,
   stopPreview,
+  otherWays = NO_WAYS,
+  hoveredWay,
   hotels = [],
   selectedHotelId,
   onSelectHotel,
@@ -190,6 +199,7 @@ export function TripMap({
   const previewLine = stopPreview?.line;
   const previewNext = stopPreview?.nextLine;
   const previewing = !overview && !!previewLine;
+  const wayHovered = !overview && otherWays.some((w) => w.id === hoveredWay);
 
   const data = useMemo<FeatureCollection<LineString>>(
     () => ({
@@ -201,10 +211,12 @@ export function TripMap({
           color: index % 2 ? tokens.stageB : tokens.stageA,
           selected: overview
             ? hovered === undefined || hovered === index
-            : index === selected && !previewing,
+            : index === selected && !previewing && !wayHovered,
           hovered: index === hovered,
-          // The route a previewed stop would replace.
-          dim: previewing && (index === selected || index === selected + 1),
+          // The route a previewed stop or way would replace.
+          dim:
+            (previewing && (index === selected || index === selected + 1)) ||
+            (wayHovered && index === selected),
         },
         geometry: { type: "LineString", coordinates },
       })),
@@ -215,8 +227,34 @@ export function TripMap({
       hovered,
       overview,
       previewing,
+      wayHovered,
       tokens.stageA,
       tokens.stageB,
+    ],
+  );
+
+  const otherWaysData = useMemo<FeatureCollection<LineString>>(
+    () => ({
+      type: "FeatureCollection",
+      features: overview
+        ? []
+        : otherWays.map(({ id, line }, i) => ({
+            type: "Feature",
+            properties: {
+              // The same as the swatches in RouteChoices.
+              color: [tokens.route2, tokens.route3, tokens.route5][i % 3],
+              hovered: id === hoveredWay,
+            },
+            geometry: { type: "LineString", coordinates: line },
+          })),
+    }),
+    [
+      overview,
+      otherWays,
+      hoveredWay,
+      tokens.route2,
+      tokens.route3,
+      tokens.route5,
     ],
   );
 
@@ -544,7 +582,7 @@ export function TripMap({
             "line-opacity": [
               "case",
               ["get", "dim"],
-              0.2,
+              0.35,
               ["get", "hovered"],
               0.85,
               0.45,
@@ -574,6 +612,33 @@ export function TripMap({
             "line-width": 18,
             "line-opacity": 0,
           }}
+        />
+      </Source>
+      <Source id="other-ways" type="geojson" data={otherWaysData}>
+        <MapLayer
+          id="other-ways-line"
+          type="line"
+          filter={["==", ["get", "hovered"], false]}
+          layout={lineLayout}
+          paint={{
+            "line-color": ["get", "color"],
+            "line-width": 4,
+            "line-opacity": wayHovered ? 0.35 : 0.75,
+          }}
+        />
+        <MapLayer
+          id="other-ways-casing"
+          type="line"
+          filter={["==", ["get", "hovered"], true]}
+          layout={lineLayout}
+          paint={{ "line-color": tokens.routeOutline, "line-width": 8 }}
+        />
+        <MapLayer
+          id="other-ways-hovered"
+          type="line"
+          filter={["==", ["get", "hovered"], true]}
+          layout={lineLayout}
+          paint={{ "line-color": ["get", "color"], "line-width": 5.5 }}
         />
       </Source>
       <Source id="stop-preview" type="geojson" data={stopPreviewData}>
@@ -670,6 +735,7 @@ export function TripMap({
       />
       {route &&
         !previewing &&
+        !wayHovered &&
         trip.stages[selected]?.via.map((via, index) => (
           <Marker
             // Index keys keep the marker while its point moves.

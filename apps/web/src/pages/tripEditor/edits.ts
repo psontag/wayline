@@ -38,6 +38,25 @@ export function setHotel(trip: Trip, index: number, hotel: Hotel): Trip {
   return setStage(trip, index, { ...stage, hotel });
 }
 
+/**
+ * Rides the stage another way: via points, legs and stats from `route`.
+ * Start, stop, hotel and the other stages stay.
+ */
+export function setStageRoute(
+  trip: Trip,
+  index: number,
+  route: Pick<Stage, "via" | "legs">,
+): Trip {
+  const stage = trip.stages[index];
+  if (!stage) return trip;
+  return setStage(trip, index, {
+    ...stage,
+    via: route.via,
+    legs: route.legs,
+    stats: statsFromLegs(route.legs),
+  });
+}
+
 export function sameTrain(a: Connection, b: Connection): boolean {
   return (
     a.direction === b.direction &&
