@@ -197,17 +197,6 @@ const routeBorderClasses: Record<RouteColor, string> = {
   route8: "border-route-8",
 };
 
-const routeTextClasses: Record<RouteColor, string> = {
-  route1: "text-route-1",
-  route2: "text-route-2",
-  route3: "text-route-3",
-  route4: "text-route-4",
-  route5: "text-route-5",
-  route6: "text-route-6",
-  route7: "text-route-7",
-  route8: "text-route-8",
-};
-
 /**
  * Another town to end the day in. With a color, it reads as another
  * version of the day's stop: the same number, dashed, in its route color.
@@ -246,10 +235,9 @@ export function AlternativeMarker({
                       "size-8 text-on-route ring-4 ring-surface",
                       routeColorClasses[color],
                     )
-                  : cn(
-                      "size-7 border-dashed bg-surface",
-                      routeTextClasses[color],
-                    ),
+                  : // The color is on the ring. Light route colors are too
+                    // pale for the number.
+                    "size-7 border-3 border-dashed bg-surface text-text",
               )
             : selected
               ? "size-4 border-selected-border bg-accent"
