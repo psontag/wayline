@@ -107,10 +107,6 @@
     "noTown": "No town within 5 km",
     "moveTo": "To {{town}}"
   },
-  "stopPreview": {
-    "title": "End day {{day}} in {{name}}",
-    "detail": "{{today}} · tomorrow {{next}}"
-  },
   "place": {
     "add": "Add via point",
     "move": "Move via point",

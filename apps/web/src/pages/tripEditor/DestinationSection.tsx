@@ -3,7 +3,7 @@ import { Button, PanelSection, StopChoices } from "@wayline/ui";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useStopOptions } from "./stopChoices";
-import type { StopPick } from "./StopPicker";
+import type { StopHover } from "./StopPicker";
 import type { TripEditorState } from "./useTripEditor";
 
 /** Last day: other train stops to end at, looked up on request. */
@@ -13,7 +13,7 @@ export function DestinationSection({
   editor,
   finding,
   onFindingChange,
-  pick,
+  hover,
 }: {
   trip: Trip;
   index: number;
@@ -21,7 +21,7 @@ export function DestinationSection({
   /** The train stops show here and on the map. */
   finding: boolean;
   onFindingChange: (finding: boolean) => void;
-  pick: StopPick;
+  hover: StopHover;
 }) {
   const { t } = useTranslation("tripEditor");
   const end = trip.stages[index]?.end;
@@ -51,7 +51,8 @@ export function DestinationSection({
           trip={trip}
           index={index}
           editor={editor}
-          pick={pick}
+          onPicked={() => onFindingChange(false)}
+          hover={hover}
         />
       )}
     </PanelSection>
@@ -62,12 +63,14 @@ function DestinationChoices({
   trip,
   index,
   editor,
-  pick,
+  onPicked,
+  hover,
 }: {
   trip: Trip;
   index: number;
   editor: TripEditorState;
-  pick: StopPick;
+  onPicked: () => void;
+  hover: StopHover;
 }) {
   const { t } = useTranslation("tripEditor");
   const options = useStopOptions(trip, index, true);
@@ -84,12 +87,15 @@ function DestinationChoices({
         current,
       }))}
       disabled={!editor.canEdit}
-      onSelect={pick.onSelect}
-      {...(pick.selected && { selectedId: pick.selected })}
-      onConfirm={(name) => {
+      onSelect={(name) => {
         const option = options.find((o) => o.place.name === name);
-        if (option) pick.onApply(option.place);
+        if (!option) return;
+        hover.onHover(undefined);
+        onPicked();
+        void editor.moveStop(index, option.place);
       }}
+      onHover={hover.onHover}
+      {...(hover.name && { hoveredId: hover.name })}
     />
   );
 }

@@ -30,7 +30,7 @@ import { HotelChoices } from "./HotelChoices";
 import { StageChange } from "./StageChange";
 import { dayWarnings, stageWind } from "./stageWeather";
 import { hasMovableDestination } from "./stopChoices";
-import { StopPicker, type StopPick } from "./StopPicker";
+import { type StopHover, StopPicker } from "./StopPicker";
 import { TrainOptions, useHasTrains } from "./TrainOptions";
 import type { TripEditorState } from "./useTripEditor";
 
@@ -46,7 +46,7 @@ export function DayPanel({
   onHighlightProposed,
   findingDestination,
   onFindingDestination,
-  stopPick,
+  stopHover,
   selectedVia,
   onSelectVia,
   chart,
@@ -67,8 +67,8 @@ export function DayPanel({
   /** Other train stops to end the last day at show here and on the map. */
   findingDestination: boolean;
   onFindingDestination: (finding: boolean) => void;
-  /** The stop choice previewed here and on the map. */
-  stopPick: StopPick;
+  /** The stop choice under the pointer, previewed on the map. */
+  stopHover: StopHover;
   /** Via point selected here and on the map. */
   selectedVia?: number;
   onSelectVia: (index: number | undefined) => void;
@@ -233,7 +233,7 @@ export function DayPanel({
               trip={trip}
               index={index}
               editor={editor}
-              pick={stopPick}
+              hover={stopHover}
             />
           )}
         </PanelSection>
@@ -256,7 +256,7 @@ export function DayPanel({
           editor={editor}
           finding={findingDestination}
           onFindingChange={onFindingDestination}
-          pick={stopPick}
+          hover={stopHover}
         />
       )}
       {isLast && home && (

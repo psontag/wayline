@@ -13,8 +13,6 @@ import {
   FloatingTitle,
   Menu,
   MenuItem,
-  PlaceBar,
-  type PlaceBarProps,
   SHEET_PEEK,
   type SheetSnap,
   useFormat,
@@ -51,9 +49,6 @@ export type PhoneTripEditorProps = {
   onSelect: (index: number) => void;
   alternatives: MapAlternative[];
   onPickAlternative: (place: Place) => void;
-  stopPreview?: TripMapProps["stopPreview"];
-  /** Confirms the previewed stop. The sheet goes down while it shows. */
-  stopConfirm?: PlaceBarProps;
   hover?: LonLat;
   /** Trip or day level, the same as the desktop side panel. */
   panel: ReactNode;
@@ -78,8 +73,6 @@ export function PhoneTripEditor({
   onSelect,
   alternatives,
   onPickAlternative,
-  stopPreview,
-  stopConfirm,
   hover,
   panel,
   chart,
@@ -113,21 +106,6 @@ export function PhoneTripEditor({
     },
   };
 
-  // A previewed stop needs the map, so the sheet goes down the same way.
-  const confirming = !!stopConfirm;
-  const [wasConfirming, setWasConfirming] = useState(confirming);
-  const [snapBeforeConfirm, setSnapBeforeConfirm] = useState<SheetSnap>();
-  if (confirming !== wasConfirming) {
-    setWasConfirming(confirming);
-    if (confirming) {
-      setSnapBeforeConfirm(snap);
-      setSnap("peek");
-    } else if (snapBeforeConfirm) {
-      setSnap(snapBeforeConfirm);
-      setSnapBeforeConfirm(undefined);
-    }
-  }
-
   // Fit the trip or the day into the part of the map above the half-open
   // sheet.
   const padding = useMemo<MapPadding>(() => {
@@ -151,7 +129,6 @@ export function PhoneTripEditor({
           {...mapLayers}
           alternatives={alternatives}
           onPickAlternative={onPickAlternative}
-          stopPreview={stopPreview}
           hover={hover}
           route={placingRoute}
           padding={padding}
@@ -160,11 +137,6 @@ export function PhoneTripEditor({
           <div className="absolute inset-x-3 top-16 z-toast flex justify-center">
             {toast}
           </div>
-          {stopConfirm && (
-            <div className="absolute inset-x-3 bottom-10 z-panel flex justify-center">
-              <PlaceBar {...stopConfirm} />
-            </div>
-          )}
         </TripMap>
       </div>
       <PhoneHeader trip={trip} editor={editor} onShare={onShare} />

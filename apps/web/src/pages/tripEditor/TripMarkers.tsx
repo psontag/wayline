@@ -52,6 +52,7 @@ export type TripMarkersProps = {
   onSelect: (index: number) => void;
   alternatives: MapAlternative[];
   onPickAlternative?: (place: Place) => void;
+  onHoverAlternative?: (name: string | undefined) => void;
   /** Name of the stop choice being previewed. */
   previewStop?: string;
   stations: MapStation[];
@@ -72,6 +73,7 @@ export function TripMarkers({
   onSelect,
   alternatives,
   onPickAlternative,
+  onHoverAlternative,
   previewStop,
   stations,
   hotels,
@@ -247,6 +249,10 @@ export function TripMarkers({
             compact={crowded.has(`choice-${place.name}`)}
             aria-label={label}
             onClick={() => onPickAlternative?.(place)}
+            onMouseEnter={() => onHoverAlternative?.(place.name)}
+            onMouseLeave={() => onHoverAlternative?.(undefined)}
+            onFocus={() => onHoverAlternative?.(place.name)}
+            onBlur={() => onHoverAlternative?.(undefined)}
           />
         </Marker>
       ))}

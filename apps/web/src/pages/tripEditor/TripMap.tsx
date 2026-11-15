@@ -92,7 +92,9 @@ export type TripMapProps = {
   /** Other towns for the selected stop. */
   alternatives?: MapAlternative[];
   onPickAlternative?: (place: Place) => void;
-  /** A stop choice shown before it is picked: the day and the next day as they would be. */
+  /** Called with the name of the stop choice under the pointer. */
+  onHoverAlternative?: (name: string | undefined) => void;
+  /** The hovered stop choice: the day and the next day as they would be. */
   stopPreview?: StopPreview;
   /** Hotels near the end stop of the selected day. */
   hotels?: MapHotel[];
@@ -156,6 +158,7 @@ export function TripMap({
   hovered,
   alternatives = [],
   onPickAlternative,
+  onHoverAlternative,
   stopPreview,
   hotels = [],
   selectedHotelId,
@@ -657,6 +660,7 @@ export function TripMap({
         onSelect={onSelect}
         alternatives={alternatives}
         onPickAlternative={onPickAlternative}
+        {...(onHoverAlternative && { onHoverAlternative })}
         {...(stopPreview && { previewStop: stopPreview.name })}
         stations={stations}
         hotels={hotels}

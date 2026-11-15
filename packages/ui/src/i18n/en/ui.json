@@ -124,13 +124,6 @@
     "hotelsNote": "Hotels: places to sleep within {{radius}}.",
     "none": "–",
     "choose": "Stop in {{name}}",
-    "preview": "{{name}}:",
-    "delta": "today {{distance}} · {{ascent}}",
-    "nextDelta": "tomorrow {{distance}} ({{change}})",
-    "more": "+{{value}}",
-    "less": "−{{value}}",
-    "confirm": "End in {{name}}",
-    "cancel": "Cancel",
     "size": {
       "village": "Village",
       "town": "Town",
