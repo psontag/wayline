@@ -53,7 +53,7 @@ import {
   useDayChoices,
 } from "./dayChoices";
 import { type ChoiceStages, samePlace, stageLine } from "./edits";
-import { type DayRoute, useDayRoutes } from "./dayRoutes";
+import { type DayRoute, MAX_ROUTES, useDayRoutes } from "./dayRoutes";
 
 // Stable, so the memos that use them keep.
 const NO_ROUTES: DayRoute[] = [];
@@ -322,7 +322,7 @@ function TripEditor({
       ...(!same && before.next && { nextLine: stageLine(before.next) }),
     };
     // Last, so a found route with the same km and climbing shows instead.
-    return [...found, previous];
+    return [...found.slice(0, MAX_ROUTES - 1), previous];
   }, [before, stage, found, t]);
   // Other towns show only on the last day, as train stops to end at.
   const towns = useMemo(

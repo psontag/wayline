@@ -31,7 +31,7 @@ export type DayRoute = {
   nextLine?: LonLat[];
 };
 
-const MAX_ROUTES = 6;
+export const MAX_ROUTES = 5;
 /** A route with more of its km near another one is no real choice. */
 const MAX_SHARED = 0.7;
 const CORRIDOR_KM = 1;
@@ -85,7 +85,7 @@ export function dayRoutesRequest(trip: Trip, index: number): GenerateRequest {
 
 /**
  * Proposals that differ from the day's route and from each other, at most
- * 6, in the order given.
+ * MAX_ROUTES, in the order given.
  */
 export function differentRoutes(
   stage: Stage,
