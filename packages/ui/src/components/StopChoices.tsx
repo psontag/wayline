@@ -22,6 +22,10 @@ export type StopChoice = {
 export type StopChoicesProps = {
   choices: StopChoice[];
   onSelect?: (id: string) => void;
+  /** The choice under the pointer or in focus, e.g. to preview it. */
+  onHover?: (id: string | undefined) => void;
+  /** Shows a choice as hovered, e.g. while its map marker is. */
+  hoveredId?: string;
   disabled?: boolean;
   /**
    * Radius for the hotel count, in meters. Without it there is no next day
@@ -34,6 +38,8 @@ export type StopChoicesProps = {
 export function StopChoices({
   choices,
   onSelect,
+  onHover,
+  hoveredId,
   disabled = false,
   hotelsRadius,
 }: StopChoicesProps) {
@@ -73,16 +79,21 @@ export function StopChoices({
               c.current || disabled || !onSelect
                 ? undefined
                 : () => onSelect(c.id);
+            const hover = (on: boolean) =>
+              !c.current && onHover?.(on ? c.id : undefined);
             return (
               <tr
                 key={c.id}
                 aria-current={c.current || undefined}
                 onClick={pick}
+                onMouseEnter={() => hover(true)}
+                onMouseLeave={() => hover(false)}
                 className={cn(
                   "[&>td:first-child]:rounded-l-sm [&>td:last-child]:rounded-r-sm",
                   c.current
                     ? "bg-selected font-bold"
                     : pick && "cursor-pointer hover:bg-hover",
+                  !c.current && c.id === hoveredId && "bg-hover",
                 )}
               >
                 <td className="w-full max-w-0 px-1.5 py-1.5 text-left">
@@ -100,6 +111,8 @@ export function StopChoices({
                             e.stopPropagation();
                             pick();
                           }}
+                          onFocus={() => hover(true)}
+                          onBlur={() => hover(false)}
                           aria-label={t("stopChoices.choose", {
                             name: c.name,
                           })}

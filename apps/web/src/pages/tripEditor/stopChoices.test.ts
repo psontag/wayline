@@ -1,5 +1,6 @@
 import {
   distanceKm,
+  type LonLat,
   parseTrip,
   type Place,
   type Places,
@@ -7,6 +8,7 @@ import {
 import { fitsBudget } from "@wayline/providers";
 import { describe, expect, it } from "vitest";
 import places from "../../../public/data/mock/oberfranken/places.json";
+import type { RoutedStageIfEnding } from "./edits";
 import sample from "../../../public/data/mock/oberfranken/sample-trip.json";
 import {
   awayFromStart,
@@ -90,16 +92,20 @@ describe("awayFromStart", () => {
 });
 
 describe("withRouted", () => {
-  it("uses routed km for alternatives and keeps the current stop", () => {
+  it("uses routed km and lines for alternatives and keeps the current stop", () => {
     const choices = stopChoices(trip, 0);
     const current = choices.find((c) => c.current)!;
     const other = choices.find((c) => !c.current)!;
-    const routed = new Map([
-      [other.place.name, { distance: 1000, ascent: 5, nextDistance: 2000 }],
-      [current.place.name, { distance: 9, ascent: 9 }],
+    const line: LonLat[] = [stage!.start.coord, other.place.coord];
+    const routed = new Map<string, RoutedStageIfEnding>([
+      [
+        other.place.name,
+        { distance: 1000, ascent: 5, nextDistance: 2000, line },
+      ],
+      [current.place.name, { distance: 9, ascent: 9, line: [] }],
     ]);
     const [first, ...rest] = withRouted(choices, routed);
-    expect(first).toMatchObject({ place: other.place, distance: 1000 });
+    expect(first).toMatchObject({ place: other.place, distance: 1000, line });
     expect(rest.find((c) => c.current)).toEqual(current);
   });
 });

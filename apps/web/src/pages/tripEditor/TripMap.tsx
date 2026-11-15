@@ -74,6 +74,13 @@ export type MapAlternative = {
   beds?: number;
 };
 
+export type StopPreview = {
+  name: string;
+  /** Missing until the choice is routed. */
+  line?: LonLat[];
+  nextLine?: LonLat[];
+};
+
 export type TripMapProps = {
   trip: Trip;
   selected: number;
@@ -85,6 +92,10 @@ export type TripMapProps = {
   /** Other towns for the selected stop. */
   alternatives?: MapAlternative[];
   onPickAlternative?: (place: Place) => void;
+  /** Called with the name of the stop choice under the pointer. */
+  onHoverAlternative?: (name: string | undefined) => void;
+  /** The hovered stop choice: the day and the next day as they would be. */
+  stopPreview?: StopPreview;
   /** Hotels near the end stop of the selected day. */
   hotels?: MapHotel[];
   selectedHotelId?: string;
@@ -147,6 +158,8 @@ export function TripMap({
   hovered,
   alternatives = [],
   onPickAlternative,
+  onHoverAlternative,
+  stopPreview,
   hotels = [],
   selectedHotelId,
   onSelectHotel,
@@ -174,6 +187,10 @@ export function TripMap({
     [trip.stages],
   );
 
+  const previewLine = stopPreview?.line;
+  const previewNext = stopPreview?.nextLine;
+  const previewing = !overview && !!previewLine;
+
   const data = useMemo<FeatureCollection<LineString>>(
     () => ({
       type: "FeatureCollection",
@@ -184,14 +201,57 @@ export function TripMap({
           color: index % 2 ? tokens.stageB : tokens.stageA,
           selected: overview
             ? hovered === undefined || hovered === index
-            : index === selected,
+            : index === selected && !previewing,
           hovered: index === hovered,
+          // The route a previewed stop would replace.
+          dim: previewing && (index === selected || index === selected + 1),
         },
         geometry: { type: "LineString", coordinates },
       })),
     }),
-    [lines, selected, hovered, overview, tokens.stageA, tokens.stageB],
+    [
+      lines,
+      selected,
+      hovered,
+      overview,
+      previewing,
+      tokens.stageA,
+      tokens.stageB,
+    ],
   );
+
+  const stopPreviewData = useMemo<FeatureCollection<LineString>>(() => {
+    const parts = previewing
+      ? [
+          { line: previewLine, next: false, index: selected },
+          { line: previewNext, next: true, index: selected + 1 },
+        ]
+      : [];
+    return {
+      type: "FeatureCollection",
+      features: parts.flatMap(({ line, next, index }) =>
+        line && line.length > 1
+          ? [
+              {
+                type: "Feature",
+                properties: {
+                  next,
+                  color: index % 2 ? tokens.stageB : tokens.stageA,
+                },
+                geometry: { type: "LineString", coordinates: line },
+              },
+            ]
+          : [],
+      ),
+    };
+  }, [
+    previewing,
+    previewLine,
+    previewNext,
+    selected,
+    tokens.stageA,
+    tokens.stageB,
+  ]);
 
   // Legs of the selected stage, to drag the route.
   const legLines = useMemo(
@@ -481,7 +541,14 @@ export function TripMap({
           paint={{
             "line-color": ["get", "color"],
             "line-width": 5,
-            "line-opacity": ["case", ["get", "hovered"], 0.85, 0.45],
+            "line-opacity": [
+              "case",
+              ["get", "dim"],
+              0.2,
+              ["get", "hovered"],
+              0.85,
+              0.45,
+            ],
           }}
         />
         <MapLayer
@@ -507,6 +574,34 @@ export function TripMap({
             "line-width": 18,
             "line-opacity": 0,
           }}
+        />
+      </Source>
+      <Source id="stop-preview" type="geojson" data={stopPreviewData}>
+        <MapLayer
+          id="stop-preview-next"
+          type="line"
+          filter={["==", ["get", "next"], true]}
+          layout={lineLayout}
+          paint={{
+            "line-color": ["get", "color"],
+            "line-width": 5,
+            // The round caps fill part of each gap.
+            "line-dasharray": [0.8, 2],
+          }}
+        />
+        <MapLayer
+          id="stop-preview-casing"
+          type="line"
+          filter={["==", ["get", "next"], false]}
+          layout={lineLayout}
+          paint={{ "line-color": tokens.routeOutline, "line-width": 8 }}
+        />
+        <MapLayer
+          id="stop-preview-line"
+          type="line"
+          filter={["==", ["get", "next"], false]}
+          layout={lineLayout}
+          paint={{ "line-color": ["get", "color"], "line-width": 5.5 }}
         />
       </Source>
       {highlight && highlight.length > 1 && (
@@ -565,6 +660,8 @@ export function TripMap({
         onSelect={onSelect}
         alternatives={alternatives}
         onPickAlternative={onPickAlternative}
+        {...(onHoverAlternative && { onHoverAlternative })}
+        {...(stopPreview && { previewStop: stopPreview.name })}
         stations={stations}
         hotels={hotels}
         selectedHotelId={selectedHotelId}
@@ -572,6 +669,7 @@ export function TripMap({
         onToggleSaveHotel={onToggleSaveHotel}
       />
       {route &&
+        !previewing &&
         trip.stages[selected]?.via.map((via, index) => (
           <Marker
             // Index keys keep the marker while its point moves.

@@ -197,24 +197,37 @@ export type StageIfEnding = {
   nextDistance?: number;
 };
 
+/** A routed stop choice: the numbers, and the lines to preview it. */
+export type RoutedStageIfEnding = StageIfEnding & {
+  line: LonLat[];
+  /** The next stage. Missing on the last stage. */
+  nextLine?: LonLat[];
+};
+
 /** The stage if it ended at the place, routed the same way as moveStop. */
 export async function routedStageIfEnding(
   trip: Trip,
   index: number,
   place: Place,
   route: RouteFn,
-): Promise<StageIfEnding> {
+): Promise<RoutedStageIfEnding> {
   const moved = await moveStop(trip, index, place, {
     route,
     nearestHotel: async () => undefined,
   });
   const stage = moved.stages[index];
   const next = moved.stages[index + 1];
-  const out: StageIfEnding = {
+  const lineOf = (s: Stage) =>
+    s.legs.flatMap((leg) => decodeLine(leg.geometry));
+  const out: RoutedStageIfEnding = {
     distance: stage?.stats.distance ?? 0,
     ascent: stage?.stats.ascent ?? 0,
+    line: stage ? lineOf(stage) : [],
   };
-  if (next) out.nextDistance = next.stats.distance;
+  if (next) {
+    out.nextDistance = next.stats.distance;
+    out.nextLine = lineOf(next);
+  }
   return out;
 }
 

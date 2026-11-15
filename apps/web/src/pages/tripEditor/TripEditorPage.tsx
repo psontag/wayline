@@ -124,6 +124,8 @@ function TripEditor({
   // Hour the weather map shows. Follows the ride start until moved.
   const [mapTime, setMapTime] = useState<number>();
   const [findingDestination, setFindingDestination] = useState(false);
+  // Stop choice under the pointer, in the stop table or on the map.
+  const [stopHover, setStopHover] = useState<{ day: number; name: string }>();
   const [viaSelection, setViaSelection] = useState<{
     day: number;
     coord: LonLat;
@@ -263,8 +265,21 @@ function TripEditor({
   const mapHotels = useMapHotels(trip, selected);
   const stations = useRouteStations(trip);
   const pickAlternative = (place: Place) => {
+    setStopHover(undefined);
     setFindingDestination(false);
     void editor.moveStop(selected, place);
+  };
+  const hoveredStop =
+    dayOpen && stopHover?.day === selected ? stopHover.name : undefined;
+  const hoverStop = (name: string | undefined) =>
+    setStopHover(name ? { day: selected, name } : undefined);
+  const hoveredOption = options.find(
+    (o) => !o.current && o.place.name === hoveredStop,
+  );
+  const stopPreview = hoveredOption && {
+    name: hoveredOption.place.name,
+    ...(hoveredOption.line && { line: hoveredOption.line }),
+    ...(hoveredOption.nextLine && { nextLine: hoveredOption.nextLine }),
   };
   const alternatives = readOnly
     ? []
@@ -464,6 +479,10 @@ function TripEditor({
       onHighlightProposed={setProposedHighlighted}
       findingDestination={findingDestination}
       onFindingDestination={setFindingDestination}
+      stopHover={{
+        ...(hoveredStop && { name: hoveredStop }),
+        onHover: hoverStop,
+      }}
       selectedVia={selectedVia}
       onSelectVia={selectVia}
       chart={isPhone ? chart : undefined}
@@ -525,6 +544,8 @@ function TripEditor({
               highlight={highlight}
               alternatives={dayOpen ? alternatives : []}
               onPickAlternative={pickAlternative}
+              onHoverAlternative={hoverStop}
+              stopPreview={stopPreview}
               hotels={
                 !dayOpen || isLast || !layers.hotels ? [] : mapHotels.hotels
               }
