@@ -93,13 +93,16 @@ describe("routedStageIfEnding", () => {
     });
     const lineOf = (i: number) =>
       next.stages[i]!.legs.flatMap((leg) => decodeLine(leg.geometry));
-    expect(choice).toEqual({
+    expect(choice).toMatchObject({
       distance: next.stages[0]!.stats.distance,
       ascent: next.stages[0]!.stats.ascent,
       nextDistance: next.stages[1]!.stats.distance,
       line: lineOf(0),
       nextLine: lineOf(1),
     });
+    // The same stages as moving the stop, without the hotel.
+    expect(choice.stages.stage.legs).toEqual(next.stages[0]!.legs);
+    expect(choice.stages.next).toEqual(next.stages[1]);
     expect(choice.line.at(-1)).toEqual(place.coord);
   });
 });

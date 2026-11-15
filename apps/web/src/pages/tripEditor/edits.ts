@@ -33,22 +33,42 @@ export function setHotel(trip: Trip, index: number, hotel: Hotel): Trip {
 }
 
 /**
- * Rides the stage another way: via points, legs and stats from `route`.
- * Start, stop, hotel and the other stages stay.
+ * A day as it would be after a stop or way choice: the stage, and the next
+ * stage when it changes too.
  */
-export function setStageRoute(
+export type ChoiceStages = { stage: Stage; next?: Stage };
+
+/**
+ * Takes a choice: its stages replace the day and the next day as they are.
+ * A new stop gets the hotel nearest to it, the same stop keeps its hotel.
+ */
+export async function takeChoice(
   trip: Trip,
   index: number,
-  route: Pick<Stage, "via" | "legs">,
-): Trip {
+  choice: ChoiceStages,
+  nearestHotel: HotelFn,
+): Promise<Trip> {
   const stage = trip.stages[index];
   if (!stage) return trip;
-  return setStage(trip, index, {
-    ...stage,
-    via: route.via,
-    legs: route.legs,
-    stats: statsFromLegs(route.legs),
-  });
+  const next = trip.stages[index + 1];
+  const moved = !samePlace(stage.end, choice.stage.end);
+  const taken: Stage = { ...choice.stage };
+  delete taken.hotel;
+  const hotel = !next
+    ? undefined
+    : moved
+      ? await nearestHotel(taken.end.coord)
+      : stage.hotel;
+  if (hotel) taken.hotel = hotel;
+  const stages = [...trip.stages];
+  stages[index] = taken;
+  if (next && choice.next) stages[index + 1] = choice.next;
+  // Saved trains home leave from the old destination.
+  const trains =
+    moved && !next
+      ? trip.trains.filter((train) => train.direction !== "back")
+      : trip.trains;
+  return { ...trip, stages, trains };
 }
 
 export function sameTrain(a: Connection, b: Connection): boolean {
@@ -127,6 +147,9 @@ export function nearestLeg(legs: Leg[], at: LonLat): number {
 function keepVia(via: Place[], points: LonLat[]): Place[] {
   return via.filter((v) => points.some((p) => distanceKm(p, v.coord) < 0.001));
 }
+
+export const stageLine = (stage: Pick<Stage, "legs">): LonLat[] =>
+  stage.legs.flatMap((leg) => decodeLine(leg.geometry));
 
 export function withLegs(stage: Stage, legs: Leg[]): Stage {
   return { ...stage, legs, stats: statsFromLegs(legs) };
@@ -210,11 +233,12 @@ export type StageIfEnding = {
   nextDistance?: number;
 };
 
-/** A routed stop choice: the numbers, and the lines to preview it. */
+/** A routed stop choice: the numbers, the lines to preview it, the stages to take it. */
 export type RoutedStageIfEnding = StageIfEnding & {
   line: LonLat[];
   /** The next stage. Missing on the last stage. */
   nextLine?: LonLat[];
+  stages: ChoiceStages;
 };
 
 /** The stage if it ended at the place, routed the same way as moveStop. */
@@ -229,17 +253,17 @@ export async function routedStageIfEnding(
     nearestHotel: async () => undefined,
   });
   const stage = moved.stages[index];
+  if (!stage) throw new Error(`No stage ${index}`);
   const next = moved.stages[index + 1];
-  const lineOf = (s: Stage) =>
-    s.legs.flatMap((leg) => decodeLine(leg.geometry));
   const out: RoutedStageIfEnding = {
-    distance: stage?.stats.distance ?? 0,
-    ascent: stage?.stats.ascent ?? 0,
-    line: stage ? lineOf(stage) : [],
+    distance: stage.stats.distance,
+    ascent: stage.stats.ascent,
+    line: stageLine(stage),
+    stages: next ? { stage, next } : { stage },
   };
   if (next) {
     out.nextDistance = next.stats.distance;
-    out.nextLine = lineOf(next);
+    out.nextLine = stageLine(next);
   }
   return out;
 }

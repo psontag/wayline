@@ -10,6 +10,7 @@ import {
   pointAtKm,
   dayHours,
   routePoints,
+  type Stage,
   stageSpeed,
   stageStartTime,
   timeToHours,
@@ -45,7 +46,12 @@ import {
   useMapHotels,
   useStopOptions,
 } from "./stopChoices";
-import { type DayChoicesState, useDayChoices } from "./dayChoices";
+import {
+  type DayChoice,
+  type DayChoicesState,
+  useDayChoices,
+} from "./dayChoices";
+import { stageLine } from "./edits";
 import { type OtherWay, useOtherWays } from "./otherWays";
 
 // Stable, so the memos that use them keep.
@@ -132,6 +138,7 @@ function TripEditor({
   const [findingDestination, setFindingDestination] = useState(false);
   // Stop choice under the pointer, in the stop table or on the map.
   const [choiceHover, setChoiceHover] = useState<{ day: number; id: string }>();
+  const [replaced, setReplaced] = useState<{ day: number; stage: Stage }>();
   const [viaSelection, setViaSelection] = useState<{
     day: number;
     coord: LonLat;
@@ -270,14 +277,59 @@ function TripEditor({
   const options = useStopOptions(trip, selected, findingDestination);
   const mapHotels = useMapHotels(trip, selected);
   const stations = useRouteStations(trip);
-  const pickAlternative = (place: Place) => {
-    setChoiceHover(undefined);
-    setFindingDestination(false);
-    void editor.moveStop(selected, place);
-  };
   const waysOn = dayOpen && !editor.readOnly;
   const ways = useOtherWays(trip, selected, waysOn);
-  const choiceList = useDayChoices(options, (waysOn && ways.data) || NO_WAYS);
+  const found = (waysOn && ways.data) || NO_WAYS;
+  // The way ridden before the last way picked, to switch back to.
+  const before =
+    replaced?.day === selected &&
+    stage &&
+    replaced.stage.end.name === stage.end.name &&
+    replaced.stage.legs !== stage.legs
+      ? replaced.stage
+      : undefined;
+  const wayList = useMemo(
+    () =>
+      // Last, so a found way with the same route shows instead.
+      before && stage
+        ? [
+            ...found,
+            {
+              id: "previous",
+              name: t("otherWays.previous"),
+              tags: [],
+              via: [],
+              stage: {
+                ...stage,
+                via: before.via,
+                legs: before.legs,
+                stats: before.stats,
+              },
+              line: stageLine(before),
+            },
+          ]
+        : found,
+    [before, stage, found, t],
+  );
+  const choiceList = useDayChoices(options, wayList);
+  const pick = (choice: DayChoice) => {
+    const now = trip.stages[selected];
+    if (!choice.stages || !now) return;
+    setChoiceHover(undefined);
+    setFindingDestination(false);
+    setReplaced(
+      choice.kind === "way" ? { day: selected, stage: now } : undefined,
+    );
+    void editor.takeChoice(selected, choice.stages);
+  };
+  const pickAlternative = (place: Place) => {
+    const choice = choiceList.find((c) => c.id === place.name && c.stages);
+    if (choice) return pick(choice);
+    setChoiceHover(undefined);
+    setFindingDestination(false);
+    setReplaced(undefined);
+    void editor.moveStop(selected, place);
+  };
   const hoverChoice = (id: string | undefined) =>
     setChoiceHover(id ? { day: selected, id } : undefined);
   const hoveredChoice =
@@ -290,11 +342,7 @@ function TripEditor({
     choices: choiceList,
     ...(hoveredChoice && { hovered: hoveredChoice }),
     onHover: hoverChoice,
-    onPick: (choice) => {
-      if (choice.place) return pickAlternative(choice.place);
-      setChoiceHover(undefined);
-      if (choice.way) editor.setRoute(selected, choice.way.route);
-    },
+    onPick: pick,
     loading: waysOn && ways.isFetching,
     failed: waysOn && ways.isError,
     onRetry: () => void ways.refetch(),

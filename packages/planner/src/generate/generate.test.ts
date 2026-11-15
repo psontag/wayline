@@ -107,6 +107,39 @@ describe("Planner on the Oberfranken network", () => {
     expect(ends.size).toBeGreaterThan(1);
   });
 
+  it("starts and ends at the places themselves with exactEnds", async () => {
+    // Near Bamberg station, which a plain request would start at.
+    const start = {
+      name: "Bamberg Hain",
+      kind: "town" as const,
+      coord: [10.8916, 49.8925] as [number, number],
+    };
+    const end = {
+      name: "Coburg",
+      kind: "town" as const,
+      coord: [10.9645, 50.2582] as [number, number],
+    };
+    const request: GenerateRequest = {
+      ...oneWay,
+      startStation: start,
+      endStation: end,
+      days: 1,
+      kmPerDay: 60,
+      maxProposals: 2,
+    };
+    const plain = await planner.generate(request);
+    const exact = await planner.generate({ ...request, exactEnds: true });
+    if (!plain.ok || !exact.ok) throw new Error("no proposals");
+    expect(plain.proposals[0]?.trip.stages[0]?.start.coord).not.toEqual(
+      start.coord,
+    );
+    for (const p of exact.proposals) {
+      const day = p.trip.stages[0];
+      expect(day?.start.coord).toEqual(start.coord);
+      expect(day?.end.coord).toEqual(end.coord);
+    }
+  });
+
   // Bamberg to Coburg is about 45 km, so 210 km need detours.
   it("ends at the requested station, without filler loops", async () => {
     const request: GenerateRequest = {

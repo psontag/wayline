@@ -658,7 +658,9 @@ export class Planner {
    */
   private startNode(request: GenerateRequest): number | undefined {
     const isStation = (n: { kind: string }) => n.kind === "station";
-    if (request.startStation) return this.nodeAt(request.startStation.coord);
+    if (request.startStation) {
+      return this.nodeAt(request.startStation.coord, request.exactEnds);
+    }
     const r = request.region;
     if (!r) return undefined;
     const node = this.graph.nearestNode(
@@ -682,16 +684,17 @@ export class Planner {
    */
   private endNode(request: GenerateRequest): number | null | undefined {
     if (request.kind !== "one-way" || !request.endStation) return undefined;
-    return this.nodeAt(request.endStation.coord) ?? null;
+    return this.nodeAt(request.endStation.coord, request.exactEnds) ?? null;
   }
 
-  private nodeAt(coord: LonLat): number | undefined {
-    return (
-      this.graph.nearestNode(coord, {
-        maxKm: STATION_KM,
-        filter: (n) => n.kind === "station",
-      }) ?? this.graph.nearestNode(coord, { maxKm: START_KM })
-    );
+  private nodeAt(coord: LonLat, exact = false): number | undefined {
+    const station = exact
+      ? undefined
+      : this.graph.nearestNode(coord, {
+          maxKm: STATION_KM,
+          filter: (n) => n.kind === "station",
+        });
+    return station ?? this.graph.nearestNode(coord, { maxKm: START_KM });
   }
 
   /** The station at a node, else the requested place. */

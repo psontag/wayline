@@ -437,6 +437,7 @@ export function TripMap({
     ...(overview ? lines.flat() : (lines[selected] ?? [])),
     ...alternatives.map(({ place }) => place.coord),
     ...hotels.map((hotel) => hotel.coord),
+    ...(overview ? [] : choices.flatMap((choice) => choice.line)),
   ];
 
   const first = trip.stages[0];
@@ -486,8 +487,9 @@ export function TripMap({
     <AppMap
       label={t("map.label", { day: selected + 1 })}
       fit={fit}
-      // Also when options show up or go, e.g. train stops for the last day.
-      fitKey={[fitDay, alternatives.length > 0]}
+      // Also when options show up or go, e.g. train stops for the last day
+      // or other ways once found.
+      fitKey={[fitDay, alternatives.length > 0, choices.length]}
       // A link with ?stage=n opens on that day, not on the whole trip.
       initialFit={overview ? lines.flat() : (lines[selected] ?? [])}
       padding={padding}

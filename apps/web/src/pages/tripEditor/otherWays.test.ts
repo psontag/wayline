@@ -1,5 +1,4 @@
 import {
-  distanceKm,
   type LonLat,
   parseTrip,
   type Proposal,
@@ -8,13 +7,8 @@ import {
 import { straightLeg } from "@wayline/planner";
 import { describe, expect, it } from "vitest";
 import sample from "../../../public/data/mock/oberfranken/sample-trip.json";
-import { setStageRoute } from "./edits";
-import {
-  differentWays,
-  otherWaysRequest,
-  routeWay,
-  viasAlong,
-} from "./otherWays";
+import { routedStageIfEnding, takeChoice } from "./edits";
+import { differentWays, otherWaysRequest, wayOf } from "./otherWays";
 
 const trip = parseTrip(sample);
 const stage = trip.stages[0]!;
@@ -43,7 +37,7 @@ const away: LonLat = [mid[0], mid[1] + 0.3];
 describe("otherWaysRequest", () => {
   it("asks for one day from the start to the stop, without stations", () => {
     const r = otherWaysRequest(trip, stage);
-    expect(r).toMatchObject({ kind: "one-way", days: 1 });
+    expect(r).toMatchObject({ kind: "one-way", days: 1, exactEnds: true });
     expect(r.startStation?.coord).toEqual(stage.start.coord);
     expect(r.endStation?.coord).toEqual(stage.end.coord);
     expect(r.endStation).not.toHaveProperty("station");
@@ -70,35 +64,45 @@ describe("differentWays", () => {
   });
 });
 
-describe("viasAlong", () => {
-  it("puts three via points along the route, away from the ends", async () => {
-    const vias = viasAlong(await route([a, b]));
-    expect(vias).toHaveLength(3);
-    for (const v of vias) {
-      expect(v.kind).toBe("custom");
-      expect(distanceKm(v.coord, a)).toBeGreaterThan(1);
-      expect(distanceKm(v.coord, b)).toBeGreaterThan(1);
-    }
+describe("wayOf", () => {
+  it("rides the proposal's legs between the stage's own ends, without via points", async () => {
+    const p = await proposal("p", [away]);
+    const way = wayOf({ ...stage, via: [stage.start] }, p)!;
+    expect(way.stage.legs).toBe(p.trip.stages[0]!.legs);
+    expect(way.stage.via).toEqual([]);
+    expect(way.stage.start).toEqual(stage.start);
+    expect(way.stage.end).toEqual(stage.end);
+    expect(way.character).toBe("scenic");
   });
 });
 
-describe("routeWay", () => {
-  it("routes from the stage's own ends through the via points", async () => {
-    const way = await routeWay(stage, await proposal("p", [away]), route);
-    expect(way!.route.legs).toHaveLength(4);
-    expect(way!.route.via).toHaveLength(3);
-    expect(way!.line[0]).toEqual(stage.start.coord);
-    expect(way!.line.at(-1)).toEqual(stage.end.coord);
-    expect(way!.character).toBe("scenic");
+describe("takeChoice", () => {
+  const noHotel = async () => undefined;
+
+  it("rides another way to the same stop: hotel and next day stay", async () => {
+    const way = wayOf(stage, await proposal("p", [away]))!;
+    const next = await takeChoice(trip, 0, { stage: way.stage }, noHotel);
+    expect(next.stages[0]!.legs).toBe(way.stage.legs);
+    expect(next.stages[0]!.hotel).toEqual(stage.hotel);
+    expect(next.stages[1]).toBe(trip.stages[1]);
   });
 
-  it("gives a route setStageRoute keeps the stop and hotel for", async () => {
-    const way = await routeWay(stage, await proposal("p", [away]), route);
-    const next = setStageRoute(trip, 0, way!.route);
-    const day = next.stages[0]!;
-    expect(day.end).toEqual(stage.end);
-    expect(day.hotel).toEqual(stage.hotel);
-    expect(day.stats.distance).toBe(way!.route.stats.distance);
-    expect(next.stages[1]).toBe(trip.stages[1]);
+  it("ends at another stop: writes both days and looks up a hotel", async () => {
+    const place = stage.end.alternatives[0]!;
+    const routed = await routedStageIfEnding(trip, 0, place, route);
+    const hotel = { osmId: "n1", name: "Hotel", coord: place.coord };
+    const next = await takeChoice(trip, 0, routed.stages, async () => hotel);
+    expect(next.stages[0]!.end.name).toBe(place.name);
+    expect(next.stages[0]!.hotel).toEqual(hotel);
+    expect(next.stages[1]!.start.name).toBe(place.name);
+    expect(next.stages[0]!.stats.distance).toBe(routed.distance);
+  });
+
+  it("takes back a way picked before", async () => {
+    const way = wayOf(stage, await proposal("p", [away]))!;
+    const there = await takeChoice(trip, 0, { stage: way.stage }, noHotel);
+    const back = await takeChoice(there, 0, { stage }, noHotel);
+    expect(back.stages[0]!.legs).toBe(stage.legs);
+    expect(back.stages[0]!.hotel).toEqual(stage.hotel);
   });
 });

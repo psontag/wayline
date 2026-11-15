@@ -233,7 +233,8 @@
     "failed": "The search for other ways stopped with an error.",
     "retry": "Try again",
     "via": "via {{places}}",
-    "way": "Other way"
+    "way": "Other way",
+    "previous": "Previous route"
   },
   "destination": {
     "title": "Where to end",

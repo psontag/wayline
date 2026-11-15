@@ -25,12 +25,12 @@ const town = (name: string, km: number, current = false) =>
     nextLine: line,
   }) as StopChoice;
 
-const way = (id: string, km: number) =>
+const way = (id: string, km: number, via = id) =>
   ({
     id,
     tags: [],
-    via: ["Somewhere"],
-    route: { via: [], legs: [], stats: { distance: km * 1000, ascent: 300 } },
+    via: [via],
+    stage: { via: [], legs: [], stats: { distance: km * 1000, ascent: 300 } },
     line,
   }) as unknown as OtherWay;
 
@@ -58,5 +58,23 @@ describe("dayChoices", () => {
     );
     expect(w).toMatchObject({ nextDistance: 70_000, hotels: 80 });
     expect(w?.nextLine).toBeUndefined();
+    expect(w?.stages?.next).toBeUndefined();
+  });
+
+  it("shows ways with the same name once", () => {
+    const list = dayChoices(t, towns, [
+      way("a", 85, "Forchheim"),
+      way("b", 99, "Forchheim"),
+    ]);
+    expect(list.filter((c) => c.kind === "way").map((c) => c.id)).toEqual([
+      "way:a",
+    ]);
+  });
+
+  it("shows ways with the same km and climbing once", () => {
+    const list = dayChoices(t, towns, [way("a", 85), way("previous", 85)]);
+    expect(list.filter((c) => c.kind === "way").map((c) => c.id)).toEqual([
+      "way:a",
+    ]);
   });
 });
