@@ -176,15 +176,16 @@ export function TripMarkers({
           : (x, y) => clusterBox(x, y),
       );
     }
-    for (const { id, place, label, beds } of alternatives) {
+    for (const { id, place, label, beds, color } of alternatives) {
+      const r = color ? 14 : 8;
       add(
         `choice-${id}`,
         PRIORITY.choice,
         place.coord,
         // The bed count adds about four characters.
         (x, y) =>
-          labelBox(x, y, 8, label.length + (beds === undefined ? 0 : 4), 6.5),
-        (x, y) => labelBox(x, y, 8),
+          labelBox(x, y, r, label.length + (beds === undefined ? 0 : 4), 6.5),
+        (x, y) => labelBox(x, y, r),
       );
     }
     for (const group of hotelGroups) {
@@ -252,13 +253,14 @@ export function TripMarkers({
           longitude={place.coord[0]}
           latitude={place.coord[1]}
           anchor="left"
-          offset={[id === previewStop && color ? -10 : -8, 0]}
+          // Center the circle on the town: 28 px, 32 px while previewed.
+          offset={[color ? (id === previewStop ? -16 : -14) : -8, 0]}
           style={{ zIndex: id === previewStop ? 5 : 2 }}
         >
           <AlternativeMarker
             label={label}
             beds={beds}
-            {...(color && { color })}
+            {...(color && { color, day: selected + 1 })}
             selected={id === previewStop}
             compact={crowded.has(`choice-${id}`)}
             aria-label={label}

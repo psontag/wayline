@@ -227,7 +227,7 @@ Stop markers in the trip editor, when a day is selected:
 | Day end | Large circle with the day number, filled in `route-selected`, bold name |
 | Day start | Circle with the number, outlined in `route-selected`. At the trip start, the end marker gets a `route-selected` ring. |
 | Other days | Small `marker` circle with the number, faded, muted name |
-| Other routes' ends | Dot in the route's color, name, km and hotels |
+| Other routes' ends | The day number in a dashed circle in the route's color, with name, km and hotels: "this could be stop 2". Filled in that color while previewed. |
 
 Screens add only their own sources, layers and markers as children. Line and fill layers use `MapLayer`, so they sit below the base map labels. Screens don't set a base style, controls or their own fitting.
 

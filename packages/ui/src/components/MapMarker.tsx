@@ -177,17 +177,48 @@ export type AlternativeMarkerProps = Omit<
   compact?: boolean;
   /** Being previewed: a larger circle and the full label. */
   selected?: boolean;
-  /** Color of the route that ends here. Without it, a dashed circle. */
+  /**
+   * Color of the route that ends here. With it, the marker is a dashed
+   * stop marker in that color, filled while selected.
+   */
   color?: RouteColor;
+  /** Day number the stop would have. Shown inside a colored marker. */
+  day?: number;
 };
 
-/** Another town to end the day in, in the color of its route. */
+const routeBorderClasses: Record<RouteColor, string> = {
+  route1: "border-route-1",
+  route2: "border-route-2",
+  route3: "border-route-3",
+  route4: "border-route-4",
+  route5: "border-route-5",
+  route6: "border-route-6",
+  route7: "border-route-7",
+  route8: "border-route-8",
+};
+
+const routeTextClasses: Record<RouteColor, string> = {
+  route1: "text-route-1",
+  route2: "text-route-2",
+  route3: "text-route-3",
+  route4: "text-route-4",
+  route5: "text-route-5",
+  route6: "text-route-6",
+  route7: "text-route-7",
+  route8: "text-route-8",
+};
+
+/**
+ * Another town to end the day in. With a color, it reads as another
+ * version of the day's stop: the same number, dashed, in its route color.
+ */
 export function AlternativeMarker({
   label,
   beds,
   compact = false,
   selected = false,
   color,
+  day,
   className,
   ...props
 }: AlternativeMarkerProps) {
@@ -205,18 +236,28 @@ export function AlternativeMarker({
     >
       <span
         className={cn(
-          "rounded-full border-2 transition-all",
+          "flex items-center justify-center rounded-full border-2 font-extrabold tabular-nums transition-all",
           color
             ? cn(
-                "border-surface shadow-md",
-                routeColorClasses[color],
-                selected ? "size-5 ring-4 ring-surface/70" : "size-4",
+                "text-sm shadow-md",
+                routeBorderClasses[color],
+                selected
+                  ? cn(
+                      "size-8 text-on-route ring-4 ring-surface",
+                      routeColorClasses[color],
+                    )
+                  : cn(
+                      "size-7 border-dashed bg-surface",
+                      routeTextClasses[color],
+                    ),
               )
             : selected
               ? "size-4 border-selected-border bg-accent"
               : "size-4 border-dashed border-text-muted bg-surface/60 group-hover:border-text",
         )}
-      />
+      >
+        {color && day}
+      </span>
       <MarkerLabel
         muted={!selected}
         className={cn(
