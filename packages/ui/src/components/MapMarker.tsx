@@ -14,6 +14,7 @@ import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { Button, focusRing } from "./Button";
 import { SaveHotelButton } from "./HotelRow";
+import { type RouteColor, routeColorClasses } from "./RouteLabel";
 import { windSpeedColor } from "./MapLayerMenu";
 
 export type StopMarkerProps = Omit<
@@ -133,16 +134,19 @@ export type AlternativeMarkerProps = Omit<
   beds?: number;
   /** Only the circle; the label shows on hover or focus. For crowded maps. */
   compact?: boolean;
-  /** Being previewed: a solid circle and the full label. */
+  /** Being previewed: a larger circle and the full label. */
   selected?: boolean;
+  /** Color of the route that ends here. Without it, a dashed circle. */
+  color?: RouteColor;
 };
 
-/** Another town that works as the stop. Dashed, so it reads as an option. */
+/** Another town to end the day in, in the color of its route. */
 export function AlternativeMarker({
   label,
   beds,
   compact = false,
   selected = false,
+  color,
   className,
   ...props
 }: AlternativeMarkerProps) {
@@ -160,10 +164,16 @@ export function AlternativeMarker({
     >
       <span
         className={cn(
-          "size-4 rounded-full border-2 transition-colors",
-          selected
-            ? "border-selected-border bg-accent"
-            : "border-dashed border-text-muted bg-surface/60 group-hover:border-text",
+          "rounded-full border-2 transition-all",
+          color
+            ? cn(
+                "border-surface shadow-md",
+                routeColorClasses[color],
+                selected ? "size-5 ring-4 ring-surface/70" : "size-4",
+              )
+            : selected
+              ? "size-4 border-selected-border bg-accent"
+              : "size-4 border-dashed border-text-muted bg-surface/60 group-hover:border-text",
         )}
       />
       <MarkerLabel

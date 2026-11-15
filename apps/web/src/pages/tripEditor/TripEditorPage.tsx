@@ -10,7 +10,6 @@ import {
   pointAtKm,
   dayHours,
   routePoints,
-  type Stage,
   stageSpeed,
   stageStartTime,
   timeToHours,
@@ -25,7 +24,7 @@ import {
   ToastViewport,
   useFormat,
 } from "@wayline/ui";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorScreen } from "../../components/ErrorPanel";
 import { networkArea } from "../../components/NetworkLayer";
@@ -42,26 +41,33 @@ import { DayPanel } from "./DayPanel";
 import { StageProfile } from "./StageProfile";
 import { useRouteStations } from "./stations";
 import {
+  bedsNear,
   hasMovableDestination,
   useMapHotels,
   useStopOptions,
+  useTripPlaces,
 } from "./stopChoices";
 import {
   type DayChoice,
   type DayChoicesState,
   useDayChoices,
 } from "./dayChoices";
-import { stageLine } from "./edits";
-import { type OtherWay, useOtherWays } from "./otherWays";
+import { type ChoiceStages, samePlace, stageLine } from "./edits";
+import { type DayRoute, useDayRoutes } from "./dayRoutes";
 
 // Stable, so the memos that use them keep.
-const NO_WAYS: OtherWay[] = [];
+const NO_ROUTES: DayRoute[] = [];
 const NO_CHOICES: MapChoice[] = [];
 import { ShareDialog } from "./ShareDialog";
 import { TripActions } from "./TripHeader";
 import { proposedSection } from "./proposedSection";
 import { isChanged } from "./routeEdits";
-import { type MapChoice, type RouteEditing, TripMap } from "./TripMap";
+import {
+  type MapAlternative,
+  type MapChoice,
+  type RouteEditing,
+  TripMap,
+} from "./TripMap";
 import { tripStops } from "./tripArea";
 import { TripPanel } from "./TripPanel";
 import { PhoneTripEditor } from "./PhoneTripEditor";
@@ -138,7 +144,10 @@ function TripEditor({
   const [findingDestination, setFindingDestination] = useState(false);
   // Stop choice under the pointer, in the stop table or on the map.
   const [choiceHover, setChoiceHover] = useState<{ day: number; id: string }>();
-  const [replaced, setReplaced] = useState<{ day: number; stage: Stage }>();
+  const [replaced, setReplaced] = useState<{
+    day: number;
+    stages: ChoiceStages;
+  }>();
   const [viaSelection, setViaSelection] = useState<{
     day: number;
     coord: LonLat;
@@ -277,58 +286,79 @@ function TripEditor({
   const options = useStopOptions(trip, selected, findingDestination);
   const mapHotels = useMapHotels(trip, selected);
   const stations = useRouteStations(trip);
-  const waysOn = dayOpen && !editor.readOnly;
-  const ways = useOtherWays(trip, selected, waysOn);
-  const found = (waysOn && ways.data) || NO_WAYS;
-  // The way ridden before the last way picked, to switch back to.
+  const routesOn = dayOpen && !editor.readOnly;
+  const routes = useDayRoutes(trip, selected, routesOn);
+  const found = (routesOn && routes.data) || NO_ROUTES;
+  // The day before the last route picked, to switch back to, while the
+  // next day still ends where it did.
+  const nextStage = trip.stages[selected + 1];
   const before =
     replaced?.day === selected &&
     stage &&
-    replaced.stage.end.name === stage.end.name &&
-    replaced.stage.legs !== stage.legs
-      ? replaced.stage
+    replaced.stages.stage.legs !== stage.legs &&
+    (!replaced.stages.next ||
+      (nextStage && samePlace(nextStage.end, replaced.stages.next.end)))
+      ? replaced.stages
       : undefined;
-  const wayList = useMemo(
-    () =>
-      // Last, so a found way with the same route shows instead.
-      before && stage
-        ? [
-            ...found,
-            {
-              id: "previous",
-              name: t("otherWays.previous"),
-              tags: [],
-              via: [],
-              stage: {
-                ...stage,
-                via: before.via,
-                legs: before.legs,
-                stats: before.stats,
-              },
-              line: stageLine(before),
+  const routeList = useMemo(() => {
+    if (!before || !stage) return found;
+    const same = samePlace(before.stage.end, stage.end);
+    const previous: DayRoute = {
+      id: "previous",
+      name: t("dayRoutes.previous"),
+      tags: [],
+      via: [],
+      stages: same
+        ? {
+            stage: {
+              ...stage,
+              via: before.stage.via,
+              legs: before.stage.legs,
+              stats: before.stage.stats,
             },
-          ]
-        : found,
-    [before, stage, found, t],
+          }
+        : before,
+      line: stageLine(before.stage),
+      ...(!same && before.next && { nextLine: stageLine(before.next) }),
+    };
+    // Last, so a found route with the same km and climbing shows instead.
+    return [...found, previous];
+  }, [before, stage, found, t]);
+  // Other towns show only on the last day, as train stops to end at.
+  const towns = useMemo(
+    () => (isLast ? options : options.filter((o) => o.current)),
+    [isLast, options],
   );
-  const choiceList = useDayChoices(options, wayList);
+  const places = useTripPlaces(trip);
+  const budget = trip.settings.hotelBudget;
+  const beds = useCallback(
+    (place: Place) =>
+      places ? bedsNear(places.hotels, place.coord, budget).total : undefined,
+    [places, budget],
+  );
+  const choiceList = useDayChoices(towns, routeList, beds);
   const pick = (choice: DayChoice) => {
     const now = trip.stages[selected];
     if (!choice.stages || !now) return;
     setChoiceHover(undefined);
     setFindingDestination(false);
+    const next = trip.stages[selected + 1];
     setReplaced(
-      choice.kind === "way" ? { day: selected, stage: now } : undefined,
+      choice.id.startsWith("route:")
+        ? {
+            day: selected,
+            stages: {
+              stage: now,
+              ...(choice.stages.next && next && { next }),
+            },
+          }
+        : undefined,
     );
     void editor.takeChoice(selected, choice.stages);
   };
-  const pickAlternative = (place: Place) => {
-    const choice = choiceList.find((c) => c.id === place.name && c.stages);
-    if (choice) return pick(choice);
-    setChoiceHover(undefined);
-    setFindingDestination(false);
-    setReplaced(undefined);
-    void editor.moveStop(selected, place);
+  const pickAlternative = (id: string) => {
+    const choice = choiceList.find((c) => c.id === id);
+    if (choice) pick(choice);
   };
   const hoverChoice = (id: string | undefined) =>
     setChoiceHover(id ? { day: selected, id } : undefined);
@@ -343,9 +373,9 @@ function TripEditor({
     ...(hoveredChoice && { hovered: hoveredChoice }),
     onHover: hoverChoice,
     onPick: pick,
-    loading: waysOn && ways.isFetching,
-    failed: waysOn && ways.isError,
-    onRetry: () => void ways.refetch(),
+    loading: routesOn && routes.isFetching,
+    failed: routesOn && routes.isError,
+    onRetry: () => void routes.refetch(),
   };
   const mapChoices = useMemo(
     () =>
@@ -363,18 +393,27 @@ function TripEditor({
       ),
     [choiceList],
   );
-  const alternatives = readOnly
-    ? []
-    : options
-        .filter((o) => !o.current)
-        .map(({ place, distance }) => ({
-          place,
-          beds: mapHotels.beds.get(place.name),
-          label: t("stage.alternative", {
-            name: place.name,
-            distance: format.distance(distance),
-          }),
-        }));
+  // One marker per town another choice ends in, for the first such choice.
+  const alternatives = useMemo(() => {
+    if (readOnly || !stage) return [];
+    const out: MapAlternative[] = [];
+    for (const c of choiceList) {
+      const end = c.stages?.stage.end;
+      if (c.current || !end || samePlace(end, stage.end)) continue;
+      if (out.some((a) => samePlace(a.place, end))) continue;
+      out.push({
+        id: c.id,
+        place: end,
+        ...(c.hotels !== undefined && { beds: c.hotels }),
+        ...(c.color && { color: c.color }),
+        label: t("stage.alternative", {
+          name: end.name,
+          distance: format.distance(c.distance),
+        }),
+      });
+    }
+    return out;
+  }, [readOnly, stage, choiceList, t, format]);
 
   const selectedLegs = stage?.legs;
   const proposedLegs = isChanged(trip, selected)

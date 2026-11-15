@@ -228,13 +228,18 @@
     "route": "Route",
     "hotel": "Hotel"
   },
-  "otherWays": {
-    "searching": "Looking for other ways…",
-    "failed": "The search for other ways stopped with an error.",
+  "dayRoutes": {
+    "searching": "Looking for other routes…",
+    "failed": "The search for other routes stopped with an error.",
     "retry": "Try again",
     "via": "via {{places}}",
     "way": "Other way",
-    "previous": "Previous route"
+    "previous": "Previous route",
+    "shorter": "Shorter",
+    "longer": "Longer",
+    "flatter": "Flatter",
+    "hillier": "Hillier",
+    "scenic": "Scenic"
   },
   "destination": {
     "title": "Where to end",
@@ -271,7 +276,7 @@
     "summary": "{{share}} paved"
   },
   "stop": {
-    "hint": "Pick another stop or way here, or a stop on the map."
+    "hint": "Pick another route here, or a stop on the map."
   },
   "hotels": {
     "label": "Hotels near {{place}}",

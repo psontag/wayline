@@ -4,7 +4,6 @@ import {
   localTimeToDate,
   tripStats,
   type LonLat,
-  type Place,
   type Trip,
 } from "@wayline/domain";
 import {
@@ -48,7 +47,7 @@ export type PhoneTripEditorProps = {
   overview: boolean;
   onSelect: (index: number) => void;
   alternatives: MapAlternative[];
-  onPickAlternative: (place: Place) => void;
+  onPickAlternative: (id: string) => void;
   hover?: LonLat;
   /** Trip or day level, the same as the desktop side panel. */
   panel: ReactNode;

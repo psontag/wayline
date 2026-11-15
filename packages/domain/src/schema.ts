@@ -267,6 +267,14 @@ export const GenerateRequest = z
      * nearby, e.g. to plan one day of a trip again.
      */
     exactEnds: z.boolean().optional(),
+    /**
+     * One-way, one day, no end: the day ends at a town with hotels from
+     * which `place` is at most `maxKm` away. Proposals then have the ride
+     * on to `place` as a second stage. To plan one day of a trip again.
+     */
+    nextStop: z
+      .object({ place: Place, maxKm: z.number().positive() })
+      .optional(),
   })
   .refine((r) => r.region || r.startStation, {
     message: "Needs a region or a start station",

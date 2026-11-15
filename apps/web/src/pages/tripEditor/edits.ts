@@ -57,7 +57,7 @@ export async function takeChoice(
   const hotel = !next
     ? undefined
     : moved
-      ? await nearestHotel(taken.end.coord)
+      ? (choice.stage.hotel ?? (await nearestHotel(taken.end.coord)))
       : stage.hotel;
   if (hotel) taken.hotel = hotel;
   const stages = [...trip.stages];
@@ -107,7 +107,7 @@ function asPlace({ name, kind, coord, osmId }: Place): Place {
   return osmId ? { name, kind, coord, osmId } : { name, kind, coord };
 }
 
-function samePlace(a: Place, b: Place) {
+export function samePlace(a: Place, b: Place) {
   return a.name === b.name && distanceKm(a.coord, b.coord) < 0.05;
 }
 

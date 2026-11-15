@@ -1,4 +1,4 @@
-import type { LonLat } from "@wayline/domain";
+import type { LonLat, Place, RouteTag } from "@wayline/domain";
 import { HOTEL_KM } from "@wayline/providers";
 import {
   Button,
@@ -10,13 +10,10 @@ import type { TFunction } from "i18next";
 import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { ChoiceStages } from "./edits";
-import type { OtherWay } from "./otherWays";
+import type { DayRoute } from "./dayRoutes";
 import type { StopChoice as StopOption } from "./stopChoices";
 
-/**
- * A town to end the day in or another way to the stop: the day as it would
- * be. Both show, preview and pick alike.
- */
+/** A route for the day: the day as it would be if picked. */
 export type DayChoice = ChoiceRow & {
   /** This day if picked. Missing until routed. */
   line?: LonLat[];
@@ -51,37 +48,77 @@ const COLORS: RouteColor[] = [
   "route8",
 ];
 
-function wayTitle(t: TFunction<["tripEditor", "proposals"]>, way: OtherWay) {
-  if (way.name) return way.name;
-  const via = way.via.slice(0, 2).join(", ");
-  // "Direct" is the generator's shortest way, which may still be longer
-  // than the current route.
-  const kind =
-    way.character &&
-    way.character !== "direct" &&
-    t(`proposals:card.character.${way.character}`);
-  const place = via && t("otherWays.via", { places: via });
-  return [kind, place].filter(Boolean).join(" · ") || t("otherWays.way");
+type T = TFunction<["tripEditor", "proposals"]>;
+
+/** A route to the same stop: by the towns on the way. */
+function wayTitle(t: T, route: DayRoute) {
+  const via = route.via.slice(0, 2).join(", ");
+  return via ? t("dayRoutes.via", { places: via }) : t("dayRoutes.way");
 }
+
+/** Shorter, longer, flatter, hillier or scenic, against the current day. */
+function differences(
+  t: T,
+  route: DayRoute,
+  now: StopOption | undefined,
+): string[] {
+  const { distance, ascent } = route.stages.stage.stats;
+  const out: string[] = [];
+  if (now) {
+    if (distance < (1 - KM_GAP) * now.distance)
+      out.push(t("dayRoutes.shorter"));
+    if (distance > (1 + KM_GAP) * now.distance) out.push(t("dayRoutes.longer"));
+    const climb = ascent - now.ascent;
+    const gap = Math.max(CLIMB_GAP_M, CLIMB_GAP * now.ascent);
+    if (climb < -gap) out.push(t("dayRoutes.flatter"));
+    if (climb > gap) out.push(t("dayRoutes.hillier"));
+  }
+  if (route.flavour === "nature" || route.character === "scenic") {
+    out.push(t("dayRoutes.scenic"));
+  }
+  return out;
+}
+
+/** Route tags the differences to the current day already cover. */
+const SAID: RouteTag[] = [
+  "longer",
+  "shorter",
+  "moreClimbing",
+  "flat",
+  "hilly",
+  "climbs",
+];
+/** Routes this much shorter or longer than now say so. */
+const KM_GAP = 0.1;
+/** Routes with this much more or less climbing say so: share, and meters. */
+const CLIMB_GAP = 0.25;
+const CLIMB_GAP_M = 100;
 
 export function useDayChoices(
   options: StopOption[],
-  ways: OtherWay[],
+  routes: DayRoute[],
+  beds?: (place: Place) => number | undefined,
 ): DayChoice[] {
   const { t } = useTranslation(["tripEditor", "proposals"]);
-  return useMemo(() => dayChoices(t, options, ways), [options, ways, t]);
+  return useMemo(
+    () => dayChoices(t, options, routes, beds),
+    [options, routes, beds, t],
+  );
 }
 
 /**
- * Towns and ways in one list, by today's km. Towns take colors first, so
- * theirs stay when the ways arrive. Ways end at the current stop, so
- * tomorrow and the hotels stay as they are. Of ways with the same name, or
- * the same km and climbing, only the first shows.
+ * The current day, the given towns and the routes in one list, by today's
+ * km. Towns take colors first, so theirs stay when the routes arrive. A
+ * route to another town is named after it; one to the same stop by the
+ * towns on the way, and keeps tomorrow and the hotels. Of routes to the
+ * same place with the same km and climbing, or the same name, only the
+ * first shows.
  */
 export function dayChoices(
-  t: TFunction<["tripEditor", "proposals"]>,
+  t: T,
   options: StopOption[],
-  ways: OtherWay[],
+  routes: DayRoute[],
+  beds?: (place: Place) => number | undefined,
 ): DayChoice[] {
   const now = options.find((o) => o.current);
   let next = 0;
@@ -101,34 +138,49 @@ export function dayChoices(
     ...(o.nextLine && { nextLine: o.nextLine }),
     ...(o.stages && { stages: o.stages }),
   }));
-  const kept: OtherWay[] = [];
-  const same = (a: OtherWay, b: OtherWay) =>
-    wayTitle(t, a) === wayTitle(t, b) ||
-    (Math.abs(a.stage.stats.distance - b.stage.stats.distance) < 100 &&
-      Math.abs(a.stage.stats.ascent - b.stage.stats.ascent) < 10);
-  for (const way of ways) {
-    if (!kept.some((k) => same(k, way))) kept.push(way);
+  const title = (r: DayRoute) =>
+    r.name ?? (r.stages.next ? r.stages.stage.end.name : wayTitle(t, r));
+  const kept: DayRoute[] = [];
+  const same = (a: DayRoute, b: DayRoute) => {
+    const [x, y] = [a.stages.stage, b.stages.stage];
+    return (
+      x.end.name === y.end.name &&
+      ((!a.stages.next && title(a) === title(b)) ||
+        (Math.abs(x.stats.distance - y.stats.distance) < 100 &&
+          Math.abs(x.stats.ascent - y.stats.ascent) < 10))
+    );
+  };
+  for (const route of routes) {
+    if (!kept.some((k) => same(k, route))) kept.push(route);
   }
-  const wayRows = kept.map((way): DayChoice => ({
-    id: `way:${way.id}`,
-    kind: "way",
-    name: wayTitle(t, way),
-    current: false,
-    distance: way.stage.stats.distance,
-    ascent: way.stage.stats.ascent,
-    ...(now?.nextDistance !== undefined && {
-      nextDistance: now.nextDistance,
-    }),
-    ...(now?.beds && { hotels: now.beds.total }),
-    color: color(),
-    detail: way.tags
-      .slice(0, 3)
-      .map((tag) => t(`proposals:card.tag.${tag}`))
-      .join(" · "),
-    line: way.line,
-    stages: { stage: way.stage },
-  }));
-  return [...towns, ...wayRows].sort((a, b) => a.distance - b.distance);
+  const routeRows = kept.map((route): DayChoice => {
+    const { stage, next: tomorrow } = route.stages;
+    const nextDistance = tomorrow?.stats.distance ?? now?.nextDistance;
+    const hotels = tomorrow ? beds?.(stage.end) : now?.beds?.total;
+    return {
+      id: `route:${route.id}`,
+      kind: tomorrow && !route.name ? "stop" : "way",
+      name: title(route),
+      current: false,
+      distance: stage.stats.distance,
+      ascent: stage.stats.ascent,
+      ...(nextDistance !== undefined && { nextDistance }),
+      ...(hotels !== undefined && { hotels }),
+      color: color(),
+      detail: [
+        ...differences(t, route, now),
+        ...route.tags
+          .filter((tag) => !SAID.includes(tag))
+          .map((tag) => t(`proposals:card.tag.${tag}`)),
+      ]
+        .slice(0, 3)
+        .join(" · "),
+      line: route.line,
+      ...(route.nextLine && { nextLine: route.nextLine }),
+      stages: route.stages,
+    };
+  });
+  return [...towns, ...routeRows].sort((a, b) => a.distance - b.distance);
 }
 
 /** The day's choices as a table. Hover previews one, a click picks it. */
@@ -174,15 +226,15 @@ function WaysStatus({ state }: { state: DayChoicesState }) {
     return (
       <div className="flex items-center gap-2 px-1.5">
         <span className="flex-1 text-xs text-text-muted">
-          {t("otherWays.failed")}
+          {t("dayRoutes.failed")}
         </span>
         <Button size="sm" onClick={state.onRetry}>
-          {t("otherWays.retry")}
+          {t("dayRoutes.retry")}
         </Button>
       </div>
     );
   }
   return state.loading ? (
-    <p className="px-1.5 text-xs text-text-muted">{t("otherWays.searching")}</p>
+    <p className="px-1.5 text-xs text-text-muted">{t("dayRoutes.searching")}</p>
   ) : null;
 }

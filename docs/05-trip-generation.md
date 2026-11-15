@@ -216,6 +216,18 @@ The Web Worker reports phases:
 | One day A to B | Graph search. Each proposal has a character: direct, longer or scenic. No flavours. |
 | Day loop | Graph search for a loop of the given length, without stops. If no loop fits, as in mountain valleys, out and back rides: to a town about half the length away and back the same way, up to 5, at least 35° apart. |
 | Open day ride | One-way, one day, no end. Graph search to any station. See below. |
+| Day of a trip | One-way, one day, no end, `nextStop`. Plans one day of a trip again. See below. |
+
+`exactEnds` starts and ends on the network nearest the given places, not at a station up to 2 km away.
+
+## Day of a trip
+
+Routes for one day of a trip, to the same stop or to another town. The editor's Route section uses it.
+
+- Ends: towns with hotels from which `nextStop` is at most `maxKm` away and closer than from the start.
+- One route per slot, each sharing at most 40 % with the earlier ones: as long as asked, 80 %, 120 %, flattest, hilliest, through nature. A slot without a fit stays empty.
+- Flattest and hilliest keep the least or most climbing of up to 40 fitting paths.
+- Each proposal has two stages: the day, and the best path on to `nextStop`. No fill, no signed routes.
 
 ## Open day ride
 

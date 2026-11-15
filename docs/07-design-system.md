@@ -44,7 +44,7 @@ Map tokens:
 | `route-dimmed` | Unselected routes in the legend |
 | `route-selected` | Selected stage |
 | `stage-a`, `stage-b` | Days in the trip editor alternate between these two, in the list and on the map |
-| `route-1` … `route-8` | One color per proposal on the proposals map, by list order. Other stops and ways of a day use `route-2`, `route-3`, `route-5` … `route-8`, on the map and as swatches in the Route table. Not `route-1` and `route-4`: they look like the day colors. |
+| `route-1` … `route-8` | One color per proposal on the proposals map, by list order. Other routes of a day use `route-2`, `route-3`, `route-5` … `route-8`: lines and end dots on the map, swatches in the Route table. Not `route-1` and `route-4`: they look like the day colors. |
 | `on-route` | Text on a route color |
 | `route-outline` | Casing of the highlighted proposal |
 | `hillshade-shadow`, `hillshade-highlight` | Terrain shading on the maps |

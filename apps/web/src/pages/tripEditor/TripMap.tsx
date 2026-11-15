@@ -68,11 +68,15 @@ const SPOT_OFFSET: Record<SpotAnchor, [number, number]> = {
   "bottom-right": [-8, -8],
 };
 
+/** Where a choice ends the day, if not at the stop. */
 export type MapAlternative = {
+  /** The choice's id. */
+  id: string;
   place: Place;
   label: string;
   /** Places to sleep there, if known. */
   beds?: number;
+  color?: RouteColor;
 };
 
 // Stable, so the memo of the map data keeps.
@@ -96,12 +100,12 @@ export type TripMapProps = {
   onSelect: (index: number) => void;
   /** Day under the pointer in the day list. */
   hovered?: number;
-  /** Other towns for the selected stop. */
+  /** Other towns the selected day can end in. */
   alternatives?: MapAlternative[];
-  onPickAlternative?: (place: Place) => void;
-  /** Called with the name of the town under the pointer. */
-  onHoverAlternative?: (name: string | undefined) => void;
-  /** Other stops and ways for the selected day, each in its color. */
+  /** Called with the id of the choice. */
+  onPickAlternative?: (id: string) => void;
+  onHoverAlternative?: (id: string | undefined) => void;
+  /** Other routes for the selected day, each in its color. */
   choices?: MapChoice[];
   /** The choice to show strong, with the next day, e.g. a hovered one. */
   hoveredChoice?: string;

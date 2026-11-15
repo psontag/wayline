@@ -99,7 +99,7 @@ Derived when shown: dates, weather, booking links.
 | Move or add a via point | The legs next to it and the stats of that stage. If the new route would ride out to a join and back along the old route, the join goes and the next leg is routed too. Up to 2 joins per side, never a via point, the start or the stop. |
 | Remove a via point | The two legs next to it become one |
 | Move a stop | Only the leg that passes the new stop, split at it. This and the next stage get new stats. |
-| Take another way | The stage's legs and stats from the generator's day, via points dropped. Stop, hotel and next stage stay. |
+| Take another route | The stage's legs and stats from the generator's day, via points dropped. To the same stop, hotel and next stage stay. To another town, the stop moves, the hotel is the generator's pick and the next stage rides the generator's path on. |
 | Revert a stage | Route, stop and hotel as proposed. The next stage starts at the proposed stop. |
 | Select a hotel | Stop moves to the hotel. Same as moving a stop. |
 | Change start date | Dates and weather |

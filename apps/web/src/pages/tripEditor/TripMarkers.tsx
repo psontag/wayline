@@ -51,9 +51,9 @@ export type TripMarkersProps = {
   overview: boolean;
   onSelect: (index: number) => void;
   alternatives: MapAlternative[];
-  onPickAlternative?: (place: Place) => void;
-  onHoverAlternative?: (name: string | undefined) => void;
-  /** Name of the stop choice being previewed. */
+  onPickAlternative?: (id: string) => void;
+  onHoverAlternative?: (id: string | undefined) => void;
+  /** Id of the choice being previewed. */
   previewStop?: string;
   stations: MapStation[];
   hotels: MapHotel[];
@@ -164,9 +164,9 @@ export function TripMarkers({
           : (x, y) => clusterBox(x, y),
       );
     }
-    for (const { place, label, beds } of alternatives) {
+    for (const { id, place, label, beds } of alternatives) {
       add(
-        `choice-${place.name}`,
+        `choice-${id}`,
         PRIORITY.choice,
         place.coord,
         // The bed count adds about four characters.
@@ -233,25 +233,26 @@ export function TripMarkers({
           </ClusterAt>
         );
       })}
-      {alternatives.map(({ place, label, beds }) => (
+      {alternatives.map(({ id, place, label, beds, color }) => (
         <Marker
-          key={place.name}
+          key={id}
           longitude={place.coord[0]}
           latitude={place.coord[1]}
           anchor="left"
-          offset={[-8, 0]}
-          style={{ zIndex: place.name === previewStop ? 5 : 2 }}
+          offset={[id === previewStop && color ? -10 : -8, 0]}
+          style={{ zIndex: id === previewStop ? 5 : 2 }}
         >
           <AlternativeMarker
             label={label}
             beds={beds}
-            selected={place.name === previewStop}
-            compact={crowded.has(`choice-${place.name}`)}
+            {...(color && { color })}
+            selected={id === previewStop}
+            compact={crowded.has(`choice-${id}`)}
             aria-label={label}
-            onClick={() => onPickAlternative?.(place)}
-            onMouseEnter={() => onHoverAlternative?.(place.name)}
+            onClick={() => onPickAlternative?.(id)}
+            onMouseEnter={() => onHoverAlternative?.(id)}
             onMouseLeave={() => onHoverAlternative?.(undefined)}
-            onFocus={() => onHoverAlternative?.(place.name)}
+            onFocus={() => onHoverAlternative?.(id)}
             onBlur={() => onHoverAlternative?.(undefined)}
           />
         </Marker>

@@ -764,6 +764,13 @@ function TripEditorParts() {
         <AlternativeMarker
           label={t("demo.alternative", { name: "Mitwitz", distance: "61 km" })}
           beds={4}
+          color="route3"
+        />
+        <AlternativeMarker
+          label={t("demo.alternative", { name: "Pressig", distance: "72 km" })}
+          beds={6}
+          color="route5"
+          selected
         />
         <HotelMarker
           name="Hotel Krone"

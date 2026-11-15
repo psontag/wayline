@@ -140,6 +140,44 @@ describe("Planner on the Oberfranken network", () => {
     }
   });
 
+  it("plans one day to towns with the next stop in reach", async () => {
+    const start = {
+      name: "Bamberg Hain",
+      kind: "town" as const,
+      coord: [10.8916, 49.8925] as [number, number],
+    };
+    const coburg = {
+      name: "Coburg",
+      kind: "town" as const,
+      coord: [10.9645, 50.2582] as [number, number],
+    };
+    const result = await planner.generate({
+      ...oneWay,
+      startStation: start,
+      exactEnds: true,
+      days: 1,
+      kmPerDay: 50,
+      nextStop: { place: coburg, maxKm: 60 },
+    });
+    if (!result.ok) throw new Error(result.failedLimit);
+    expect(result.proposals.length).toBeGreaterThanOrEqual(3);
+    for (const p of result.proposals) {
+      const [day, on] = p.trip.stages;
+      expect(day?.start.coord).toEqual(start.coord);
+      expect(on?.start.name).toBe(day?.end.name);
+      expect(on?.end.name).toBe("Coburg");
+      expect((on?.stats.distance ?? Infinity) / 1000).toBeLessThan(70);
+    }
+    const ends = new Set(
+      result.proposals.map((p) => p.trip.stages[0]?.end.name),
+    );
+    expect(ends.size).toBeGreaterThan(1);
+    const km = result.proposals.map(
+      (p) => (p.trip.stages[0]?.stats.distance ?? 0) / 1000,
+    );
+    expect(Math.max(...km) - Math.min(...km)).toBeGreaterThan(10);
+  });
+
   // Bamberg to Coburg is about 45 km, so 210 km need detours.
   it("ends at the requested station, without filler loops", async () => {
     const request: GenerateRequest = {
