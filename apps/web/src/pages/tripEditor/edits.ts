@@ -26,12 +26,6 @@ export function setStage(trip: Trip, index: number, stage: Stage): Trip {
   };
 }
 
-export function setLocked(trip: Trip, index: number, locked: boolean): Trip {
-  const stage = trip.stages[index];
-  if (!stage) return trip;
-  return setStage(trip, index, { ...stage, end: { ...stage.end, locked } });
-}
-
 export function setHotel(trip: Trip, index: number, hotel: Hotel): Trip {
   const stage = trip.stages[index];
   if (!stage) return trip;
@@ -139,8 +133,8 @@ export function withLegs(stage: Stage, legs: Leg[]): Stage {
 }
 
 /**
- * Moves the end of a stage to another place. The stop gets locked and the
- * old stop becomes an alternative. The route of this and the next stage is
+ * Moves the end of a stage to another place. The old stop becomes an
+ * alternative. The route of this and the next stage is
  * kept: only the leg that passes the new place is routed again, split at it.
  */
 export async function moveStop(
@@ -154,7 +148,7 @@ export async function moveStop(
   const next = trip.stages[index + 1];
   const end: Stop = {
     ...asPlace(place),
-    locked: true,
+    locked: stage.end.locked,
     alternatives: [
       asPlace(stage.end),
       ...stage.end.alternatives.filter((a) => !samePlace(a, place)),

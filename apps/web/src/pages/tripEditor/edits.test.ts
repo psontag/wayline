@@ -12,7 +12,6 @@ import {
   ascentAlong,
   moveStop,
   routedStageIfEnding,
-  setLocked,
   stageIfEndingAt,
   toggleSavedHotel,
   toggleTrain,
@@ -62,7 +61,7 @@ describe("moveStop", () => {
     expect(next.trains.map((t) => t.direction)).toEqual(["there"]);
   });
 
-  it("moves the stop, locks it and routes the stages around it", async () => {
+  it("moves the stop and routes the stages around it", async () => {
     const place = trip.stages[0]!.end.alternatives[0]!;
     const next = await moveStop(trip, 0, place, {
       route,
@@ -70,7 +69,6 @@ describe("moveStop", () => {
     });
     const [first, second] = next.stages;
     expect(first!.end.name).toBe(place.name);
-    expect(first!.end.locked).toBe(true);
     expect(first!.end.alternatives.map((a) => a.name)).toContain("Bayreuth");
     expect(first!.end.alternatives.map((a) => a.name)).not.toContain(
       place.name,
@@ -158,14 +156,6 @@ describe("moveStop on a planned route", () => {
         0,
       );
     expect(Math.abs(km(next) - km(planned))).toBeLessThan(10);
-  });
-});
-
-describe("setLocked", () => {
-  it("changes only the given stop", () => {
-    const next = setLocked(trip, 1, true);
-    expect(next.stages[1]!.end.locked).toBe(true);
-    expect(next.stages[0]).toBe(trip.stages[0]);
   });
 });
 

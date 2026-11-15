@@ -56,9 +56,7 @@
     "revert": "Revert",
     "bookHotels": "Hotels in {{place}} on Booking.com",
     "noHotel": "No hotel picked",
-    "noHotelsNear": "No hotels found near {{place}}",
-    "locked": "Locked",
-    "lock": "Lock"
+    "noHotelsNear": "No hotels found near {{place}}"
   },
   "profile": {
     "title": "Day {{day}} · {{from}} → {{to}}",
@@ -227,16 +225,13 @@
     "gettingThere": "Getting there",
     "gettingHome": "Getting home",
     "ride": "Ride",
-    "choices": "Where and which way",
+    "route": "Route",
     "hotel": "Hotel"
   },
   "otherWays": {
-    "hint": "Other routes to the same stop.",
-    "find": "Find other ways",
     "searching": "Looking for other ways…",
-    "failed": "The search stopped with an error.",
+    "failed": "The search for other ways stopped with an error.",
     "retry": "Try again",
-    "none": "No other ways found. The route here is the only good one.",
     "via": "via {{places}}",
     "way": "Other way"
   },
@@ -275,8 +270,7 @@
     "summary": "{{share}} paved"
   },
   "stop": {
-    "summaryLocked": "{{place}} · locked",
-    "hint": "Pick a stop here or on the map."
+    "hint": "Pick another stop or way here, or a stop on the map."
   },
   "hotels": {
     "label": "Hotels near {{place}}",

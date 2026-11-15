@@ -28,19 +28,6 @@ export type OtherWay = {
   line: LonLat[];
 };
 
-/** What the panel and the map share about the other ways of a day. */
-export type OtherWaysState = {
-  /** Searched or searching. */
-  on: boolean;
-  onSearch: () => void;
-  loading: boolean;
-  failed: boolean;
-  ways: OtherWay[];
-  hovered?: string;
-  onHover: (id: string | undefined) => void;
-  onPick: (way: OtherWay) => void;
-};
-
 const MAX_WAYS = 3;
 /** A way with more of its km near the current route is no real choice. */
 const MAX_SHARED = 0.7;
@@ -136,8 +123,8 @@ export async function routeWay(
 }
 
 /**
- * Other ways for a stage, searched when `enabled`. Kept per trip version, so
- * an edit searches again.
+ * Other ways for a stage, searched while `enabled`. Kept per trip version,
+ * so an edit searches again.
  */
 export function useOtherWays(trip: Trip, index: number, enabled: boolean) {
   const { generator, routing } = useServices();

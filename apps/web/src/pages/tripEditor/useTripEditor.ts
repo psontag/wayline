@@ -19,7 +19,6 @@ import { useServices } from "../../data/ServicesProvider";
 import {
   moveStop,
   setHotel,
-  setLocked,
   setStageRoute,
   toggleSavedHotel,
   toggleTrain,
@@ -216,9 +215,6 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     /** Rides the whole trip the other way round. */
     reverse() {
       if (canEdit) commit(reverseTrip(trip), t("note.reversed"));
-    },
-    setLocked(index: number, locked: boolean) {
-      if (canEdit) commit(setLocked(trip, index, locked));
     },
     /** Start of the ride window of a stage, "HH:MM". */
     setRideStart(index: number, start: string) {

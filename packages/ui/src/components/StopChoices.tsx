@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { focusRing } from "./Button";
+import { type RouteColor, routeColorClasses } from "./RouteLabel";
 
 export type StopChoice = {
   id: string;
@@ -18,20 +19,13 @@ export type StopChoice = {
   /** Hotels near the stop. Missing while unknown. */
   hotels?: number;
   size?: "village" | "town" | "city";
-  /**
-   * Another way to the same stop, not another stop: its number, for the
-   * swatch in the color of its map line.
-   */
-  way?: number;
+  /** A town ends the day there, a way keeps the stop. Only for screen readers. */
+  kind?: "stop" | "way";
+  /** Swatch in the color of the choice's line on the map. */
+  color?: RouteColor;
   /** Second line, e.g. what a way is like. Without it, the town size. */
   detail?: string;
 };
-
-/**
- * Swatches of the ways, the same as their lines on the map. Not route-1 or
- * route-4: they look like the day colors.
- */
-const WAY_SWATCH = ["bg-route-2", "bg-route-3", "bg-route-5"] as const;
 
 export type StopChoicesProps = {
   choices: StopChoice[];
@@ -50,7 +44,7 @@ export type StopChoicesProps = {
   hotelsRadius?: number;
 };
 
-/** The stop, other stops and other ways, with what each changes. */
+/** The current choice and other choices, with what each changes. */
 export function StopChoices({
   choices,
   footer,
@@ -63,7 +57,6 @@ export function StopChoices({
   const { t } = useTranslation("ui");
   const format = useFormat();
   const cell = "px-1.5 py-1.5 text-right whitespace-nowrap";
-  const withWays = choices.some((c) => c.way !== undefined);
 
   return (
     <div className="flex w-full flex-col gap-1.5">
@@ -71,7 +64,7 @@ export function StopChoices({
         <thead>
           <tr className="text-2xs text-text-muted">
             <th className="px-1.5 pb-1 text-left font-semibold">
-              {t(withWays ? "stopChoices.choice" : "stopChoices.stop")}
+              {t("stopChoices.choice")}
             </th>
             <th className="px-1.5 pb-1 text-right font-semibold whitespace-nowrap">
               {t("stopChoices.today")}
@@ -118,12 +111,12 @@ export function StopChoices({
                   <div className="flex items-center gap-1">
                     {c.current ? (
                       <Check className="size-3.5 shrink-0" aria-hidden />
-                    ) : c.way !== undefined ? (
+                    ) : c.color ? (
                       <span className="flex size-3.5 shrink-0 items-center justify-center">
                         <span
                           className={cn(
                             "size-2.5 rounded-sm",
-                            WAY_SWATCH[c.way % WAY_SWATCH.length],
+                            routeColorClasses[c.color],
                           )}
                         />
                       </span>
@@ -141,9 +134,9 @@ export function StopChoices({
                           onFocus={() => hover(true)}
                           onBlur={() => hover(false)}
                           aria-label={t(
-                            c.way === undefined
-                              ? "stopChoices.choose"
-                              : "stopChoices.ride",
+                            c.kind === "way"
+                              ? "stopChoices.ride"
+                              : "stopChoices.choose",
                             { name: c.name },
                           )}
                           className={cn(

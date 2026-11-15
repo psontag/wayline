@@ -1,54 +1,62 @@
-import { describe, expect, it, vi } from "vitest";
-import { dayChoiceProps } from "./dayChoices";
-import type { OtherWay, OtherWaysState } from "./otherWays";
+import type { LonLat } from "@wayline/domain";
+import type { TFunction } from "i18next";
+import { describe, expect, it } from "vitest";
+import { dayChoices } from "./dayChoices";
+import type { OtherWay } from "./otherWays";
+import type { StopChoice } from "./stopChoices";
 
-const way = { id: "p1" } as OtherWay;
+const t = ((key: string) => key) as unknown as TFunction<
+  ["tripEditor", "proposals"]
+>;
+const line: LonLat[] = [
+  [10, 50],
+  [10.1, 50],
+];
 
-function setup(hovered?: string) {
-  const hover = { onHover: vi.fn() };
-  const ways: OtherWaysState = {
-    on: true,
-    onSearch: vi.fn(),
-    loading: false,
-    failed: false,
-    ways: [way],
-    ...(hovered && { hovered }),
-    onHover: vi.fn(),
-    onPick: vi.fn(),
-  };
-  const pickTown = vi.fn();
-  return {
-    hover,
-    ways,
-    pickTown,
-    props: dayChoiceProps(hover, ways, pickTown),
-  };
-}
+const town = (name: string, km: number, current = false) =>
+  ({
+    place: { name, kind: "town", coord: [10, 50] },
+    current,
+    distance: km * 1000,
+    ascent: 100,
+    nextDistance: (150 - km) * 1000,
+    beds: { total: km },
+    line,
+    nextLine: line,
+  }) as StopChoice;
 
-describe("dayChoiceProps", () => {
-  it("sends a way's hover to the ways and clears the town", () => {
-    const { hover, ways, props } = setup();
-    props.onHover?.("way:p1");
-    expect(ways.onHover).toHaveBeenCalledWith("p1");
-    expect(hover.onHover).toHaveBeenCalledWith(undefined);
+const way = (id: string, km: number) =>
+  ({
+    id,
+    tags: [],
+    via: ["Somewhere"],
+    route: { via: [], legs: [], stats: { distance: km * 1000, ascent: 300 } },
+    line,
+  }) as unknown as OtherWay;
+
+describe("dayChoices", () => {
+  const towns = [town("Now", 80, true), town("Near", 70), town("Far", 95)];
+
+  it("lists towns and ways by today's km", () => {
+    const list = dayChoices(t, towns, [way("a", 85)]);
+    expect(list.map((c) => c.id)).toEqual(["Near", "Now", "way:a", "Far"]);
   });
 
-  it("sends a town's hover to the towns and clears the way", () => {
-    const { hover, ways, props } = setup();
-    props.onHover?.("Bug");
-    expect(hover.onHover).toHaveBeenCalledWith("Bug");
-    expect(ways.onHover).toHaveBeenCalledWith(undefined);
+  it("keeps the town colors when ways arrive", () => {
+    const before = dayChoices(t, towns, []);
+    const after = dayChoices(t, towns, [way("a", 85)]);
+    const colors = (list: typeof before) =>
+      Object.fromEntries(list.map((c) => [c.id, c.color]));
+    expect(colors(after)).toMatchObject(colors(before));
+    expect(colors(before).Now).toBeUndefined();
+    expect(new Set(Object.values(colors(after))).size).toBe(4);
   });
 
-  it("picks a way or a town", () => {
-    const { ways, pickTown, props } = setup();
-    props.onSelect?.("way:p1");
-    expect(ways.onPick).toHaveBeenCalledWith(way);
-    props.onSelect?.("Bug");
-    expect(pickTown).toHaveBeenCalledWith("Bug");
-  });
-
-  it("marks the hovered way", () => {
-    expect(setup("p1").props.hoveredId).toBe("way:p1");
+  it("keeps tomorrow and the hotels for a way", () => {
+    const [w] = dayChoices(t, towns, [way("a", 85)]).filter(
+      (c) => c.kind === "way",
+    );
+    expect(w).toMatchObject({ nextDistance: 70_000, hotels: 80 });
+    expect(w?.nextLine).toBeUndefined();
   });
 });

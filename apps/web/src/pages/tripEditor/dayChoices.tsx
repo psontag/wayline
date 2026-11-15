@@ -1,11 +1,54 @@
-import { Button, type StopChoice, type StopChoicesProps } from "@wayline/ui";
+import type { LonLat, Place } from "@wayline/domain";
+import { HOTEL_KM } from "@wayline/providers";
+import {
+  Button,
+  type RouteColor,
+  type StopChoice as ChoiceRow,
+  StopChoices,
+} from "@wayline/ui";
 import type { TFunction } from "i18next";
-import { Search } from "lucide-react";
+import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { OtherWay, OtherWaysState } from "./otherWays";
-import type { StopHover } from "./StopPicker";
+import type { OtherWay } from "./otherWays";
+import type { StopChoice as StopOption } from "./stopChoices";
 
-const WAY = "way:";
+/**
+ * A town to end the day in or another way to the stop. Both show, preview
+ * and pick alike.
+ */
+export type DayChoice = ChoiceRow & {
+  /** This day if picked. Missing until routed. */
+  line?: LonLat[];
+  /** The next day if picked. Missing when it stays, as for a way. */
+  nextLine?: LonLat[];
+  place?: Place;
+  way?: OtherWay;
+};
+
+/** What the panel and the map share about the choices of a day. */
+export type DayChoicesState = {
+  choices: DayChoice[];
+  hovered?: string;
+  onHover: (id: string | undefined) => void;
+  onPick: (choice: DayChoice) => void;
+  /** The search for other ways. */
+  loading: boolean;
+  failed: boolean;
+  onRetry: () => void;
+};
+
+/**
+ * Colors of the choices on the map and in the table. Not route-1 or
+ * route-4: they look like the day colors.
+ */
+const COLORS: RouteColor[] = [
+  "route2",
+  "route3",
+  "route5",
+  "route6",
+  "route7",
+  "route8",
+];
 
 function wayTitle(t: TFunction<["tripEditor", "proposals"]>, way: OtherWay) {
   const via = way.via.slice(0, 2).join(", ");
@@ -19,18 +62,45 @@ function wayTitle(t: TFunction<["tripEditor", "proposals"]>, way: OtherWay) {
   return [kind, place].filter(Boolean).join(" · ") || t("otherWays.way");
 }
 
-/**
- * Towns and ways in one list, by today's km. Ways end at the current stop,
- * so tomorrow and the hotels stay as they are.
- */
 export function useDayChoices(
-  towns: StopChoice[],
-  ways: OtherWaysState,
-): StopChoice[] {
+  options: StopOption[],
+  ways: OtherWay[],
+): DayChoice[] {
   const { t } = useTranslation(["tripEditor", "proposals"]);
-  const now = towns.find((c) => c.current);
-  const wayRows = ways.ways.map((way, i): StopChoice => ({
-    id: WAY + way.id,
+  return useMemo(() => dayChoices(t, options, ways), [options, ways, t]);
+}
+
+/**
+ * Towns and ways in one list, by today's km. Towns take colors first, so
+ * theirs stay when the ways arrive. Ways end at the current stop, so
+ * tomorrow and the hotels stay as they are.
+ */
+export function dayChoices(
+  t: TFunction<["tripEditor", "proposals"]>,
+  options: StopOption[],
+  ways: OtherWay[],
+): DayChoice[] {
+  const now = options.find((o) => o.current);
+  let next = 0;
+  const color = () => COLORS[next++ % COLORS.length];
+  const towns = options.map((o): DayChoice => ({
+    id: o.place.name,
+    kind: "stop",
+    name: o.place.name,
+    current: o.current,
+    distance: o.distance,
+    ascent: o.ascent,
+    ...(o.nextDistance !== undefined && { nextDistance: o.nextDistance }),
+    ...(o.beds && { hotels: o.beds.total }),
+    ...(o.size && { size: o.size }),
+    ...(!o.current && { color: color() }),
+    ...(o.line && { line: o.line }),
+    ...(o.nextLine && { nextLine: o.nextLine }),
+    place: o.place,
+  }));
+  const wayRows = ways.map((way): DayChoice => ({
+    id: `way:${way.id}`,
+    kind: "way",
     name: wayTitle(t, way),
     current: false,
     distance: way.route.stats.distance,
@@ -38,70 +108,70 @@ export function useDayChoices(
     ...(now?.nextDistance !== undefined && {
       nextDistance: now.nextDistance,
     }),
-    ...(now?.hotels !== undefined && { hotels: now.hotels }),
-    way: i,
+    ...(now?.beds && { hotels: now.beds.total }),
+    color: color(),
     detail: way.tags
       .slice(0, 3)
       .map((tag) => t(`proposals:card.tag.${tag}`))
       .join(" · "),
+    line: way.line,
+    way,
   }));
   return [...towns, ...wayRows].sort((a, b) => a.distance - b.distance);
 }
 
-/** Hover and pick for a list of towns and ways. */
-export function dayChoiceProps(
-  hover: StopHover,
-  ways: OtherWaysState,
-  pickTown: (name: string) => void,
-): Pick<StopChoicesProps, "onSelect" | "onHover" | "hoveredId"> {
-  const hoveredId = ways.hovered ? WAY + ways.hovered : hover.name;
-  return {
-    onSelect: (id) => {
-      hover.onHover(undefined);
-      ways.onHover(undefined);
-      if (!id.startsWith(WAY)) return pickTown(id);
-      const way = ways.ways.find((w) => WAY + w.id === id);
-      if (way) ways.onPick(way);
-    },
-    onHover: (id) => {
-      const isWay = id?.startsWith(WAY);
-      ways.onHover(isWay ? id?.slice(WAY.length) : undefined);
-      hover.onHover(isWay ? undefined : id);
-    },
-    ...(hoveredId && { hoveredId }),
-  };
+/** The day's choices as a table. Hover previews one, a click picks it. */
+export function DayChoiceTable({
+  state,
+  disabled,
+  hotels = true,
+  children,
+}: {
+  state: DayChoicesState;
+  disabled: boolean;
+  /** Without the next day and hotels, e.g. at the end of a trip. */
+  hotels?: boolean;
+  /** Above the footer, e.g. a note on the choices. */
+  children?: ReactNode;
+}) {
+  const { choices } = state;
+  return (
+    <StopChoices
+      choices={choices}
+      disabled={disabled}
+      onSelect={(id) => {
+        const choice = choices.find((c) => c.id === id);
+        if (choice) state.onPick(choice);
+      }}
+      onHover={state.onHover}
+      {...(state.hovered && { hoveredId: state.hovered })}
+      footer={
+        <>
+          {children}
+          <WaysStatus state={state} />
+        </>
+      }
+      {...(hotels && { hotelsRadius: HOTEL_KM * 1000 })}
+    />
+  );
 }
 
-/** Under the list: find other ways, and how the search went. */
-export function WaysFooter({
-  ways,
-  disabled,
-}: {
-  ways: OtherWaysState;
-  disabled: boolean;
-}) {
+/** How the search for other ways goes, while it matters. */
+function WaysStatus({ state }: { state: DayChoicesState }) {
   const { t } = useTranslation("tripEditor");
-  const { on, loading, failed } = ways;
-  if (on && !loading && !failed) {
-    return ways.ways.length === 0 ? (
-      <p className="px-1.5 text-xs text-text-muted">{t("otherWays.none")}</p>
-    ) : null;
-  }
-  return (
-    <div className="flex items-center gap-2 px-1.5">
-      <span className="flex-1 text-xs text-text-muted">
-        {loading
-          ? t("otherWays.searching")
-          : failed
-            ? t("otherWays.failed")
-            : t("otherWays.hint")}
-      </span>
-      {!loading && (
-        <Button size="sm" disabled={disabled} onClick={ways.onSearch}>
-          <Search aria-hidden />
-          {t(failed ? "otherWays.retry" : "otherWays.find")}
+  if (state.failed) {
+    return (
+      <div className="flex items-center gap-2 px-1.5">
+        <span className="flex-1 text-xs text-text-muted">
+          {t("otherWays.failed")}
+        </span>
+        <Button size="sm" onClick={state.onRetry}>
+          {t("otherWays.retry")}
         </Button>
-      )}
-    </div>
-  );
+      </div>
+    );
+  }
+  return state.loading ? (
+    <p className="px-1.5 text-xs text-text-muted">{t("otherWays.searching")}</p>
+  ) : null;
 }

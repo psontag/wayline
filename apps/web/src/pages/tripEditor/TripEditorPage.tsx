@@ -45,12 +45,17 @@ import {
   useMapHotels,
   useStopOptions,
 } from "./stopChoices";
-import { type OtherWaysState, useOtherWays } from "./otherWays";
+import { type DayChoicesState, useDayChoices } from "./dayChoices";
+import { type OtherWay, useOtherWays } from "./otherWays";
+
+// Stable, so the memos that use them keep.
+const NO_WAYS: OtherWay[] = [];
+const NO_CHOICES: MapChoice[] = [];
 import { ShareDialog } from "./ShareDialog";
 import { TripActions } from "./TripHeader";
 import { proposedSection } from "./proposedSection";
 import { isChanged } from "./routeEdits";
-import { type RouteEditing, TripMap } from "./TripMap";
+import { type MapChoice, type RouteEditing, TripMap } from "./TripMap";
 import { tripStops } from "./tripArea";
 import { TripPanel } from "./TripPanel";
 import { PhoneTripEditor } from "./PhoneTripEditor";
@@ -126,10 +131,7 @@ function TripEditor({
   const [mapTime, setMapTime] = useState<number>();
   const [findingDestination, setFindingDestination] = useState(false);
   // Stop choice under the pointer, in the stop table or on the map.
-  const [stopHover, setStopHover] = useState<{ day: number; name: string }>();
-  // Day whose other ways were asked for, and the one under the pointer.
-  const [waysDay, setWaysDay] = useState<number>();
-  const [wayHover, setWayHover] = useState<string>();
+  const [choiceHover, setChoiceHover] = useState<{ day: number; id: string }>();
   const [viaSelection, setViaSelection] = useState<{
     day: number;
     coord: LonLat;
@@ -269,43 +271,50 @@ function TripEditor({
   const mapHotels = useMapHotels(trip, selected);
   const stations = useRouteStations(trip);
   const pickAlternative = (place: Place) => {
-    setStopHover(undefined);
+    setChoiceHover(undefined);
     setFindingDestination(false);
     void editor.moveStop(selected, place);
   };
-  const waysOn = dayOpen && waysDay === selected;
+  const waysOn = dayOpen && !editor.readOnly;
   const ways = useOtherWays(trip, selected, waysOn);
-  const foundWays = waysOn ? (ways.data ?? []) : [];
-  const otherWays: OtherWaysState = {
-    on: waysOn,
-    onSearch: () => {
-      setWaysDay(selected);
-      if (ways.isError) void ways.refetch();
+  const choiceList = useDayChoices(options, (waysOn && ways.data) || NO_WAYS);
+  const hoverChoice = (id: string | undefined) =>
+    setChoiceHover(id ? { day: selected, id } : undefined);
+  const hoveredChoice =
+    dayOpen &&
+    choiceHover?.day === selected &&
+    choiceList.some((c) => !c.current && c.id === choiceHover.id)
+      ? choiceHover.id
+      : undefined;
+  const choices: DayChoicesState = {
+    choices: choiceList,
+    ...(hoveredChoice && { hovered: hoveredChoice }),
+    onHover: hoverChoice,
+    onPick: (choice) => {
+      if (choice.place) return pickAlternative(choice.place);
+      setChoiceHover(undefined);
+      if (choice.way) editor.setRoute(selected, choice.way.route);
     },
     loading: waysOn && ways.isFetching,
     failed: waysOn && ways.isError,
-    ways: foundWays,
-    ...(wayHover &&
-      foundWays.some((w) => w.id === wayHover) && { hovered: wayHover }),
-    onHover: setWayHover,
-    onPick: (way) => {
-      setWayHover(undefined);
-      setWaysDay(undefined);
-      editor.setRoute(selected, way.route);
-    },
+    onRetry: () => void ways.refetch(),
   };
-  const hoveredStop =
-    dayOpen && stopHover?.day === selected ? stopHover.name : undefined;
-  const hoverStop = (name: string | undefined) =>
-    setStopHover(name ? { day: selected, name } : undefined);
-  const hoveredOption = options.find(
-    (o) => !o.current && o.place.name === hoveredStop,
+  const mapChoices = useMemo(
+    () =>
+      choiceList.flatMap((c) =>
+        !c.current && c.color && c.line
+          ? [
+              {
+                id: c.id,
+                color: c.color,
+                line: c.line,
+                ...(c.nextLine && { nextLine: c.nextLine }),
+              },
+            ]
+          : [],
+      ),
+    [choiceList],
   );
-  const stopPreview = hoveredOption && {
-    name: hoveredOption.place.name,
-    ...(hoveredOption.line && { line: hoveredOption.line }),
-    ...(hoveredOption.nextLine && { nextLine: hoveredOption.nextLine }),
-  };
   const alternatives = readOnly
     ? []
     : options
@@ -476,8 +485,8 @@ function TripEditor({
     />
   );
   const mapLayers = {
-    otherWays: otherWays.ways,
-    ...(otherWays.hovered && { hoveredWay: otherWays.hovered }),
+    choices: dayOpen ? mapChoices : NO_CHOICES,
+    ...(hoveredChoice && { hoveredChoice }),
     stations: layers.stations ? stations : [],
     network: layers.network ? ("quiet" as const) : ("off" as const),
     weather: weatherField && {
@@ -506,11 +515,7 @@ function TripEditor({
       onHighlightProposed={setProposedHighlighted}
       findingDestination={findingDestination}
       onFindingDestination={setFindingDestination}
-      stopHover={{
-        ...(hoveredStop && { name: hoveredStop }),
-        onHover: hoverStop,
-      }}
-      otherWays={otherWays}
+      choices={choices}
       selectedVia={selectedVia}
       onSelectVia={selectVia}
       chart={isPhone ? chart : undefined}
@@ -572,8 +577,7 @@ function TripEditor({
               highlight={highlight}
               alternatives={dayOpen ? alternatives : []}
               onPickAlternative={pickAlternative}
-              onHoverAlternative={hoverStop}
-              stopPreview={stopPreview}
+              onHoverAlternative={hoverChoice}
               hotels={
                 !dayOpen || isLast || !layers.hotels ? [] : mapHotels.hotels
               }

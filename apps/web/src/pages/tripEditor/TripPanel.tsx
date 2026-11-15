@@ -205,7 +205,6 @@ function DayItem({
       }
       dated={!!trip.startDate}
       hotel={isLast ? undefined : stage.hotel?.name}
-      locked={!isLast && stage.end.locked}
       changed={isChanged(trip, index)}
       highlighted={highlighted}
       onClick={onOpen}

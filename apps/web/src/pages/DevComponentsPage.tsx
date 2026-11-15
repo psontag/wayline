@@ -210,10 +210,6 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
   const profileLabelId = useId();
   const [profile, setProfile] = useState("touring");
   const [selectedDay, setSelectedDay] = useState(2);
-  const [locked, setLocked] = useState<Record<number, boolean>>({
-    1: true,
-    2: true,
-  });
   const [stop, setStop] = useState("Kronach");
 
   return (
@@ -399,7 +395,6 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
                   )
                 }
                 hotel={t("demo.hotelName")}
-                locked={locked[stage.day]}
                 changed={stage.day === 3}
                 highlighted={stage.day === selectedDay}
                 onClick={() => setSelectedDay(stage.day)}
@@ -434,7 +429,7 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
                 <MoreRow
                   label={t("demo.moreStops")}
                   expanded={false}
-                  onClick={() => setLocked({ ...locked, 2: !locked[2] })}
+                  onClick={() => {}}
                 />
               }
             />
