@@ -211,7 +211,8 @@ export function NewTripForm({
   const shownRoute = areaShelf?.find(
     (r) => r.name === (hoveredRoute ?? selectedRoute),
   );
-  const stretch = areaShelf?.find((r) => r.name === selectedRoute)?.stretch;
+  const pickedRoute = areaShelf?.find((r) => r.name === selectedRoute);
+  const stretch = pickedRoute?.stretch;
   const rainStations = useMemo(
     () => withRain(reach.stations, wx),
     [reach.stations, wx],
@@ -257,6 +258,7 @@ export function NewTripForm({
       areaPlaces,
       areaStart,
       areaShape,
+      pickedArea?.area.bbox,
     );
     if (!first) return;
     void navigate({
@@ -443,6 +445,13 @@ export function NewTripForm({
           {([startDate, days]) => (
             <WherePanel
               onChoosePlace={toTrip}
+              {...(pickedRoute?.stretch && {
+                ride: {
+                  label: t("where.ride", { count: days }),
+                  hint: pickedRoute.name,
+                  onRide: () => ride(pickedRoute),
+                },
+              })}
               {...(isPhone && { lead: areasSection })}
             >
               <DaysSection

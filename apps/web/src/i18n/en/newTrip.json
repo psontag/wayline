@@ -55,7 +55,9 @@
     "length": "Trip length",
     "otherDates": "Other dates",
     "hint": "Pick an area, then a station.",
-    "choosePlace": "Choose a place"
+    "choosePlace": "Choose a place",
+    "ride_one": "Ride {{count}} day",
+    "ride_other": "Ride {{count}} days"
   },
   "reach": {
     "title": "Train from home",
@@ -205,7 +207,7 @@
   },
   "wind": {
     "label": "With the wind",
-    "hint": "Picks directions with a tailwind from the forecast, up to 16 days ahead."
+    "hint": "Picks directions with a tailwind from the forecast, up to 16 days ahead. It does not look for climbs, so routes may climb much less than your max ascent."
   },
   "distance": "Distance",
   "kmPerDay": "Km per day",

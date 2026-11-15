@@ -123,6 +123,9 @@ describe("Planner on the Oberfranken network", () => {
     const result = await planner.generate(request);
     if (!result.ok) throw new Error(result.failedLimit);
     expect(result.proposals.length).toBeGreaterThanOrEqual(2);
+    // The way by bike, for the "fewer days" hint.
+    expect(result.directKm).toBeGreaterThan(40);
+    expect(result.directKm).toBeLessThan(80);
     for (const p of result.proposals) {
       console.log(describeProposal(p));
       // The fill may widen the km per day.
@@ -147,6 +150,12 @@ describe("Planner on the Oberfranken network", () => {
       if (p.flavour) checkTrip(p, loop);
       expect(p.trip.stages.at(-1)?.end.name).toBe("Bamberg");
     }
+  });
+
+  it("stops at maxProposals", async () => {
+    const result = await planner.generate({ ...oneWay, maxProposals: 2 });
+    if (!result.ok) throw new Error(result.failedLimit);
+    expect(result.proposals).toHaveLength(2);
   });
 
   it("reports progress", async () => {

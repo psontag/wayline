@@ -127,7 +127,11 @@ export function TripPanel({
         <PanelSection
           icon="trains"
           title={t("section.trains")}
-          summary={t("trains.summary", { from: start, to: end })}
+          summary={
+            start === end
+              ? t("trains.summaryLoop", { station: start })
+              : t("trains.summary", { from: start, to: end })
+          }
           collapsible
           defaultOpen={false}
         >

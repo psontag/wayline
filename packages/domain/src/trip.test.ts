@@ -32,4 +32,15 @@ describe("tripTitle", () => {
       "Loop from Heidelberg via Wiesloch",
     );
   });
+
+  it("names stations by their town", () => {
+    expect(tripTitle("Heidelberg Hauptbahnhof")).toBe("Loop from Heidelberg");
+    expect(tripTitle("Frankfurt (Main) Hbf", "Lorch (Württ)")).toBe(
+      "Frankfurt – Lorch",
+    );
+    expect(tripTitle("Würzburg Hbf", "Würzburg")).toBe("Loop from Würzburg");
+    expect(tripTitle("Garmisch-Partenkirchen")).toBe(
+      "Loop from Garmisch-Partenkirchen",
+    );
+  });
 });

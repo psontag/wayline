@@ -1,4 +1,5 @@
 import {
+  distanceKm,
   type GeoHotel,
   type GeoStation,
   type GeoTown,
@@ -25,12 +26,23 @@ const URBAN_KM: Partial<Record<GeoTown["place"], number>> = {
   city: 4,
   town: 1.5,
 };
+const PLACE_RANK: Record<GeoTown["place"], number> = {
+  village: 0,
+  town: 1,
+  city: 2,
+};
+/** Grid cell in degrees for finding towns near a stop. */
+const CELL = 0.05;
+const cellKey = (lon: number, lat: number) =>
+  `${Math.floor(lon / CELL)},${Math.floor(lat / CELL)}`;
 
 /**
  * Names, places and hotels for network nodes. Built once per network.
  */
 export class Stops {
   private towns = new Map<number, GeoTown>();
+  /** Towns and cities by grid cell, snapped or not. */
+  private bigTowns = new Map<string, GeoTown[]>();
   private stations = new Map<number, GeoStation>();
   private hotels: HotelIndex;
   private urban?: Set<number>;
@@ -40,6 +52,10 @@ export class Stops {
     places: Places,
   ) {
     for (const t of places.towns) {
+      if (t.place !== "village") {
+        const key = cellKey(t.lon, t.lat);
+        this.bigTowns.set(key, [...(this.bigTowns.get(key) ?? []), t]);
+      }
       if (t.nodeId === null) continue;
       const cur = this.towns.get(t.nodeId);
       if (!cur || t.hotelCount > cur.hotelCount) this.towns.set(t.nodeId, t);
@@ -104,11 +120,46 @@ export class Stops {
   town(node: number): Place {
     const t = this.towns.get(node);
     if (t) {
-      return { name: t.name, kind: "town", coord: [t.lon, t.lat], osmId: t.id };
+      const named = this.biggerNear(t) ?? t;
+      return {
+        name: named.name,
+        kind: "town",
+        coord: [t.lon, t.lat],
+        osmId: named.id,
+      };
     }
     if (this.stations.has(node)) return this.station(node);
     const n = this.graph.node(node);
     return { name: n.name ?? "", kind: "town", coord: [n.lon, n.lat] };
+  }
+
+  /**
+   * The biggest place that outranks t and has most of the hotels near it. A
+   * stop at a village next to a town is named after the town.
+   */
+  private biggerNear(t: GeoTown): GeoTown | undefined {
+    const at: LonLat = [t.lon, t.lat];
+    const bigger = (a: GeoTown, b: GeoTown) =>
+      PLACE_RANK[a.place] - PLACE_RANK[b.place] ||
+      (a.population ?? 0) - (b.population ?? 0);
+    let best: GeoTown | undefined;
+    for (const dx of [-CELL, 0, CELL]) {
+      for (const dy of [-CELL, 0, CELL]) {
+        const cell = this.bigTowns.get(cellKey(t.lon + dx, t.lat + dy)) ?? [];
+        for (const o of cell) {
+          if (PLACE_RANK[o.place] <= PLACE_RANK[t.place]) continue;
+          if (distanceKm(at, [o.lon, o.lat]) > TOWN_HOTEL_KM) continue;
+          if (!best || bigger(o, best) > 0) best = o;
+        }
+      }
+    }
+    if (!best) return undefined;
+    const town: LonLat = [best.lon, best.lat];
+    const hotels = this.hotelsNear(at, TOWN_HOTEL_KM);
+    const own = hotels.filter(
+      (h) => distanceKm(at, [h.lon, h.lat]) < distanceKm(town, [h.lon, h.lat]),
+    );
+    return own.length * 2 < hotels.length ? best : undefined;
   }
 
   /** OSM town data at a node, if a town snaps to it. */

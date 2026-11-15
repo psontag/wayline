@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import {
   comparisonTags,
   labelPoints,
+  longRequest,
   progressValue,
   rainTag,
   relaxOptions,
@@ -55,6 +56,12 @@ describe("shortRequest", () => {
     expect(withDays(toWuerzburg, 1).hotelBudget).toBeUndefined();
   });
 
+  it("uses the km by bike once the search knows them", () => {
+    // The straight line says 90 km, the way along the river 160 km.
+    expect(shortRequest(toWuerzburg, 160)).toBeUndefined();
+    expect(shortRequest(toWuerzburg, 120)).toMatchObject({ km: 120, days: 2 });
+  });
+
   it("says nothing on a stretch of a signed route", () => {
     expect(
       shortRequest({ ...toWuerzburg, route: "Main-Radweg" }),
@@ -66,6 +73,33 @@ describe("shortRequest", () => {
     expect(shortRequest({ ...toWuerzburg, days: 2, kmPerDay: 60 })).toBe(
       undefined,
     );
+  });
+});
+
+describe("longRequest", () => {
+  const toBamberg: GenerateRequest = {
+    ...request,
+    endStation: { name: "Bamberg", kind: "station", coord: [10.9, 49.9] },
+  };
+  const ofKm = (km: number) =>
+    ({
+      trip: {
+        stages: [{ stats: { distance: km * 1000 } }],
+      },
+    }) as unknown as Proposal;
+
+  it("offers more days when the shortest route is much longer", () => {
+    expect(longRequest(toBamberg, [ofKm(295), ofKm(277)])).toEqual({
+      km: 275,
+      plannedKm: 210,
+      days: 4,
+    });
+  });
+
+  it("says nothing when the days fit or without an end", () => {
+    expect(longRequest(toBamberg, [ofKm(240)])).toBeUndefined();
+    expect(longRequest(request, [ofKm(400)])).toBeUndefined();
+    expect(longRequest(toBamberg, [])).toBeUndefined();
   });
 });
 
@@ -191,12 +225,12 @@ describe("shownRouteTags", () => {
     expect(shown.get("c")).toEqual(["shorter", "moreClimbing"]);
   });
 
-  it("always shows More climbing", () => {
+  it("always shows More climbing and Out and back", () => {
     const shown = shownRouteTags([
-      tagged("a", ["moreClimbing"]),
-      tagged("b", ["moreClimbing"]),
+      tagged("a", ["nature", "moreClimbing", "outAndBack"]),
+      tagged("b", ["nature", "moreClimbing", "outAndBack"]),
     ]);
-    expect(shown.get("a")).toEqual(["moreClimbing"]);
+    expect(shown.get("a")).toEqual(["moreClimbing", "outAndBack"]);
   });
 
   it("keeps all tags of a single proposal", () => {

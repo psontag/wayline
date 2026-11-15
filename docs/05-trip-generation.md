@@ -16,7 +16,7 @@ Every proposal searches and routes with the `touring` profile.
 
 ## Output
 
-5–8 proposals where the network allows it. Each is a full trip with stages, hotels at stops, stats, tags and, if dated, weather. Proposals should differ from each other, not be small variations of one route.
+5–8 proposals where the network allows it, or at most `maxProposals` when the request has it. Each is a full trip with stages, hotels at stops, stats, tags and, if dated, weather. Proposals should differ from each other, not be small variations of one route.
 
 Multi-day trips and loops start with one proposal per flavour (see below). One day from A to B starts with proposals with a character. An open day ride starts with proposals to different destinations. The fill step then adds more.
 
@@ -102,6 +102,7 @@ Search:
 - Keeps the path with the most km on the route, with at most 40 % shared km and at most 60 % in the same corridor as another proposal. It must pass the same filters as all others.
 - Skips a route when a proposal already follows it.
 - A request with `route` (from the route shelf) tries that route first. Proposals that follow it rank first, after rides with the wind.
+- If no path on that route fits the max ascent, it tries again with 30 % more. The proposal then has the More climbing tag.
 - Limit: about 1.5 s, 12 routes, 30 candidates per route and length. A length is given up after 8 candidates in a row that don't fit.
 
 ## Seeking climbs
@@ -168,6 +169,7 @@ The planner sets these when a route is done. Scenery and ways come from the grap
 | Lots of climbing | `climbs` | ≥ 12 m per km. Replaces Hilly. |
 | Longer, Shorter | `longer`, `shorter` | ≥ 10 % off the target km. Not on one day from A to B, which has a character. |
 | More climbing | `moreClimbing` | A stage over its max ascent by more than 5 % |
+| Out and back | `outAndBack` | A day loop that turns at a town and comes back the same way |
 
 The app adds the rest. See `06-ui.md`.
 
@@ -182,6 +184,8 @@ Stops must be towns with hotels. For a route of length L and n days:
    - two stops closer than a quarter of the target km in a straight line
    - on loops: a stop closer to the start than 15 km (or 10 % of the length)
 3. Keep up to 3 alternatives per stop: towns with hotels that make the stage about 10 or 20 % shorter or longer, clearly apart from each other and from the stop. Fewer if the path has none.
+
+A stop at a village takes the name of a town or city within 2 km when most hotels within 2 km are closer to that town: Möhrig becomes Öhringen. Trip names use the town of a station: "Loop from Heidelberg", not "Loop from Heidelberg Hauptbahnhof".
 
 ### Day shares
 
@@ -199,6 +203,7 @@ The Web Worker reports phases:
 
 - Each kept proposal is cut, routed and sent right away. The search goes on after that.
 - Time limits pause while a proposal is routed.
+- Time limits are a safety net for slow devices. Each fires only after 3 × its time, so a normal machine, even a busy one, stops by tries. The same inputs then give the same proposals.
 - The worker keeps distance searches from each node between runs in the same area, for the last setting of max ascent per km, up to 64 MB per area. A second search after changing the dates or the number of days is faster.
 - Each proposal has a rank. The UI sorts by it, so the final order does not depend on when a proposal came.
 - The user can cancel.
@@ -209,7 +214,7 @@ The Web Worker reports phases:
 | Mode | How |
 |---|---|
 | One day A to B | Graph search. Each proposal has a character: direct, longer or scenic. No flavours. |
-| Day loop | Graph search for a loop of the given length, without stops. |
+| Day loop | Graph search for a loop of the given length, without stops. If no loop fits, as in mountain valleys, out and back rides: to a town about half the length away and back the same way, up to 5, at least 35° apart. |
 | Open day ride | One-way, one day, no end. Graph search to any station. See below. |
 
 ## Open day ride

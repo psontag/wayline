@@ -13,6 +13,7 @@ import {
   routePoints,
   type RouteTag,
   shortTrip,
+  shortTripKm,
   type StageWeather,
   type Trip,
   tripStats,
@@ -130,12 +131,20 @@ export function comparisonTags(
 }
 
 /** Tags that say a proposal leaves the inputs. Shown first. */
-const OFF_INPUT: readonly RouteTag[] = ["longer", "shorter", "moreClimbing"];
+const OFF_INPUT: readonly RouteTag[] = [
+  "outAndBack",
+  "longer",
+  "shorter",
+  "moreClimbing",
+];
+/** Tags that always show, even when most proposals have them. */
+const ALWAYS: readonly RouteTag[] = ["outAndBack", "moreClimbing"];
 
 /**
  * Route tags to show, by proposal id: leaving the inputs first, then the
  * rarest in the list. A tag most proposals have says little, so it goes.
- * More climbing breaks a limit, so it always shows.
+ * More climbing breaks a limit and Out and back is not a loop, so they
+ * always show.
  */
 export function shownRouteTags(proposals: Proposal[]): Map<string, RouteTag[]> {
   const counts = new Map<RouteTag, number>();
@@ -150,7 +159,7 @@ export function shownRouteTags(proposals: Proposal[]): Map<string, RouteTag[]> {
       (p.tags ?? [])
         .filter(
           (tag) =>
-            tag === "moreClimbing" ||
+            ALWAYS.includes(tag) ||
             proposals.length < 2 ||
             (counts.get(tag) ?? 0) <= proposals.length / 2,
         )
@@ -330,24 +339,51 @@ export function withDays(
 /**
  * A to B much shorter than the planned days, with the days that fit.
  * Undefined for other trips, and for a stretch of a signed route: the
- * route is the detour.
+ * route is the detour. directKm: the km by bike once the search knows
+ * it, else the straight line tells.
  */
-export function shortRequest(request: GenerateRequest) {
+export function shortRequest(request: GenerateRequest, directKm?: number) {
   const { startStation, endStation } = request;
   if (request.kind !== "one-way" || !startStation || !endStation) return;
   if (request.route) return;
-  const days = (request.dayShares ?? []).reduce(
+  const days = plannedDays(request);
+  const short =
+    directKm === undefined
+      ? shortTrip(startStation.coord, endStation.coord, days, request.kmPerDay)
+      : shortTripKm(directKm, days, request.kmPerDay);
+  if (!short || short.days >= request.days) return;
+  return { ...short, plannedKm: days * request.kmPerDay };
+}
+
+/** Days of the request, short days counted as parts of a day. */
+function plannedDays(request: GenerateRequest): number {
+  return (request.dayShares ?? []).reduce(
     (sum, share) => sum + share,
     request.days - (request.dayShares?.length ?? 0),
   );
-  const short = shortTrip(
-    startStation.coord,
-    endStation.coord,
-    days,
-    request.kmPerDay,
-  );
-  if (!short || short.days >= request.days) return;
-  return { ...short, plannedKm: days * request.kmPerDay };
+}
+
+/** Above this share of the planned km, the days come out too long. */
+const LONG_SHARE = 1.2;
+
+/**
+ * Multi-day A to B whose shortest proposal is much longer than planned,
+ * with the days that fit. The straight line can't tell: rivers and hills
+ * make the way much longer.
+ */
+export function longRequest(request: GenerateRequest, proposals: Proposal[]) {
+  if (request.kind !== "one-way" || !request.endStation) return;
+  if (request.days < 2 || proposals.length === 0) return;
+  const meters = (p: Proposal) =>
+    p.trip.stages.reduce((sum, stage) => sum + stage.stats.distance, 0);
+  const km = Math.min(...proposals.map(meters)) / 1000;
+  const plannedKm = plannedDays(request) * request.kmPerDay;
+  if (km <= LONG_SHARE * plannedKm) return;
+  return {
+    km: Math.round(km / 5) * 5,
+    plannedKm,
+    days: request.days + Math.ceil((km - plannedKm) / request.kmPerDay),
+  };
 }
 
 /** Up to two changes that relax the failed limit. Main one first. */

@@ -260,6 +260,8 @@ export const GenerateRequest = z
     withWind: z.boolean().optional(),
     /** Signed route to follow, by its clean name. Tried first, and ranks first. */
     route: z.string().optional(),
+    /** Fewer proposals than usual, e.g. when several requests share one list. */
+    maxProposals: z.number().int().min(1).optional(),
   })
   .refine((r) => r.region || r.startStation, {
     message: "Needs a region or a start station",
@@ -292,6 +294,7 @@ export const RouteTag = z.enum([
   "longer",
   "shorter",
   "moreClimbing",
+  "outAndBack",
 ]);
 export type RouteTag = z.infer<typeof RouteTag>;
 
@@ -362,7 +365,12 @@ export const FailedLimit = z.enum([
 export type FailedLimit = z.infer<typeof FailedLimit>;
 
 export const GenerateResult = z.discriminatedUnion("ok", [
-  z.object({ ok: z.literal(true), proposals: z.array(Proposal) }),
+  z.object({
+    ok: z.literal(true),
+    proposals: z.array(Proposal),
+    /** A to B: km of the best path from start to end. */
+    directKm: z.number().nonnegative().optional(),
+  }),
   z.object({ ok: z.literal(false), failedLimit: FailedLimit }),
 ]);
 export type GenerateResult = z.infer<typeof GenerateResult>;

@@ -29,11 +29,31 @@ export type TripSummary = {
 /**
  * Trip name: "Start – End" one way, "Loop from Start" when it ends where it
  * starts, "Loop from Start via Town" to tell day loops apart. `reverseTrip`
- * relies on the " – ".
+ * relies on the " – ". Stations go by their town.
  */
 export function tripTitle(from: string, to?: string, via?: string): string {
-  if (to && to !== from) return `${from} – ${to}`;
-  return via ? `Loop from ${from} via ${via}` : `Loop from ${from}`;
+  const [a, b] = [townOf(from), to && townOf(to)];
+  if (b && b !== a) return `${a} – ${b}`;
+  return via ? `Loop from ${a} via ${via}` : `Loop from ${a}`;
+}
+
+/** Name of a day ride that turns at a town and comes back the same way. */
+export function outAndBackTitle(from: string, turn: string): string {
+  return `${townOf(from)} to ${turn} and back`;
+}
+
+const STATION_WORDS = /\s+(Hauptbahnhof|Hbf\.?|Bahnhof|Bf\.?)$/i;
+
+/**
+ * The town of a station name, without station words and notes in brackets:
+ * "Frankfurt (Main) Hbf" is Frankfurt.
+ */
+export function townOf(name: string): string {
+  const town = name
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(STATION_WORDS, "")
+    .trim();
+  return town || name;
 }
 
 /** Bike routes are about this much longer than the straight line. */
@@ -62,6 +82,16 @@ export function shortTrip(
   minKmPerDay = 20,
 ): ShortTrip | undefined {
   const km = distanceKm(from, to) * ROUTE_FACTOR;
+  return shortTripKm(km, days, kmPerDay, minKmPerDay);
+}
+
+/** The same from the km by bike, when known. */
+export function shortTripKm(
+  km: number,
+  days: number,
+  kmPerDay: number,
+  minKmPerDay = 20,
+): ShortTrip | undefined {
   if (!(km < SHORT_SHARE * days * kmPerDay)) return undefined;
   const round = (v: number) => Math.round(v / 5) * 5;
   return {

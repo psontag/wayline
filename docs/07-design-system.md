@@ -400,7 +400,7 @@ The same thing always has the same name in the UI. Translations use one fixed te
 | Proposed route | The route of a stage as proposed, shown after a change |
 | Changed, Revert | A stage that differs from its proposal, and the action that restores it |
 | Direct, longer, scenic | Characters of one-day A to B proposals |
-| Nature, Rivers & lakes, Wine, Sights, Mostly towns, Scenic, Quiet, Gravel, Main roads, Off signed routes, Flat, Hilly, Lots of climbing, Longer, Shorter, More climbing | Route tags on proposals |
+| Nature, Rivers & lakes, Wine, Sights, Mostly towns, Scenic, Quiet, Gravel, Main roads, Off signed routes, Flat, Hilly, Lots of climbing, Longer, Shorter, More climbing, Out and back | Route tags on proposals |
 | Riding time | Time on the bike for a stage, without breaks |
 | Ride window | The hours of a stage on the bike, shown on the weather timeline |
 | Best start | The start time with the least rain, then the least headwind |

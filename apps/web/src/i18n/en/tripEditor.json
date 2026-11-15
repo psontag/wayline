@@ -33,6 +33,7 @@
     "from": "From {{station}}",
     "arriveBy": "Arrive by {{time}}",
     "summary": "{{from}} and {{to}}",
+    "summaryLoop": "To and from {{station}}",
     "reservation": "R: IC, ICE or Flix. Book a bike space with the ticket.",
     "book": "Book on bahn.de"
   },
