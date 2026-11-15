@@ -210,10 +210,6 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
   const profileLabelId = useId();
   const [profile, setProfile] = useState("touring");
   const [selectedDay, setSelectedDay] = useState(2);
-  const [locked, setLocked] = useState<Record<number, boolean>>({
-    1: true,
-    2: true,
-  });
   const [stop, setStop] = useState("Kronach");
 
   return (
@@ -399,7 +395,6 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
                   )
                 }
                 hotel={t("demo.hotelName")}
-                locked={locked[stage.day]}
                 changed={stage.day === 3}
                 highlighted={stage.day === selectedDay}
                 onClick={() => setSelectedDay(stage.day)}
@@ -434,7 +429,7 @@ function Column({ theme, title }: { theme: ResolvedTheme; title: string }) {
                 <MoreRow
                   label={t("demo.moreStops")}
                   expanded={false}
-                  onClick={() => setLocked({ ...locked, 2: !locked[2] })}
+                  onClick={() => {}}
                 />
               }
             />
@@ -762,13 +757,25 @@ function TripEditorParts() {
         <WindMarker from={250} speed={8} label={t("demo.windMarker")} />
         <WindMarker from={250} speed={22} label={t("demo.windMarker")} />
         <StopMarker day={1} name="Coburg" />
+        <StopMarker day={1} name="Coburg" tone="start" />
         <StopMarker day={2} name="Kronach" selected />
+        <StopMarker day={3} name="Ludwigsstadt" tone="muted" />
+        <EndpointMarker name="Bamberg" station tone="start" />
         <AlternativeMarker
           label={t("demo.alternative", { name: "Küps", distance: "56 km" })}
         />
         <AlternativeMarker
           label={t("demo.alternative", { name: "Mitwitz", distance: "61 km" })}
           beds={4}
+          color="route3"
+          day={2}
+        />
+        <AlternativeMarker
+          label={t("demo.alternative", { name: "Pressig", distance: "72 km" })}
+          beds={6}
+          color="route5"
+          day={2}
+          selected
         />
         <HotelMarker
           name="Hotel Krone"

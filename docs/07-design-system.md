@@ -44,7 +44,7 @@ Map tokens:
 | `route-dimmed` | Unselected routes in the legend |
 | `route-selected` | Selected stage |
 | `stage-a`, `stage-b` | Days in the trip editor alternate between these two, in the list and on the map |
-| `route-1` … `route-8` | One color per proposal on the proposals map, by list order |
+| `route-1` … `route-8` | One color per proposal on the proposals map, by list order. Other routes of a day use `route-2`, `route-3`, `route-5` … `route-8`: lines and end dots on the map, swatches in the Route table. Not `route-1` and `route-4`: they look like the day colors. |
 | `on-route` | Text on a route color |
 | `route-outline` | Casing of the highlighted proposal |
 | `hillshade-shadow`, `hillshade-highlight` | Terrain shading on the maps |
@@ -220,6 +220,15 @@ Signed cycling routes show by size:
 
 Hovering or tapping a route highlights all of it and shows its name, kind, full length and other routes on the same way.
 
+Stop markers in the trip editor, when a day is selected:
+
+| Marker | Look |
+|---|---|
+| Day end | Large circle with the day number, filled in `route-selected`, bold name |
+| Day start | Circle with the number, outlined in `route-selected`. At the trip start, the end marker gets a `route-selected` ring. |
+| Other days | Small `marker` circle with the number, faded, muted name |
+| Other routes' ends | The day number in a dashed circle in the route's color, with name, km and hotels: "this could be stop 2". Filled in that color while previewed. |
+
 Screens add only their own sources, layers and markers as children. Line and fill layers use `MapLayer`, so they sit below the base map labels. Screens don't set a base style, controls or their own fitting.
 
 - Base styles: OpenFreeMap Positron (light) and Dark.
@@ -334,7 +343,7 @@ Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of
 | Level | Header | Sections |
 |---|---|---|
 | Trip | Trip name, trip menu | Dates, Trip, Days, Trains |
-| Day | All days, day chips | Getting there (first day), Ride, Stop, Hotel, Getting home (last day) |
+| Day | All days, day chips | Getting there (first day), Ride, Route, Hotel, Getting home (last day) |
 
 Click a day card, a route on the map or a day chip to open a day.
 

@@ -262,6 +262,19 @@ export const GenerateRequest = z
     route: z.string().optional(),
     /** Fewer proposals than usual, e.g. when several requests share one list. */
     maxProposals: z.number().int().min(1).optional(),
+    /**
+     * Start and end on the network at the given places, not at a station
+     * nearby, e.g. to plan one day of a trip again.
+     */
+    exactEnds: z.boolean().optional(),
+    /**
+     * One-way, one day, no end: the day ends at a town with hotels from
+     * which `place` is at most `maxKm` away. Proposals then have the ride
+     * on to `place` as a second stage. To plan one day of a trip again.
+     */
+    nextStop: z
+      .object({ place: Place, maxKm: z.number().positive() })
+      .optional(),
   })
   .refine((r) => r.region || r.startStation, {
     message: "Needs a region or a start station",

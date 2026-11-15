@@ -26,16 +26,49 @@ export function setStage(trip: Trip, index: number, stage: Stage): Trip {
   };
 }
 
-export function setLocked(trip: Trip, index: number, locked: boolean): Trip {
-  const stage = trip.stages[index];
-  if (!stage) return trip;
-  return setStage(trip, index, { ...stage, end: { ...stage.end, locked } });
-}
-
 export function setHotel(trip: Trip, index: number, hotel: Hotel): Trip {
   const stage = trip.stages[index];
   if (!stage) return trip;
   return setStage(trip, index, { ...stage, hotel });
+}
+
+/**
+ * A day as it would be after a stop or way choice: the stage, and the next
+ * stage when it changes too.
+ */
+export type ChoiceStages = { stage: Stage; next?: Stage };
+
+/**
+ * Takes a choice: its stages replace the day and the next day as they are.
+ * A new stop gets the hotel nearest to it, the same stop keeps its hotel.
+ */
+export async function takeChoice(
+  trip: Trip,
+  index: number,
+  choice: ChoiceStages,
+  nearestHotel: HotelFn,
+): Promise<Trip> {
+  const stage = trip.stages[index];
+  if (!stage) return trip;
+  const next = trip.stages[index + 1];
+  const moved = !samePlace(stage.end, choice.stage.end);
+  const taken: Stage = { ...choice.stage };
+  delete taken.hotel;
+  const hotel = !next
+    ? undefined
+    : moved
+      ? (choice.stage.hotel ?? (await nearestHotel(taken.end.coord)))
+      : stage.hotel;
+  if (hotel) taken.hotel = hotel;
+  const stages = [...trip.stages];
+  stages[index] = taken;
+  if (next && choice.next) stages[index + 1] = choice.next;
+  // Saved trains home leave from the old destination.
+  const trains =
+    moved && !next
+      ? trip.trains.filter((train) => train.direction !== "back")
+      : trip.trains;
+  return { ...trip, stages, trains };
 }
 
 export function sameTrain(a: Connection, b: Connection): boolean {
@@ -74,7 +107,7 @@ function asPlace({ name, kind, coord, osmId }: Place): Place {
   return osmId ? { name, kind, coord, osmId } : { name, kind, coord };
 }
 
-function samePlace(a: Place, b: Place) {
+export function samePlace(a: Place, b: Place) {
   return a.name === b.name && distanceKm(a.coord, b.coord) < 0.05;
 }
 
@@ -115,13 +148,16 @@ function keepVia(via: Place[], points: LonLat[]): Place[] {
   return via.filter((v) => points.some((p) => distanceKm(p, v.coord) < 0.001));
 }
 
+export const stageLine = (stage: Pick<Stage, "legs">): LonLat[] =>
+  stage.legs.flatMap((leg) => decodeLine(leg.geometry));
+
 export function withLegs(stage: Stage, legs: Leg[]): Stage {
   return { ...stage, legs, stats: statsFromLegs(legs) };
 }
 
 /**
- * Moves the end of a stage to another place. The stop gets locked and the
- * old stop becomes an alternative. The route of this and the next stage is
+ * Moves the end of a stage to another place. The old stop becomes an
+ * alternative. The route of this and the next stage is
  * kept: only the leg that passes the new place is routed again, split at it.
  */
 export async function moveStop(
@@ -135,7 +171,7 @@ export async function moveStop(
   const next = trip.stages[index + 1];
   const end: Stop = {
     ...asPlace(place),
-    locked: true,
+    locked: stage.end.locked,
     alternatives: [
       asPlace(stage.end),
       ...stage.end.alternatives.filter((a) => !samePlace(a, place)),
@@ -197,11 +233,12 @@ export type StageIfEnding = {
   nextDistance?: number;
 };
 
-/** A routed stop choice: the numbers, and the lines to preview it. */
+/** A routed stop choice: the numbers, the lines to preview it, the stages to take it. */
 export type RoutedStageIfEnding = StageIfEnding & {
   line: LonLat[];
   /** The next stage. Missing on the last stage. */
   nextLine?: LonLat[];
+  stages: ChoiceStages;
 };
 
 /** The stage if it ended at the place, routed the same way as moveStop. */
@@ -216,17 +253,17 @@ export async function routedStageIfEnding(
     nearestHotel: async () => undefined,
   });
   const stage = moved.stages[index];
+  if (!stage) throw new Error(`No stage ${index}`);
   const next = moved.stages[index + 1];
-  const lineOf = (s: Stage) =>
-    s.legs.flatMap((leg) => decodeLine(leg.geometry));
   const out: RoutedStageIfEnding = {
-    distance: stage?.stats.distance ?? 0,
-    ascent: stage?.stats.ascent ?? 0,
-    line: stage ? lineOf(stage) : [],
+    distance: stage.stats.distance,
+    ascent: stage.stats.ascent,
+    line: stageLine(stage),
+    stages: next ? { stage, next } : { stage },
   };
   if (next) {
     out.nextDistance = next.stats.distance;
-    out.nextLine = lineOf(next);
+    out.nextLine = stageLine(next);
   }
   return out;
 }

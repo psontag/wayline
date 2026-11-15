@@ -100,9 +100,18 @@ describe("withRouted", () => {
     const routed = new Map<string, RoutedStageIfEnding>([
       [
         other.place.name,
-        { distance: 1000, ascent: 5, nextDistance: 2000, line },
+        {
+          distance: 1000,
+          ascent: 5,
+          nextDistance: 2000,
+          line,
+          stages: { stage: stage! },
+        },
       ],
-      [current.place.name, { distance: 9, ascent: 9, line: [] }],
+      [
+        current.place.name,
+        { distance: 9, ascent: 9, line: [], stages: { stage: stage! } },
+      ],
     ]);
     const [first, ...rest] = withRouted(choices, routed);
     expect(first).toMatchObject({ place: other.place, distance: 1000, line });

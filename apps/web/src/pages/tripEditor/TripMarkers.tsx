@@ -6,6 +6,7 @@ import {
   HotelMarker,
   StationMarker,
   StopMarker,
+  type StopTone,
 } from "@wayline/ui";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -51,9 +52,9 @@ export type TripMarkersProps = {
   overview: boolean;
   onSelect: (index: number) => void;
   alternatives: MapAlternative[];
-  onPickAlternative?: (place: Place) => void;
-  onHoverAlternative?: (name: string | undefined) => void;
-  /** Name of the stop choice being previewed. */
+  onPickAlternative?: (id: string) => void;
+  onHoverAlternative?: (id: string | undefined) => void;
+  /** Id of the choice being previewed. */
   previewStop?: string;
   stations: MapStation[];
   hotels: MapHotel[];
@@ -94,6 +95,17 @@ export function TripMarkers({
   const ends = [first?.start, last?.end].filter((p): p is Place => !!p);
   const stops = trip.stages.slice(0, -1);
   const isSelected = (index: number) => !overview && index === selected;
+  // Stop i ends day i. The selected day starts at the stop before it.
+  const toneOf = (index: number): StopTone =>
+    overview
+      ? "default"
+      : index === selected
+        ? "end"
+        : index === selected - 1
+          ? "start"
+          : "muted";
+  const endTones: StopTone[] = [toneOf(-1), toneOf(trip.stages.length - 1)];
+  const radius = { end: 20, start: 16, default: 16, muted: 12 };
   const saved = (osmId: string) =>
     trip.savedHotels.some((h) => h.osmId === osmId);
   // Selected and saved hotels always show on their own.
@@ -135,7 +147,7 @@ export function TripMarkers({
     };
     stops.forEach((stage, index) => {
       // The selected stop is larger, with a larger name.
-      const r = isSelected(index) ? 20 : 16;
+      const r = radius[toneOf(index)];
       const charPx = isSelected(index) ? 9 : 7.5;
       add(
         `stop-${index}`,
@@ -164,15 +176,16 @@ export function TripMarkers({
           : (x, y) => clusterBox(x, y),
       );
     }
-    for (const { place, label, beds } of alternatives) {
+    for (const { id, place, label, beds, color } of alternatives) {
+      const r = color ? 14 : 8;
       add(
-        `choice-${place.name}`,
+        `choice-${id}`,
         PRIORITY.choice,
         place.coord,
         // The bed count adds about four characters.
         (x, y) =>
-          labelBox(x, y, 8, label.length + (beds === undefined ? 0 : 4), 6.5),
-        (x, y) => labelBox(x, y, 8),
+          labelBox(x, y, r, label.length + (beds === undefined ? 0 : 4), 6.5),
+        (x, y) => labelBox(x, y, r),
       );
     }
     for (const group of hotelGroups) {
@@ -207,6 +220,7 @@ export function TripMarkers({
           <EndpointMarker
             {...(!crowded.has(`end-${index}`) && { name: place.name })}
             station={place.kind === "station"}
+            tone={endTones[index] ?? "default"}
           />
         </Marker>
       ))}
@@ -233,25 +247,27 @@ export function TripMarkers({
           </ClusterAt>
         );
       })}
-      {alternatives.map(({ place, label, beds }) => (
+      {alternatives.map(({ id, place, label, beds, color }) => (
         <Marker
-          key={place.name}
+          key={id}
           longitude={place.coord[0]}
           latitude={place.coord[1]}
           anchor="left"
-          offset={[-8, 0]}
-          style={{ zIndex: place.name === previewStop ? 5 : 2 }}
+          // Center the circle on the town: 28 px, 32 px while previewed.
+          offset={[color ? (id === previewStop ? -16 : -14) : -8, 0]}
+          style={{ zIndex: id === previewStop ? 5 : 2 }}
         >
           <AlternativeMarker
             label={label}
             beds={beds}
-            selected={place.name === previewStop}
-            compact={crowded.has(`choice-${place.name}`)}
+            {...(color && { color, day: selected + 1 })}
+            selected={id === previewStop}
+            compact={crowded.has(`choice-${id}`)}
             aria-label={label}
-            onClick={() => onPickAlternative?.(place)}
-            onMouseEnter={() => onHoverAlternative?.(place.name)}
+            onClick={() => onPickAlternative?.(id)}
+            onMouseEnter={() => onHoverAlternative?.(id)}
             onMouseLeave={() => onHoverAlternative?.(undefined)}
-            onFocus={() => onHoverAlternative?.(place.name)}
+            onFocus={() => onHoverAlternative?.(id)}
             onBlur={() => onHoverAlternative?.(undefined)}
           />
         </Marker>
@@ -262,14 +278,14 @@ export function TripMarkers({
           longitude={stage.end.coord[0]}
           latitude={stage.end.coord[1]}
           anchor="left"
-          // Center the circle on the stop. It is larger when selected.
-          offset={[isSelected(index) ? -20 : -16, 0]}
-          style={{ zIndex: isSelected(index) ? 4 : 3 }}
+          // Center the circle on the stop. Its size depends on the tone.
+          offset={[-radius[toneOf(index)], 0]}
+          style={{ zIndex: toneOf(index) === "muted" ? 2 : 4 }}
         >
           <StopMarker
             day={index + 1}
             {...(!crowded.has(`stop-${index}`) && { name: stage.end.name })}
-            selected={isSelected(index)}
+            tone={toneOf(index)}
             aria-label={t("map.selectStage", {
               day: index + 1,
               place: stage.end.name,

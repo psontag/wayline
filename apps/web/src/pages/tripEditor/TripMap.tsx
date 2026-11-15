@@ -14,6 +14,7 @@ import {
   PlacePin,
   PointMenu,
   PreviewLabel,
+  type RouteColor,
   useFormat,
   useThemeTokens,
   ViaActions,
@@ -67,17 +68,27 @@ const SPOT_OFFSET: Record<SpotAnchor, [number, number]> = {
   "bottom-right": [-8, -8],
 };
 
+/** Where a choice ends the day, if not at the stop. */
 export type MapAlternative = {
+  /** The choice's id. */
+  id: string;
   place: Place;
   label: string;
   /** Places to sleep there, if known. */
   beds?: number;
+  color?: RouteColor;
 };
 
-export type StopPreview = {
-  name: string;
-  /** Missing until the choice is routed. */
-  line?: LonLat[];
+// Stable, so the memo of the map data keeps.
+const NO_CHOICES: MapChoice[] = [];
+
+/** Another stop or another way for the selected day, as it would be. */
+export type MapChoice = {
+  id: string;
+  /** The same as its swatch in the table. */
+  color: RouteColor;
+  line: LonLat[];
+  /** The next day. Missing when it stays, as for a way. */
   nextLine?: LonLat[];
 };
 
@@ -89,13 +100,15 @@ export type TripMapProps = {
   onSelect: (index: number) => void;
   /** Day under the pointer in the day list. */
   hovered?: number;
-  /** Other towns for the selected stop. */
+  /** Other towns the selected day can end in. */
   alternatives?: MapAlternative[];
-  onPickAlternative?: (place: Place) => void;
-  /** Called with the name of the stop choice under the pointer. */
-  onHoverAlternative?: (name: string | undefined) => void;
-  /** The hovered stop choice: the day and the next day as they would be. */
-  stopPreview?: StopPreview;
+  /** Called with the id of the choice. */
+  onPickAlternative?: (id: string) => void;
+  onHoverAlternative?: (id: string | undefined) => void;
+  /** Other routes for the selected day, each in its color. */
+  choices?: MapChoice[];
+  /** The choice to show strong, with the next day, e.g. a hovered one. */
+  hoveredChoice?: string;
   /** Hotels near the end stop of the selected day. */
   hotels?: MapHotel[];
   selectedHotelId?: string;
@@ -159,7 +172,8 @@ export function TripMap({
   alternatives = [],
   onPickAlternative,
   onHoverAlternative,
-  stopPreview,
+  choices = NO_CHOICES,
+  hoveredChoice,
   hotels = [],
   selectedHotelId,
   onSelectHotel,
@@ -187,9 +201,11 @@ export function TripMap({
     [trip.stages],
   );
 
-  const previewLine = stopPreview?.line;
-  const previewNext = stopPreview?.nextLine;
-  const previewing = !overview && !!previewLine;
+  const shown = overview
+    ? undefined
+    : choices.find((c) => c.id === hoveredChoice);
+  const previewing = !!shown;
+  const previewsNext = !!shown?.nextLine;
 
   const data = useMemo<FeatureCollection<LineString>>(
     () => ({
@@ -203,8 +219,10 @@ export function TripMap({
             ? hovered === undefined || hovered === index
             : index === selected && !previewing,
           hovered: index === hovered,
-          // The route a previewed stop would replace.
-          dim: previewing && (index === selected || index === selected + 1),
+          // The route a previewed choice would replace.
+          dim:
+            previewing &&
+            (index === selected || (previewsNext && index === selected + 1)),
         },
         geometry: { type: "LineString", coordinates },
       })),
@@ -215,43 +233,54 @@ export function TripMap({
       hovered,
       overview,
       previewing,
+      previewsNext,
       tokens.stageA,
       tokens.stageB,
     ],
   );
 
-  const stopPreviewData = useMemo<FeatureCollection<LineString>>(() => {
-    const parts = previewing
+  const choicesData = useMemo<FeatureCollection<LineString>>(
+    () => ({
+      type: "FeatureCollection",
+      features: overview
+        ? []
+        : choices.flatMap(({ id, color, line }) =>
+            id === hoveredChoice || line.length < 2
+              ? []
+              : [
+                  {
+                    type: "Feature",
+                    properties: { color: tokens[color] },
+                    geometry: { type: "LineString", coordinates: line },
+                  },
+                ],
+          ),
+    }),
+    [overview, choices, hoveredChoice, tokens],
+  );
+
+  const choicePreviewData = useMemo<FeatureCollection<LineString>>(() => {
+    const parts = shown
       ? [
-          { line: previewLine, next: false, index: selected },
-          { line: previewNext, next: true, index: selected + 1 },
+          { line: shown.line, next: false },
+          { line: shown.nextLine, next: true },
         ]
       : [];
     return {
       type: "FeatureCollection",
-      features: parts.flatMap(({ line, next, index }) =>
-        line && line.length > 1
+      features: parts.flatMap(({ line, next }) =>
+        shown && line && line.length > 1
           ? [
               {
                 type: "Feature",
-                properties: {
-                  next,
-                  color: index % 2 ? tokens.stageB : tokens.stageA,
-                },
+                properties: { next, color: tokens[shown.color] },
                 geometry: { type: "LineString", coordinates: line },
               },
             ]
           : [],
       ),
     };
-  }, [
-    previewing,
-    previewLine,
-    previewNext,
-    selected,
-    tokens.stageA,
-    tokens.stageB,
-  ]);
+  }, [shown, tokens]);
 
   // Legs of the selected stage, to drag the route.
   const legLines = useMemo(
@@ -412,6 +441,7 @@ export function TripMap({
     ...(overview ? lines.flat() : (lines[selected] ?? [])),
     ...alternatives.map(({ place }) => place.coord),
     ...hotels.map((hotel) => hotel.coord),
+    ...(overview ? [] : choices.flatMap((choice) => choice.line)),
   ];
 
   const first = trip.stages[0];
@@ -461,8 +491,9 @@ export function TripMap({
     <AppMap
       label={t("map.label", { day: selected + 1 })}
       fit={fit}
-      // Also when options show up or go, e.g. train stops for the last day.
-      fitKey={[fitDay, alternatives.length > 0]}
+      // Also when options show up or go, e.g. train stops for the last day
+      // or other ways once found.
+      fitKey={[fitDay, alternatives.length > 0, choices.length]}
       // A link with ?stage=n opens on that day, not on the whole trip.
       initialFit={overview ? lines.flat() : (lines[selected] ?? [])}
       padding={padding}
@@ -532,6 +563,19 @@ export function TripMap({
           }}
         />
       </Source>
+      {/* Below the days: where a choice follows the route, the route shows. */}
+      <Source id="choices" type="geojson" data={choicesData}>
+        <MapLayer
+          id="choice-line"
+          type="line"
+          layout={lineLayout}
+          paint={{
+            "line-color": ["get", "color"],
+            "line-width": 4,
+            "line-opacity": previewing ? 0.35 : 0.75,
+          }}
+        />
+      </Source>
       <Source id="stages" type="geojson" data={data}>
         <MapLayer
           id="stage-line"
@@ -544,7 +588,7 @@ export function TripMap({
             "line-opacity": [
               "case",
               ["get", "dim"],
-              0.2,
+              0.35,
               ["get", "hovered"],
               0.85,
               0.45,
@@ -576,9 +620,9 @@ export function TripMap({
           }}
         />
       </Source>
-      <Source id="stop-preview" type="geojson" data={stopPreviewData}>
+      <Source id="choice-preview" type="geojson" data={choicePreviewData}>
         <MapLayer
-          id="stop-preview-next"
+          id="choice-preview-next"
           type="line"
           filter={["==", ["get", "next"], true]}
           layout={lineLayout}
@@ -590,14 +634,14 @@ export function TripMap({
           }}
         />
         <MapLayer
-          id="stop-preview-casing"
+          id="choice-preview-casing"
           type="line"
           filter={["==", ["get", "next"], false]}
           layout={lineLayout}
           paint={{ "line-color": tokens.routeOutline, "line-width": 8 }}
         />
         <MapLayer
-          id="stop-preview-line"
+          id="choice-preview-line"
           type="line"
           filter={["==", ["get", "next"], false]}
           layout={lineLayout}
@@ -661,7 +705,7 @@ export function TripMap({
         alternatives={alternatives}
         onPickAlternative={onPickAlternative}
         {...(onHoverAlternative && { onHoverAlternative })}
-        {...(stopPreview && { previewStop: stopPreview.name })}
+        {...(shown && { previewStop: shown.id })}
         stations={stations}
         hotels={hotels}
         selectedHotelId={selectedHotelId}

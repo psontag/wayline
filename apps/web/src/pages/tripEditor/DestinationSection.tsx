@@ -1,101 +1,67 @@
 import type { Trip } from "@wayline/domain";
-import { Button, PanelSection, StopChoices } from "@wayline/ui";
+import { Button, PanelSection } from "@wayline/ui";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useStopOptions } from "./stopChoices";
-import type { StopHover } from "./StopPicker";
+import { DayChoiceTable, type DayChoicesState } from "./dayChoices";
 import type { TripEditorState } from "./useTripEditor";
 
-/** Last day: other train stops to end at, looked up on request. */
+/**
+ * Last day: other ways to the end, and other train stops to end at if the
+ * trip may end elsewhere, looked up on request.
+ */
 export function DestinationSection({
   trip,
   index,
   editor,
+  movable,
   finding,
   onFindingChange,
-  hover,
+  choices,
 }: {
   trip: Trip;
   index: number;
   editor: TripEditorState;
+  /** The trip may end at another train stop. */
+  movable: boolean;
   /** The train stops show here and on the map. */
   finding: boolean;
   onFindingChange: (finding: boolean) => void;
-  hover: StopHover;
+  choices: DayChoicesState;
 }) {
   const { t } = useTranslation("tripEditor");
   const end = trip.stages[index]?.end;
   if (!end) return null;
+  const noStops =
+    finding && !choices.choices.some((c) => c.kind === "stop" && !c.current);
   return (
     <PanelSection
       icon="stop"
-      title={t("section.destination")}
+      title={t("section.route")}
       summary={end.name}
       collapsible
     >
-      <div className="flex items-center gap-2">
-        <span className="flex-1 text-xs text-text-muted">
-          {t(finding ? "destination.pick" : "destination.hint")}
-        </span>
-        <Button
-          size="sm"
-          aria-expanded={finding}
-          onClick={() => onFindingChange(!finding)}
-        >
-          {!finding && <Search aria-hidden />}
-          {t(finding ? "destination.hide" : "destination.find")}
-        </Button>
-      </div>
-      {finding && (
-        <DestinationChoices
-          trip={trip}
-          index={index}
-          editor={editor}
-          onPicked={() => onFindingChange(false)}
-          hover={hover}
-        />
+      {movable && (
+        <div className="flex items-center gap-2">
+          <span className="flex-1 text-xs text-text-muted">
+            {t(finding ? "destination.pick" : "destination.hint")}
+          </span>
+          <Button
+            size="sm"
+            aria-expanded={finding}
+            onClick={() => onFindingChange(!finding)}
+          >
+            {!finding && <Search aria-hidden />}
+            {t(finding ? "destination.hide" : "destination.find")}
+          </Button>
+        </div>
       )}
+      <DayChoiceTable state={choices} disabled={!editor.canEdit} hotels={false}>
+        {noStops && (
+          <p className="px-1.5 text-xs text-text-muted">
+            {t("destination.none")}
+          </p>
+        )}
+      </DayChoiceTable>
     </PanelSection>
-  );
-}
-
-function DestinationChoices({
-  trip,
-  index,
-  editor,
-  onPicked,
-  hover,
-}: {
-  trip: Trip;
-  index: number;
-  editor: TripEditorState;
-  onPicked: () => void;
-  hover: StopHover;
-}) {
-  const { t } = useTranslation("tripEditor");
-  const options = useStopOptions(trip, index, true);
-  if (options.length < 2) {
-    return <p className="text-xs text-text-muted">{t("destination.none")}</p>;
-  }
-  return (
-    <StopChoices
-      choices={options.map(({ place, distance, ascent, current }) => ({
-        id: place.name,
-        name: place.name,
-        distance,
-        ascent,
-        current,
-      }))}
-      disabled={!editor.canEdit}
-      onSelect={(name) => {
-        const option = options.find((o) => o.place.name === name);
-        if (!option) return;
-        hover.onHover(undefined);
-        onPicked();
-        void editor.moveStop(index, option.place);
-      }}
-      onHover={hover.onHover}
-      {...(hover.name && { hoveredId: hover.name })}
-    />
   );
 }

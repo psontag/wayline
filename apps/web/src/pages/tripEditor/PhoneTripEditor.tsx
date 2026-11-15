@@ -4,7 +4,6 @@ import {
   localTimeToDate,
   tripStats,
   type LonLat,
-  type Place,
   type Trip,
 } from "@wayline/domain";
 import {
@@ -48,14 +47,17 @@ export type PhoneTripEditorProps = {
   overview: boolean;
   onSelect: (index: number) => void;
   alternatives: MapAlternative[];
-  onPickAlternative: (place: Place) => void;
+  onPickAlternative: (id: string) => void;
   hover?: LonLat;
   /** Trip or day level, the same as the desktop side panel. */
   panel: ReactNode;
   /** Elevation or weather, in the sheet. */
   chart: ReactNode;
   /** Layers the user can turn on and off, and the weather. */
-  mapLayers: Pick<TripMapProps, "stations" | "network" | "weather" | "layers">;
+  mapLayers: Pick<
+    TripMapProps,
+    "stations" | "network" | "weather" | "layers" | "choices" | "hoveredChoice"
+  >;
   /** Route edits of the selected stage. */
   route?: RouteEditing;
   /** The note after an edit. */

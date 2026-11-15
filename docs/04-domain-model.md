@@ -62,10 +62,7 @@ A snapshot: coordinates, name and type (`station`, `town`, `junction`, `hotel`, 
 
 ### Stop
 
-A place at a stage end, plus a `locked` flag.
-
-- Picking a stop or a hotel locks it.
-- Automatic re-cutting never moves locked stops.
+A place at a stage end, plus other places it could move to. The stored `locked` flag is not used.
 
 ### Leg
 
@@ -101,12 +98,13 @@ Derived when shown: dates, weather, booking links.
 |---|---|
 | Move or add a via point | The legs next to it and the stats of that stage. If the new route would ride out to a join and back along the old route, the join goes and the next leg is routed too. Up to 2 joins per side, never a via point, the start or the stop. |
 | Remove a via point | The two legs next to it become one |
-| Move a stop | Only the leg that passes the new stop, split at it. This and the next stage get new stats. The stop is locked. |
+| Move a stop | Only the leg that passes the new stop, split at it. This and the next stage get new stats. |
+| Take another route | The stage's legs and stats from the generator's day, via points dropped. To the same stop, hotel and next stage stay. To another town, the stop moves, the hotel is the generator's pick and the next stage rides the generator's path on. |
 | Revert a stage | Route, stop and hotel as proposed. The next stage starts at the proposed stop. |
-| Select a hotel | Stop moves to the hotel and is locked. Same as moving a stop. |
+| Select a hotel | Stop moves to the hotel. Same as moving a stop. |
 | Change start date | Dates and weather |
 | Change profile | Nothing until "Re-route" |
-| Add or remove a stage | Re-cuts unlocked stops only |
+| Add or remove a stage | Re-cuts the stops |
 
 After an edit, the UI shows downstream changes, e.g. "Day 3 now ends in Lichtenfels".
 

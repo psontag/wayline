@@ -16,9 +16,11 @@ import { queryKeys, useSaveTrip } from "../../data/queries";
 import { type ErrorAction, useErrorText, useFailedText } from "../../errors";
 import { useServices } from "../../data/ServicesProvider";
 import {
+  type ChoiceStages,
+  type HotelFn,
   moveStop,
   setHotel,
-  setLocked,
+  takeChoice,
   toggleSavedHotel,
   toggleTrain,
 } from "./edits";
@@ -167,6 +169,27 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     }
   };
 
+  const nearestHotel: HotelFn = async (coord) => {
+    const [nearest] = await lodging.hotelsNear(coord, {
+      limit: 1,
+      budget: trip.settings.hotelBudget,
+    });
+    return nearest && toHotel(nearest);
+  };
+
+  /** Note after a stop moved. */
+  const stopNote = (index: number, next: Trip) => {
+    const place = next.stages[index]?.end.name ?? "";
+    const after = next.stages[index + 1];
+    return after
+      ? t("note.nextStage", {
+          day: index + 2,
+          place,
+          distance: format.distance(after.stats.distance),
+        })
+      : t("note.lastStage", { day: index + 1, place });
+  };
+
   /** Note after a route change of one stage. */
   const routeNote = (index: number) => (next: Trip) =>
     t("note.routeChanged", {
@@ -215,9 +238,6 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     reverse() {
       if (canEdit) commit(reverseTrip(trip), t("note.reversed"));
     },
-    setLocked(index: number, locked: boolean) {
-      if (canEdit) commit(setLocked(trip, index, locked));
-    },
     /** Start of the ride window of a stage, "HH:MM". */
     setRideStart(index: number, start: string) {
       if (!canEdit) return;
@@ -232,6 +252,16 @@ export function useTripEditor(trip: Trip, readOnly = false) {
     setHotel(index: number, hotel: Hotel) {
       if (canEdit) commit(setHotel(trip, index, hotel));
     },
+    /** Rides the stage another way, e.g. one of its other ways. */
+    /** Takes a stop or way choice as it was previewed. */
+    takeChoice: (index: number, choice: ChoiceStages) =>
+      run(
+        () => takeChoice(trip, index, choice, nearestHotel),
+        (next) =>
+          next.stages[index]?.end.name === trip.stages[index]?.end.name
+            ? routeNote(index)(next)
+            : stopNote(index, next),
+      ),
     toggleTrain(train: Connection) {
       if (canEdit) commit(toggleTrain(trip, train));
     },
@@ -263,25 +293,9 @@ export function useTripEditor(trip: Trip, readOnly = false) {
         const next = await moveStop(trip, index, place, {
           route: (points: LonLat[]) =>
             routing.route(points, { profile: trip.settings.profile }),
-          nearestHotel: async (coord) => {
-            const [nearest] = await lodging.hotelsNear(coord, {
-              limit: 1,
-              budget: trip.settings.hotelBudget,
-            });
-            return nearest && toHotel(nearest);
-          },
+          nearestHotel,
         });
-        const after = next.stages[index + 1];
-        commit(
-          next,
-          after
-            ? t("note.nextStage", {
-                day: index + 2,
-                place: place.name,
-                distance: format.distance(after.stats.distance),
-              })
-            : t("note.lastStage", { day: index + 1, place: place.name }),
-        );
+        commit(next, stopNote(index, next));
       } catch (error) {
         failed(error);
       } finally {

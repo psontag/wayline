@@ -1,4 +1,4 @@
-import { ChevronRight, Lock } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../lib/cn";
@@ -25,7 +25,6 @@ export type DayCardProps = {
   dated?: boolean;
   /** Hotel at the stop. */
   hotel?: string;
-  locked?: boolean;
   changed?: boolean;
   /** Highlighted, e.g. while its route is hovered on the map. */
   highlighted?: boolean;
@@ -45,7 +44,6 @@ export function DayCard({
   weather,
   dated = false,
   hotel,
-  locked,
   changed,
   highlighted,
   onClick,
@@ -75,12 +73,6 @@ export function DayCard({
             {date
               ? t("dayCard.dayDate", { day: label, date })
               : t("dayCard.day", { day: label })}
-            {locked && (
-              <Badge>
-                <Lock className="mr-1 size-2.5" aria-hidden />
-                {t("stage.locked")}
-              </Badge>
-            )}
             {changed && <Badge tone="accent">{t("dayCard.changed")}</Badge>}
           </span>
           <span className="truncate text-md font-extrabold">{place}</span>

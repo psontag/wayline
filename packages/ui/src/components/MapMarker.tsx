@@ -14,6 +14,7 @@ import { useFormat } from "../format";
 import { cn } from "../lib/cn";
 import { Button, focusRing } from "./Button";
 import { SaveHotelButton } from "./HotelRow";
+import { type RouteColor, routeColorClasses } from "./RouteLabel";
 import { windSpeedColor } from "./MapLayerMenu";
 
 export type StopMarkerProps = Omit<
@@ -24,14 +25,24 @@ export type StopMarkerProps = Omit<
   day: number;
   /** Place name next to the marker. */
   name?: string;
+  /** Same as tone "end". */
   selected?: boolean;
+  /**
+   * Its part in the selected day: where it ends (large, in the route
+   * color), where it starts (outlined in the route color) or another day
+   * (small and faded). Default: no day selected.
+   */
+  tone?: StopTone;
 };
 
-/** Numbered stop on the map. The selected one is larger, in the route color. */
+export type StopTone = "default" | "start" | "end" | "muted";
+
+/** Numbered stop on the map: the end of that day. */
 export function StopMarker({
   day,
   name,
   selected = false,
+  tone = selected ? "end" : "default",
   className,
   ...props
 }: StopMarkerProps) {
@@ -40,6 +51,7 @@ export function StopMarker({
       type="button"
       className={cn(
         "flex items-center gap-1.5 rounded-full",
+        tone === "muted" && "opacity-70 hover:opacity-100",
         focusRing,
         className,
       )}
@@ -47,37 +59,67 @@ export function StopMarker({
     >
       <span
         className={cn(
-          "flex items-center justify-center rounded-full border-2 font-extrabold tabular-nums shadow-md",
-          selected
-            ? "size-10 border-route-outline bg-route-selected text-md text-on-route ring-4 ring-surface"
-            : "size-8 border-surface bg-marker text-sm text-surface",
+          "flex items-center justify-center rounded-full font-extrabold tabular-nums shadow-md",
+          {
+            end: "size-10 border-2 border-route-outline bg-route-selected text-md text-on-route ring-4 ring-surface",
+            start:
+              "size-8 border-4 border-route-selected bg-surface text-sm text-text",
+            default:
+              "size-8 border-2 border-surface bg-marker text-sm text-surface",
+            muted:
+              "size-6 border-2 border-surface bg-marker text-xs text-surface",
+          }[tone],
         )}
       >
         {day}
       </span>
-      {name && <MarkerLabel strong={selected}>{shortName(name)}</MarkerLabel>}
+      {name && (
+        <MarkerLabel strong={tone === "end"} muted={tone === "muted"}>
+          {shortName(name)}
+        </MarkerLabel>
+      )}
     </button>
   );
 }
 
-/** Start or end of a trip, with a train icon at stations. */
+/**
+ * Start or end of a trip, with a train icon at stations. Tones as for
+ * StopMarker: "start" and "end" when the selected day starts or ends here.
+ */
 export function EndpointMarker({
   name,
   station = false,
+  tone = "default",
 }: {
   name?: string;
   station?: boolean;
+  tone?: StopTone;
 }) {
+  const ofDay = tone === "start" || tone === "end";
   return (
-    <span className="flex items-center gap-1.5">
-      <span className="flex size-6 items-center justify-center rounded-md bg-marker text-surface shadow-sm">
+    <span
+      className={cn(
+        "flex items-center gap-1.5",
+        tone === "muted" && "opacity-70",
+      )}
+    >
+      <span
+        className={cn(
+          "flex size-6 items-center justify-center rounded-md bg-marker text-surface shadow-sm",
+          ofDay && "ring-4 ring-route-selected",
+        )}
+      >
         {station ? (
           <TrainFront className="size-3.5" aria-hidden />
         ) : (
           <span className="size-2 rounded-full bg-surface" />
         )}
       </span>
-      {name && <MarkerLabel>{shortName(name)}</MarkerLabel>}
+      {name && (
+        <MarkerLabel strong={tone === "end"} muted={tone === "muted"}>
+          {shortName(name)}
+        </MarkerLabel>
+      )}
     </span>
   );
 }
@@ -133,16 +175,50 @@ export type AlternativeMarkerProps = Omit<
   beds?: number;
   /** Only the circle; the label shows on hover or focus. For crowded maps. */
   compact?: boolean;
-  /** Being previewed: a solid circle and the full label. */
+  /** Being previewed: a larger circle and the full label. */
   selected?: boolean;
+  /**
+   * Color of the route that ends here. With it, the marker is a dashed
+   * stop marker in that color, filled while selected.
+   */
+  color?: RouteColor;
+  /** Day number the stop would have. Shown inside a colored marker. */
+  day?: number;
 };
 
-/** Another town that works as the stop. Dashed, so it reads as an option. */
+const routeBorderClasses: Record<RouteColor, string> = {
+  route1: "border-route-1",
+  route2: "border-route-2",
+  route3: "border-route-3",
+  route4: "border-route-4",
+  route5: "border-route-5",
+  route6: "border-route-6",
+  route7: "border-route-7",
+  route8: "border-route-8",
+};
+
+const routeTextClasses: Record<RouteColor, string> = {
+  route1: "text-route-1",
+  route2: "text-route-2",
+  route3: "text-route-3",
+  route4: "text-route-4",
+  route5: "text-route-5",
+  route6: "text-route-6",
+  route7: "text-route-7",
+  route8: "text-route-8",
+};
+
+/**
+ * Another town to end the day in. With a color, it reads as another
+ * version of the day's stop: the same number, dashed, in its route color.
+ */
 export function AlternativeMarker({
   label,
   beds,
   compact = false,
   selected = false,
+  color,
+  day,
   className,
   ...props
 }: AlternativeMarkerProps) {
@@ -160,12 +236,28 @@ export function AlternativeMarker({
     >
       <span
         className={cn(
-          "size-4 rounded-full border-2 transition-colors",
-          selected
-            ? "border-selected-border bg-accent"
-            : "border-dashed border-text-muted bg-surface/60 group-hover:border-text",
+          "flex items-center justify-center rounded-full border-2 font-extrabold tabular-nums transition-all",
+          color
+            ? cn(
+                "text-sm shadow-md",
+                routeBorderClasses[color],
+                selected
+                  ? cn(
+                      "size-8 text-on-route ring-4 ring-surface",
+                      routeColorClasses[color],
+                    )
+                  : cn(
+                      "size-7 border-dashed bg-surface",
+                      routeTextClasses[color],
+                    ),
+              )
+            : selected
+              ? "size-4 border-selected-border bg-accent"
+              : "size-4 border-dashed border-text-muted bg-surface/60 group-hover:border-text",
         )}
-      />
+      >
+        {color && day}
+      </span>
       <MarkerLabel
         muted={!selected}
         className={cn(

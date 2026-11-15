@@ -24,6 +24,7 @@ import { networkArea } from "../../components/NetworkLayer";
 import { useServices } from "../../data/ServicesProvider";
 import {
   routedStageIfEnding,
+  type ChoiceStages,
   type RoutedStageIfEnding,
   stageIfEndingAt,
   type StageIfEnding,
@@ -40,6 +41,8 @@ export type StopChoice = StageIfEnding & {
   /** Routed lines of this stage and the next. Missing until routed. */
   line?: LonLat[];
   nextLine?: LonLat[];
+  /** What picking it writes. Missing until routed. */
+  stages?: ChoiceStages;
   /** Missing while the region data loads. */
   beds?: Beds;
   size?: TownSize;

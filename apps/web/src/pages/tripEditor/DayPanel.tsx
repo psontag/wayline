@@ -20,7 +20,7 @@ import {
   useFormat,
   ViaRow,
 } from "@wayline/ui";
-import { ChevronLeft, Lock, LockOpen } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useWeather } from "../../data/queries";
@@ -30,7 +30,7 @@ import { HotelChoices } from "./HotelChoices";
 import { StageChange } from "./StageChange";
 import { dayWarnings, stageWind } from "./stageWeather";
 import { hasMovableDestination } from "./stopChoices";
-import { type StopHover, StopPicker } from "./StopPicker";
+import { DayChoiceTable, type DayChoicesState } from "./dayChoices";
 import { TrainOptions, useHasTrains } from "./TrainOptions";
 import type { TripEditorState } from "./useTripEditor";
 
@@ -46,7 +46,7 @@ export function DayPanel({
   onHighlightProposed,
   findingDestination,
   onFindingDestination,
-  stopHover,
+  choices,
   selectedVia,
   onSelectVia,
   chart,
@@ -67,8 +67,8 @@ export function DayPanel({
   /** Other train stops to end the last day at show here and on the map. */
   findingDestination: boolean;
   onFindingDestination: (finding: boolean) => void;
-  /** The stop choice under the pointer, previewed on the map. */
-  stopHover: StopHover;
+  /** Other stops and other ways, here and on the map. */
+  choices: DayChoicesState;
   /** Via point selected here and on the map. */
   selectedVia?: number;
   onSelectVia: (index: number | undefined) => void;
@@ -86,7 +86,6 @@ export function DayPanel({
     trip.startDate &&
     format.date(localTimeToDate(addDays(trip.startDate, index)));
   const { surface } = stage.stats;
-  const locked = stage.end.locked;
 
   return (
     <>
@@ -204,37 +203,15 @@ export function DayPanel({
       {!isLast && (
         <PanelSection
           icon="stop"
-          title={t("section.stop")}
-          summary={
-            locked
-              ? t("stop.summaryLocked", { place: stage.end.name })
-              : stage.end.name
-          }
+          title={t("section.route")}
+          summary={stage.end.name}
           collapsible
         >
           {!editor.readOnly && (
-            <div className="flex items-center gap-2">
-              <span className="flex-1 text-xs text-text-muted">
-                {t("stop.hint")}
-              </span>
-              <Button
-                size="sm"
-                aria-pressed={locked}
-                disabled={!editor.canEdit}
-                onClick={() => editor.setLocked(index, !locked)}
-              >
-                {locked ? <Lock aria-hidden /> : <LockOpen aria-hidden />}
-                {locked ? t("stage.locked") : t("stage.lock")}
-              </Button>
-            </div>
+            <p className="text-xs text-text-muted">{t("stop.hint")}</p>
           )}
           {!editor.readOnly && (
-            <StopPicker
-              trip={trip}
-              index={index}
-              editor={editor}
-              hover={stopHover}
-            />
+            <DayChoiceTable state={choices} disabled={!editor.canEdit} />
           )}
         </PanelSection>
       )}
@@ -249,14 +226,15 @@ export function DayPanel({
           <BookingLink trip={trip} index={index} />
         </PanelSection>
       )}
-      {isLast && !editor.readOnly && hasMovableDestination(trip) && (
+      {isLast && !editor.readOnly && (
         <DestinationSection
           trip={trip}
           index={index}
           editor={editor}
+          movable={hasMovableDestination(trip)}
           finding={findingDestination}
           onFindingChange={onFindingDestination}
-          hover={stopHover}
+          choices={choices}
         />
       )}
       {isLast && home && (

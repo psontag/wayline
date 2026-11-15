@@ -31,7 +31,6 @@
     "ridingTime": "Riding time"
   },
   "stage": {
-    "locked": "Locked",
     "temperatureRange": "{{min}}–{{max}}",
     "windWithSpeed": "{{wind}} · {{speed}}",
     "wind": {
@@ -116,7 +115,7 @@
     }
   },
   "stopChoices": {
-    "stop": "Stop",
+    "choice": "Choice",
     "today": "Today",
     "ascent": "Ascent",
     "tomorrow": "Tomorrow",
@@ -124,6 +123,7 @@
     "hotelsNote": "Hotels: places to sleep within {{radius}}.",
     "none": "–",
     "choose": "Stop in {{name}}",
+    "ride": "Ride {{name}}",
     "size": {
       "village": "Village",
       "town": "Town",
