@@ -56,7 +56,13 @@ export type PhoneTripEditorProps = {
   /** Layers the user can turn on and off, and the weather. */
   mapLayers: Pick<
     TripMapProps,
-    "stations" | "network" | "weather" | "layers" | "choices" | "hoveredChoice"
+    | "stations"
+    | "network"
+    | "weather"
+    | "layers"
+    | "choices"
+    | "hoveredChoice"
+    | "towns"
   >;
   /** Route edits of the selected stage. */
   route?: RouteEditing;

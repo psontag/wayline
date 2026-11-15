@@ -267,6 +267,67 @@ export function AlternativeMarker({
   );
 }
 
+export type TownMarkerProps = Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "children"
+> & {
+  name: string;
+  hotels: number;
+  /** Only the badge; the name shows on hover or focus. For crowded maps. */
+  compact?: boolean;
+  /** Being previewed. */
+  selected?: boolean;
+};
+
+/** A town with hotels the day could end in: a hotel badge and its name. */
+export function TownMarker({
+  name,
+  hotels,
+  compact = false,
+  selected = false,
+  className,
+  ...props
+}: TownMarkerProps) {
+  const { t } = useTranslation("ui");
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      className={cn(
+        "group flex items-center gap-1 rounded-full",
+        focusRing,
+        className,
+      )}
+      {...props}
+    >
+      <span
+        className={cn(
+          "flex h-6 items-center gap-1 rounded-full border-2 px-1.5 text-xs font-extrabold tabular-nums shadow-sm transition-colors",
+          selected
+            ? "border-selected-border bg-accent text-on-accent"
+            : "border-marker bg-surface text-text group-hover:border-selected-border",
+        )}
+      >
+        <BedDouble className="size-3.5" aria-hidden />
+        {hotels}
+        <span className="sr-only">
+          {t("marker.townHotels", { count: hotels })}
+        </span>
+      </span>
+      <MarkerLabel
+        muted={!selected}
+        className={cn(
+          compact &&
+            !selected &&
+            "hidden group-hover:inline group-focus-visible:inline",
+        )}
+      >
+        {name}
+      </MarkerLabel>
+    </button>
+  );
+}
+
 export type ViaMarkerProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   "children"

@@ -15,6 +15,7 @@ import {
   bedsNear,
   destinationStations,
   hasMovableDestination,
+  hotelTowns,
   nearestTown,
   placeIndex,
   routeNear,
@@ -163,5 +164,41 @@ describe("nearestTown", () => {
 
   it("finds nothing beyond the limit", () => {
     expect(nearestTown(index.towns, [0, 0], 5)).toBeUndefined();
+  });
+});
+
+describe("hotelTowns", () => {
+  const found = hotelTowns(index, stage!);
+
+  it("lists towns with more than 8 hotels within 50 km of the stop", () => {
+    expect(found.length).toBeGreaterThan(0);
+    for (const town of found) {
+      expect(town.hotels).toBeGreaterThan(8);
+      expect(town.hotels).toBe(bedsNear(index.hotels, town.place.coord).total);
+      expect(distanceKm(town.place.coord, stage!.end.coord)).toBeLessThan(50);
+      expect(
+        distanceKm(town.place.coord, stage!.start.coord),
+      ).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  it("keeps towns apart, the one with more hotels first", () => {
+    expect(found.map((t) => t.hotels)).toEqual(
+      [...found].map((t) => t.hotels).sort((a, b) => b - a),
+    );
+    for (const [i, town] of found.entries()) {
+      expect(distanceKm(town.place.coord, stage!.end.coord)).toBeGreaterThan(3);
+      for (const other of found.slice(i + 1)) {
+        expect(distanceKm(town.place.coord, other.place.coord)).toBeGreaterThan(
+          3,
+        );
+      }
+    }
+  });
+
+  it("leaves out towns at taken places", () => {
+    const [first] = found;
+    const rest = hotelTowns(index, stage!, [first!.place.coord]);
+    expect(rest.some((t) => t.id === first!.id)).toBe(false);
   });
 });

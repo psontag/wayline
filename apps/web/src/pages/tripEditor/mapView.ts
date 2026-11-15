@@ -9,6 +9,7 @@ export type MapLayers = Record<MapLayerKind, boolean>;
 const allOn: MapLayers = {
   network: true,
   hotels: true,
+  towns: true,
   stations: true,
   rain: true,
   wind: true,
