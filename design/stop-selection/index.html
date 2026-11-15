@@ -1,0 +1,518 @@
+<title>Wayline stop selection</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one reading column for text; each option is a browser frame (map + side panel) with pros and cons beside it. Wayline tokens. */
+:root{
+  --bg:#F6F7F9;--surface:#FFFFFF;--text:#15181D;--muted:#5A616C;--border:#E1E4EA;
+  --accent:#FFB088;--on-accent:#3B1503;--selected:#FFEDE3;--sel-border:#B4532A;
+  --success:#2F9E6B;--danger:#C2412D;
+  --route:#FF9A73;--casing:#B4532A;--ghost:#9AA1AC;--stage-b:#8F7CC9;
+  --r1:#FF9A73;--r2:#3FB37A;--r3:#4F9FF0;--r4:#A685EC;
+  --map:#EEF1EC;--water:#BFD6EA;--forest:#DCE7D8;--road:#E2E5EA;--band:#FFB088;
+  --add-bg:#E6F4EC;--add-fg:#1F6B47;--rem-bg:#FBE9E6;--rem-fg:#9A2F1F;
+  --font:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101216;--surface:#171A20;--text:#EDEFF3;--muted:#A0A7B3;--border:#2A2F38;
+  --accent:#FFB088;--on-accent:#2A0F02;--selected:#2D211B;--sel-border:#FFB088;
+  --success:#5CCB97;--danger:#FF8F7D;
+  --route:#FFA67F;--casing:#101216;--ghost:#5D6470;--stage-b:#A99BDB;
+  --r1:#FFA67F;--r2:#62D197;--r3:#6DB4FF;--r4:#BB9EFF;
+  --map:#1A1E22;--water:#1C3046;--forest:#1F2A22;--road:#2A2F38;--band:#FFB088;
+  --add-bg:#16301F;--add-fg:#8FE0B5;--rem-bg:#341B17;--rem-fg:#FFB0A3;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101216;--surface:#171A20;--text:#EDEFF3;--muted:#A0A7B3;--border:#2A2F38;
+  --accent:#FFB088;--on-accent:#2A0F02;--selected:#2D211B;--sel-border:#FFB088;
+  --success:#5CCB97;--danger:#FF8F7D;
+  --route:#FFA67F;--casing:#101216;--ghost:#5D6470;--stage-b:#A99BDB;
+  --r1:#FFA67F;--r2:#62D197;--r3:#6DB4FF;--r4:#BB9EFF;
+  --map:#1A1E22;--water:#1C3046;--forest:#1F2A22;--road:#2A2F38;--band:#FFB088;
+  --add-bg:#16301F;--add-fg:#8FE0B5;--rem-bg:#341B17;--rem-fg:#FFB0A3;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 64px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:64px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.15;font-weight:800;letter-spacing:-0.02em;margin:0;text-wrap:balance}
+h2{font-size:24px;font-weight:800;letter-spacing:-0.01em;margin:0;text-wrap:balance;line-height:1.25}
+h3{font-size:15px;font-weight:700;margin:0}
+p,ul{margin:0}
+ul{padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.lede{font-size:17px;color:var(--muted)}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sel-border)}
+.muted{color:var(--muted)}
+section{display:flex;flex-direction:column;gap:20px}
+.opt{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:860px){.opt{grid-template-columns:1fr}}
+.browser{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+.bar{height:26px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid var(--border);background:var(--bg)}
+.bar i{width:8px;height:8px;border-radius:50%;background:var(--border);display:block}
+.split{display:grid;grid-template-columns:1fr 36%}
+.split > svg{display:block;width:100%;height:auto;background:var(--map)}
+@media (max-width:520px){.split{grid-template-columns:1fr}.panel{border-left:0;border-top:1px solid var(--border)}}
+.panel{border-left:1px solid var(--border);padding:10px;font-size:11px;display:flex;flex-direction:column;gap:8px;min-width:0;line-height:1.35}
+.ph{font-size:12px;font-weight:800}
+.sec{display:flex;gap:6px;align-items:center;font-weight:700;font-size:11px}
+.sec .i{width:16px;height:16px;border-radius:5px;background:var(--selected);flex:none}
+.sec .s{margin-left:auto;color:var(--muted);font-weight:500}
+.row{display:flex;align-items:center;gap:6px;padding:5px 6px;border:1px solid var(--border);border-radius:6px}
+.row.on{background:var(--selected);border-color:var(--sel-border)}
+.row .nm{flex:1;min-width:0}
+.row .nm small{display:block;color:var(--muted);font-size:10px}
+.sw{width:10px;height:10px;border-radius:3px;flex:none}
+.d{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;white-space:nowrap}
+.d.up{background:var(--rem-bg);color:var(--rem-fg)} .d.dn{background:var(--add-bg);color:var(--add-fg)}
+.btn{align-self:flex-start;background:var(--accent);color:var(--on-accent);font-weight:700;border-radius:6px;padding:4px 10px;font-size:11px}
+.btn.sec2{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.note{font-size:10px;color:var(--muted)}
+.ripple{display:flex;gap:3px;align-items:flex-end;height:34px}
+.ripple div{flex:1;border-radius:3px 3px 0 0;background:var(--border);position:relative}
+.ripple div.ch{background:var(--accent)}
+.ripple div span{position:absolute;bottom:-14px;left:0;right:0;text-align:center;font-size:9px;color:var(--muted)}
+.pc{display:flex;flex-direction:column;gap:14px;font-size:14px}
+.pc h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.pc .pros li::marker{content:"+  ";color:var(--success);font-weight:800}
+.pc .cons li::marker{content:"–  ";color:var(--danger);font-weight:800}
+.cost{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--border)}
+.cost b{font-weight:700}
+.tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:700;white-space:nowrap}
+.dots{letter-spacing:2px;color:var(--sel-border);font-weight:800}
+.rec{border:1px solid var(--sel-border);background:var(--selected);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;max-width:80ch}
+.gaps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+.gap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.gap .tag{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.phones{display:flex;gap:20px;flex-wrap:wrap}
+.phone{border:1px solid var(--border);border-radius:28px;padding:6px;background:var(--surface);width:240px;max-width:100%}
+.phone .scr{border-radius:22px;overflow:hidden;background:var(--map);display:flex;flex-direction:column}
+.phone svg{display:block;width:100%;height:auto}
+.sheet{background:var(--surface);border-top:1px solid var(--border);padding:8px 10px 12px;font-size:11px;display:flex;flex-direction:column;gap:6px}
+.grab{width:32px;height:4px;border-radius:2px;background:var(--border);align-self:center}
+.cards{display:flex;gap:6px;overflow:hidden}
+.card{flex:none;width:130px;border:1px solid var(--border);border-radius:8px;padding:6px 8px;line-height:1.3}
+.card.on{border-color:var(--sel-border);background:var(--selected)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:22px;height:0;border-top:3px solid}
+/* map text */
+.t{font-family:var(--font);font-size:9px;fill:var(--muted);font-weight:600}
+.tb{font-family:var(--font);font-size:10px;fill:var(--text);font-weight:800}
+.beds{font-family:var(--font);font-size:8px;fill:var(--on-accent);font-weight:800}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="base" viewBox="0 0 440 250">
+      <rect width="440" height="250" fill="var(--map)"/>
+      <path d="M300,10 C340,0 420,10 440,30 L440,110 C400,120 360,95 330,95 C300,90 280,40 300,10Z" fill="var(--forest)"/>
+      <path d="M230,215 C260,200 330,205 350,230 L350,250 L220,250Z" fill="var(--forest)"/>
+      <path d="M0,60 C30,40 60,30 80,45 C90,70 50,100 0,105Z" fill="var(--forest)"/>
+      <path d="M440,168 C400,180 330,150 280,150 S220,150 210,147 S170,178 120,188 S60,207 0,217" fill="none" stroke="var(--water)" stroke-width="4"/>
+      <path d="M232,40 C215,90 170,115 150,150 S110,188 80,200" fill="none" stroke="var(--water)" stroke-width="2.5"/>
+      <path d="M0,150 L440,120 M60,250 L200,0 M150,250 L420,0" stroke="var(--road)" stroke-width="2" fill="none"/>
+      <g fill="var(--muted)">
+        <circle cx="120" cy="95" r="2.5"/><circle cx="165" cy="40" r="2.5"/><circle cx="210" cy="140" r="2.5"/>
+        <circle cx="165" cy="170" r="2.5"/><circle cx="255" cy="190" r="2.5"/><circle cx="330" cy="65" r="2.5"/>
+      </g>
+      <text class="t" x="126" y="92">Ebern</text>
+      <text class="t" x="171" y="37">Seßlach</text>
+      <text class="t" x="216" y="137">Lichtenfels</text>
+      <text class="t" x="128" y="166">Staffelstein</text>
+      <text class="t" x="261" y="187">Weismain</text>
+      <text class="t" x="336" y="62">Kronach</text>
+    </symbol>
+    <symbol id="ends" viewBox="0 0 440 250">
+      <circle cx="40" cy="200" r="6" fill="var(--surface)" stroke="var(--text)" stroke-width="2.5"/>
+      <text class="tb" x="20" y="222">Bamberg</text>
+      <circle cx="390" cy="175" r="6" fill="var(--surface)" stroke="var(--text)" stroke-width="2.5"/>
+      <text class="tb" x="368" y="197">Kulmbach</text>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<header class="prose">
+  <div class="eyebrow">Proposal · Trip editor</div>
+  <h1>Choosing where a day ends, and which way it goes</h1>
+  <p class="lede">Today the Stop section lists other towns on the same line. You pick one blind: the map does not show the new route, and every choice follows the path you already have. Below are five ways to fix that, from a small change to a bigger one.</p>
+  <div class="legend">
+    <span><i style="border-color:var(--route)"></i>Day being edited</span>
+    <span><i style="border-color:var(--stage-b);border-top-style:dashed"></i>Next day</span>
+    <span><i style="border-color:var(--ghost);border-top-style:dotted"></i>Current route</span>
+  </div>
+  <p class="muted" style="font-size:13px">Example: day 2, Bamberg to Coburg, 72 km. Day 3 goes on to Kulmbach. Maps are sketches, numbers are made up.</p>
+</header>
+
+<!-- A -->
+<section>
+  <div class="prose">
+    <div class="eyebrow">Option A</div>
+    <h2>Preview before you pick</h2>
+    <p>Same list of stops. Hover or tap a stop and the map draws this day and the next day as they would be. The list shows the change in km and climbing for both days. Apply or Cancel.</p>
+  </div>
+  <div class="opt">
+    <div class="browser"><div class="bar"><i></i><i></i><i></i></div>
+      <div class="split">
+        <svg viewBox="0 0 440 250" role="img" aria-label="Map: the day ending in Ebern instead of Coburg, with the next day re-routed through Lichtenfels">
+          <use href="#base"/>
+          <path d="M40,200 C70,170 95,120 120,95 S190,60 225,70" fill="none" stroke="var(--ghost)" stroke-width="3" stroke-dasharray="1 5" stroke-linecap="round"/>
+          <path d="M225,70 C270,90 300,110 320,130 S370,165 390,175" fill="none" stroke="var(--ghost)" stroke-width="3" stroke-dasharray="1 5" stroke-linecap="round"/>
+          <path d="M120,95 C170,110 200,135 210,140 S300,160 390,175" fill="none" stroke="var(--stage-b)" stroke-width="4" stroke-dasharray="7 5"/>
+          <path d="M40,200 C70,170 95,120 120,95" fill="none" stroke="var(--casing)" stroke-width="7"/>
+          <path d="M40,200 C70,170 95,120 120,95" fill="none" stroke="var(--route)" stroke-width="4"/>
+          <circle cx="225" cy="70" r="4" fill="var(--surface)" stroke="var(--ghost)" stroke-width="2"/>
+          <text class="t" x="232" y="72">Coburg</text>
+          <circle cx="120" cy="95" r="7" fill="var(--accent)" stroke="var(--casing)" stroke-width="2"/>
+          <use href="#ends"/>
+        </svg>
+        <div class="panel">
+          <div class="ph">Day 2 · Sat 14 Jun</div>
+          <div class="sec"><span class="i"></span>Stop<span class="s">Coburg</span></div>
+          <div class="row on"><div class="nm">Ebern<small>48 km · 7 hotels</small></div><span class="d dn">−24</span></div>
+          <div class="row"><div class="nm">Coburg<small>72 km · 21 hotels · now</small></div></div>
+          <div class="row"><div class="nm">Rödental<small>81 km · 4 hotels</small></div><span class="d up">+9</span></div>
+          <div class="note">Day 3 then: 104 km, +31 km, via Lichtenfels</div>
+          <div class="btns"><span class="btn">End in Ebern</span><span class="btn sec2">Cancel</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pc">
+      <div><h3>Pros</h3><ul class="pros">
+        <li>Small change. The routes are already computed for the km numbers (<code>useStopOptions</code>), they just aren't drawn.</li>
+        <li>Shows what happens to the next day, which is often the real cost of a choice.</li>
+        <li>Works the same on phone: tap a row, see the map, confirm.</li>
+      </ul></div>
+      <div><h3>Cons</h3><ul class="cons">
+        <li>Still only towns on the current line. Doesn't solve "I want to go a different way".</li>
+        <li>Adds a confirm step where today one tap is enough.</li>
+      </ul></div>
+      <div class="cost"><b>Effort:</b> small. Preview layer on the map plus deltas in <code>StopChoices</code>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- B -->
+<section>
+  <div class="prose">
+    <div class="eyebrow">Option B</div>
+    <h2>Sleep anywhere in reach</h2>
+    <p>Instead of towns on the line, the map shades the band you can reach today, from about 15 % shorter to 20 % longer than your target. Every town with beds in that band is a choice, also off the current route. Pick one and the day and the next day are routed fresh.</p>
+  </div>
+  <div class="opt">
+    <div class="browser"><div class="bar"><i></i><i></i><i></i></div>
+      <div class="split">
+        <svg viewBox="0 0 440 250" role="img" aria-label="Map: a shaded band of reachable distance around Bamberg with towns marked by hotel count; Lichtenfels selected">
+          <use href="#base"/>
+          <defs><clipPath id="clipB"><rect width="440" height="250"/></clipPath></defs>
+          <circle cx="40" cy="200" r="198" fill="none" stroke="var(--band)" stroke-opacity=".22" stroke-width="66" clip-path="url(#clipB)"/>
+          <path d="M40,200 C70,170 95,120 120,95 S190,60 225,70" fill="none" stroke="var(--ghost)" stroke-width="3" stroke-dasharray="1 5" stroke-linecap="round"/>
+          <path d="M210,140 C260,150 300,155 330,160 S370,170 390,175" fill="none" stroke="var(--stage-b)" stroke-width="4" stroke-dasharray="7 5"/>
+          <path d="M40,200 C90,190 140,180 165,170 S200,145 210,140" fill="none" stroke="var(--casing)" stroke-width="7"/>
+          <path d="M40,200 C90,190 140,180 165,170 S200,145 210,140" fill="none" stroke="var(--route)" stroke-width="4"/>
+          <g>
+            <circle cx="165" cy="40" r="7" fill="var(--accent)" opacity=".75"/><text class="beds" x="162" y="43">3</text>
+            <circle cx="225" cy="70" r="10" fill="var(--accent)" opacity=".75"/><text class="beds" x="219" y="73">21</text>
+            <text class="t" x="237" y="73">Coburg</text>
+            <circle cx="255" cy="190" r="7" fill="var(--accent)" opacity=".75"/><text class="beds" x="252" y="193">4</text>
+            <circle cx="210" cy="140" r="10" fill="var(--accent)" stroke="var(--casing)" stroke-width="2"/><text class="beds" x="204" y="143">12</text>
+          </g>
+          <use href="#ends"/>
+        </svg>
+        <div class="panel">
+          <div class="ph">Day 2 · Sat 14 Jun</div>
+          <div class="sec"><span class="i"></span>Where to sleep<span class="s">60–85 km</span></div>
+          <div class="row on"><div class="nm">Lichtenfels<small>69 km · 310 m · 12 hotels</small></div></div>
+          <div class="row"><div class="nm">Coburg<small>72 km · 540 m · 21 hotels · now</small></div></div>
+          <div class="row"><div class="nm">Weismain<small>78 km · 620 m · 4 hotels</small></div></div>
+          <div class="row"><div class="nm">Seßlach<small>66 km · 450 m · 3 hotels</small></div></div>
+          <div class="note">Day 3 then: 58 km, −14 km</div>
+          <div class="btns"><span class="btn">End in Lichtenfels</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pc">
+      <div><h3>Pros</h3><ul class="pros">
+        <li>Matches how you think on tour: "where can I sleep tonight?"</li>
+        <li>Big changes become one click: a stop off the line pulls the whole day onto a new path.</li>
+        <li>Bed counts on the map make "is this a real town" obvious.</li>
+      </ul></div>
+      <div><h3>Cons</h3><ul class="cons">
+        <li>Needs a route per candidate. 5–10 router calls per open day; fine on a dev box, slower on BRouter.</li>
+        <li>Changes two days at once, and may wreck day 3. Needs the preview from A to be safe.</li>
+        <li>The band is distance as the crow flies; real km can fall outside. Rows show routed km once known.</li>
+        <li>The route to the new stop is "cheapest", not your trip's flavour (scenic, hilly), unless we route with the trip's profile.</li>
+      </ul></div>
+      <div class="cost"><b>Effort:</b> medium. Candidate search from the place index, routing, band layer.</div>
+    </div>
+  </div>
+</section>
+
+<!-- C -->
+<section>
+  <div class="prose">
+    <div class="eyebrow">Option C</div>
+    <h2>Other ways to the same stop</h2>
+    <p>Keep the stop. A "Other ways" button runs the generator for just this day and shows up to three routes that really differ, drawn like the proposals map. Each card says what it is: valley, hills, gravel, along a signed route.</p>
+  </div>
+  <div class="opt">
+    <div class="browser"><div class="bar"><i></i><i></i><i></i></div>
+      <div class="split">
+        <svg viewBox="0 0 440 250" role="img" aria-label="Map: three different routes from Bamberg to Coburg, via Ebern, via Staffelstein and Lichtenfels, and via Seßlach">
+          <use href="#base"/>
+          <path d="M225,70 C270,90 300,110 320,130 S370,165 390,175" fill="none" stroke="var(--stage-b)" stroke-width="3" stroke-dasharray="7 5" opacity=".6"/>
+          <path d="M40,200 C50,140 100,60 165,40 S210,55 225,70" fill="none" stroke="var(--r3)" stroke-width="4" opacity=".55"/>
+          <path d="M40,200 C90,190 140,180 165,170 S200,145 210,140 S220,95 225,70" fill="none" stroke="var(--r2)" stroke-width="4" opacity=".55"/>
+          <path d="M40,200 C70,170 95,120 120,95 S190,60 225,70" fill="none" stroke="var(--casing)" stroke-width="7"/>
+          <path d="M40,200 C70,170 95,120 120,95 S190,60 225,70" fill="none" stroke="var(--r1)" stroke-width="4"/>
+          <g font-family="var(--font)" font-size="9" font-weight="800">
+            <circle cx="88" cy="130" r="8" fill="var(--r1)"/><text x="85" y="133" fill="var(--on-accent)">1</text>
+            <circle cx="120" cy="183" r="8" fill="var(--r2)"/><text x="117" y="186" fill="var(--on-accent)">2</text>
+            <circle cx="72" cy="105" r="8" fill="var(--r3)"/><text x="69" y="108" fill="var(--on-accent)">3</text>
+          </g>
+          <circle cx="225" cy="70" r="6" fill="var(--accent)" stroke="var(--casing)" stroke-width="2"/>
+          <text class="tb" x="234" y="72">Coburg</text>
+          <use href="#ends"/>
+        </svg>
+        <div class="panel">
+          <div class="ph">Day 2 · Bamberg → Coburg</div>
+          <div class="sec"><span class="i"></span>Other ways<span class="s">3</span></div>
+          <div class="row on"><span class="sw" style="background:var(--r1)"></span><div class="nm">Now · via Ebern<small>72 km · 540 m · quiet</small></div></div>
+          <div class="row"><span class="sw" style="background:var(--r2)"></span><div class="nm">Main valley<small>79 km · 230 m · flat, river</small></div><span class="d up">+7</span></div>
+          <div class="row"><span class="sw" style="background:var(--r3)"></span><div class="nm">Haßberge<small>84 km · 890 m · forest, 30 % gravel</small></div><span class="d up">+12</span></div>
+          <div class="note">Stop and day 3 stay the same.</div>
+          <div class="btns"><span class="btn">Use Main valley</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pc">
+      <div><h3>Pros</h3><ul class="pros">
+        <li>Answers "different path" directly. Choices differ by corridor, not by a few hundred metres.</li>
+        <li>Reuses the generator's flavours, corridor check and tags, and the proposals look people already know.</li>
+        <li>Nothing else in the trip moves. Low risk.</li>
+      </ul></div>
+      <div><h3>Cons</h3><ul class="cons">
+        <li>The stop is fixed, so a day can't grow or shrink much.</li>
+        <li>Needs the generator to run for one stage (start and end given, no cutting). Some work in <code>packages/generator</code>.</li>
+        <li>In thin networks you get one or two ways, or none. Needs an empty state.</li>
+      </ul></div>
+      <div class="cost"><b>Effort:</b> medium. Stage-only generator entry, a panel section, the proposals map layer.</div>
+    </div>
+  </div>
+</section>
+
+<!-- D -->
+<section>
+  <div class="prose">
+    <div class="eyebrow">Option D</div>
+    <h2>Change this day: where and which way</h2>
+    <p>B and C together in one "Change day" mode. Step 1: pick a stop in the band. Step 2: pick one of the ways there. A strip of day bars shows what the change does to the rest of the trip before you apply it.</p>
+  </div>
+  <div class="opt">
+    <div class="browser"><div class="bar"><i></i><i></i><i></i></div>
+      <div class="split">
+        <svg viewBox="0 0 440 250" role="img" aria-label="Map: reach band with Coburg selected and two ways there">
+          <use href="#base"/>
+          <defs><clipPath id="clipD"><rect width="440" height="250"/></clipPath></defs>
+          <circle cx="40" cy="200" r="198" fill="none" stroke="var(--band)" stroke-opacity=".16" stroke-width="66" clip-path="url(#clipD)"/>
+          <path d="M225,70 C270,90 300,110 320,130 S370,165 390,175" fill="none" stroke="var(--stage-b)" stroke-width="4" stroke-dasharray="7 5"/>
+          <path d="M40,200 C50,140 100,60 165,40 S210,55 225,70" fill="none" stroke="var(--r3)" stroke-width="4" opacity=".55"/>
+          <path d="M40,200 C70,170 95,120 120,95 S190,60 225,70" fill="none" stroke="var(--casing)" stroke-width="7"/>
+          <path d="M40,200 C70,170 95,120 120,95 S190,60 225,70" fill="none" stroke="var(--r1)" stroke-width="4"/>
+          <circle cx="165" cy="40" r="6" fill="var(--accent)" opacity=".5"/>
+          <circle cx="210" cy="140" r="8" fill="var(--accent)" opacity=".5"/>
+          <circle cx="255" cy="190" r="6" fill="var(--accent)" opacity=".5"/>
+          <circle cx="225" cy="70" r="9" fill="var(--accent)" stroke="var(--casing)" stroke-width="2"/>
+          <text class="tb" x="237" y="73">Coburg</text>
+          <use href="#ends"/>
+        </svg>
+        <div class="panel">
+          <div class="ph">Change day 2</div>
+          <div class="sec"><span class="i"></span>1 · Stop<span class="s">Coburg</span></div>
+          <div class="sec"><span class="i"></span>2 · Way<span class="s">2 found</span></div>
+          <div class="row on"><span class="sw" style="background:var(--r1)"></span><div class="nm">via Ebern<small>72 km · 540 m</small></div></div>
+          <div class="row"><span class="sw" style="background:var(--r3)"></span><div class="nm">via Seßlach<small>77 km · 610 m · forest</small></div></div>
+          <div class="sec"><span class="i"></span>Trip<span class="s">km per day</span></div>
+          <div class="ripple"><div style="height:60%"><span>1</span></div><div class="ch" style="height:72%"><span>2</span></div><div class="ch" style="height:52%"><span>3</span></div><div style="height:66%"><span>4</span></div><div style="height:58%"><span>5</span></div></div>
+          <div class="btns" style="margin-top:12px"><span class="btn">Apply</span><span class="btn sec2">Cancel</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pc">
+      <div><h3>Pros</h3><ul class="pros">
+        <li>One place for every mid-size change: shorter, longer, other town, other path.</li>
+        <li>The trip strip makes knock-on effects visible before you commit.</li>
+        <li>Via points stay for fine tuning; this covers the big moves.</li>
+      </ul></div>
+      <div><h3>Cons</h3><ul class="cons">
+        <li>Most UI and most compute. A second mode in the editor to learn.</li>
+        <li>Two steps on a phone bottom sheet get cramped.</li>
+        <li>Only worth it once A, B and C each work on their own.</li>
+      </ul></div>
+      <div class="cost"><b>Effort:</b> large. Best reached by building A, then C, then B, and merging them.</div>
+    </div>
+  </div>
+</section>
+
+<!-- E -->
+<section>
+  <div class="prose">
+    <div class="eyebrow">Option E</div>
+    <h2>Re-plan from here</h2>
+    <p>For the big change: keep days 1 and 2, then ask the generator for new proposals for the rest of the trip, starting at tonight's stop and ending where the trip ends. Locked stops stay. The result opens in the proposals view; pick one and it replaces the later days.</p>
+  </div>
+  <div class="opt">
+    <div class="browser"><div class="bar"><i></i><i></i><i></i></div>
+      <div class="split">
+        <svg viewBox="0 0 440 250" role="img" aria-label="Map: days 1 and 2 kept in grey, three proposals for the remaining days fanning out from Coburg to Kulmbach">
+          <use href="#base"/>
+          <path d="M0,215 C20,212 30,205 40,200" fill="none" stroke="var(--ghost)" stroke-width="4"/>
+          <path d="M40,200 C70,170 95,120 120,95 S190,60 225,70" fill="none" stroke="var(--ghost)" stroke-width="4"/>
+          <path d="M225,70 C280,30 330,40 345,70 S380,140 390,175" fill="none" stroke="var(--r2)" stroke-width="4" opacity=".55"/>
+          <path d="M225,70 C230,120 250,170 290,185 S360,190 390,175" fill="none" stroke="var(--r3)" stroke-width="4" opacity=".55"/>
+          <path d="M225,70 C270,90 300,110 320,130 S370,165 390,175" fill="none" stroke="var(--casing)" stroke-width="7"/>
+          <path d="M225,70 C270,90 300,110 320,130 S370,165 390,175" fill="none" stroke="var(--r1)" stroke-width="4"/>
+          <circle cx="225" cy="70" r="6" fill="var(--surface)" stroke="var(--text)" stroke-width="2.5"/>
+          <text class="tb" x="200" y="62">Coburg</text>
+          <use href="#ends"/>
+        </svg>
+        <div class="panel">
+          <div class="ph">Re-plan days 3–5</div>
+          <div class="note">From Coburg to Kulmbach in 3 days. Days 1–2 stay.</div>
+          <div class="row on"><span class="sw" style="background:var(--r1)"></span><div class="nm">Direct<small>3 days · 186 km · 1 900 m</small></div></div>
+          <div class="row"><span class="sw" style="background:var(--r2)"></span><div class="nm">Frankenwald<small>3 days · 214 km · 3 100 m</small></div></div>
+          <div class="row"><span class="sw" style="background:var(--r3)"></span><div class="nm">Jura and Main<small>3 days · 198 km · 1 400 m</small></div></div>
+          <div class="btns"><span class="btn">Use Direct</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pc">
+      <div><h3>Pros</h3><ul class="pros">
+        <li>The only option that changes several days at once in a sane way.</li>
+        <li>Almost no new UI: it's the proposals screen with a fixed start and fewer days.</li>
+        <li>Good after a real-world change: weather turns, a day was lost, you want to go home a day early.</li>
+      </ul></div>
+      <div><h3>Cons</h3><ul class="cons">
+        <li>Throws away hand edits on later days, unless they are locked.</li>
+        <li>A loop needs "back to the start" as the end; a route (track) trip can't use it at all.</li>
+        <li>Heavy: a full generator run, seconds not milliseconds.</li>
+      </ul></div>
+      <div class="cost"><b>Effort:</b> medium. Generator already takes start and end; mostly wiring and the replace step.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="prose"><h2>Side by side</h2></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Option</th><th>Shows new route</th><th>Different path</th><th>Changes day length</th><th>Days touched</th><th>Effort</th></tr></thead>
+    <tbody>
+      <tr><td>A · Preview</td><td>Yes</td><td>No</td><td>Yes, along the line</td><td>2</td><td class="dots">●○○</td></tr>
+      <tr><td>B · Sleep anywhere</td><td>Yes, after pick</td><td>Yes, through the stop</td><td>Yes, freely</td><td>2</td><td class="dots">●●○</td></tr>
+      <tr><td>C · Other ways</td><td>Yes, all at once</td><td>Yes</td><td>No</td><td>1</td><td class="dots">●●○</td></tr>
+      <tr><td>D · Change day</td><td>Yes</td><td>Yes</td><td>Yes</td><td>2, shown for all</td><td class="dots">●●●</td></tr>
+      <tr><td>E · Re-plan</td><td>Yes</td><td>Yes, over days</td><td>Yes</td><td>All later days</td><td class="dots">●●○</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="rec">
+    <div class="eyebrow">Recommendation</div>
+    <h2>Build A now, then C, then B. Merge into D only if it feels needed.</h2>
+    <ul>
+      <li><b>A first.</b> It fixes the blind pick with data we already have. Every later option needs the preview anyway.</li>
+      <li><b>C next.</b> It gives the "really different path" you asked for, with the least risk: one day changes, nothing else moves.</li>
+      <li><b>B after.</b> Stops off the line. With A's preview in place, the two-day change is safe.</li>
+      <li><b>E</b> is a separate, cheap win for "the plan broke". It can come at any time.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="prose">
+    <div class="eyebrow">Phone</div>
+    <h2>A and C on the bottom sheet</h2>
+    <p>Choices as a swipeable card row. The map follows the card in the middle, so swiping is previewing.</p>
+  </div>
+  <div class="phones">
+    <figure style="margin:0;display:flex;flex-direction:column;gap:8px">
+      <div class="phone"><div class="scr">
+        <svg viewBox="0 30 300 220" role="img" aria-label="Phone map with the day previewed to Ebern">
+          <use href="#base" x="-40" y="0" width="440" height="250"/>
+          <g transform="translate(-40,0)">
+            <path d="M40,200 C70,170 95,120 120,95 S190,60 225,70" fill="none" stroke="var(--ghost)" stroke-width="3" stroke-dasharray="1 5" stroke-linecap="round"/>
+            <path d="M120,95 C170,110 200,135 210,140 S300,160 390,175" fill="none" stroke="var(--stage-b)" stroke-width="4" stroke-dasharray="7 5"/>
+            <path d="M40,200 C70,170 95,120 120,95" fill="none" stroke="var(--casing)" stroke-width="7"/>
+            <path d="M40,200 C70,170 95,120 120,95" fill="none" stroke="var(--route)" stroke-width="4"/>
+            <circle cx="120" cy="95" r="7" fill="var(--accent)" stroke="var(--casing)" stroke-width="2"/>
+            <use href="#ends"/>
+          </g>
+        </svg>
+        <div class="sheet"><div class="grab"></div>
+          <b>Stop · Day 2</b>
+          <div class="cards">
+            <div class="card on"><b>Ebern</b><br>48 km <span class="d dn">−24</span><br><span class="muted">Day 3: 104 km</span></div>
+            <div class="card"><b>Coburg</b><br>72 km · now<br><span class="muted">Day 3: 73 km</span></div>
+          </div>
+          <span class="btn">End in Ebern</span>
+        </div>
+      </div></div>
+      <figcaption class="muted" style="font-size:13px">A · swipe through stops</figcaption>
+    </figure>
+    <figure style="margin:0;display:flex;flex-direction:column;gap:8px">
+      <div class="phone"><div class="scr">
+        <svg viewBox="0 30 300 220" role="img" aria-label="Phone map with three ways to Coburg">
+          <use href="#base" x="-40" y="0" width="440" height="250"/>
+          <g transform="translate(-40,0)">
+            <path d="M40,200 C50,140 100,60 165,40 S210,55 225,70" fill="none" stroke="var(--r3)" stroke-width="4" opacity=".55"/>
+            <path d="M40,200 C70,170 95,120 120,95 S190,60 225,70" fill="none" stroke="var(--r1)" stroke-width="4" opacity=".55"/>
+            <path d="M40,200 C90,190 140,180 165,170 S200,145 210,140 S220,95 225,70" fill="none" stroke="var(--casing)" stroke-width="7"/>
+            <path d="M40,200 C90,190 140,180 165,170 S200,145 210,140 S220,95 225,70" fill="none" stroke="var(--r2)" stroke-width="4"/>
+            <circle cx="225" cy="70" r="6" fill="var(--accent)" stroke="var(--casing)" stroke-width="2"/>
+            <use href="#ends"/>
+          </g>
+        </svg>
+        <div class="sheet"><div class="grab"></div>
+          <b>Other ways · Day 2</b>
+          <div class="cards">
+            <div class="card"><b>Now</b><br>72 km · 540 m</div>
+            <div class="card on"><b>Main valley</b><br>79 km · 230 m<br><span class="muted">flat, river</span></div>
+          </div>
+          <span class="btn">Use Main valley</span>
+        </div>
+      </div></div>
+      <figcaption class="muted" style="font-size:13px">C · swipe through ways</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="prose">
+    <div class="eyebrow">What else</div>
+    <h2>What's missing around this</h2>
+    <p>Things that would make the choice easier, roughly by value.</p>
+  </div>
+  <div class="gaps">
+    <div class="gap"><span class="tag">Compare</span><h3>Show the cost of a choice</h3><p>Deltas for km, climbing, gravel share and arrival time, for this day and the next. Today you see km only.</p></div>
+    <div class="gap"><span class="tag">Stop quality</span><h3>Why this town</h3><p>Hotels in budget and the cheapest price, a station for bail-out, a shop or restaurant open on a Sunday. "7 hotels" alone doesn't say much.</p></div>
+    <div class="gap"><span class="tag">Weather</span><h3>Wind and rain per choice</h3><p>A longer day with tailwind can beat a short one into a headwind. Ways in C can be tagged "tailwind" or "rain after 15:00".</p></div>
+    <div class="gap"><span class="tag">Shaping</span><h3>Avoid this part</h3><p>Select a stretch on the map and say "not here". The day re-routes around it. Faster than dragging three via points.</p></div>
+    <div class="gap"><span class="tag">Shaping</span><h3>Must pass</h3><p>Pick a town, sight or café the day has to go through. A via point by name, with search, instead of by dragging.</p></div>
+    <div class="gap"><span class="tag">Trip</span><h3>Day balance</h3><p>A small bar chart of all days. Moving one stop can offer to even out the unlocked ones after it.</p></div>
+    <div class="gap"><span class="tag">Trip</span><h3>Split, merge, rest day</h3><p>Turn one long day into two, two short days into one, or add a rest day at a stop. Common changes with no button today.</p></div>
+    <div class="gap"><span class="tag">Safety net</span><h3>Undo history</h3><p>Revert only goes back to the proposal. Trying options is easier with undo and redo for each step.</p></div>
+    <div class="gap"><span class="tag">Arrival</span><h3>Arrival time and daylight</h3><p>"Arrive around 17:30, sunset 21:40" on each choice, from start time and average speed, which we already have.</p></div>
+  </div>
+</section>
+
+</div>

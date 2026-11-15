@@ -3,6 +3,7 @@ import { Button, PanelSection, StopChoices } from "@wayline/ui";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useStopOptions } from "./stopChoices";
+import type { StopPick } from "./StopPicker";
 import type { TripEditorState } from "./useTripEditor";
 
 /** Last day: other train stops to end at, looked up on request. */
@@ -12,6 +13,7 @@ export function DestinationSection({
   editor,
   finding,
   onFindingChange,
+  pick,
 }: {
   trip: Trip;
   index: number;
@@ -19,6 +21,7 @@ export function DestinationSection({
   /** The train stops show here and on the map. */
   finding: boolean;
   onFindingChange: (finding: boolean) => void;
+  pick: StopPick;
 }) {
   const { t } = useTranslation("tripEditor");
   const end = trip.stages[index]?.end;
@@ -48,7 +51,7 @@ export function DestinationSection({
           trip={trip}
           index={index}
           editor={editor}
-          onPicked={() => onFindingChange(false)}
+          pick={pick}
         />
       )}
     </PanelSection>
@@ -59,12 +62,12 @@ function DestinationChoices({
   trip,
   index,
   editor,
-  onPicked,
+  pick,
 }: {
   trip: Trip;
   index: number;
   editor: TripEditorState;
-  onPicked: () => void;
+  pick: StopPick;
 }) {
   const { t } = useTranslation("tripEditor");
   const options = useStopOptions(trip, index, true);
@@ -81,11 +84,11 @@ function DestinationChoices({
         current,
       }))}
       disabled={!editor.canEdit}
-      onSelect={(name) => {
+      onSelect={pick.onSelect}
+      {...(pick.selected && { selectedId: pick.selected })}
+      onConfirm={(name) => {
         const option = options.find((o) => o.place.name === name);
-        if (!option) return;
-        onPicked();
-        void editor.moveStop(index, option.place);
+        if (option) pick.onApply(option.place);
       }}
     />
   );

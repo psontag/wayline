@@ -24,6 +24,7 @@ import { networkArea } from "../../components/NetworkLayer";
 import { useServices } from "../../data/ServicesProvider";
 import {
   routedStageIfEnding,
+  type RoutedStageIfEnding,
   stageIfEndingAt,
   type StageIfEnding,
 } from "./edits";
@@ -36,6 +37,9 @@ export type Beds = { total: number; inBudget?: number };
 export type StopChoice = StageIfEnding & {
   place: Place;
   current: boolean;
+  /** Routed lines of this stage and the next. Missing until routed. */
+  line?: LonLat[];
+  nextLine?: LonLat[];
   /** Missing while the region data loads. */
   beds?: Beds;
   size?: TownSize;
@@ -264,7 +268,7 @@ export function stopChoices(
 /** Replaces estimates with routed numbers, by place name. */
 export function withRouted(
   choices: StopChoice[],
-  routed: Map<string, StageIfEnding>,
+  routed: Map<string, RoutedStageIfEnding>,
 ): StopChoice[] {
   return choices
     .map((c) => {
@@ -309,7 +313,7 @@ export function useStopOptions(
     combine: (results) => results.map((r) => r.data),
   });
   return useMemo(() => {
-    const byName = new Map<string, StageIfEnding>();
+    const byName = new Map<string, RoutedStageIfEnding>();
     alternatives.forEach((place, i) => {
       const r = routed[i];
       if (r) byName.set(place.name, r);

@@ -1,4 +1,10 @@
-import { type LonLat, parseTrip, type Stage, type Trip } from "@wayline/domain";
+import {
+  decodeLine,
+  type LonLat,
+  parseTrip,
+  type Stage,
+  type Trip,
+} from "@wayline/domain";
 import { straightLeg } from "@wayline/planner";
 import { describe, expect, it } from "vitest";
 import sample from "../../../public/data/mock/oberfranken/sample-trip.json";
@@ -80,18 +86,23 @@ describe("moveStop", () => {
 });
 
 describe("routedStageIfEnding", () => {
-  it("gives the km the stage has after picking the place", async () => {
+  it("gives the km and lines the stages have after picking the place", async () => {
     const place = trip.stages[0]!.end.alternatives[0]!;
     const choice = await routedStageIfEnding(trip, 0, place, route);
     const next = await moveStop(trip, 0, place, {
       route,
       nearestHotel: async () => hotel,
     });
+    const lineOf = (i: number) =>
+      next.stages[i]!.legs.flatMap((leg) => decodeLine(leg.geometry));
     expect(choice).toEqual({
       distance: next.stages[0]!.stats.distance,
       ascent: next.stages[0]!.stats.ascent,
       nextDistance: next.stages[1]!.stats.distance,
+      line: lineOf(0),
+      nextLine: lineOf(1),
     });
+    expect(choice.line.at(-1)).toEqual(place.coord);
   });
 });
 

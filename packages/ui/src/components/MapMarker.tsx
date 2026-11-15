@@ -133,6 +133,8 @@ export type AlternativeMarkerProps = Omit<
   beds?: number;
   /** Only the circle; the label shows on hover or focus. For crowded maps. */
   compact?: boolean;
+  /** Being previewed: a solid circle and the full label. */
+  selected?: boolean;
 };
 
 /** Another town that works as the stop. Dashed, so it reads as an option. */
@@ -140,6 +142,7 @@ export function AlternativeMarker({
   label,
   beds,
   compact = false,
+  selected = false,
   className,
   ...props
 }: AlternativeMarkerProps) {
@@ -147,6 +150,7 @@ export function AlternativeMarker({
   return (
     <button
       type="button"
+      aria-pressed={selected}
       className={cn(
         "group flex items-center gap-1.5 rounded-full",
         focusRing,
@@ -154,11 +158,20 @@ export function AlternativeMarker({
       )}
       {...props}
     >
-      <span className="size-4 rounded-full border-2 border-dashed border-text-muted bg-surface/60 transition-colors group-hover:border-text" />
-      <MarkerLabel
-        muted
+      <span
         className={cn(
-          compact && "hidden group-hover:inline group-focus-visible:inline",
+          "size-4 rounded-full border-2 transition-colors",
+          selected
+            ? "border-selected-border bg-accent"
+            : "border-dashed border-text-muted bg-surface/60 group-hover:border-text",
+        )}
+      />
+      <MarkerLabel
+        muted={!selected}
+        className={cn(
+          compact &&
+            !selected &&
+            "hidden group-hover:inline group-focus-visible:inline",
         )}
       >
         {label}

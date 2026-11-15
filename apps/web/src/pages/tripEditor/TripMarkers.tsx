@@ -52,6 +52,8 @@ export type TripMarkersProps = {
   onSelect: (index: number) => void;
   alternatives: MapAlternative[];
   onPickAlternative?: (place: Place) => void;
+  /** Name of the stop choice being previewed. */
+  previewStop?: string;
   stations: MapStation[];
   hotels: MapHotel[];
   selectedHotelId?: string;
@@ -70,6 +72,7 @@ export function TripMarkers({
   onSelect,
   alternatives,
   onPickAlternative,
+  previewStop,
   stations,
   hotels,
   selectedHotelId,
@@ -235,11 +238,12 @@ export function TripMarkers({
           latitude={place.coord[1]}
           anchor="left"
           offset={[-8, 0]}
-          style={{ zIndex: 2 }}
+          style={{ zIndex: place.name === previewStop ? 5 : 2 }}
         >
           <AlternativeMarker
             label={label}
             beds={beds}
+            selected={place.name === previewStop}
             compact={crowded.has(`choice-${place.name}`)}
             aria-label={label}
             onClick={() => onPickAlternative?.(place)}

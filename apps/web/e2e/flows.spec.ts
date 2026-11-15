@@ -43,7 +43,13 @@ test.describe("desktop flows", () => {
 
     const other = page.getByRole("button", { name: /^Stop in / }).first();
     const name = (await other.textContent())?.trim();
+    // Picking a stop previews it. Phones confirm on the map, as the sheet
+    // goes down.
     await other.click();
+    const confirm = page
+      .getByRole("button", { name: `End in ${name}` })
+      .or(page.getByRole("button", { name: "Done" }));
+    await confirm.first().click();
     await expect(stop).toHaveText(`to ${name}`);
     expect(before).not.toBe(`to ${name}`);
     await screenshots(page, info, "day");

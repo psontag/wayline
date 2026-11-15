@@ -22,9 +22,11 @@ import {
   Toast,
   ToastProvider,
   ToastViewport,
+  type Format,
   useFormat,
 } from "@wayline/ui";
-import { useMemo, useState } from "react";
+import { type TFunction } from "i18next";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorScreen } from "../../components/ErrorPanel";
 import { networkArea } from "../../components/NetworkLayer";
@@ -42,6 +44,7 @@ import { StageProfile } from "./StageProfile";
 import { useRouteStations } from "./stations";
 import {
   hasMovableDestination,
+  type StopChoice,
   useMapHotels,
   useStopOptions,
 } from "./stopChoices";
@@ -124,6 +127,12 @@ function TripEditor({
   // Hour the weather map shows. Follows the ride start until moved.
   const [mapTime, setMapTime] = useState<number>();
   const [findingDestination, setFindingDestination] = useState(false);
+  // Goes away when the day changes or the trip is edited.
+  const [stopPick, setStopPick] = useState<{
+    day: number;
+    version: string;
+    name: string;
+  }>();
   const [viaSelection, setViaSelection] = useState<{
     day: number;
     coord: LonLat;
@@ -262,10 +271,51 @@ function TripEditor({
   const options = useStopOptions(trip, selected, findingDestination);
   const mapHotels = useMapHotels(trip, selected);
   const stations = useRouteStations(trip);
-  const pickAlternative = (place: Place) => {
+  const previewName =
+    dayOpen && stopPick?.day === selected && stopPick.version === trip.updatedAt
+      ? stopPick.name
+      : undefined;
+  const previewOption = options.find(
+    (o) => !o.current && o.place.name === previewName,
+  );
+  const previewStop = (name: string | undefined) =>
+    setStopPick(
+      name ? { day: selected, version: trip.updatedAt, name } : undefined,
+    );
+  const applyStop = (place: Place) => {
+    setStopPick(undefined);
     setFindingDestination(false);
     void editor.moveStop(selected, place);
   };
+  const pickAlternative = (place: Place) => previewStop(place.name);
+  const stopPreview = previewOption && {
+    name: previewOption.place.name,
+    ...(previewOption.line && { line: previewOption.line }),
+    ...(previewOption.nextLine && { nextLine: previewOption.nextLine }),
+  };
+  const currentOption = options.find((o) => o.current);
+  const stopConfirm = previewOption &&
+    currentOption && {
+      title: t("stopPreview.title", {
+        day: selected + 1,
+        name: previewOption.place.name,
+      }),
+      detail: stopDetail(t, format, previewOption, currentOption),
+      cancelLabel: t("place.cancel"),
+      doneLabel: t("place.done"),
+      busy: !editor.canEdit,
+      onCancel: () => previewStop(undefined),
+      onDone: () => applyStop(previewOption.place),
+    };
+  const hasPreview = !!previewOption;
+  useEffect(() => {
+    if (!hasPreview) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setStopPick(undefined);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [hasPreview]);
   const alternatives = readOnly
     ? []
     : options
@@ -464,6 +514,11 @@ function TripEditor({
       onHighlightProposed={setProposedHighlighted}
       findingDestination={findingDestination}
       onFindingDestination={setFindingDestination}
+      stopPick={{
+        selected: previewName,
+        onSelect: previewStop,
+        onApply: applyStop,
+      }}
       selectedVia={selectedVia}
       onSelectVia={selectVia}
       chart={isPhone ? chart : undefined}
@@ -492,6 +547,8 @@ function TripEditor({
           onSelect={select}
           alternatives={dayOpen ? alternatives : []}
           onPickAlternative={pickAlternative}
+          stopPreview={stopPreview}
+          stopConfirm={stopConfirm}
           hover={hover}
           panel={panel}
           // A day shows the chart under its header instead.
@@ -525,6 +582,7 @@ function TripEditor({
               highlight={highlight}
               alternatives={dayOpen ? alternatives : []}
               onPickAlternative={pickAlternative}
+              stopPreview={stopPreview}
               hotels={
                 !dayOpen || isLast || !layers.hotels ? [] : mapHotels.hotels
               }
@@ -559,4 +617,27 @@ function TripEditor({
       </div>
     </div>
   );
+}
+
+/** "−24 km · −120 m · tomorrow 104 km": what a stop choice changes. */
+function stopDetail(
+  t: TFunction<"tripEditor">,
+  format: Format,
+  picked: StopChoice,
+  now: StopChoice,
+): string {
+  const signed = (value: number, text: string) =>
+    t(value < 0 ? "place.less" : "place.more", { value: text });
+  const distance = picked.distance - now.distance;
+  const ascent = picked.ascent - now.ascent;
+  const today = t("place.delta", {
+    distance: signed(distance, format.distance(Math.abs(distance))),
+    ascent: signed(ascent, format.elevation(Math.abs(ascent))),
+  });
+  return picked.nextDistance === undefined
+    ? today
+    : t("stopPreview.detail", {
+        today,
+        next: format.distance(picked.nextDistance),
+      });
 }
