@@ -6,6 +6,7 @@ import {
   HotelMarker,
   StationMarker,
   StopMarker,
+  type StopTone,
 } from "@wayline/ui";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -94,6 +95,17 @@ export function TripMarkers({
   const ends = [first?.start, last?.end].filter((p): p is Place => !!p);
   const stops = trip.stages.slice(0, -1);
   const isSelected = (index: number) => !overview && index === selected;
+  // Stop i ends day i. The selected day starts at the stop before it.
+  const toneOf = (index: number): StopTone =>
+    overview
+      ? "default"
+      : index === selected
+        ? "end"
+        : index === selected - 1
+          ? "start"
+          : "muted";
+  const endTones: StopTone[] = [toneOf(-1), toneOf(trip.stages.length - 1)];
+  const radius = { end: 20, start: 16, default: 16, muted: 12 };
   const saved = (osmId: string) =>
     trip.savedHotels.some((h) => h.osmId === osmId);
   // Selected and saved hotels always show on their own.
@@ -135,7 +147,7 @@ export function TripMarkers({
     };
     stops.forEach((stage, index) => {
       // The selected stop is larger, with a larger name.
-      const r = isSelected(index) ? 20 : 16;
+      const r = radius[toneOf(index)];
       const charPx = isSelected(index) ? 9 : 7.5;
       add(
         `stop-${index}`,
@@ -207,6 +219,7 @@ export function TripMarkers({
           <EndpointMarker
             {...(!crowded.has(`end-${index}`) && { name: place.name })}
             station={place.kind === "station"}
+            tone={endTones[index] ?? "default"}
           />
         </Marker>
       ))}
@@ -263,14 +276,14 @@ export function TripMarkers({
           longitude={stage.end.coord[0]}
           latitude={stage.end.coord[1]}
           anchor="left"
-          // Center the circle on the stop. It is larger when selected.
-          offset={[isSelected(index) ? -20 : -16, 0]}
-          style={{ zIndex: isSelected(index) ? 4 : 3 }}
+          // Center the circle on the stop. Its size depends on the tone.
+          offset={[-radius[toneOf(index)], 0]}
+          style={{ zIndex: toneOf(index) === "muted" ? 2 : 4 }}
         >
           <StopMarker
             day={index + 1}
             {...(!crowded.has(`stop-${index}`) && { name: stage.end.name })}
-            selected={isSelected(index)}
+            tone={toneOf(index)}
             aria-label={t("map.selectStage", {
               day: index + 1,
               place: stage.end.name,

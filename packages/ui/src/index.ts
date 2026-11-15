@@ -199,6 +199,7 @@ export {
   type HotelMarkerProps,
   type StationMarkerProps,
   type StopMarkerProps,
+  type StopTone,
   type ViaActionsProps,
   type ViaMarkerProps,
 } from "./components/MapMarker";

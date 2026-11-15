@@ -757,7 +757,10 @@ function TripEditorParts() {
         <WindMarker from={250} speed={8} label={t("demo.windMarker")} />
         <WindMarker from={250} speed={22} label={t("demo.windMarker")} />
         <StopMarker day={1} name="Coburg" />
+        <StopMarker day={1} name="Coburg" tone="start" />
         <StopMarker day={2} name="Kronach" selected />
+        <StopMarker day={3} name="Ludwigsstadt" tone="muted" />
+        <EndpointMarker name="Bamberg" station tone="start" />
         <AlternativeMarker
           label={t("demo.alternative", { name: "Küps", distance: "56 km" })}
         />
