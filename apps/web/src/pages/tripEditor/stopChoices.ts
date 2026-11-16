@@ -234,15 +234,20 @@ const START_GAP_KM = 10;
 export const TOWN_STOP_KM = 50;
 /** Towns need more hotels than this to show. */
 const TOWN_MIN_HOTELS = 8;
-/** Towns closer than this to a stop or a bigger town are the same place. */
-const TOWN_GAP_KM = 3;
+/**
+ * Towns closer than this to a stop or a bigger town are the same place.
+ * Their hotel circles overlap, so a village next to a city counts the
+ * city's hotels.
+ */
+const TOWN_GAP_KM = HOTEL_KM * 2;
 
 export type HotelTown = { id: string; place: Place; hotels: number };
 
 /**
  * Towns the day could end in instead: within TOWN_STOP_KM of the stop,
  * with more than TOWN_MIN_HOTELS hotels, away from the start and from
- * `taken` places. Towns with more hotels win where they are close.
+ * `taken` places. Where towns are close, the bigger one wins, then the one
+ * with more hotels.
  */
 export function hotelTowns(
   { hotels, towns }: PlaceIndex,
@@ -261,16 +266,15 @@ export function hotelTowns(
       coord,
       osmId: town.id,
     };
-    return [{ id: town.id, place, hotels: count }];
+    return [{ id: town.id, place, hotels: count, rank: SIZE_RANK[town.place] }];
   });
   const kept = [stage.end.coord, ...taken];
   const out: HotelTown[] = [];
-  for (const town of found.sort((a, b) => b.hotels - a.hotels)) {
-    if (kept.some((c) => distanceKm(c, town.place.coord) < TOWN_GAP_KM)) {
-      continue;
-    }
-    kept.push(town.place.coord);
-    out.push(town);
+  found.sort((a, b) => a.rank - b.rank || b.hotels - a.hotels);
+  for (const { id, place, hotels: count } of found) {
+    if (kept.some((c) => distanceKm(c, place.coord) < TOWN_GAP_KM)) continue;
+    kept.push(place.coord);
+    out.push({ id, place, hotels: count });
   }
   return out;
 }

@@ -2,6 +2,7 @@ import type { LonLat, Place, Trip } from "@wayline/domain";
 import {
   AlternativeMarker,
   ClusterMarker,
+  cn,
   EndpointMarker,
   HotelMarker,
   StationMarker,
@@ -9,7 +10,7 @@ import {
   type StopTone,
   TownMarker,
 } from "@wayline/ui";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type MapRef, Marker, useMap } from "react-map-gl/maplibre";
 import { boundsOf } from "../../components/map/AppMap";
@@ -223,6 +224,24 @@ export function TripMarkers({
     return placeLabels(labels);
   })();
 
+  // A tap on the empty map ends a town preview. Phones have no pointer to
+  // leave the town with.
+  const previewedTown = towns?.previewed;
+  const onHoverTown = towns?.onHover;
+  useEffect(() => {
+    if (!map || !previewedTown || !onHoverTown) return;
+    const end = (e: { originalEvent: Event }) => {
+      if (e.originalEvent.target === map.getCanvas()) onHoverTown(undefined);
+    };
+    map.on("click", end);
+    return () => {
+      map.off("click", end);
+    };
+  }, [map, previewedTown, onHoverTown]);
+  // The preview label opens away from the near edge of the map.
+  const opensLeft = (coord: LonLat) =>
+    !!map && map.project(coord).x > map.getContainer().clientWidth / 2;
+
   const zoomTo = (coords: LonLat[]) =>
     map?.fitBounds(boundsOf(coords), { padding: 80, maxZoom: CLUSTER_ZOOM });
 
@@ -300,7 +319,18 @@ export function TripMarkers({
                 onBlur={() => towns.onHover(undefined)}
               />
               {previewed && towns.preview && (
-                <div className="absolute top-full left-0 mt-2">
+                <div
+                  className={cn(
+                    "absolute top-full left-0 mt-2 flex w-max",
+                    opensLeft(place.coord) && "-translate-x-full",
+                  )}
+                  // Opening left, it ends at the badge, not at the name.
+                  style={
+                    opensLeft(place.coord)
+                      ? { left: townBadgePx(count) }
+                      : undefined
+                  }
+                >
                   {towns.preview}
                 </div>
               )}
