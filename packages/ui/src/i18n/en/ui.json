@@ -138,6 +138,8 @@
     "beds_other": "{{count}} places to sleep",
     "hotels_one": "{{count}} hotel, zoom in",
     "hotels_other": "{{count}} hotels, zoom in",
+    "townHotels_one": "{{count}} hotel",
+    "townHotels_other": "{{count}} hotels",
     "stations_one": "{{count}} station, zoom in",
     "stations_other": "{{count}} stations, zoom in"
   },

@@ -105,6 +105,17 @@
     "noTown": "No town within 5 km",
     "moveTo": "To {{town}}"
   },
+  "town": {
+    "title_one": "{{name}} · {{count}} hotel",
+    "title_other": "{{name}} · {{count}} hotels",
+    "day": "Day {{day}}: {{delta}}",
+    "routing": "Finding the route…",
+    "failed": "No route found",
+    "click": "Click to stop here",
+    "tap": "Tap again to stop here",
+    "label_one": "End the day in {{name}}, {{count}} hotel",
+    "label_other": "End the day in {{name}}, {{count}} hotels"
+  },
   "place": {
     "add": "Add via point",
     "move": "Move via point",
@@ -211,6 +222,7 @@
   "layers": {
     "map": "Map",
     "hotels": "Hotels",
+    "towns": "Towns with hotels",
     "stations": "Train stations",
     "weather": "Weather",
     "rain": "Rain",

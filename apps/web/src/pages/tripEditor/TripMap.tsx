@@ -79,6 +79,25 @@ export type MapAlternative = {
   color?: RouteColor;
 };
 
+/** A town with hotels the selected day could end in. */
+export type MapTown = {
+  id: string;
+  place: Place;
+  hotels: number;
+  /** What picking it does, for screen readers. */
+  label: string;
+};
+
+export type TownLayer = {
+  towns: MapTown[];
+  /** Id of the town being previewed. */
+  previewed?: string;
+  /** Shown next to the previewed town, e.g. how the days change. */
+  preview?: ReactNode;
+  onHover: (id: string | undefined) => void;
+  onPick: (id: string) => void;
+};
+
 // Stable, so the memo of the map data keeps.
 const NO_CHOICES: MapChoice[] = [];
 
@@ -109,6 +128,8 @@ export type TripMapProps = {
   choices?: MapChoice[];
   /** The choice to show strong, with the next day, e.g. a hovered one. */
   hoveredChoice?: string;
+  /** Towns with hotels the selected day could end in. */
+  towns?: TownLayer;
   /** Hotels near the end stop of the selected day. */
   hotels?: MapHotel[];
   selectedHotelId?: string;
@@ -174,6 +195,7 @@ export function TripMap({
   onHoverAlternative,
   choices = NO_CHOICES,
   hoveredChoice,
+  towns,
   hotels = [],
   selectedHotelId,
   onSelectHotel,
@@ -706,6 +728,7 @@ export function TripMap({
         onPickAlternative={onPickAlternative}
         {...(onHoverAlternative && { onHoverAlternative })}
         {...(shown && { previewStop: shown.id })}
+        {...(towns && !overview && { towns })}
         stations={stations}
         hotels={hotels}
         selectedHotelId={selectedHotelId}
@@ -912,10 +935,11 @@ function ViaActionsMarker({
 }
 
 /** "+6 km · +120 m": how much longer and hillier the day gets. */
-function formatDelta(
+/** Change in km and climbing, e.g. "+3.2 km · −40 m". */
+export function formatDelta(
   t: TFunction<"tripEditor">,
   format: Format,
-  { distance, ascent }: ViaPreview,
+  { distance, ascent }: { distance: number; ascent: number },
 ) {
   const signed = (value: number, text: string) =>
     t(value < 0 ? "place.less" : "place.more", { value: text });

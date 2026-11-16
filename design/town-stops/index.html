@@ -1,0 +1,514 @@
+<title>Wayline town stops</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: reading column; each option is a live map mockup (hover and click the towns) next to its notes. Wayline tokens. */
+:root{
+  --bg:#F6F7F9;--surface:#FFFFFF;--text:#15181D;--muted:#5A616C;--border:#E1E4EA;--hover:#EEF0F3;
+  --accent:#FFB088;--on-accent:#3B1503;--selected:#FFEDE3;--sel-border:#B4532A;
+  --success:#2F9E6B;--warning:#B7791F;--danger:#C2412D;
+  --inverse:#15181D;--on-inverse:#EDEFF3;--inverse-accent:#FFB088;
+  --route:#FF9A73;--casing:#B4532A;--dimmed:#C3C8D0;--next:#C9BDE6;--marker:#15181D;
+  --map:#EEF1EC;--water:#BFD6EA;--forest:#DCE7D8;--road:#E2E5EA;
+  --font:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101216;--surface:#171A20;--text:#EDEFF3;--muted:#A0A7B3;--border:#2A2F38;--hover:#222730;
+  --accent:#FFB088;--on-accent:#2A0F02;--selected:#2D211B;--sel-border:#FFB088;
+  --success:#5CCB97;--warning:#E3A84A;--danger:#FF8F7D;
+  --inverse:#EDEFF3;--on-inverse:#15181D;--inverse-accent:#B4532A;
+  --route:#FF9A73;--casing:#101216;--dimmed:#4A505B;--next:#8F82B8;--marker:#EDEFF3;
+  --map:#1A1E22;--water:#1C3046;--forest:#1F2A22;--road:#2A2F38;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101216;--surface:#171A20;--text:#EDEFF3;--muted:#A0A7B3;--border:#2A2F38;--hover:#222730;
+  --accent:#FFB088;--on-accent:#2A0F02;--selected:#2D211B;--sel-border:#FFB088;
+  --success:#5CCB97;--warning:#E3A84A;--danger:#FF8F7D;
+  --inverse:#EDEFF3;--on-inverse:#15181D;--inverse-accent:#B4532A;
+  --route:#FF9A73;--casing:#101216;--dimmed:#4A505B;--next:#8F82B8;--marker:#EDEFF3;
+  --map:#1A1E22;--water:#1C3046;--forest:#1F2A22;--road:#2A2F38;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 64px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:64px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.15;font-weight:800;letter-spacing:-0.02em;margin:0;text-wrap:balance}
+h2{font-size:24px;font-weight:800;letter-spacing:-0.01em;margin:0;text-wrap:balance;line-height:1.25}
+h3{font-size:13px;margin:0;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+p,ul{margin:0}
+ul{padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.lede{font-size:17px;color:var(--muted)}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sel-border)}
+section{display:flex;flex-direction:column;gap:20px}
+.opt{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px;align-items:start}
+.opt.withpanel{grid-template-columns:minmax(0,1.5fr) 300px minmax(0,1fr)}
+@media (max-width:1000px){.opt.withpanel{grid-template-columns:minmax(0,1fr) 300px}.opt.withpanel .pc{grid-column:1/-1}}
+@media (max-width:720px){.opt,.opt.withpanel{grid-template-columns:1fr}}
+.mapbox{position:relative;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--map)}
+.mapbox svg{display:block;width:100%;height:auto}
+.hint{font-size:12px;color:var(--muted)}
+.pc{display:flex;flex-direction:column;gap:12px;font-size:14px}
+.pc .good li::marker{color:var(--success)}
+.pc .bad li::marker{color:var(--danger)}
+
+/* map pieces */
+.town{cursor:pointer}
+.town text{pointer-events:none}
+.town .name{font-size:11px;font-weight:700;fill:var(--text);paint-order:stroke;stroke:var(--map);stroke-width:3px}
+.town .dot{filter:drop-shadow(0 1px 1.5px rgb(0 0 0 / .18))}
+.town:hover .dot,.town:focus .dot{stroke:var(--marker);stroke-width:2.5}
+.towns-off .ring{display:none}
+.town:focus{outline:none}
+.towns-off .town{display:none}
+
+/* legend control */
+.legend{position:absolute;right:10px;top:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:6px 10px;font-size:12px;display:flex;flex-direction:column;gap:4px;box-shadow:0 1px 3px rgb(0 0 0 / .08)}
+.legend label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600}
+.legend .sw{width:26px;height:16px;border-radius:999px;background:var(--dimmed);position:relative;transition:background .15s;flex:none}
+.legend .sw::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--surface);transition:left .15s}
+.legend input{position:absolute;opacity:0;pointer-events:none}
+.legend input:checked + .sw{background:var(--sel-border)}
+.legend input:checked + .sw::after{left:12px}
+.legend input:focus-visible + .sw{outline:2px solid var(--sel-border);outline-offset:2px}
+.legend .keys{display:flex;gap:10px;color:var(--muted);flex-wrap:wrap}
+.legend .k{display:flex;align-items:center;gap:4px}
+.legend .k i{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+/* tooltip like the route drag label */
+.tip{position:absolute;pointer-events:none;background:var(--inverse);color:var(--on-inverse);border-radius:8px;
+  padding:6px 9px;font-size:12px;line-height:1.35;white-space:nowrap;box-shadow:0 4px 12px rgb(0 0 0 / .18);z-index:3}
+.tip b{font-weight:800}
+.tip .row{display:flex;gap:10px;justify-content:space-between;font-variant-numeric:tabular-nums}
+.tip .row span:first-child{opacity:.7}
+.tip .click{opacity:.7;font-size:11px;margin-top:2px}
+
+/* toast */
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--inverse);color:var(--on-inverse);
+  border-radius:999px;padding:6px 8px 6px 14px;font-size:12px;display:flex;gap:10px;align-items:center;z-index:4;white-space:nowrap}
+.toast button{background:none;border:0;color:var(--inverse-accent);font:inherit;font-weight:800;cursor:pointer;padding:2px 6px;border-radius:999px}
+.toast button:focus-visible{outline:2px solid var(--inverse-accent)}
+
+/* side panel mockup */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:12px;line-height:1.35;overflow:hidden}
+.ph{padding:12px 12px 8px;border-bottom:1px solid var(--border)}
+.ph .t{font-weight:800;font-size:14px}
+.ph .s{color:var(--muted)}
+.sec{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.sec:last-child{border-bottom:0}
+.sh{display:flex;align-items:center;gap:8px}
+.sh .ic{width:16px;height:16px;border-radius:4px;background:var(--selected);border:1px solid var(--sel-border);flex:none}
+.sh .ti{font-weight:800}
+.sh .su{margin-left:auto;color:var(--muted)}
+.cmp{display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 10px;font-variant-numeric:tabular-nums}
+.cmp .h{color:var(--muted);font-size:11px}
+.up{color:var(--danger)} .down{color:var(--success)}
+.ghost{color:var(--muted);font-style:italic}
+.btns{display:flex;gap:6px}
+.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font:inherit;font-weight:700}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+
+/* phone */
+.phone{width:280px;max-width:100%;border:1px solid var(--border);border-radius:28px;overflow:hidden;background:var(--map);position:relative}
+.phone svg{display:block;width:100%;height:auto}
+.sheet{background:var(--surface);border-top:1px solid var(--border);padding:10px 14px 14px;display:flex;flex-direction:column;gap:8px;font-size:12px}
+.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 2px}
+.sheet .t{font-weight:800;font-size:15px}
+.row2{display:flex;gap:16px;font-variant-numeric:tabular-nums}
+.phones{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+table{border-collapse:collapse;font-size:14px;width:100%}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="prose">
+    <div class="eyebrow">Trip editor · day stops</div>
+    <h1>Pick any town as a day's stop</h1>
+    <p class="lede">Towns with more than 8 hotels show on the map. Hover one to see how today and tomorrow change. Click it to make it the stop.</p>
+    <p class="hint">The maps below work: hover and click the towns, flip the legend switch. Towns, positions and numbers are made up. Day 3 runs from Friedrichshafen to Wangen, day 4 from Wangen to Füssen.</p>
+  </header>
+
+  <section class="prose">
+    <h2>What I understand</h2>
+    <ul>
+      <li>A new map layer for the selected day: every town within 50 km of the day's stop (dashed circle) with more than 8 hotels within the hotel radius (<code>HOTEL_KM</code>). A badge with the hotel icon shows the count.</li>
+      <li>The layer shows next to the stop alternatives we have now.</li>
+      <li>A switch in the map legend turns the layer on and off.</li>
+      <li>Hover a town: the map shows the day ending there and the next day starting there, like the stop preview today. The old route dims.</li>
+      <li>The km and ascent change shows while you hover, in a dark label like the one when you drag the route.</li>
+      <li>Click: the town becomes the stop. Today and tomorrow are routed again. The hotel picks the nearest hotel, as it does for alternatives now.</li>
+      <li>Moving a stop changes two days. So the label shows both days, not just one.</li>
+    </ul>
+  </section>
+
+  <!-- Option A -->
+  <section>
+    <div class="prose">
+      <div class="eyebrow">Option A</div>
+      <h2>Hotel badges and a cursor label</h2>
+      <p>Closest to the route drag. Badges show hotels. The label next to the pointer has both days.</p>
+    </div>
+    <div class="opt">
+      <div class="mapbox" data-map="a"></div>
+      <div class="pc">
+        <h3>Good</h3>
+        <ul class="good">
+          <li>Same pattern as dragging the route. Nothing new to learn.</li>
+          <li>All numbers are where you look.</li>
+          <li>Small change: one layer, one label, the existing preview line.</li>
+        </ul>
+        <h3>Not so good</h3>
+        <ul class="bad">
+          <li>You only learn which towns fit by hovering each one.</li>
+          <li>No hover on phones. Needs its own flow (see below).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Option B -->
+  <section>
+    <div class="prose">
+      <div class="eyebrow">Option B</div>
+      <h2>Short label, numbers in the panel</h2>
+      <p>The label only says the town and its hotels. The Route section of the side panel shows the day as it would be: km and ascent, today and tomorrow, before and after.</p>
+    </div>
+    <div class="opt withpanel">
+      <div class="mapbox" data-map="b"></div>
+      <div class="panel" id="panel-b" aria-live="polite"></div>
+      <div class="pc">
+        <h3>Good</h3>
+        <ul class="good">
+          <li>Room for more: arrival time, km per day against the trip's target, hotels in budget.</li>
+          <li>The same panel works on the phone sheet.</li>
+        </ul>
+        <h3>Not so good</h3>
+        <ul class="bad">
+          <li>Eyes jump between map and panel.</li>
+          <li>The panel content flickers while the pointer moves over the map.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Option C -->
+  <section>
+    <div class="prose">
+      <div class="eyebrow">Option C</div>
+      <h2>Badges colored by fit</h2>
+      <p>Same label as A. The badge color says how well both days fit the trip's km and ascent per day, before you hover. The legend can switch the badge between hotels and today's km.</p>
+    </div>
+    <div class="opt">
+      <div class="mapbox" data-map="c"></div>
+      <div class="pc">
+        <h3>Good</h3>
+        <ul class="good">
+          <li>You see good stops at a glance. Hover only to confirm.</li>
+          <li>Shows why a big town is a bad stop: it makes tomorrow too long.</li>
+        </ul>
+        <h3>Not so good</h3>
+        <ul class="bad">
+          <li>Needs km and ascent for every town up front. A crow-flies estimate first, routed numbers on hover.</li>
+          <li>One more color code on the map.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Phone -->
+  <section>
+    <div class="prose">
+      <div class="eyebrow">For all options</div>
+      <h2>On the phone: tap to preview, then confirm</h2>
+      <p>Tap a town to show the preview and a sheet with the numbers. "Stop here" changes it. Tap the map to cancel.</p>
+    </div>
+    <div class="phones">
+      <div class="phone" id="phone"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="prose">
+      <h2>Nice to have</h2>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Idea</th><th>Why</th><th>Effort</th></tr></thead>
+        <tbody>
+          <tr><td>Undo toast after a click</td><td>A click on a map is easy to do by mistake. The editor has undo already. A toast makes it visible.</td><td>Small</td></tr>
+          <tr><td>Only towns in reach</td><td>Hide towns that make today or tomorrow far longer than the trip's km per day (for example over 1.5×). Keeps the map calm.</td><td>Small</td></tr>
+          <tr><td>Hotels in budget</td><td>With a budget, the bubble counts only hotels in budget, and the threshold applies to those.</td><td>Small</td></tr>
+          <tr><td>Arrival time</td><td>The day already knows its start time and speed. "Arrive 17:40" helps more than km for short days.</td><td>Small</td></tr>
+          <tr><td>Train station badge</td><td>Shows which towns have a station. Useful as a way out on bad weather days.</td><td>Small</td></tr>
+          <tr><td>Profile preview</td><td>While hovering, the elevation profile shows the new day as a ghost over the old one.</td><td>Medium</td></tr>
+          <tr><td>Bigger towns first</td><td>When bubbles overlap, show the one with more hotels. Larger bubbles for cities.</td><td>Small</td></tr>
+          <tr><td>Weather at the stop</td><td>Rain in the evening at one town, not at the next one.</td><td>Medium</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="prose">
+    <h2>Decided</h2>
+    <ul>
+      <li>Only for the selected day. Not in the whole-trip view.</li>
+      <li>Towns within 50 km of the day's current stop.</li>
+      <li>Shows next to the current alternatives markers.</li>
+      <li>On the last day it can move the trip's end, only for A to B trips, like the train stops today.</li>
+      <li>Hotel count as a badge with the hotel icon.</li>
+      <li>Hover routes on demand. Each hover is two routing calls, cached per town. A short delay keeps fast mouse moves cheap.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+  const S = {x:60,y:300,name:"Friedrichshafen"};
+  const B = {x:330,y:190,name:"Wangen",hotels:12};
+  const C = {x:590,y:80,name:"Füssen"};
+  const TARGET = {km:70, asc:900};
+  const DAY = {d3:{km:68,asc:820}, d4:{km:74,asc:980}};
+  // d3/d4: change in km and ascent for day 3 and day 4 if the stop moves there
+  const towns = [
+    {id:"amtzell", name:"Amtzell", x:250,y:248, hotels:9,  d3:[-14,-160], d4:[16,190]},
+    {id:"lindau",  name:"Lindau",  x:200,y:345, hotels:38, d3:[6,-40],    d4:[31,410]},
+    {id:"isny",    name:"Isny",    x:410,y:205, hotels:14, d3:[17,290],   d4:[-15,-260]},
+    {id:"leutkirch",name:"Leutkirch",x:360,y:110,hotels:10,d3:[11,140],   d4:[3,40]},
+    {id:"kempten", name:"Kempten", x:480,y:120, hotels:52, d3:[34,450],   d4:[-28,-380]},
+    {id:"ravensburg",name:"Ravensburg",x:160,y:200,hotels:27,d3:[-22,-300],d4:[38,520]},
+  ];
+  const NS = "http://www.w3.org/2000/svg";
+  const fmt = (n,u) => (n>0?"+":n<0?"−":"±")+Math.abs(n)+" "+u;
+  const cls = n => n>0?"up":n<0?"down":"";
+  function fit(t){
+    const k3 = DAY.d3.km+t.d3[0], k4 = DAY.d4.km+t.d4[0];
+    const a3 = DAY.d3.asc+t.d3[1], a4 = DAY.d4.asc+t.d4[1];
+    const worst = Math.max(k3/TARGET.km, k4/TARGET.km, a3/TARGET.asc, a4/TARGET.asc);
+    const best = Math.min(k3/TARGET.km, k4/TARGET.km);
+    if (worst > 1.3 || best < 0.6) return "danger";
+    if (worst > 1.12 || best < 0.8) return "warning";
+    return "success";
+  }
+  const path = (a,b,bend) => {
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
+    const cx=mx-dy/len*bend, cy=my+dx/len*bend;
+    return `M${a.x},${a.y} Q${cx},${cy} ${b.x},${b.y}`;
+  };
+  function el(tag, attrs, parent){
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function base(svg, w, h){
+    el("rect",{x:0,y:0,width:w,height:h,fill:"var(--map)"},svg);
+    el("path",{d:`M0,${h-40} C120,${h-70} 220,${h-20} 300,${h} L0,${h} Z`,fill:"var(--water)"},svg);
+    el("ellipse",{cx:w*0.72,cy:h*0.62,rx:90,ry:50,fill:"var(--forest)"},svg);
+    el("ellipse",{cx:w*0.25,cy:h*0.2,rx:70,ry:38,fill:"var(--forest)"},svg);
+    el("path",{d:`M0,${h*0.45} C200,${h*0.4} 400,${h*0.55} ${w},${h*0.3}`,stroke:"var(--road)","stroke-width":4,fill:"none"},svg);
+    el("path",{d:`M${w*0.55},0 C${w*0.5},${h*0.4} ${w*0.62},${h*0.7} ${w*0.58},${h}`,stroke:"var(--road)","stroke-width":3,fill:"none"},svg);
+  }
+  function routeLines(g, stop, preview){
+    g.innerHTML = "";
+    const cur3 = path(S,B,-30), cur4 = path(B,C,25);
+    const dim = !!preview;
+    // current: day 3 strong, day 4 in next-day color
+    el("path",{d:cur4,stroke:dim?"var(--dimmed)":"var(--next)","stroke-width":5,fill:"none","stroke-linecap":"round",opacity:dim?.7:1},g);
+    if(!dim) el("path",{d:cur3,stroke:"var(--casing)","stroke-width":8,fill:"none","stroke-linecap":"round"},g);
+    el("path",{d:cur3,stroke:dim?"var(--dimmed)":"var(--route)","stroke-width":dim?5:5,fill:"none","stroke-linecap":"round",opacity:dim?.7:1},g);
+    if (preview){
+      el("path",{d:path(preview,C,22),stroke:"var(--next)","stroke-width":5,fill:"none","stroke-linecap":"round","stroke-dasharray":"8 6"},g);
+      el("path",{d:path(S,preview,-25),stroke:"var(--casing)","stroke-width":8,fill:"none","stroke-linecap":"round"},g);
+      el("path",{d:path(S,preview,-25),stroke:"var(--route)","stroke-width":5,fill:"none","stroke-linecap":"round","stroke-dasharray":"10 6"},g);
+    }
+  }
+  // Lucide BedDouble, the app's hotel icon.
+  const BED = ["M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8","M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4","M12 4v6","M2 18h20"];
+  /** Pill with the hotel icon and a count, centered on the town. */
+  function badge(g, x, y, text, icon, fill, ink, outline){
+    const h = 20, iconW = icon ? 13 : 0, gap = icon ? 4 : 0;
+    const w = 14 + iconW + gap + text.length * 6.6;
+    el("rect",{class:"dot",x:x-w/2,y:y-h/2,width:w,height:h,rx:h/2,fill,
+      ...(outline ? {stroke:"var(--marker)","stroke-width":1.5} : {})},g);
+    const left = x - w/2 + 7;
+    if (icon){
+      const ic = el("g",{transform:`translate(${left},${y-6.5}) scale(${13/24})`,fill:"none",stroke:ink,"stroke-width":2.2,"stroke-linecap":"round","stroke-linejoin":"round"},g);
+      for (const d of BED) el("path",{d},ic);
+    }
+    const t = el("text",{x:left+iconW+gap,y:y+4,fill:ink,"text-anchor":"start","font-size":11,"font-weight":800},g);
+    t.textContent = text;
+  }
+  function endpoint(g, p, label, kind){
+    const m = el("g",{},g);
+    if (kind==="stop"){
+      el("circle",{cx:p.x,cy:p.y,r:9,fill:"var(--marker)",stroke:"var(--surface)","stroke-width":2.5},m);
+      el("circle",{cx:p.x,cy:p.y,r:3.5,fill:"var(--surface)"},m);
+    } else {
+      el("circle",{cx:p.x,cy:p.y,r:6,fill:"var(--surface)",stroke:"var(--marker)","stroke-width":2.5},m);
+    }
+    const right = p.x > 560;
+    const t = el("text",{x:right?p.x-12:p.x+12,y:p.y-10,"text-anchor":right?"end":"start","font-size":12,"font-weight":800,fill:"var(--text)","paint-order":"stroke",stroke:"var(--map)","stroke-width":3},m);
+    t.textContent = label;
+  }
+
+  function buildMap(host, mode){
+    const W=640,H=400;
+    host.innerHTML="";
+    const svg = el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Map of day 3 with towns that have more than 8 hotels"});
+    host.appendChild(svg);
+    base(svg,W,H);
+    const ring = el("g",{class:"ring"},svg);
+    const lines = el("g",{},svg);
+    const ends = el("g",{},svg);
+    const layer = el("g",{},svg);
+    let stop = {...B};
+    let label = "hotels";
+    const state = {stop};
+
+    // legend
+    const lg = document.createElement("div");
+    lg.className="legend";
+    const id = "sw-"+mode;
+    lg.innerHTML = `<label for="${id}"><input type="checkbox" id="${id}" checked><span class="sw"></span>Towns with 8+ hotels</label>`
+      + (mode==="c" ? `<div class="keys"><span class="k"><i style="background:var(--success)"></i>fits</span><span class="k"><i style="background:var(--warning)"></i>stretch</span><span class="k"><i style="background:var(--danger)"></i>too far</span></div>
+        <label for="lbl-${id}" style="font-weight:500;color:var(--muted)"><input type="checkbox" id="lbl-${id}"><span class="sw"></span>Show today's km</label>` : "");
+    host.appendChild(lg);
+    lg.querySelector("#"+id).addEventListener("change",e=>{
+      svg.classList.toggle("towns-off",!e.target.checked); hide();
+    });
+    if (mode==="c") lg.querySelector("#lbl-"+id).addEventListener("change",e=>{label=e.target.checked?"km":"hotels";drawTowns();});
+
+    const tip = document.createElement("div"); tip.className="tip"; tip.hidden=true; host.appendChild(tip);
+    let toast;
+
+    function deltas(t){
+      // relative to the current stop
+      const off = state.stop.id ? towns.find(x=>x.id===state.stop.id) : {d3:[0,0],d4:[0,0]};
+      return {d3:[t.d3[0]-off.d3[0], t.d3[1]-off.d3[1]], d4:[t.d4[0]-off.d4[0], t.d4[1]-off.d4[1]]};
+    }
+    function show(t){
+      routeLines(lines, state.stop, t);
+      drawEnds(t);
+      const d = deltas(t);
+      if (mode==="b"){
+        tip.innerHTML = `<b>${t.name}</b> · ${t.hotels} hotels<div class="click">Click to stop here</div>`;
+        panelB(t,d);
+      } else {
+        tip.innerHTML = `<b>${t.name}</b> · ${t.hotels} hotels
+          <div class="row"><span>Day 3</span><span>${fmt(d.d3[0],"km")} · ${fmt(d.d3[1],"m")}</span></div>
+          <div class="row"><span>Day 4</span><span>${fmt(d.d4[0],"km")} · ${fmt(d.d4[1],"m")}</span></div>
+          <div class="click">Click to stop here</div>`;
+      }
+      tip.hidden=false;
+      const r = host.getBoundingClientRect();
+      const sx = r.width/W;
+      let left = t.x*sx+16, top = t.y*sx+14;
+      if (left + tip.offsetWidth > r.width-8) left = t.x*sx - tip.offsetWidth - 16;
+      if (top + tip.offsetHeight > r.height-8) top = t.y*sx - tip.offsetHeight - 14;
+      tip.style.left=left+"px"; tip.style.top=top+"px";
+    }
+    function hide(){
+      tip.hidden=true; routeLines(lines,state.stop,null); drawEnds(null);
+      if (mode==="b") panelB(null);
+    }
+    function pick(t){
+      const prev = state.stop;
+      state.stop = t.id==="wangen" ? {...B} : {...t};
+      hide(); drawTowns();
+      if (toast) toast.remove();
+      toast = document.createElement("div"); toast.className="toast";
+      toast.innerHTML = `Day 3 now ends in ${t.name} <button type="button">Undo</button>`;
+      toast.querySelector("button").onclick=()=>{state.stop=prev;toast.remove();hide();drawTowns();};
+      host.appendChild(toast);
+    }
+    function drawEnds(preview){
+      ends.innerHTML="";
+      endpoint(ends,S,S.name,"start");
+      endpoint(ends,C,C.name,"start");
+      if (!preview) endpoint(ends,state.stop,state.stop.name,"stop");
+    }
+    function drawTowns(){
+      layer.innerHTML="";
+      ring.innerHTML="";
+      // 50 km around the day's stop, about 4.4 px per km here.
+      el("circle",{cx:state.stop.x,cy:state.stop.y,r:220,fill:"var(--sel-border)","fill-opacity":.04,stroke:"var(--sel-border)","stroke-opacity":.5,"stroke-width":1.5,"stroke-dasharray":"6 6"},ring);
+      const all = [...towns];
+      if (state.stop.id) all.push({id:"wangen",name:"Wangen",x:B.x,y:B.y,hotels:12,d3:[0,0],d4:[0,0]});
+      for (const t of all){
+        if (t.id===state.stop.id) continue;
+        const g = el("g",{class:"town",tabindex:0,role:"button","aria-label":`${t.name}, ${t.hotels} hotels`},layer);
+        let fill = "var(--surface)", txt="var(--text)";
+        if (mode==="c"){ const f = fit(t); fill=`var(--${f})`; txt="var(--surface)"; }
+        badge(g, t.x, t.y, label==="km" ? `${DAY.d3.km + t.d3[0]} km` : String(t.hotels), label!=="km", fill, txt, mode!=="c");
+        const nm = el("text",{class:"name",x:t.x,y:t.y+24,"text-anchor":"middle"},g);
+        nm.textContent=t.name;
+        g.addEventListener("mouseenter",()=>show(t));
+        g.addEventListener("mouseleave",hide);
+        g.addEventListener("focus",()=>show(t));
+        g.addEventListener("blur",hide);
+        g.addEventListener("click",()=>pick(t));
+        g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();pick(t);}});
+      }
+    }
+    function panelB(t,d){
+      const p = document.getElementById("panel-b");
+      if (!p) return;
+      const k3 = DAY.d3.km + (state.stop.id?towns.find(x=>x.id===state.stop.id).d3[0]:0);
+      const a3 = DAY.d3.asc + (state.stop.id?towns.find(x=>x.id===state.stop.id).d3[1]:0);
+      const k4 = DAY.d4.km + (state.stop.id?towns.find(x=>x.id===state.stop.id).d4[0]:0);
+      const a4 = DAY.d4.asc + (state.stop.id?towns.find(x=>x.id===state.stop.id).d4[1]:0);
+      const row = (lab,k,a,dk,da) => t
+        ? `<span>${lab}</span><span>${k+dk} km <span class="${cls(dk)}">${fmt(dk,"")}</span></span><span>${a+da} m <span class="${cls(da)}">${fmt(da,"")}</span></span>`
+        : `<span>${lab}</span><span>${k} km</span><span>${a} m</span>`;
+      p.innerHTML = `
+        <div class="ph"><div class="t">Day 3 · Sat 14 Jun</div><div class="s">${S.name} → ${t?t.name:state.stop.name}</div></div>
+        <div class="sec">
+          <div class="sh"><span class="ic"></span><span class="ti">Route</span><span class="su">${t?"Preview":"Planned"}</span></div>
+          <div class="cmp">
+            <span class="h"></span><span class="h">Distance</span><span class="h">Ascent</span>
+            ${row("Day 3",k3,a3,t?d.d3[0]:0,t?d.d3[1]:0)}
+            ${row("Day 4",k4,a4,t?d.d4[0]:0,t?d.d4[1]:0)}
+          </div>
+          ${t?`<div class="ghost">Arrive about ${t.d3[0]>10?"18:20":t.d3[0]<-10?"15:10":"16:45"}. Target 70 km a day.</div>`:`<div class="ghost">Hover a town on the map to compare.</div>`}
+        </div>
+        <div class="sec">
+          <div class="sh"><span class="ic"></span><span class="ti">Stop</span><span class="su">${t?t.hotels:state.stop.hotels||12} hotels</span></div>
+          <div>${t?t.name:state.stop.name}</div>
+        </div>`;
+    }
+    drawTowns(); hide();
+  }
+  document.querySelectorAll("[data-map]").forEach(h=>buildMap(h,h.dataset.map));
+
+  // phone: static tap state on Isny
+  const ph = document.getElementById("phone");
+  const W=280,H=300;
+  const svg = el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Phone map with Isny tapped"});
+  ph.appendChild(svg);
+  el("rect",{x:0,y:0,width:W,height:H,fill:"var(--map)"},svg);
+  el("ellipse",{cx:200,cy:200,rx:60,ry:34,fill:"var(--forest)"},svg);
+  const s={x:20,y:250}, b={x:140,y:160}, c={x:265,y:60}, i={x:185,y:170};
+  el("path",{d:path(s,b,-20),stroke:"var(--dimmed)","stroke-width":4,fill:"none","stroke-linecap":"round"},svg);
+  el("path",{d:path(b,c,18),stroke:"var(--dimmed)","stroke-width":4,fill:"none","stroke-linecap":"round"},svg);
+  el("path",{d:path(i,c,14),stroke:"var(--next)","stroke-width":4,fill:"none","stroke-dasharray":"7 5","stroke-linecap":"round"},svg);
+  el("path",{d:path(s,i,-18),stroke:"var(--route)","stroke-width":4,fill:"none","stroke-dasharray":"8 5","stroke-linecap":"round"},svg);
+  for (const [p,n] of [[{x:90,y:215},"9"],[{x:150,y:60},"10"],[{x:215,y:90},"52"]]){
+    badge(el("g",{class:"town"},svg),p.x,p.y,n,true,"var(--surface)","var(--text)",true);
+  }
+  const sel = el("g",{class:"town"},svg);
+  badge(sel,i.x,i.y,"14",true,"var(--surface)","var(--text)",true);
+  sel.querySelector(".dot").setAttribute("stroke-width","3");
+  const sheet=document.createElement("div"); sheet.className="sheet";
+  sheet.innerHTML=`<div class="grab"></div><div class="t">Isny · 14 hotels</div>
+    <div class="row2"><span>Day 3 <b>85 km</b> <span class="up">+17</span></span><span><b>1110 m</b> <span class="up">+290</span></span></div>
+    <div class="row2"><span>Day 4 <b>59 km</b> <span class="down">−15</span></span><span><b>720 m</b> <span class="down">−260</span></span></div>
+    <div class="btns"><button class="btn pri" type="button">Stop here</button><button class="btn" type="button">Cancel</button></div>`;
+  ph.appendChild(sheet);
+})();
+</script>

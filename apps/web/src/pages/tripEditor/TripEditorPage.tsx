@@ -18,6 +18,7 @@ import {
 import {
   type MapLayerGroup,
   type MapLayerKind,
+  PreviewLabel,
   SegmentedControl,
   Toast,
   ToastProvider,
@@ -43,6 +44,7 @@ import { useRouteStations } from "./stations";
 import {
   bedsNear,
   hasMovableDestination,
+  useHotelTowns,
   useMapHotels,
   useStopOptions,
   useTripPlaces,
@@ -52,8 +54,19 @@ import {
   type DayChoicesState,
   useDayChoices,
 } from "./dayChoices";
-import { type ChoiceStages, samePlace, stageLine } from "./edits";
+import {
+  type ChoiceStages,
+  routedStageIfEnding,
+  samePlace,
+  stageLine,
+} from "./edits";
 import { type DayRoute, MAX_ROUTES, useDayRoutes } from "./dayRoutes";
+import { useQuery } from "@tanstack/react-query";
+import { useDebouncedHover } from "../../components/useDebouncedHover";
+import { useServices } from "../../data/ServicesProvider";
+
+/** The pointer rests this long on a town before its route loads. */
+const TOWN_HOVER_MS = 120;
 
 // Stable, so the memos that use them keep.
 const NO_ROUTES: DayRoute[] = [];
@@ -63,9 +76,11 @@ import { TripActions } from "./TripHeader";
 import { proposedSection } from "./proposedSection";
 import { isChanged } from "./routeEdits";
 import {
+  formatDelta,
   type MapAlternative,
   type MapChoice,
   type RouteEditing,
+  type TownLayer,
   TripMap,
 } from "./TripMap";
 import { tripStops } from "./tripArea";
@@ -131,6 +146,7 @@ function TripEditor({
   useUndoKeys(editor);
   const network = useNetwork(networkArea(tripStops(trip)));
   const isPhone = useIsPhone();
+  const { routing } = useServices();
   const [hoverKm, setHoverKm] = useState<number>();
   const [hoveredDay, setHoveredDay] = useState<number>();
   const [hoveredClimb, setHoveredClimb] = useState<number>();
@@ -415,6 +431,123 @@ function TripEditor({
     return out;
   }, [readOnly, stage, choiceList, t, format]);
 
+  // Towns with hotels around the stop, to end the day in instead.
+  const townsOn =
+    dayOpen &&
+    !readOnly &&
+    layers.towns &&
+    (!isLast || hasMovableDestination(trip));
+  const taken = useMemo(
+    () => alternatives.map((a) => a.place.coord),
+    [alternatives],
+  );
+  const hotelTowns = useHotelTowns(trip, selected, townsOn, taken);
+  const [townHover, setTownHover, clearTownHover] = useDebouncedHover<{
+    day: number;
+    id: string;
+  }>(TOWN_HOVER_MS);
+  const hoveredTown =
+    townsOn && townHover?.day === selected
+      ? hotelTowns.find((town) => town.id === townHover.id)
+      : undefined;
+  const townRoute = useQuery({
+    // The same key as the stop options, so a town routed there is reused.
+    queryKey: [
+      "stopRoute",
+      trip.id,
+      trip.updatedAt,
+      selected,
+      hoveredTown?.place.name,
+    ],
+    queryFn: () => {
+      if (!hoveredTown) throw new Error("No town hovered");
+      return routedStageIfEnding(trip, selected, hoveredTown.place, (points) =>
+        routing.route(points, { profile: trip.settings.profile }),
+      );
+    },
+    enabled: !!hoveredTown,
+    staleTime: Infinity,
+  });
+  const townRouted = hoveredTown && townRoute.data;
+  const townChoice: MapChoice | undefined = townRouted
+    ? {
+        id: `town:${hoveredTown.id}`,
+        color: "route1",
+        line: townRouted.line,
+        ...(townRouted.nextLine && { nextLine: townRouted.nextLine }),
+      }
+    : undefined;
+  const pickTown = (id: string) => {
+    const town = hotelTowns.find((x) => x.id === id);
+    if (!town || !editor.canEdit) return;
+    // Phones have no hover: the first tap previews, the second picks.
+    if (isPhone && hoveredTown?.id !== id) {
+      setTownHover({ day: selected, id });
+      return;
+    }
+    clearTownHover();
+    void editor.moveStop(selected, town.place);
+  };
+  const nextDay = trip.stages[selected + 1];
+  const townLine = (day: number, distance: number, ascent: number) => (
+    <span className="block">
+      {t("town.day", {
+        day,
+        delta: formatDelta(t, format, { distance, ascent }),
+      })}
+    </span>
+  );
+  const townPreview = hoveredTown && stage && (
+    <PreviewLabel>
+      <span className="block">
+        {t("town.title", {
+          name: hoveredTown.place.name,
+          count: hoveredTown.hotels,
+        })}
+      </span>
+      {townRouted ? (
+        <>
+          {townLine(
+            selected + 1,
+            townRouted.distance - stage.stats.distance,
+            townRouted.ascent - stage.stats.ascent,
+          )}
+          {nextDay &&
+            townRouted.stages.next &&
+            townLine(
+              selected + 2,
+              townRouted.stages.next.stats.distance - nextDay.stats.distance,
+              townRouted.stages.next.stats.ascent - nextDay.stats.ascent,
+            )}
+        </>
+      ) : (
+        <span className="block font-medium">
+          {t(townRoute.isError ? "town.failed" : "town.routing")}
+        </span>
+      )}
+      <span className="block font-medium">
+        {t(isPhone ? "town.tap" : "town.click")}
+      </span>
+    </PreviewLabel>
+  );
+  const townLayer: TownLayer | undefined = townsOn
+    ? {
+        towns: hotelTowns.map((town) => ({
+          id: town.id,
+          place: town.place,
+          hotels: town.hotels,
+          label: t("town.label", {
+            name: town.place.name,
+            count: town.hotels,
+          }),
+        })),
+        ...(hoveredTown && { previewed: hoveredTown.id }),
+        ...(townPreview && { preview: townPreview }),
+        onHover: (id) => setTownHover(id ? { day: selected, id } : undefined),
+        onPick: pickTown,
+      }
+    : undefined;
+
   const selectedLegs = stage?.legs;
   const proposedLegs = isChanged(trip, selected)
     ? trip.proposed?.[selected]?.legs
@@ -483,6 +616,11 @@ function TripEditor({
                 checked: layers.hotels,
               },
             ]),
+        {
+          kind: "towns",
+          label: t("layers.towns"),
+          checked: layers.towns,
+        },
         {
           kind: "stations",
           label: t("layers.stations"),
@@ -572,8 +710,15 @@ function TripEditor({
     />
   );
   const mapLayers = {
-    choices: dayOpen ? mapChoices : NO_CHOICES,
-    ...(hoveredChoice && { hoveredChoice }),
+    choices: !dayOpen
+      ? NO_CHOICES
+      : townChoice
+        ? [...mapChoices, townChoice]
+        : mapChoices,
+    ...(townChoice
+      ? { hoveredChoice: townChoice.id }
+      : hoveredChoice && { hoveredChoice }),
+    ...(townLayer && { towns: townLayer }),
     stations: layers.stations ? stations : [],
     network: layers.network ? ("quiet" as const) : ("off" as const),
     weather: weatherField && {

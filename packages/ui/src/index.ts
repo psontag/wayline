@@ -189,6 +189,8 @@ export {
   StationMarker,
   HoverMarker,
   StopMarker,
+  TownMarker,
+  type TownMarkerProps,
   PlacePin,
   PreviewLabel,
   ViaActions,

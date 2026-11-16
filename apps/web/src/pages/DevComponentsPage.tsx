@@ -54,6 +54,7 @@ import {
   ClusterMarker,
   HotelMarker,
   StationMarker,
+  TownMarker,
   HotelRow,
   TrainRow,
   HoverMarker,
@@ -777,6 +778,8 @@ function TripEditorParts() {
           day={2}
           selected
         />
+        <TownMarker name="Kronach" hotels={14} />
+        <TownMarker name="Coburg" hotels={52} selected />
         <HotelMarker
           name="Hotel Krone"
           kind="hotel"

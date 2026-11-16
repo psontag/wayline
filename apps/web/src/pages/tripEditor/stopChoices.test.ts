@@ -1,5 +1,6 @@
 import {
   distanceKm,
+  type GeoTown,
   type LonLat,
   parseTrip,
   type Place,
@@ -15,6 +16,7 @@ import {
   bedsNear,
   destinationStations,
   hasMovableDestination,
+  hotelTowns,
   nearestTown,
   placeIndex,
   routeNear,
@@ -163,5 +165,71 @@ describe("nearestTown", () => {
 
   it("finds nothing beyond the limit", () => {
     expect(nearestTown(index.towns, [0, 0], 5)).toBeUndefined();
+  });
+});
+
+describe("hotelTowns", () => {
+  const found = hotelTowns(index, stage!);
+
+  it("lists towns with more than 8 hotels within 50 km of the stop", () => {
+    expect(found.length).toBeGreaterThan(0);
+    for (const town of found) {
+      expect(town.hotels).toBeGreaterThan(8);
+      expect(town.hotels).toBe(bedsNear(index.hotels, town.place.coord).total);
+      expect(distanceKm(town.place.coord, stage!.end.coord)).toBeLessThan(50);
+      expect(
+        distanceKm(town.place.coord, stage!.start.coord),
+      ).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  it("keeps towns apart, so their hotels don't overlap", () => {
+    for (const [i, town] of found.entries()) {
+      expect(distanceKm(town.place.coord, stage!.end.coord)).toBeGreaterThan(
+        10,
+      );
+      for (const other of found.slice(i + 1)) {
+        expect(distanceKm(town.place.coord, other.place.coord)).toBeGreaterThan(
+          10,
+        );
+      }
+    }
+  });
+
+  it("prefers a town to a village next to it", () => {
+    const town = (id: string, place: GeoTown["place"], lon: number) => ({
+      id,
+      name: id,
+      place,
+      lon,
+      lat: 50,
+      hotelCount: 0,
+      nodeId: null,
+    });
+    // Hotels between both places, so the village counts them too.
+    const hotels = Array.from({ length: 12 }, (_, i) => ({
+      id: `h${i}`,
+      name: `Hotel ${i}`,
+      kind: "hotel" as const,
+      lon: 11.32,
+      lat: 50,
+    }));
+    const local = placeIndex({
+      ...(places as Places),
+      hotels,
+      towns: [town("village", "village", 11.34), town("town", "town", 11.3)],
+    });
+    const day = {
+      ...stage!,
+      start: { ...stage!.start, coord: [10.5, 50] as LonLat },
+      end: { ...stage!.end, coord: [11, 50] as LonLat },
+    };
+    expect(hotelTowns(local, day).map((t) => t.id)).toEqual(["town"]);
+  });
+
+  it("leaves out towns at taken places", () => {
+    const [first] = found;
+    const rest = hotelTowns(index, stage!, [first!.place.coord]);
+    expect(rest.some((t) => t.id === first!.id)).toBe(false);
   });
 });

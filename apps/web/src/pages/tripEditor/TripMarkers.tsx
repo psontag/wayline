@@ -2,13 +2,15 @@ import type { LonLat, Place, Trip } from "@wayline/domain";
 import {
   AlternativeMarker,
   ClusterMarker,
+  cn,
   EndpointMarker,
   HotelMarker,
   StationMarker,
   StopMarker,
   type StopTone,
+  TownMarker,
 } from "@wayline/ui";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type MapRef, Marker, useMap } from "react-map-gl/maplibre";
 import { boundsOf } from "../../components/map/AppMap";
@@ -26,7 +28,7 @@ import { useSiteInfo } from "../../data/queries";
 import { hotelBookingUrl } from "./BookingLink";
 import type { MapHotel } from "./mapTypes";
 import type { MapStation } from "./stations";
-import type { MapAlternative } from "./TripMap";
+import type { MapAlternative, TownLayer } from "./TripMap";
 
 /** Stations show from this zoom on, so the whole trip stays calm. */
 const STATION_ZOOM = 10;
@@ -37,6 +39,9 @@ const STATION_RADIUS = 36;
 /** All hotels are near one stop, so below CLUSTER_ZOOM they show as one count. */
 const HOTEL_RADIUS = Infinity;
 
+/** Width of a town's hotel badge: padding, border, icon and digits. */
+const townBadgePx = (hotels: number) => 30 + String(hotels).length * 7;
+
 /** Label priority: lower wins when labels run into each other. */
 const PRIORITY = {
   selected: 0,
@@ -44,6 +49,7 @@ const PRIORITY = {
   station: 2,
   choice: 3,
   hotel: 4,
+  town: 5,
 };
 
 export type TripMarkersProps = {
@@ -56,6 +62,7 @@ export type TripMarkersProps = {
   onHoverAlternative?: (id: string | undefined) => void;
   /** Id of the choice being previewed. */
   previewStop?: string;
+  towns?: TownLayer;
   stations: MapStation[];
   hotels: MapHotel[];
   selectedHotelId?: string;
@@ -76,6 +83,7 @@ export function TripMarkers({
   onPickAlternative,
   onHoverAlternative,
   previewStop,
+  towns,
   stations,
   hotels,
   selectedHotelId,
@@ -188,6 +196,18 @@ export function TripMarkers({
         (x, y) => labelBox(x, y, r),
       );
     }
+    for (const { id, place, hotels: count } of towns?.towns ?? []) {
+      // Towns give way to everything else and may hide.
+      const half = townBadgePx(count) / 2;
+      add(
+        `town-${id}`,
+        PRIORITY.town,
+        place.coord,
+        (x, y) => labelBox(x, y, half, place.name.length, 6.5),
+        (x, y) => centerBox(x, y, half * 2, 24),
+        false,
+      );
+    }
     for (const group of hotelGroups) {
       const [hotel] = group.items;
       // Selected and saved hotels always show in full, often under the stop.
@@ -203,6 +223,24 @@ export function TripMarkers({
     }
     return placeLabels(labels);
   })();
+
+  // A tap on the empty map ends a town preview. Phones have no pointer to
+  // leave the town with.
+  const previewedTown = towns?.previewed;
+  const onHoverTown = towns?.onHover;
+  useEffect(() => {
+    if (!map || !previewedTown || !onHoverTown) return;
+    const end = (e: { originalEvent: Event }) => {
+      if (e.originalEvent.target === map.getCanvas()) onHoverTown(undefined);
+    };
+    map.on("click", end);
+    return () => {
+      map.off("click", end);
+    };
+  }, [map, previewedTown, onHoverTown]);
+  // The preview label opens away from the near edge of the map.
+  const opensLeft = (coord: LonLat) =>
+    !!map && map.project(coord).x > map.getContainer().clientWidth / 2;
 
   const zoomTo = (coords: LonLat[]) =>
     map?.fitBounds(boundsOf(coords), { padding: 80, maxZoom: CLUSTER_ZOOM });
@@ -245,6 +283,59 @@ export function TripMarkers({
               onClick={() => zoomTo(group.items.map((s) => s.coord))}
             />
           </ClusterAt>
+        );
+      })}
+      {towns?.towns.map(({ id, place, hotels: count, label }) => {
+        const previewed = id === towns.previewed;
+        const cut = previewed ? undefined : crowded.get(`town-${id}`);
+        if (cut === "none") return null;
+        const hover = (e: { pointerType: string }) =>
+          e.pointerType === "mouse" && towns.onHover(id);
+        const leave = (e: { pointerType: string }) =>
+          e.pointerType === "mouse" && towns.onHover(undefined);
+        return (
+          <Marker
+            key={`town-${id}`}
+            longitude={place.coord[0]}
+            latitude={place.coord[1]}
+            anchor="left"
+            offset={[-townBadgePx(count) / 2, 0]}
+            style={{ zIndex: previewed ? 7 : 1 }}
+          >
+            <div className="relative">
+              <TownMarker
+                name={place.name}
+                hotels={count}
+                selected={previewed}
+                compact={cut === "core"}
+                aria-label={label}
+                onClick={() => towns.onPick(id)}
+                onPointerEnter={hover}
+                onPointerLeave={leave}
+                // Only keyboard focus previews. A tap previews on its own.
+                onFocus={(e) =>
+                  e.currentTarget.matches(":focus-visible") && towns.onHover(id)
+                }
+                onBlur={() => towns.onHover(undefined)}
+              />
+              {previewed && towns.preview && (
+                <div
+                  className={cn(
+                    "absolute top-full left-0 mt-2 flex w-max",
+                    opensLeft(place.coord) && "-translate-x-full",
+                  )}
+                  // Opening left, it ends at the badge, not at the name.
+                  style={
+                    opensLeft(place.coord)
+                      ? { left: townBadgePx(count) }
+                      : undefined
+                  }
+                >
+                  {towns.preview}
+                </div>
+              )}
+            </div>
+          </Marker>
         );
       })}
       {alternatives.map(({ id, place, label, beds, color }) => (

@@ -1,12 +1,13 @@
 import * as MenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { ArrowUp, Check, Layers, TrainFront } from "lucide-react";
+import { ArrowUp, BedDouble, Check, Layers, TrainFront } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../lib/cn";
 import { usePortalContainer } from "../theme/ThemeScope";
 import { IconButton } from "./IconButton";
 import { MapLegendLine, type MapLegendItem } from "./MapLegend";
 
-export type MapLayerKind = "network" | "hotels" | "stations" | "rain" | "wind";
+export type MapLayerKind =
+  "network" | "hotels" | "towns" | "stations" | "rain" | "wind";
 
 export type MapLayerToggle = {
   kind: MapLayerKind;
@@ -55,6 +56,8 @@ function Swatch({ kind }: { kind: MapLayerKind }) {
       return (
         <span className="size-3 rounded-full border-2 border-marker bg-surface" />
       );
+    case "towns":
+      return <BedDouble className="size-3.5 text-text" />;
     case "stations":
       return (
         <span className="flex size-3.5 items-center justify-center rounded-sm bg-text-muted text-surface">

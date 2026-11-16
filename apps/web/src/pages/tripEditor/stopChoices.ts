@@ -56,12 +56,16 @@ export type PlaceIndex = {
 };
 
 /** Places around points, e.g. a route. Undefined while they load. */
-export function usePlaceIndex(points: LonLat[]): PlaceIndex | undefined {
+export function usePlaceIndex(
+  points: LonLat[],
+  km?: number,
+): PlaceIndex | undefined {
   const { network } = useServices();
   // Every 20th point is enough for the area, and keeps Math.min in bboxAround
   // well below the argument limit for long tracks.
   const area = networkArea(
     points.filter((_, i) => i % 20 === 0 || i === points.length - 1),
+    km,
   );
   const places = useQuery({
     queryKey: ["places", area],
@@ -225,6 +229,74 @@ export function destinationStations(
 
 /** Alternatives closer than this to the day's start are no real choice. */
 const START_GAP_KM = 10;
+
+/** Towns this close to the day's stop can become the stop. */
+export const TOWN_STOP_KM = 50;
+/** Towns need more hotels than this to show. */
+const TOWN_MIN_HOTELS = 8;
+/**
+ * Towns closer than this to a stop or a bigger town are the same place.
+ * Their hotel circles overlap, so a village next to a city counts the
+ * city's hotels.
+ */
+const TOWN_GAP_KM = HOTEL_KM * 2;
+
+export type HotelTown = { id: string; place: Place; hotels: number };
+
+/**
+ * Towns the day could end in instead: within TOWN_STOP_KM of the stop,
+ * with more than TOWN_MIN_HOTELS hotels, away from the start and from
+ * `taken` places. Where towns are close, the bigger one wins, then the one
+ * with more hotels.
+ */
+export function hotelTowns(
+  { hotels, towns }: PlaceIndex,
+  stage: Stage,
+  taken: LonLat[] = [],
+): HotelTown[] {
+  const found = towns.flatMap((town) => {
+    const coord: LonLat = [town.lon, town.lat];
+    if (distanceKm(coord, stage.end.coord) > TOWN_STOP_KM) return [];
+    if (distanceKm(coord, stage.start.coord) < START_GAP_KM) return [];
+    const count = hotels.near(coord, HOTEL_KM).length;
+    if (count <= TOWN_MIN_HOTELS) return [];
+    const place: Place = {
+      name: town.name,
+      kind: "town",
+      coord,
+      osmId: town.id,
+    };
+    return [{ id: town.id, place, hotels: count, rank: SIZE_RANK[town.place] }];
+  });
+  const kept = [stage.end.coord, ...taken];
+  const out: HotelTown[] = [];
+  found.sort((a, b) => a.rank - b.rank || b.hotels - a.hotels);
+  for (const { id, place, hotels: count } of found) {
+    if (kept.some((c) => distanceKm(c, place.coord) < TOWN_GAP_KM)) continue;
+    kept.push(place.coord);
+    out.push({ id, place, hotels: count });
+  }
+  return out;
+}
+
+/** Towns with hotels around the stop of a day. Empty while they load. */
+export function useHotelTowns(
+  trip: Trip,
+  index: number,
+  enabled: boolean,
+  taken: LonLat[],
+): HotelTown[] {
+  const stage = trip.stages[index];
+  const points = useMemo(
+    () => (enabled && stage ? [stage.end.coord] : []),
+    [enabled, stage],
+  );
+  const places = usePlaceIndex(points, TOWN_STOP_KM + HOTEL_KM);
+  return useMemo(
+    () => (places && stage && enabled ? hotelTowns(places, stage, taken) : []),
+    [places, stage, enabled, taken],
+  );
+}
 
 /** Alternatives that are not just back where the day starts. */
 export function awayFromStart(stage: Stage, places: Place[]): Place[] {
