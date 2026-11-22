@@ -14,9 +14,13 @@ const NO_SCENERY = 0xffff;
 
 class Reader {
   offset = 4;
+  /** Version 1 has no urban column. Datasets built before it still load. */
+  readonly hasUrban: boolean;
   constructor(private bytes: Uint8Array) {
     const magic = new TextDecoder().decode(bytes.subarray(0, 4));
-    if (magic !== "WNT1") throw new Error(`Not a network tile: ${magic}`);
+    if (magic !== "WNT1" && magic !== "WNT2")
+      throw new Error(`Not a network tile: ${magic}`);
+    this.hasUrban = magic === "WNT2";
   }
 
   private take<T>(make: (b: ArrayBuffer) => T, size: number, count: number) {
@@ -98,6 +102,7 @@ export function decodeNetworkTile(
   const ascent = r.u16(m);
   const descent = r.u16(m);
   const scenery = [r.u16(m), r.u16(m), r.u16(m), r.u16(m), r.u16(m)] as const;
+  const urban = r.hasUrban ? r.u16(m) : undefined;
   const routeCount = r.u8(m);
   const counts = r.u32(m);
   const routeRefs = r.u32(refs);
@@ -150,7 +155,7 @@ export function decodeNetworkTile(
       geometry: encodeLine(line),
       elevation: ele.slice(point, point + count),
     };
-    if (at(scenery[0], i) !== NO_SCENERY)
+    if (at(scenery[0], i) !== NO_SCENERY) {
       edge.scenery = {
         forest: share(scenery[0], i),
         water: share(scenery[1], i),
@@ -158,6 +163,9 @@ export function decodeNetworkTile(
         nature: share(scenery[3], i),
         sights: at(scenery[4], i),
       };
+      if (urban && at(urban, i) !== NO_SCENERY)
+        edge.scenery.urban = share(urban, i);
+    }
     edges.push(edge);
     point += count;
     ref += at(routeCount, i);

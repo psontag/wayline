@@ -233,8 +233,10 @@ export type Scenery = {
   water: number;
   /** landuse=vineyard, within ~150 m. */
   vineyard: number;
-  /** Inside nature reserves, national parks and nature parks. */
+  /** Inside nature reserves, national parks, nature parks and biosphere reserves. */
   nature: number;
+  /** landuse=residential, commercial, industrial, retail. Missing in data built before it. */
+  urban?: number;
   /** Count of named castles, ruins, monasteries, city gates, attractions, viewpoints and museums within 500 m. */
   sights: number;
 };

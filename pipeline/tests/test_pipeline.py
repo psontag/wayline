@@ -21,6 +21,8 @@ import export as X  # noqa: E402
 # Packed by export.pack_tile from the mock tile. The app reads it in
 # packages/providers/src/networkTile.test.ts.
 FIXTURE_BIN = os.path.join(ROOT, "packages/providers/fixtures/17_98.bin")
+# The same tile in format version 1, without the urban column.
+FIXTURE_V1 = os.path.join(ROOT, "packages/providers/fixtures/17_98.v1.bin")
 FIXTURE_JSON = os.path.join(ROOT, "apps/web/public/data/mock/heidelberg/tiles/17_98.json")
 # Signed cycle routes, towns, a station and hotels around Bamberg, cut from
 # the filtered Germany extract: osmium extract -s complete_ways -b 10.84,49.86,10.97,49.94
@@ -39,6 +41,20 @@ def test_packed_tile_reads_back():
     with gzip.open(FIXTURE_BIN, "rb") as f:
         want = f.read()
     assert X.pack_tile(X.read_tile(FIXTURE_BIN)) == want
+
+
+def test_version_1_tile_reads():
+    assert X.read_tile(FIXTURE_V1) == X.read_tile(FIXTURE_BIN)
+
+
+def test_urban_share_reads_back(tmp_path):
+    tile = X.read_tile(FIXTURE_BIN)
+    edge = next(e for e in tile["edges"] if e.get("scenery"))
+    edge["scenery"]["urban"] = 0.25
+    path = tmp_path / "tile.bin"
+    path.write_bytes(gzip.compress(X.pack_tile(tile)))
+    back = X.read_tile(str(path))
+    assert next(e for e in back["edges"] if e["id"] == edge["id"])["scenery"]["urban"] == 0.25
 
 
 def test_sample_build(tmp_path, monkeypatch):
@@ -77,6 +93,7 @@ def test_sample_build(tmp_path, monkeypatch):
     assert any(e["routes"] for e in edges.values())
     # The synthetic DEM rises to the north, so some edges climb.
     assert any(e["ascent"] > 0 for e in edges.values())
+    assert all("urban" in e["scenery"] for e in edges.values())
 
     places = [p for key in manifest["tiles"]["places"]["keys"] for p in read_json(data / "places" / f"{key}.json")["towns"]]
     assert any(p["name"] == "Bamberg" for p in places)
