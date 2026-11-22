@@ -13,32 +13,32 @@ pnpm data:build
 - In a worktree, `pipeline/cache` is a link to the main checkout (`pnpm setup:worktree`). After the build, the new dataset moves to the main checkout and is linked back.
 - Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `eu-<date of the newest extract>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
 - First filters each OSM file with osmium-tool to what the pipeline reads (`OSM_FILTER` in `build.py`): Germany 4.5 to 1.5 GB. Then merges them. Objects on a border are in both extracts, maybe in different versions, so the newest one stays.
-- Takes about 20 minutes plus the download, and up to 6 GB of memory on a laptop. The filtered file and the extracts are cached, so the next build takes about 4.5 minutes.
+- Takes about 25 minutes plus the download, and up to 6 GB of memory on a laptop (measured for Germany alone). The filtered files and the extracts are cached, so the next build takes about 5 minutes.
 - `pnpm data:build --area switzerland` builds one country, `--area hessen` one German state.
 
 | Step | Minutes | Memory |
 |---|---|---|
-| Filter | 1 | 2.5 GB |
-| Routing extract | 7.9 | 6.0 GB |
-| Routing tiles | 2.3 | 4.4 GB |
-| Scenery extract | 4.4 | 5.4 GB |
+| Filter and merge | 2 | 2.5 GB |
+| Routing extract | 9.2 | 6.0 GB |
+| Routing tiles | 2.6 | 4.4 GB |
+| Scenery extract | 4.5 | 5.4 GB |
 | Route extract | 2 | 5.5 GB |
 | Graph, export and lines | 2.3 | 4.6 GB |
 | Route stations | 0.1 | 0.5 GB |
 | Areas | 0.1 | 0.3 GB |
 
-Output (November 2026):
+Output for Germany and Switzerland (November 2026), 6,300 files:
 
 | | |
 |---|---|
-| Route network | 152,000 nodes, 205,000 edges, 212,000 km, of which 1,650 km connectors |
-| Tiles | 226 files of 0.5°, 19.5 MiB (9.2 MiB gzipped), largest 0.21 MiB gzipped |
-| Place tiles | 229 files, 9.8 MiB (2.3 MiB gzipped), largest 143 KiB: 39,300 towns, 5,900 stations, 38,000 hotels |
-| `search.json` | 2.8 MiB (0.7 MiB gzipped): 31,800 towns and 5,900 stations on the network |
-| Route lines | 3,500 files, 15 MiB, largest 206 KiB |
-| `routes.json` | 1.8 MiB: 16,300 routes |
-| `reach/<station>.json` | 1.3 MiB (0.35 MiB gzipped) per home station, 11 s: 5,200 stations within 12 h of Karlsruhe |
-| `route-stations.json` | 0.6 MiB (0.3 MiB gzipped), 7 s: 547 routes in 570 parts, 10,000 stations |
+| Route network | 159,500 nodes, 213,900 edges, 222,600 km, of which 1,700 km connectors |
+| Tiles | 254 files of 0.5°, 20.5 MiB (9.8 MiB gzipped), largest 0.21 MiB gzipped |
+| Place tiles | 260 files, 10.9 MiB, largest 143 KiB: 42,900 towns, 7,000 stations, 43,000 hotels |
+| `search.json` | 3 MiB: towns and stations on the network |
+| Route lines | 3,800 files, 16 MiB, largest 206 KiB |
+| `routes.json` | 1.9 MiB: 16,700 routes |
+| `reach/<station>.json` | 1.3 MiB (0.35 MiB gzipped) per home station, 12 s: 5,300 stations within 12 h of Karlsruhe |
+| `route-stations.json` | 0.7 MiB, 6 s: 605 routes in 634 parts, 12,000 stations |
 | `areas.json` | 0.5 MiB (0.36 MiB gzipped), 3 s: 146 areas, 5,900 stations |
 
 A 200 km trip loads up to about 110 tiles, about 12 MiB (6 MiB gzipped).
