@@ -6,6 +6,7 @@ import { readDataFile } from "./mock/testData";
 import { TiledNetworkSource } from "./TiledNetworkSource";
 
 // fixtures/17_98.bin is the Heidelberg mock tile 17_98.json, packed by pipeline/export.py.
+// 17_98.v1.bin is the same tile in format version 1.
 const packed = async () =>
   new Uint8Array(
     await readFile(new URL("../fixtures/17_98.bin", import.meta.url)),
@@ -24,6 +25,16 @@ describe("decodeNetworkTile", () => {
       await gunzip(await packed()),
     );
     expect(got).toEqual(want);
+  });
+
+  it("reads tiles of format version 1, without urban", async () => {
+    const want = await json();
+    const v1 = new Uint8Array(
+      await readFile(new URL("../fixtures/17_98.v1.bin", import.meta.url)),
+    );
+    expect(decodeNetworkTile("17_98", want.version, await gunzip(v1))).toEqual(
+      want,
+    );
   });
 
   it("refuses other files", () => {

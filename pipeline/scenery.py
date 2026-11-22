@@ -1,4 +1,4 @@
-"""What the route network passes: forest, water, vineyards, nature reserves and sights.
+"""What the route network passes: forest, water, vineyards, nature areas, built-up land and sights.
 
 Usage: python scenery.py <input.osm.pbf>  (prints a summary)
 
@@ -23,7 +23,8 @@ CELL_LON, CELL_LAT = 0.0007, 0.00045  # about 50 m at 49° N, 45 m at 55° N
 WIDTH = math.ceil((EAST - WEST) / CELL_LON)
 HEIGHT = math.ceil((NORTH - SOUTH) / CELL_LAT)
 
-LAYERS = ("forest", "water", "vineyard", "nature")
+LAYERS = ("forest", "water", "vineyard", "nature", "urban")
+URBAN = {"residential", "commercial", "industrial", "retail"}
 MIN_LAKE_M2 = 50_000
 NOT_LAKES = {"wastewater", "basin", "reflecting_pool", "fish_pass"}
 STRICT_CLASSES = {"1", "1a", "1b", "2", "3", "4"}
@@ -38,6 +39,7 @@ TAGS = [
     ("landuse", "forest"),
     ("natural", "wood"),
     ("landuse", "vineyard"),
+    *(("landuse", v) for v in URBAN),
     ("natural", "water"),
     ("leisure", "nature_reserve"),
     ("boundary", "national_park"),
@@ -57,6 +59,8 @@ def area_layers(t):
         out.append("water")
     if is_nature(t):
         out.append("nature")
+    if t.get("landuse") in URBAN:
+        out.append("urban")
     return out
 
 
@@ -65,11 +69,13 @@ def is_nature(t):
         return True
     if t.get("boundary") != "protected_area":
         return False
-    if t.get("protect_class") in STRICT_CLASSES:
+    if t.get("protect_class") in STRICT_CLASSES or t.get("designation") == "unesco_biosphere_reserve":
         return True
     # Not all of class 5: it also holds landscape protection areas, which cover a third of the land.
     # Some nature parks have another class, e.g. Geo-Naturpark Bergstraße-Odenwald.
-    return "naturpark" in f"{t.get('protection_title', '')} {t.get('name', '')}".lower()
+    # The Pfälzerwald is mapped only as a biosphere reserve.
+    title = f"{t.get('protection_title', '')} {t.get('name', '')}".lower()
+    return "naturpark" in title or "biosphärenreservat" in title
 
 
 def is_sight(t):
@@ -229,8 +235,8 @@ def join(ways):
 
 def draw_parts(layers, parts):
     """Draw relations from the ways of all states onto packed layers. Areas that
-    reach outside the region stay open: water closes them with a straight line
-    (Bodensee), the other classes drop them."""
+    reach outside the region stay open: water and nature close them with a
+    straight line (Bodensee, Pfälzerwald), the other classes drop them."""
     for name in LAYERS:
         a = None
         for layer_names, ways in parts.values():
@@ -238,7 +244,7 @@ def draw_parts(layers, parts):
                 continue
             closed, chains = join([w[1:] for w in ways.values() if w[0] != "inner"])
             holes, _ = join([w[1:] for w in ways.values() if w[0] == "inner"])
-            rings = closed + chains if name == "water" else closed
+            rings = closed + chains if name in ("water", "nature") else closed
             if name == "water" and sum(ring_m2(r) for r in rings if len(r) >= 3) < MIN_LAKE_M2:
                 continue
             if a is None:
@@ -269,7 +275,7 @@ class Scenery:
     """Looks up the scenery of an edge. Takes the merged layers and sights of all states."""
 
     # Buffer in cells. Pillow already draws areas about half a cell too large.
-    BUFFER = {"forest": 1, "water": 3, "vineyard": 2, "nature": 0}
+    BUFFER = {"forest": 1, "water": 3, "vineyard": 2, "nature": 0, "urban": 0}
 
     def __init__(self, layers, sights):
         """Layers are packed (see pack)."""

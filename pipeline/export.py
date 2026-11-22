@@ -316,7 +316,9 @@ def parse_stars(s):
 
 # --- network tiles ----------------------------------------------------------
 
-TILE_MAGIC = b"WNT1"
+TILE_MAGIC = b"WNT2"
+# Version 1 has no urban column. Datasets built before it still load.
+OLD_TILE_MAGIC = b"WNT1"
 KINDS = ["junction", "town", "station"]
 CLASSES = ["icn", "ncn", "rcn", "lcn", "connector"]
 SCENERY = ["forest", "water", "vineyard", "nature"]
@@ -400,6 +402,7 @@ def pack_tile(tile):
         col([e["descent"] for e in edges], "<u2"),
         *(col([k(s[f]) if s else NO_SCENERY for s in scenery], "<u2") for f in SCENERY),
         col([s["sights"] if s else NO_SCENERY for s in scenery], "<u2"),
+        col([k(s["urban"]) if s and "urban" in s else NO_SCENERY for s in scenery], "<u2"),
         col([len(e["routes"]) for e in edges], "<u1"),
         col(counts, "<u4"),
         col(route_refs, "<u4"),
@@ -457,7 +460,7 @@ def read_tile(path):
 
     with gzip.open(path, "rb") as f:
         b = f.read()
-    if b[:4] != TILE_MAGIC:
+    if b[:4] not in (TILE_MAGIC, OLD_TILE_MAGIC):
         raise ValueError(f"{path} is not a network tile")
     n, m, p, r, size = np.frombuffer(b, "<u4", 5, 4).tolist()
     names = b[24 : 24 + size].decode().split("\n") if size else []
@@ -476,6 +479,7 @@ def read_tile(path):
     surface = [take("<u2", m) for _ in range(3)]
     network, score, ascent, descent = take("<u1", m), take("<u2", m), take("<u2", m), take("<u2", m)
     scenery = [take("<u2", m) for _ in range(5)]
+    urban = take("<u2", m) if b[:4] == TILE_MAGIC else [NO_SCENERY] * m
     route_count, counts, route_refs = take("<u1", m), take("<u4", m), take("<u4", r)
     p_lon, pos = read_varints(b, pos, p)
     p_lat, pos = read_varints(b, pos, p)
@@ -502,6 +506,8 @@ def read_tile(path):
         }  # fmt: skip
         if scenery[0][i] != NO_SCENERY:
             e["scenery"] = {**{f: scenery[j][i] / 1000 for j, f in enumerate(SCENERY)}, "sights": scenery[4][i]}
+            if urban[i] != NO_SCENERY:
+                e["scenery"]["urban"] = urban[i] / 1000
         edges.append(e)
         at += counts[i]
         ref += route_count[i]

@@ -53,13 +53,13 @@ A 200 km trip loads up to about 110 tiles, about 12 MiB (6 MiB gzipped).
 
 ## Network tiles
 
-`tiles/<x>_<y>.bin` hold the route network in tiles of 0.5°, gzipped. The manifest lists them under `tiles` with `format: 1`. `export.pack_tile` writes them, `packages/providers/src/networkTile.ts` and `export.read_tile` read them. A tile holds its nodes, every edge that touches one of them, and the far nodes of those edges.
+`tiles/<x>_<y>.bin` hold the route network in tiles of 0.5°, gzipped. The manifest lists them under `tiles` with `format: 1`. `export.pack_tile` writes them, `packages/providers/src/networkTile.ts` and `export.read_tile` read them. A tile holds its nodes, every edge that touches one of them, and the far nodes of those edges. Both readers also read version 1 (`WNT1`), which has no urban column.
 
 All numbers are little-endian. Coordinates are degrees × 10⁵. Shares are × 1000. "Delta" means each value minus the one before, the first as is.
 
 | Field | Type | Count |
 |---|---|---|
-| `WNT1` | 4 bytes | |
+| `WNT2` | 4 bytes | |
 | Nodes n, edges m, points p, route refs r, name bytes b | u32 | 5 |
 | Names: route and place names, UTF-8, joined by `\n` | bytes | b |
 | Node ids, delta | i32 | n |
@@ -78,6 +78,7 @@ All numbers are little-endian. Coordinates are degrees × 10⁵. Shares are × 1
 | Score | u16 | m |
 | Ascent, descent in m | u16 | 2 × m |
 | Scenery forest, water, vineyard, nature (shares) and sights (count), 65535 for none | u16 | 5 × m |
+| Scenery urban (share), 65535 for none | u16 | m |
 | Routes per edge | u8 | m |
 | Points per edge | u32 | m |
 | Routes (index in names), edge by edge | u32 | r |
@@ -135,7 +136,7 @@ The map draws the signed routes from vector tiles, not from the network tiles.
 
 ## Scenery
 
-Each edge has `scenery`: how much of it runs through forest, along water, through vineyards and in nature areas, and how many sights are near (`Scenery` in `packages/domain/src/geodata.ts`).
+Each edge has `scenery`: how much of it runs through forest, along water, through vineyards, in nature areas and through built-up land, and how many sights are near (`Scenery` in `packages/domain/src/geodata.ts`).
 
 - `scenery.py` draws the areas and rivers of each class onto a grid of 50 m cells over the region.
 - An edge's share of a class is the share of its points (every 50 m) on a cell of that class.
@@ -146,15 +147,16 @@ Each edge has `scenery`: how much of it runs through forest, along water, throug
 | `forest` | `landuse=forest`, `natural=wood` | 50 m |
 | `water` | `waterway=river\|canal`, `natural=water` over 5 ha (not basins or wastewater) | 150 m |
 | `vineyard` | `landuse=vineyard` | 100 m |
-| `nature` | `leisure=nature_reserve`, `boundary=national_park`, `boundary=protected_area` with `protect_class` 1–4, and nature parks (`Naturpark` in name or `protection_title`) | none |
+| `nature` | `leisure=nature_reserve`, `boundary=national_park`, `boundary=protected_area` with `protect_class` 1–4, nature parks (`Naturpark` in name or `protection_title`) and biosphere reserves (`designation=unesco_biosphere_reserve`, or `Biosphärenreservat` in name or `protection_title`) | none |
+| `urban` | `landuse=residential\|commercial\|industrial\|retail` | none |
 | `sights` | Named `historic=castle\|ruins\|monastery\|city_gate`, `tourism=attraction\|viewpoint\|museum` (nodes, and areas by their center) | counted within 500 m |
 
 - Pillow draws areas about 25 m too large. The buffers above come on top.
 - Landscape protection areas (`protect_class=5` without `Naturpark`) don't count. They cover about a third of the land.
 - Nature parks are large and include towns, e.g. Heidelberg is in Geo-Naturpark Bergstraße-Odenwald.
-- The extract holds only the part of a relation inside Germany. Areas that reach outside are dropped, except water: its open outline is closed with a straight line. So the Bodensee covers its German side.
+- The extract holds only the part of a relation inside Germany. Areas that reach outside are dropped, except water and nature: their open outline is closed with a straight line. So the Bodensee and the Pfälzerwald cover their German side.
 
-Mean share per edge km, October 2026:
+Mean share per edge km, October 2026, before urban and biosphere reserves:
 
 | forest | water | vineyard | nature |
 |---|---|---|---|
@@ -258,7 +260,7 @@ Format in `ReachFile` in `packages/domain/src/geodata.ts`. Per station id: minut
 | `build.py` | Runs everything |
 | `download.py` | Downloads the inputs |
 | `extract.py` | Reads cycling routes, towns, stations and hotels from a PBF file |
-| `scenery.py` | Reads forests, water, vineyards, nature areas and sights, and scores edges |
+| `scenery.py` | Reads forests, water, vineyards, nature areas, built-up land and sights, and scores edges |
 | `graph.py` | Builds the route graph (docs/05-trip-generation.md) |
 | `dem.py` | Reads elevation from the DEM tiles |
 | `export.py` | Writes nodes, edges and places in the format of `packages/domain/src/geodata.ts` |
