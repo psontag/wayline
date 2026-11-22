@@ -24,6 +24,7 @@ import {
   TransitousTrains,
   type WeatherProvider,
 } from "@wayline/providers";
+import { LINES_PROTOCOL } from "../components/map/lineTiles";
 import { offlineAware } from "./apiClient";
 import { sameStation } from "./homeStation";
 import { dataUrl, MOCK_DATA } from "./dataUrl";
@@ -129,7 +130,7 @@ export function createServices(): Services {
       const table = (await fetchJson(`${base}/${files.routes}`)) as RouteTable;
       return {
         // Not new URL(): it would encode the braces.
-        tiles: `${location.origin}${base}/${lines.path}`,
+        tiles: `${LINES_PROTOCOL}://${location.host}${base}/${lines.path}`,
         minzoom: lines.minzoom,
         maxzoom: lines.maxzoom,
         bounds: lines.bounds,
