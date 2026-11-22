@@ -17,6 +17,7 @@ sys.path.insert(0, PIPELINE)
 import build  # noqa: E402
 import download  # noqa: E402
 import export as X  # noqa: E402
+import region  # noqa: E402
 
 # Packed by export.pack_tile from the mock tile. The app reads it in
 # packages/providers/src/networkTile.test.ts.
@@ -39,6 +40,13 @@ def test_packed_tile_reads_back():
     with gzip.open(FIXTURE_BIN, "rb") as f:
         want = f.read()
     assert X.pack_tile(X.read_tile(FIXTURE_BIN)) == want
+
+
+def test_extracts():
+    assert region.extracts(region.ID) == region.EXTRACTS
+    assert region.extracts("switzerland") == ["switzerland"]
+    assert region.extracts("hessen") == ["germany/hessen"]
+    assert download.osm_paths("c", "hessen") == [os.path.join("c", "osm", "hessen-latest.osm.pbf")]
 
 
 def test_sample_build(tmp_path, monkeypatch):

@@ -1,6 +1,6 @@
 """Build the route network and places for the region.
 
-Usage: python build.py [--cache DIR] [--out DIR] [--area germany|<state>]
+Usage: python build.py [--cache DIR] [--out DIR] [--area eu|<extract>|<state>]
 
 Reads the downloads from the cache (see download.py) and writes
 <out>/<version>/ with manifest.json, search.json, tiles/<x>_<y>.json,
@@ -84,12 +84,25 @@ def stale(dst, *inputs):
 
 
 def osm_file(cache, area):
-    """The OSM file of the area, filtered by osmium-tool. Cached next to the download."""
-    src = os.path.join(cache, "osm", f"{area}-latest.osm.pbf")
+    """The OSM file of the area, filtered by osmium-tool, its extracts merged. Cached in work/."""
+    os.makedirs(os.path.join(cache, "work"), exist_ok=True)
+    filtered = []
+    for src in download.osm_paths(cache, area):
+        dst = os.path.join(cache, "work", os.path.basename(src).replace("-latest.", "-filtered."))
+        if stale(dst, src, __file__):
+            subprocess.run(["osmium", "tags-filter", "--overwrite", "-o", dst, src, *OSM_FILTER], check=True)
+        filtered.append(dst)
+    if len(filtered) == 1:
+        return filtered[0]
     dst = os.path.join(cache, "work", f"{area}-filtered.osm.pbf")
-    if stale(dst, src, __file__):
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        subprocess.run(["osmium", "tags-filter", "--overwrite", "-o", dst, src, *OSM_FILTER], check=True)
+    if stale(dst, *filtered):
+        # Objects on the border are in several extracts, maybe in different
+        # versions. Merged, the file is like a history file: time-filter keeps
+        # the newest version of each.
+        merged = dst + ".merged.osm.pbf"
+        subprocess.run(["osmium", "merge", "--overwrite", "-o", merged, *filtered], check=True)
+        subprocess.run(["osmium", "time-filter", "--overwrite", "-o", dst, merged], check=True)
+        os.remove(merged)
     return dst
 
 
@@ -162,17 +175,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache", default=os.path.join(HERE, "cache"))
     ap.add_argument("--out", default=os.path.join(HERE, "..", "apps", "web", "public", "data"))
-    ap.add_argument("--area", default=region.AREA, help="germany, or one state such as hessen")
+    ap.add_argument("--area", default=region.ID, help=f"{region.ID} (all), one extract such as switzerland, or a German state such as hessen")
     args = ap.parse_args()
     area = args.area
     t = Timer()
     download.main(args.cache, area)
     t.step("download")
 
-    raw = os.path.join(args.cache, "osm", f"{area}-latest.osm.pbf")
-    osm_date = datetime.date.fromtimestamp(os.path.getmtime(raw)).isoformat()
-    name = region.ID if area == region.AREA else area
-    version = f"{name}-{osm_date}-{pipeline_hash()}"
+    raw = download.osm_paths(args.cache, area)
+    osm_date = datetime.date.fromtimestamp(max(os.path.getmtime(p) for p in raw)).isoformat()
+    version = f"{area}-{osm_date}-{pipeline_hash()}"
     out = os.path.join(args.out, version)
     src = osm_file(args.cache, area)
     t.step("filter")
@@ -257,7 +269,7 @@ def main():
     print(f"place tiles: {len(place_sizes)} files, {sum(place_sizes) / mb:.1f} MiB, max {max(place_sizes) / 1024:.0f} KiB")
     print(f"search.json: {search_size / mb:.2f} MiB")
     print(f"tiles: {len(s)} files, {unpacked_mib:.1f} MiB ({sum(s) / mb:.1f} MiB gzipped), median {s[len(s) // 2] / mb:.2f} MiB, max {s[-1] / mb:.2f} MiB gzipped")
-    print(f"lines: {lines['routes']} routes, {lines['files']} files,{lines['bytes'] / mb:.1f} MiB, max {lines['max'] / 1024:.0f} KiB")
+    print(f"lines: {lines['routes']} routes, {lines['files']} files, {lines['bytes'] / mb:.1f} MiB, max {lines['max'] / 1024:.0f} KiB")
     if route_stations:
         print(f"route stations: {route_stations['routes']} routes, {route_stations['parts']} parts, {route_stations['stations']} stations, {route_stations['bytes'] / 1024:.0f} KiB")
     if areas:

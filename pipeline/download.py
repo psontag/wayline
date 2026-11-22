@@ -10,7 +10,7 @@ import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-from region import AREA, DEM_TILES
+import region
 
 GEOFABRIK = "https://download.geofabrik.de/europe/{}-latest.osm.pbf"
 DEM = "https://copernicus-dem-30m.s3.amazonaws.com/{0}/{0}.tif"
@@ -56,14 +56,18 @@ def ge250(cache):
     fetch(GE250, os.path.join(cache, "ge250", "ge250.utm32s.shape.zip"))
 
 
-def main(cache, area=AREA):
+def osm_paths(cache, area):
+    """The downloaded OSM files of the area."""
+    return [os.path.join(cache, "osm", f"{os.path.basename(p)}-latest.osm.pbf") for p in region.extracts(area)]
+
+
+def main(cache, area=region.ID):
     gtfs(cache)
     ge250(cache)
     os.makedirs(os.path.join(cache, "osm"), exist_ok=True)
     os.makedirs(os.path.join(cache, "dem"), exist_ok=True)
-    path = area if area == AREA else f"germany/{area}"
-    jobs = [(GEOFABRIK.format(path), os.path.join(cache, "osm", f"{area}-latest.osm.pbf"))]
-    for lat, lon in DEM_TILES:
+    jobs = [(GEOFABRIK.format(p), path) for p, path in zip(region.extracts(area), osm_paths(cache, area))]
+    for lat, lon in region.DEM_TILES:
         name = dem_name(lat, lon)
         jobs.append((DEM.format(name), os.path.join(cache, "dem", f"{name}.tif")))
     # One DEM tile alone gets only a fraction of the bandwidth.
