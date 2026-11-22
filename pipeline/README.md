@@ -1,6 +1,6 @@
 # Pipeline
 
-Builds the route network and places for Germany from OSM data and the Copernicus DEM.
+Builds the route network and places for Germany and Switzerland from OSM data and the Copernicus DEM. The countries are in `region.py`.
 
 ## Build
 
@@ -9,12 +9,12 @@ pnpm data:build
 ```
 
 - Needs [uv](https://docs.astral.sh/uv/), Python 3.12, [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`, `apt install osmium-tool`) and [tippecanoe](https://github.com/felt/tippecanoe) 2.79 or newer (`brew install tippecanoe`; the Ubuntu package is too old, so build it from source as in `.github/workflows/ci.yml`). `build.sh` installs the packages from `requirements.txt` into `pipeline/.venv`. `uv run` in `pipeline/` uses that venv.
-- Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): the Geofabrik extract of Germany (4.5 GB), Copernicus GLO-30 tiles N47–N55, E005–E015 (2.8 GB) the gtfs.de timetables (12 MB, again after 7 days) and the BKG GE250 areas (38 MB).
+- Downloads missing inputs to `pipeline/cache/` (gitignored, about 8 GB): the Geofabrik extracts of Germany (4.5 GB) and Switzerland (0.5 GB), Copernicus GLO-30 tiles N45–N55, E005–E015 (3 GB), the gtfs.de timetables (12 MB, again after 7 days) and the BKG GE250 areas (38 MB).
 - In a worktree, `pipeline/cache` is a link to the main checkout (`pnpm setup:worktree`). After the build, the new dataset moves to the main checkout and is linked back.
-- Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `de-<date of the extracts>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
-- First filters the OSM file with osmium-tool to what the pipeline reads (`OSM_FILTER` in `build.py`): 4.5 to 1.5 GB.
+- Writes `apps/web/public/data/<version>/` and `apps/web/public/data/latest.json` (gitignored). The version is `eu-<date of the newest extract>-<pipeline hash>`. The hash covers `pipeline/*.py` and `requirements.txt`, so a pipeline change gives a new version.
+- First filters each OSM file with osmium-tool to what the pipeline reads (`OSM_FILTER` in `build.py`): Germany 4.5 to 1.5 GB. Then merges them. Objects on a border are in both extracts, maybe in different versions, so the newest one stays.
 - Takes about 20 minutes plus the download, and up to 6 GB of memory on a laptop. The filtered file and the extracts are cached, so the next build takes about 4.5 minutes.
-- `pnpm data:build --area hessen` builds one state.
+- `pnpm data:build --area switzerland` builds one country, `--area hessen` one German state.
 
 | Step | Minutes | Memory |
 |---|---|---|

@@ -108,7 +108,7 @@ jobs:
         with:
           path: |
             apps/web/public/data/latest.json
-            apps/web/public/data/de-*
+            apps/web/public/data/eu-*
           key: data-${{ steps.month.outputs.month }}-${{ hashFiles('pipeline/*.py', 'pipeline/requirements.txt', 'pipeline/build.sh', 'scripts/setup-worktree.js') }}
       - if: steps.data.outputs.cache-hit != 'true'
         uses: astral-sh/setup-uv@v10.2.0
@@ -126,7 +126,7 @@ jobs:
         with:
           path: |
             apps/web/public/data/latest.json
-            apps/web/public/data/de-*
+            apps/web/public/data/eu-*
           key: ${{ steps.data.outputs.cache-primary-key }}
 
       # Creates or updates D1 and Access, and writes their ids to

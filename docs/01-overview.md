@@ -30,7 +30,7 @@ Planning a multi-day trip in an unknown region takes a lot of manual work:
 
 ## Scope
 
-- Region: Germany. Austria, Switzerland and France later.
+- Region: Germany and Switzerland. France and Austria later.
 - Riding style: mostly paved and quiet roads. Some forest and farm tracks are fine. No pushing or carrying the bike.
 - Hotels only.
 - Planning only. Navigation happens in other apps via GPX.
