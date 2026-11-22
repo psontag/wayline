@@ -33,10 +33,12 @@ import MapGL, {
 import { HillshadeLayer } from "../HillshadeLayer";
 import { NetworkLayer } from "../NetworkLayer";
 import { useHiddenPlaceLabels } from "../placeLabels";
+import { registerLineTiles } from "./lineTiles";
 
 // MapLibre finds its worker next to its own module. Vite moves both, so
 // point it to the worker that Vite bundles.
 setWorkerUrl(workerUrl);
+registerLineTiles();
 
 export const mapStyles = {
   light: "https://tiles.openfreemap.org/styles/positron",

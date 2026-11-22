@@ -35,7 +35,7 @@ Output (November 2026):
 | Tiles | 226 files of 0.5°, 19.5 MiB (9.2 MiB gzipped), largest 0.21 MiB gzipped |
 | Place tiles | 229 files, 9.8 MiB (2.3 MiB gzipped), largest 143 KiB: 39,300 towns, 5,900 stations, 38,000 hotels |
 | `search.json` | 2.8 MiB (0.7 MiB gzipped): 31,800 towns and 5,900 stations on the network |
-| Route lines | 5,000 files (1,493 empty), 15 MiB, largest 206 KiB |
+| Route lines | 3,500 files, 15 MiB, largest 206 KiB |
 | `routes.json` | 1.8 MiB: 16,300 routes |
 | `reach/<station>.json` | 1.3 MiB (0.35 MiB gzipped) per home station, 11 s: 5,200 stations within 12 h of Karlsruhe |
 | `route-stations.json` | 0.6 MiB (0.3 MiB gzipped), 7 s: 547 routes in 570 parts, 10,000 stations |
@@ -94,7 +94,7 @@ Germany: 226 tiles, 19.5 MiB (9.2 MiB gzipped). Hessen: 25 tiles, 1.5 MiB (0.7 M
 The map draws the signed routes from vector tiles, not from the network tiles.
 
 - `lines/{z}/{x}/{y}.pbf`: one layer `routes`, zoom 5–11. MapLibre stretches zoom 11 for closer views.
-- Inside the bounds in the manifest every tile exists, empty if no route runs there. The host answers a missing file with the app page, which the map can't read.
+- Only tiles with routes get a file. The host has a limit of 20,000 files. For a missing file it answers with the app page or a 404, and the map reads both as an empty tile (`apps/web/src/components/map/lineTiles.ts`). Germany needs 3,500 files. With Switzerland and France, about 9,000, scaled by land area.
 - Each line is a signed edge with `network` (its class) and `routes` (route ids as `|1|5|`, main route first).
 - EuroVelo and national edges are in every zoom, regional ones from zoom 8, local ones from zoom 11. Every line stays in; neighbours are joined.
 - `routes.json`: id, name, class, length and bbox of each route. Routes are keyed by name, so the relations of one route (e.g. one per state) count as one.

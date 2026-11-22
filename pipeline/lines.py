@@ -11,7 +11,6 @@ count as one route.
 """
 
 import json
-import math
 import os
 import shutil
 import subprocess
@@ -121,30 +120,6 @@ def features(edges, ids):
         }
 
 
-def tile_xy(lon, lat, z):
-    n = 2**z
-    lat = math.radians(max(-85.0, min(85.0, lat)))
-    return int((lon + 180) / 360 * n), int((1 - math.asinh(math.tan(lat)) / math.pi) / 2 * n)
-
-
-def fill_empty(out, bounds):
-    """Empty files for the tiles in bounds that tippecanoe left out. The host
-    answers a missing file with the app page, which the map can't read."""
-    west, south, east, north = bounds
-    added = 0
-    for z in range(MIN_ZOOM, MAX_ZOOM + 1):
-        x0, y0 = tile_xy(west, north, z)
-        x1, y1 = tile_xy(east, south, z)
-        for x in range(x0, x1 + 1):
-            for y in range(y0, y1 + 1):
-                path = os.path.join(out, str(z), str(x), f"{y}.pbf")
-                if not os.path.exists(path):
-                    os.makedirs(os.path.dirname(path), exist_ok=True)
-                    open(path, "wb").close()
-                    added += 1
-    return added
-
-
 def build(data_dir, networks=None):
     """Writes the line tiles and routes.json. `networks` as route_networks returns."""
     check_tippecanoe()
@@ -185,7 +160,6 @@ def build(data_dir, networks=None):
     os.remove(os.path.join(out, "metadata.json"))
     boxes = [r["bbox"] for r in routes]
     bounds = [min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes)]
-    empty = fill_empty(out, bounds)
 
     manifest["files"]["routes"] = "routes.json"
     manifest["lines"] = {"path": "lines/{z}/{x}/{y}.pbf", "minzoom": MIN_ZOOM, "maxzoom": MAX_ZOOM, "bounds": bounds}
@@ -193,10 +167,10 @@ def build(data_dir, networks=None):
         json.dump(manifest, f, ensure_ascii=False, separators=(",", ":"))
 
     sizes = [os.path.getsize(os.path.join(d, n)) for d, _, names in os.walk(out) for n in names]
-    return {"routes": len(routes), "files": len(sizes), "empty": empty, "bytes": sum(sizes), "max": max(sizes, default=0)}
+    return {"routes": len(routes), "files": len(sizes), "bytes": sum(sizes), "max": max(sizes, default=0)}
 
 
 if __name__ == "__main__":
     s = build(sys.argv[1])
     mb = 1024 * 1024
-    print(f"lines: {s['routes']} routes, {s['files']} files ({s['empty']} empty), {s['bytes'] / mb:.1f} MiB, max {s['max'] / 1024:.0f} KiB")
+    print(f"lines: {s['routes']} routes, {s['files']} files,{s['bytes'] / mb:.1f} MiB, max {s['max'] / 1024:.0f} KiB")

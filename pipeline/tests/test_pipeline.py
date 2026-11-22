@@ -52,7 +52,7 @@ def test_sample_build(tmp_path, monkeypatch):
     # needed. Route lines need tippecanoe and are left out.
     monkeypatch.setattr(download, "main", lambda *args: None)
     monkeypatch.setattr(build, "osm_file", lambda cache, area: os.path.join(cache, "osm", "sample-latest.osm.pbf"))
-    monkeypatch.setattr(build.L, "build", lambda *args: {"routes": 0, "files": 0, "empty": 0, "bytes": 0, "max": 0})
+    monkeypatch.setattr(build.L, "build", lambda *args: {"routes": 0, "files": 0, "bytes": 0, "max": 0})
     monkeypatch.setattr(sys, "argv", ["build.py", "--cache", str(cache), "--out", str(out), "--area", "sample"])
     build.main()
 

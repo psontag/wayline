@@ -257,7 +257,7 @@ def main():
     print(f"place tiles: {len(place_sizes)} files, {sum(place_sizes) / mb:.1f} MiB, max {max(place_sizes) / 1024:.0f} KiB")
     print(f"search.json: {search_size / mb:.2f} MiB")
     print(f"tiles: {len(s)} files, {unpacked_mib:.1f} MiB ({sum(s) / mb:.1f} MiB gzipped), median {s[len(s) // 2] / mb:.2f} MiB, max {s[-1] / mb:.2f} MiB gzipped")
-    print(f"lines: {lines['routes']} routes, {lines['files']} files ({lines['empty']} empty), {lines['bytes'] / mb:.1f} MiB, max {lines['max'] / 1024:.0f} KiB")
+    print(f"lines: {lines['routes']} routes, {lines['files']} files,{lines['bytes'] / mb:.1f} MiB, max {lines['max'] / 1024:.0f} KiB")
     if route_stations:
         print(f"route stations: {route_stations['routes']} routes, {route_stations['parts']} parts, {route_stations['stations']} stations, {route_stations['bytes'] / 1024:.0f} KiB")
     if areas:
