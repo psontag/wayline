@@ -4,11 +4,9 @@ import {
   PickList,
   type PickOption,
   RainDot,
-  RainStrip,
   ReachTime,
   useFormat,
 } from "@wayline/ui";
-import { ROUGH_AFTER_DAYS } from "./whereWeather";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AreaReach } from "./areas";
@@ -23,12 +21,9 @@ export function AreasSection({
   maxHours,
   onPick,
   onHover,
-  trip,
 }: {
   /** Areas within the max time, dry first, then fastest. Undefined: loading. */
   areas: AreaReach[] | undefined;
-  /** The trip days as forecast days from today, from and up to. */
-  trip: [number, number];
   maxHours: number;
   onPick: (id: string) => void;
   onHover: (id: string | undefined) => void;
@@ -64,22 +59,10 @@ export function AreasSection({
             id: a.area.id,
             title: a.area.name,
             ...(a.reach && { reach: a.reach }),
+            // One line per area. The 16 days are on the area itself.
             ...(a.days && {
               start: <RainDot rain={a.rain} />,
               muted: a.rain === "wet",
-              below: (
-                <RainStrip
-                  aria-label={t("areas.rain", {
-                    area: a.area.name,
-                    rain: t(`rain.${a.rain ?? "unknown"}`),
-                  })}
-                  days={a.days.map((rain, i) => ({
-                    ...(rain && { rain }),
-                    rough: i > ROUGH_AFTER_DAYS,
-                    selected: i >= trip[0] && i < trip[1],
-                  }))}
-                />
-              ),
             }),
           }))}
           onPick={onPick}

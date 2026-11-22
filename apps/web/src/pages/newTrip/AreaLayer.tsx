@@ -157,6 +157,9 @@ export function AreaLayer({
         <Layer
           id={`${AREA_LAYER}-labels`}
           type="symbol"
+          // Areas over the max time lose their label, so the ones in reach
+          // have room.
+          filter={["!", ["get", "over"]]}
           layout={{
             visibility: picked ? "none" : "visible",
             "symbol-sort-key": ["get", "minutes"],

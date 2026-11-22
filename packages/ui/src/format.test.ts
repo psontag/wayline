@@ -27,6 +27,14 @@ describe("duration", () => {
   });
 });
 
+describe("temperature", () => {
+  it("uses a real minus and no minus zero", () => {
+    const format = createFormat("en");
+    expect(format.temperature(-6)).toBe("−6 °C");
+    expect(format.degrees(-0.4)).toBe("0");
+  });
+});
+
 describe("shortDistance", () => {
   it("keeps one decimal for short stretches", () => {
     const { shortDistance } = createFormat("en");

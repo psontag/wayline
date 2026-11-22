@@ -6,12 +6,7 @@ import {
   type LonLat,
   type Place,
 } from "@wayline/domain";
-import {
-  EndpointMarker,
-  MapColorSwitch,
-  MapHint,
-  RainLegend,
-} from "@wayline/ui";
+import { EndpointMarker, MapHint, MapLegend, RainLegend } from "@wayline/ui";
 import { MousePointerClick } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,7 +18,7 @@ import {
 import { AppMap, type MapPadding } from "../../components/map/AppMap";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useServices } from "../../data/ServicesProvider";
-import { AREA_LAYER, type AreaColor, AreaLayer } from "./AreaLayer";
+import { AREA_LAYER, AreaLayer } from "./AreaLayer";
 import type { AreaReach } from "./areas";
 import { REACH_LAYER, ReachLayer, type ReachStation } from "./ReachLayer";
 import { RouteShelfLayer } from "./RouteShelfLayer";
@@ -82,13 +77,10 @@ export function NewTripMap({
     fitKey: string;
     onPick: (station: Place) => void;
   };
-  /** Areas by train time or weather. A click on one picks it. */
+  /** Areas by weather, faded over the max train time. A click picks one. */
   areas?: {
     areas: AreaReach[];
     attribution: string;
-    color: AreaColor;
-    /** Shows the switch between train time and weather. */
-    onColor?: (color: AreaColor) => void;
     /** The map zooms to it. */
     picked?: Area;
     /** Highlighted, e.g. from the list. */
@@ -152,38 +144,34 @@ export function NewTripMap({
   const inReach = reach?.stations
     .filter((s) => !s.over)
     .map((s) => s.place.coord);
-  // With areas: all of Germany, or the picked area.
+  // With areas: the areas in reach, or the picked area.
+  const areasInReach = areas?.areas
+    .filter((a) => !a.over)
+    .flatMap((a) => bboxCorners(a.area.bbox));
   const regionFit = pickedArea
     ? bboxCorners(pickedArea.bbox)
-    : !areas && inReach?.length
-      ? inReach
-      : (region.data ?? []);
-  const regionKey = areas ? `area:${pickedArea?.id ?? ""}` : reach?.fitKey;
+    : areasInReach?.length
+      ? areasInReach
+      : !areas && inReach?.length
+        ? inReach
+        : (region.data ?? []);
+  const regionKey = areas
+    ? `area:${pickedArea?.id ?? ""}:${reach?.fitKey ?? ""}`
+    : reach?.fitKey;
   const overArea = hoveredArea !== undefined && hoveredArea !== pickedArea?.id;
 
-  const onColor = !pickedArea && areas?.onColor;
-  const colorSwitch = onColor && (
-    <MapColorSwitch
-      aria-label={t("map.colorBy")}
-      options={[
-        { value: "reach", label: t("map.byReach") },
-        { value: "weather", label: t("map.byWeather") },
-      ]}
-      value={areas.color}
-      onValueChange={(v) => onColor(v as AreaColor)}
-      {...(areas.color === "weather" && {
-        legend: (
-          <RainLegend
-            labels={{
-              dry: t("rain.dry"),
-              showers: t("rain.showers"),
-              wet: t("rain.wet"),
-            }}
-            over={t("map.overMax")}
-          />
-        ),
-      })}
-    />
+  const byWeather = !!areas?.areas.some((a) => a.rain);
+  const legend = areas && !pickedArea && byWeather && (
+    <MapLegend>
+      <RainLegend
+        labels={{
+          dry: t("rain.dry"),
+          showers: t("rain.showers"),
+          wet: t("rain.wet"),
+        }}
+        over={t("map.overMax")}
+      />
+    </MapLegend>
   );
 
   // Wait for the region, so the map opens on it instead of moving there.
@@ -220,10 +208,10 @@ export function NewTripMap({
           setHoveredArea(undefined);
         },
       })}
-      {...(colorSwitch && {
+      {...(legend && {
         overlay: (
-          // Under the hint, clear of the attribution.
-          <div className="absolute top-14 left-3 z-panel">{colorSwitch}</div>
+          // Bottom left: clear of the hint and the attribution.
+          <div className="absolute bottom-3 left-3 z-panel">{legend}</div>
         ),
       })}
       hint={
@@ -245,7 +233,7 @@ export function NewTripMap({
         <AreaLayer
           areas={areas.areas}
           attribution={areas.attribution}
-          color={areas.onColor ? areas.color : "reach"}
+          color={byWeather ? "weather" : "reach"}
           {...(pickedArea && { picked: pickedArea.id })}
           {...((areas.hovered ?? hoveredArea) && {
             hovered: areas.hovered ?? hoveredArea,

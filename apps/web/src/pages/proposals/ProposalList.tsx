@@ -10,7 +10,6 @@ import {
 } from "@wayline/domain";
 import {
   Button,
-  ElevationProfile,
   InlineError,
   MessagePanel,
   PanelHeader,
@@ -24,16 +23,12 @@ import {
 import { ArrowRight, Mountain, RotateCcw, SearchX } from "lucide-react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { networkArea } from "../../components/NetworkLayer";
-import { useNetwork, useTripsWeather } from "../../data/queries";
-import { tripStops } from "../tripEditor/tripArea";
+import { useTripsWeather } from "../../data/queries";
 import { bedsNear, useTripPlaces } from "../tripEditor/stopChoices";
-import { profilePoints } from "../tripEditor/surfaceProfile";
-import { routeColorAt } from "./routeColor";
+import { proposalLetter, routeColorAt } from "./routeColor";
 import {
   type ComparisonTag,
   comparisonTags,
-  dayBreaks,
   progressValue,
   proposalStats,
   type RainTag,
@@ -71,6 +66,8 @@ export type ProposalListProps = {
   startOf?: (proposal: Proposal) => string | undefined;
   /** More requests, run after request. */
   also?: GenerateRequest[];
+  /** The search ran in this area. */
+  areaName?: string | undefined;
 };
 
 /** Side panel: progress or result line, then the proposal cards. */
@@ -88,9 +85,10 @@ export function ProposalList({
   onRelax,
   startOf,
   also,
+  areaName,
 }: ProposalListProps) {
   const { t } = useTranslation("proposals");
-  const { places, dates } = useRequestSummary(request, also);
+  const { places, dates } = useRequestSummary(request, also, areaName);
   const { status, proposals } = generation;
   const weather = useTripsWeather(proposals.map((p) => p.trip));
   const windDays = proposals.map((p, i) => {
@@ -176,7 +174,7 @@ export function ProposalList({
           <ProposalItem
             key={p.id}
             proposal={p}
-            number={i + 1}
+            index={i}
             windDays={windDays[i]}
             toEnd={request.kind === "one-way" && !request.endStation}
             town={towns.get(p.id)}
@@ -336,7 +334,7 @@ const WEAK_STOP_BEDS = 2;
 
 function ProposalItem({
   proposal,
-  number,
+  index,
   windDays,
   toEnd,
   town,
@@ -354,7 +352,8 @@ function ProposalItem({
   start,
 }: {
   proposal: Proposal;
-  number: number;
+  /** Place in the list. */
+  index: number;
   /** Where it starts, e.g. "From Neustadt · 1 h 05 by train". */
   start: string | undefined;
   /** Undefined while loading or without a forecast. */
@@ -380,6 +379,11 @@ function ProposalItem({
   const format = useFormat();
   const { trip, routeNames } = proposal;
   const stats = proposalStats(trip);
+  const letter = proposalLetter(index);
+  const dayKm = trip.stages.map((stage, i) => ({
+    km: stage.stats.distance / 1000,
+    target: trip.settings.kmPerDay * (trip.settings.dayShares?.[i] ?? 1),
+  }));
   const via = proposal.via.length
     ? proposal.via
     : trip.stages.slice(0, -1).map((s) => s.end.name);
@@ -413,7 +417,7 @@ function ProposalItem({
               ? t(`card.character.${proposal.character}`)
               : town
                 ? t("card.via", { stops: town })
-                : t("card.option", { number });
+                : t("card.option", { letter });
   // One day: the wind speed says more than the day number.
   const speed =
     trip.stages.length === 1 && windDays?.[0]
@@ -496,15 +500,15 @@ function ProposalItem({
 
   return (
     <ProposalCard
-      number={number}
-      color={routeColorAt(number - 1)}
+      letter={letter}
+      color={routeColorAt(index)}
       title={name}
       subtitle={[
         start,
         via.length
-          ? t(proposal.homeward ? "card.trainOutVia" : "card.via", {
-              stops: format.list(via),
-            })
+          ? proposal.homeward
+            ? t("card.trainOutVia", { stops: format.list(via) })
+            : t("card.through", { towns: format.list(via) })
           : "",
       ]
         .filter(Boolean)
@@ -528,7 +532,11 @@ function ProposalItem({
         },
       ]}
       surface={stats.surface}
-      chart={selected && <Profile proposal={proposal} />}
+      dayKm={dayKm}
+      dayKmLabel={t("card.dayKm", {
+        days: format.list(dayKm.map((d) => format.distance(d.km * 1000))),
+        target: format.distance(trip.settings.kmPerDay * 1000),
+      })}
       days={trip.stages.map((stage, i) => {
         const share = trip.settings.dayShares?.[i] ?? 1;
         const count = beds[i];
@@ -559,28 +567,6 @@ function ProposalItem({
         <ArrowRight aria-hidden />
       </Button>
     </ProposalCard>
-  );
-}
-
-/** Elevation of the whole trip, with a line where each day starts. */
-function Profile({ proposal }: { proposal: Proposal }) {
-  const { t } = useTranslation("proposals");
-  const format = useFormat();
-  const { trip } = proposal;
-  const network = useNetwork(networkArea(tripStops(trip)));
-  const legs = useMemo(() => trip.stages.flatMap((s) => s.legs), [trip]);
-  const points = useMemo(() => profilePoints(legs, network), [legs, network]);
-  const highest = Math.max(0, ...points.map((p) => p.ele));
-  return (
-    <ElevationProfile
-      axes
-      points={points}
-      dayBreaks={dayBreaks(trip)}
-      aria-label={t("card.chart", {
-        distance: format.distance((points.at(-1)?.km ?? 0) * 1000),
-        elevation: format.elevation(highest),
-      })}
-    />
   );
 }
 

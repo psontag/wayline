@@ -17,7 +17,7 @@ import { useDebouncedHover } from "../../components/useDebouncedHover";
 import { useIsPhone } from "../../components/useIsPhone";
 import { useDayWind } from "../../data/queries";
 import { useFailedText } from "../../errors";
-import { useAreaShape } from "../newTrip/useAreas";
+import { useAreaName, useAreaShape } from "../newTrip/useAreas";
 import { ProposalList } from "./ProposalList";
 import { ProposalsHeader } from "./ProposalsHeader";
 import { ProposalsMap } from "./ProposalsMap";
@@ -80,6 +80,7 @@ function Proposals({ request }: { request: GenerateRequest }) {
   // Null makes the generation wait for the forecast.
   const wind = windOn ? (dayWind.isPending ? null : dayWind.data) : undefined;
   const areaOutline = useAreaShape(area);
+  const areaName = useAreaName(area);
   const generation = useGeneration(request, wind, also, areaOutline);
   // Wind in the middle of the ride, shown at the start.
   const middle =
@@ -194,6 +195,7 @@ function Proposals({ request }: { request: GenerateRequest }) {
             onRelax={(next) => void navigate({ search: { request: next } })}
             {...(startOf && { startOf })}
             {...(also && { also })}
+            areaName={areaName}
           />
         </aside>
       </div>

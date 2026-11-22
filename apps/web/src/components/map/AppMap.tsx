@@ -198,6 +198,12 @@ export function AppMap({
         ?.id,
     );
     hideLabels();
+    // The compact attribution opens on load and covers the map on phones.
+    const attrib = mapRef.current
+      ?.getContainer()
+      .querySelector(".maplibregl-compact-show");
+    attrib?.classList.remove("maplibregl-compact-show");
+    attrib?.removeAttribute("open");
   };
 
   // Fit when the key changes, not on load: initialViewState does that.

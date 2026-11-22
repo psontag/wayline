@@ -43,10 +43,16 @@ export function DayWeather({
 }: DayWeatherProps) {
   const { t } = useTranslation("ui");
   const format = useFormat();
-  const range = t("stage.temperatureRange", {
-    min: Math.round(temperature.min),
-    max: format.temperature(temperature.max),
-  });
+  // "1–4 °C", but "−6 to −1 °C": a dash next to a minus is hard to read.
+  const range = t(
+    temperature.min < -0.5
+      ? "stage.temperatureRangeTo"
+      : "stage.temperatureRange",
+    {
+      min: format.degrees(temperature.min),
+      max: format.temperature(temperature.max),
+    },
+  );
   const windKind = wind
     ? t(`stage.wind.${wind.kind}`, { share: format.percent(wind.share) })
     : "";

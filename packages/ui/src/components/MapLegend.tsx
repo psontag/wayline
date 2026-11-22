@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
 
 export type MapLegendItem = {
@@ -22,13 +23,21 @@ export function MapLegendLine({ item }: { item: MapLegendItem }) {
   );
 }
 
-/** Key for the lines on a map. */
-export function MapLegend({ items }: { items: MapLegendItem[] }) {
+/** Key for the lines or colors on a map. */
+export function MapLegend({
+  items = [],
+  children,
+}: {
+  items?: MapLegendItem[];
+  /** Other keys, e.g. a RainLegend. */
+  children?: ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1 rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs text-text-muted shadow-sm">
       {items.map((item) => (
         <MapLegendLine key={item.label} item={item} />
       ))}
+      {children}
     </div>
   );
 }

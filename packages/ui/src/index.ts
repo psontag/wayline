@@ -284,4 +284,3 @@ export {
   type RainStripDay,
 } from "./components/RainStrip";
 export { MapColorSwitch } from "./components/MapColorSwitch";
-export { WindowCard } from "./components/WindowCard";

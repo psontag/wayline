@@ -1198,7 +1198,7 @@ function ProposalDemos() {
         {[1, 2].map((n) => (
           <ProposalCard
             key={n}
-            number={n}
+            letter={n === 1 ? "A" : "B"}
             color={n === 1 ? "route1" : "route2"}
             title={t("demo.proposalTitle")}
             subtitle={t("demo.proposalSubtitle")}
@@ -1223,14 +1223,10 @@ function ProposalDemos() {
             }
             stats={stats}
             surface={{ paved: 84, gravel: 12, unpaved: 4 }}
-            chart={
-              <ElevationProfile
-                axes
-                points={profile}
-                dayBreaks={[21, 50]}
-                aria-label={t("demo.elevation")}
-              />
-            }
+            dayKm={(n === 1 ? [52, 74, 108] : [68, 72, 70]).map((km) => ({
+              km,
+              target: 70,
+            }))}
             days={days}
             selected={selected === n}
             onSelect={() => setSelected(n)}

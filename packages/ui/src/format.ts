@@ -65,8 +65,10 @@ export function createFormat(language: string) {
       m > 0 && m < 1000 ? meters.format(m) : kmShort.format(m / 1000),
     /** 650 m */
     elevation: (m: number) => meters.format(m),
-    /** 22 °C */
-    temperature: (c: number) => `${number.format(c)}\u00a0°C`,
+    /** −3, without the unit, for the low end of a range. */
+    degrees: (c: number) => degrees(number, c),
+    /** 22 °C, −3 °C with a real minus. */
+    temperature: (c: number) => `${degrees(number, c)}\u00a0°C`,
     /** 16 km/h */
     speed: (kmh: number) => speed.format(kmh),
     /** 86 %. Input as share from 0 to 1. */
@@ -113,4 +115,9 @@ export type Format = ReturnType<typeof createFormat>;
 export function useFormat(): Format {
   const { i18n } = useTranslation();
   return useMemo(() => createFormat(i18n.language), [i18n.language]);
+}
+
+function degrees(number: Intl.NumberFormat, c: number): string {
+  // Rounds first, so -0.4 shows as 0, not −0.
+  return number.format(Math.round(c) || 0).replace("-", "−");
 }

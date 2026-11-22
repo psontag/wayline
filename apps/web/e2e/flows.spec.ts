@@ -10,15 +10,18 @@ test.describe("desktop flows", () => {
       page.getByRole("heading", { name: "Where to ride" }),
     ).toBeVisible();
     await screenshots(page, info, "new-trip-where");
-    await page.getByRole("button", { name: "Choose a place" }).click();
-    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("radio", { name: "A place" }).click();
+    await page.getByRole("button", { name: "Town or station" }).click();
     await page.getByRole("option", { name: /^Bamberg Town/ }).click();
+    await expect(
+      page.getByRole("heading", { name: "Trip settings" }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "End" }).click();
     await page.getByRole("combobox").last().fill("Coburg");
     await page.getByRole("option", { name: /^Coburg Town/ }).click();
     await screenshots(page, info, "new-trip");
 
-    await page.getByRole("button", { name: "Find routes" }).click();
+    await page.getByRole("button", { name: "Show trips" }).click();
     await expect(
       page.getByRole("heading", { name: "Bamberg → Coburg" }),
     ).toBeVisible();

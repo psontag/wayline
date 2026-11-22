@@ -72,8 +72,9 @@ Search, filtering, stage cutting and ranking run on the graph, without the route
 6. **Signed routes**, then **pick** one proposal per flavour that differs from them. One day from A to B picks up to 5 diverse ones first, then signed routes. See below.
 7. **Fill** up to 8 proposals. See below. List order: the direct route first, then the best fit:
    1. Closeness to the requested km, in bands of 10 %.
-   2. Fewer stops with few hotels.
-   3. Route quality: mean edge score × (1 − 0.5 × reused share).
+   2. Days close to their km: the day furthest off its target (km per day × day share), in bands of 25 %.
+   3. Fewer stops with few hotels.
+   4. Route quality: mean edge score × (1 − 0.5 × reused share).
 8. **Route** the chosen proposals on the routing tiles. Waypoints are the graph nodes between the pieces. Pieces cut at bends, so the router can't take a shortcut and follows the graph path. If routing fails, the proposal keeps the graph path.
 9. **Find hotels** at each stop from the OSM hotel data.
 10. **Tag** each proposal. See below.
