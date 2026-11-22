@@ -1,7 +1,6 @@
 import type { Place } from "@wayline/domain";
 import {
   Button,
-  Chip,
   ChoiceList,
   MoreRow,
   PanelHeader,
@@ -9,6 +8,7 @@ import {
   RainStrip,
   ReachTime,
   SegmentedControl,
+  Select,
   useFormat,
 } from "@wayline/ui";
 import { ArrowRight, ChevronLeft } from "lucide-react";
@@ -21,19 +21,25 @@ import type { ReachStation } from "./ReachLayer";
 import { ROUGH_AFTER_DAYS } from "./whereWeather";
 
 /** Km a day to pick from. Others are in "More settings". */
-const kmChips = [50, 70, 90];
+const kmChoices = [50, 70, 90];
+
+/** The choices, plus the current km when it is another one. */
+function kmOptions(current: number | undefined): number[] {
+  return current && !kmChoices.includes(current)
+    ? [...kmChoices, current].sort((a, b) => a - b)
+    : kmChoices;
+}
 
 /** Stations in the Start list before "Show all". */
 const FIRST_STATIONS = 4;
 
 const ANY = "any";
 
-/** Step 2 of New trip: one area, its weather, start and trip, then trips. */
+/** One area of New trip: its weather and trains, the start, then trips. */
 export function AreaPanel({
   area,
   stations,
   trip,
-  days,
   start,
   onStart,
   shape,
@@ -50,7 +56,6 @@ export function AreaPanel({
   stations: ReachStation[];
   /** The trip days as forecast days from today, from and up to. */
   trip: [number, number];
-  days: number;
   /** Undefined: any station. */
   start: Place | undefined;
   onStart: (start: Place | undefined) => void;
@@ -89,51 +94,44 @@ export function AreaPanel({
               {t("areas.all")}
             </Button>
           }
-          eyebrow={t("step.area")}
           title={area.area.name}
           {...(area.reach && { actions: time(area.reach.minutes) })}
-        />
-
-        {area.days && (
-          <PanelSection
-            icon="weather"
-            title={t("area.weather")}
-            summary={t(`area.rain.${area.rain ?? "unknown"}`)}
-          >
-            <RainStrip
-              size="md"
-              aria-label={t("areas.rain", {
-                area: area.area.name,
-                rain: t(`rain.${area.rain ?? "unknown"}`),
-              })}
-              days={area.days.map((rain, i) => ({
-                ...(rain && { rain }),
-                rough: i > ROUGH_AFTER_DAYS,
-                selected: i >= trip[0] && i < trip[1],
-              }))}
-            />
-          </PanelSection>
-        )}
-
-        <PanelSection
-          icon="trains"
-          title={t("reach.title")}
-          summary={
-            fastest &&
-            t("area.fastest", {
-              station: fastest.place.name,
-              time: format.duration(fastest.reach.minutes / 60),
-            })
+          // Facts about the area, not choices: one line and the forecast.
+          notice={
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-text-muted">
+                {[
+                  ...(area.days
+                    ? [t(`area.rain.${area.rain ?? "unknown"}`)]
+                    : []),
+                  fastest
+                    ? t("area.fastest", {
+                        station: fastest.place.name,
+                        time: format.duration(fastest.reach.minutes / 60),
+                      })
+                    : t("areas.noStations"),
+                  ...(fastest
+                    ? [t("area.stationCount", { count: stations.length })]
+                    : []),
+                ].join(" · ")}
+              </p>
+              {area.days && (
+                <RainStrip
+                  size="md"
+                  aria-label={t("areas.rain", {
+                    area: area.area.name,
+                    rain: t(`rain.${area.rain ?? "unknown"}`),
+                  })}
+                  days={area.days.map((rain, i) => ({
+                    ...(rain && { rain }),
+                    rough: i > ROUGH_AFTER_DAYS,
+                    selected: i >= trip[0] && i < trip[1],
+                  }))}
+                />
+              )}
+            </div>
           }
-        >
-          {fastest ? (
-            <p className="text-sm text-text-muted">
-              {t("area.stationCount", { count: stations.length })}
-            </p>
-          ) : (
-            <p className="text-sm text-text-muted">{t("areas.noStations")}</p>
-          )}
-        </PanelSection>
+        />
 
         {stations.length > 0 && (
           <PanelSection
@@ -181,16 +179,13 @@ export function AreaPanel({
           </PanelSection>
         )}
 
-        <PanelSection
-          icon="trip"
-          title={t("section.trip")}
-          summary={
-            kmPerDay &&
-            t("area.kmPerDay", { distance: format.distance(kmPerDay * 1000) })
-          }
-        >
+        {routes}
+      </div>
+
+      {/* The trip choices sit next to the button they change. */}
+      <div className="flex flex-col gap-3 border-t border-border px-4 py-4">
+        <div className="flex items-center gap-2">
           <SegmentedControl
-            stretch
             aria-label={t("shape.label")}
             value={shape}
             onValueChange={(v) => onShape(v as AreaShape)}
@@ -199,51 +194,34 @@ export function AreaPanel({
               label: t(`area.shape.${s}`),
             }))}
           />
-          <div
-            role="group"
-            aria-label={t("area.kmLabel")}
-            className="flex flex-wrap gap-1.5"
-          >
-            {kmChips.map((km) => (
-              <Chip
-                key={km}
-                selected={kmPerDay === km}
-                onClick={() => onKmPerDay(km)}
-              >
-                {t("area.kmPerDay", { distance: format.distance(km * 1000) })}
-              </Chip>
-            ))}
+          <div className="min-w-0 flex-1">
+            <Select
+              aria-label={t("area.kmLabel")}
+              value={String(kmPerDay ?? "")}
+              onValueChange={(v) => onKmPerDay(Number(v))}
+              options={kmOptions(kmPerDay).map((km) => ({
+                value: String(km),
+                label: t("area.kmPerDay", {
+                  distance: format.distance(km * 1000),
+                }),
+              }))}
+            />
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="self-start"
-            onClick={onMore}
-          >
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <Button type="button" variant="ghost" size="sm" onClick={onMore}>
             {t("area.more")}
           </Button>
-        </PanelSection>
-
-        {routes}
-      </div>
-
-      <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-4">
-        <span className="text-xs text-text-muted">
-          {t("area.footer", {
-            days: t("where.dayCount", { count: days }),
-            shape: t(`area.shapeLower.${shape}`),
-          })}
-        </span>
-        <Button
-          type="button"
-          variant="primary"
-          disabled={!stations.length}
-          onClick={onShowTrips}
-        >
-          {t("area.showTrips")}
-          <ArrowRight aria-hidden />
-        </Button>
+          <Button
+            type="button"
+            variant="primary"
+            disabled={!stations.length}
+            onClick={onShowTrips}
+          >
+            {t("area.showTrips")}
+            <ArrowRight aria-hidden />
+          </Button>
+        </div>
       </div>
     </div>
   );

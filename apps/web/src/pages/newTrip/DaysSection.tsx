@@ -2,6 +2,7 @@ import { addDays, localTimeToDate } from "@wayline/domain";
 import {
   Button,
   Chip,
+  cn,
   DateField,
   ForecastDays,
   FormField,
@@ -12,6 +13,7 @@ import {
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { dayOptions } from "./form";
+import type { TripWindow } from "./tripWindows";
 import { FORECAST_DAYS, type Rain, ROUGH_AFTER_DAYS } from "./whereWeather";
 
 /** Trip lengths as chips next to the forecast. Others are in "Other dates". */
@@ -28,6 +30,7 @@ export function DaysSection({
   onStartDate,
   onDays,
   counts,
+  best,
   loading,
   failed,
 }: {
@@ -38,6 +41,8 @@ export function DaysSection({
   onDays: (days: number) => void;
   /** Areas dry, with showers and wet on each forecast day. */
   counts: Record<Rain, number>[] | undefined;
+  /** The best window of the trip length. Null: no area is dry long enough. */
+  best: TripWindow | null | undefined;
   loading: boolean;
   failed: boolean;
 }) {
@@ -109,6 +114,18 @@ export function DaysSection({
       {counts && !inForecast && (
         <p className="text-xs text-text-muted">{t("weather.past")}</p>
       )}
+      {best === null && (
+        <p className="text-xs text-text-muted">{t("best.none")}</p>
+      )}
+      {best && (
+        <BestDays
+          now={now}
+          best={best}
+          days={days}
+          startDate={startDate}
+          onStartDate={onStartDate}
+        />
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div
           role="group"
@@ -134,5 +151,56 @@ export function DaysSection({
       </div>
       {(other || !counts) && fields}
     </PanelSection>
+  );
+}
+
+/** The best days for the trip length, and a button to move there. */
+function BestDays({
+  now,
+  best,
+  days,
+  startDate,
+  onStartDate,
+}: {
+  now: string;
+  best: TripWindow;
+  days: number;
+  startDate: string;
+  onStartDate: (date: string) => void;
+}) {
+  const { t } = useTranslation("newTrip");
+  const format = useFormat();
+  const start = addDays(now, best.start);
+  const picked = start === startDate;
+  const dates = format.dateRange(
+    localTimeToDate(start),
+    localTimeToDate(addDays(start, days - 1)),
+  );
+  return (
+    <div className="flex items-center gap-2">
+      <p
+        className={cn(
+          "min-w-0 flex-1 text-xs",
+          picked ? "font-semibold text-text" : "text-text-muted",
+        )}
+        {...(best.rough && { title: t("best.rough") })}
+      >
+        {t("best.text", {
+          count: days,
+          dates,
+          dry: t("best.dry", { count: best.dry.length }),
+        })}
+      </p>
+      {!picked && (
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => onStartDate(start)}
+        >
+          {t("best.use")}
+        </Button>
+      )}
+    </div>
   );
 }

@@ -26,7 +26,7 @@ import {
   useFormat,
 } from "@wayline/ui";
 import { ArrowRight, ChevronLeft } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   backByTimes,
@@ -49,7 +49,6 @@ import {
   type TripShape,
   withDays,
 } from "./form";
-import { useIsPhone } from "../../components/useIsPhone";
 import { type AreaReach, areasInReach } from "./areas";
 import { AreasSection } from "./AreasSection";
 import { NewTripMap } from "./NewTripMap";
@@ -73,17 +72,18 @@ import {
   withAreaRain,
 } from "./whereWeather";
 import { DaysSection } from "./DaysSection";
-import { SuggestionsSection } from "./SuggestionsSection";
 import { tripWindows } from "./tripWindows";
 import { AreaPanel } from "./AreaPanel";
 import { areaRequests, type AreaShape, formShape } from "./areaTrips";
-import type { AreaColor } from "./AreaLayer";
 import type { NewTripStep } from "./search";
-import { WherePanel } from "./WherePanel";
+import { WherePanel, type WhereTab } from "./WherePanel";
 import { nearestPlace } from "./places";
 import { usePrepare } from "./usePrepare";
 
 const budgets = ["low", "mid", "high"] as const;
+
+/** How often a new trip moves to the best days by itself. */
+const MAX_AUTO_PICKS = 3;
 
 function today() {
   const d = new Date();
@@ -124,7 +124,6 @@ export function NewTripForm({
   const atArea = step === "area";
   // Where and Area share the map with areas and stations.
   const where = step === "where" || atArea;
-  const isPhone = useIsPhone();
   const goTo = (next: NewTripStep) =>
     navigate({ to: "/new", search: (prev) => ({ ...prev, step: next }) });
   const toTrip = () => void goTo("trip");
@@ -150,7 +149,6 @@ export function NewTripForm({
     values,
     weather.wind,
   );
-  const [areaColor, setAreaColor] = useState<AreaColor>("reach");
   const stretchRain =
     wx &&
     ((r: ShelfRoute) => {
@@ -200,6 +198,30 @@ export function NewTripForm({
     form.setFieldValue("startDate", date);
     form.setFieldValue("endDate", addDays(date, days - 1));
   };
+  // A new trip opens on the best days. Other dates can bring more areas in
+  // reach (trains differ by weekday) and so another best, so it follows a few
+  // times. Dates the user picks or brings back from the proposals stay.
+  const datesPicked = useRef(!!request);
+  const autoPicks = useRef(0);
+  const pickDates = (days: number) => (date: string) => {
+    datesPicked.current = true;
+    setStartDate(date, days);
+  };
+  const best = windows?.[0];
+  const bestStart = best && !weather.loading && addDays(now, best.start);
+  useEffect(() => {
+    if (datesPicked.current || !bestStart) return;
+    if (autoPicks.current >= MAX_AUTO_PICKS) return;
+    if (bestStart === form.state.values.startDate) return;
+    autoPicks.current++;
+    form.setFieldValue("startDate", bestStart);
+    form.setFieldValue("endDate", addDays(bestStart, tripDays - 1));
+  }, [bestStart, form, tripDays]);
+  const [tab, setTab] = useState<WhereTab>(request?.route ? "routes" : "areas");
+  const pickTab = (next: WhereTab) => {
+    setTab(next);
+    setHoveredRoute(undefined);
+  };
   // With areas, the shelf shows only the routes of the picked area.
   const areaShelf = useMemo(() => {
     if (!pickedArea || !shelf) return shelf;
@@ -208,10 +230,14 @@ export function NewTripForm({
   }, [shelf, pickedArea]);
   const [selectedRoute, setSelectedRoute] = useState(request?.route);
   const [hoveredRoute, setHoveredRoute] = useState<string>();
-  const shownRoute = areaShelf?.find(
-    (r) => r.name === (hoveredRoute ?? selectedRoute),
-  );
-  const pickedRoute = areaShelf?.find((r) => r.name === selectedRoute);
+  // Routes show on the map only where their list is.
+  const routesShown = atArea || tab === "routes";
+  const shownRoute = routesShown
+    ? areaShelf?.find((r) => r.name === (hoveredRoute ?? selectedRoute))
+    : undefined;
+  const pickedRoute = routesShown
+    ? areaShelf?.find((r) => r.name === selectedRoute)
+    : undefined;
   const stretch = pickedRoute?.stretch;
   const rainStations = useMemo(
     () => withRain(reach.stations, wx),
@@ -306,10 +332,6 @@ export function NewTripForm({
       maxHours={reachFilter.maxHours}
       onPick={pickArea}
       onHover={setHoveredArea}
-      trip={[
-        daysOut(now, values.startDate),
-        daysOut(now, values.startDate) + tripDays,
-      ]}
     />
   );
 
@@ -399,12 +421,11 @@ export function NewTripForm({
                     },
                   })}
                 {...(where &&
+                  (atArea || tab !== "place") &&
                   rainAreas && {
                     areas: {
                       areas: rainAreas,
                       attribution: areaData.attribution,
-                      color: areaColor,
-                      ...(weather.weather && { onColor: setAreaColor }),
                       ...(pickedArea && { picked: pickedArea.area }),
                       ...(hoveredArea && { hovered: hoveredArea }),
                       onPick: pickArea,
@@ -424,7 +445,6 @@ export function NewTripForm({
             daysOut(now, values.startDate),
             daysOut(now, values.startDate) + tripDays,
           ]}
-          days={tripDays}
           start={areaStart}
           onStart={setAreaStart}
           shape={areaShape}
@@ -444,47 +464,58 @@ export function NewTripForm({
         >
           {([startDate, days]) => (
             <WherePanel
-              onChoosePlace={toTrip}
-              {...(pickedRoute?.stretch && {
-                ride: {
-                  label: t("where.ride", { count: days }),
-                  hint: pickedRoute.name,
-                  onRide: () => ride(pickedRoute),
-                },
-              })}
-              {...(isPhone && { lead: areasSection })}
+              tab={tab}
+              onTab={pickTab}
+              {...(tab === "routes" &&
+                pickedRoute?.stretch && {
+                  ride: {
+                    label: t("where.ride", { count: days }),
+                    hint: pickedRoute.name,
+                    onRide: () => ride(pickedRoute),
+                  },
+                })}
             >
               <DaysSection
                 now={now}
                 startDate={startDate}
                 days={days}
-                onStartDate={(date) => setStartDate(date, days)}
+                onStartDate={pickDates(days)}
                 onDays={setDays}
                 counts={counts}
+                best={windows && (windows[0] ?? null)}
                 loading={weather.loading}
                 failed={weather.failed}
               />
-              {windows && (
-                <SuggestionsSection
-                  now={now}
-                  windows={windows}
-                  days={days}
-                  startDate={startDate}
-                  onWindow={(date) => setStartDate(date, days)}
-                  onArea={(date, id) => {
-                    setStartDate(date, days);
-                    pickArea(id);
-                  }}
+              {tab !== "place" && (
+                <TrainSection
+                  home={reach.home}
+                  available={reach.stations !== null}
+                  filter={reachFilter}
+                  onFilter={setReachFilter}
                 />
               )}
-              <TrainSection
-                home={reach.home}
-                available={reach.stations !== null}
-                filter={reachFilter}
-                onFilter={setReachFilter}
-              />
-              {!isPhone && areasSection}
-              {routeSection(days)}
+              {tab === "areas" && areasSection}
+              {tab === "routes" && routeSection(days)}
+              {tab === "place" && (
+                <PanelSection icon="stop" title={t("where.place")}>
+                  <FormField
+                    hint={t("where.placeText")}
+                    label={t("where.placeLabel")}
+                    htmlFor={`${id}-where-place`}
+                  >
+                    <PlaceField
+                      id={`${id}-where-place`}
+                      places={places}
+                      value={values.start}
+                      onChange={(place) => {
+                        if (!place) return;
+                        form.setFieldValue("start", place);
+                        toTrip();
+                      }}
+                    />
+                  </FormField>
+                </PanelSection>
+              )}
             </WherePanel>
           )}
         </form.Subscribe>
@@ -509,7 +540,6 @@ export function NewTripForm({
                 {t("step.back")}
               </Button>
             }
-            eyebrow={t("step.trip")}
             title={t("title")}
           />
 

@@ -18,6 +18,16 @@ describe("fitRank", () => {
     ).toEqual(["fit", "long"]);
   });
 
+  it("puts uneven days down when the length fits as well", () => {
+    const day = (km: number) => ({ km, target: 70 });
+    expect(
+      sort([
+        { id: "uneven", km: 212, days: [40, 72, 100].map(day), quality: 9 },
+        { id: "even", km: 218, days: [70, 75, 73].map(day), quality: 5 },
+      ]),
+    ).toEqual(["even", "uneven"]);
+  });
+
   it("puts weak stops down when the length fits as well", () => {
     expect(
       sort([

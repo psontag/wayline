@@ -35,7 +35,7 @@ import {
   useZoom,
 } from "../../components/map/labels";
 import { labelPoints, tripPoints } from "./proposalView";
-import { routeColorAt } from "./routeColor";
+import { proposalLetter, routeColorAt } from "./routeColor";
 
 const lineLayout = { "line-cap": "round", "line-join": "round" } as const;
 
@@ -382,10 +382,11 @@ function ProposalMarkers({
             style={{ zIndex: selected ? 2 : 1 }}
           >
             <RouteLabel
-              label={String(i + 1)}
+              label={proposalLetter(i)}
               color={routeColorAt(i)}
               selected={selected}
-              aria-label={t("map.select", { number: i + 1 })}
+              className="rounded-sm"
+              aria-label={t("map.select", { letter: proposalLetter(i) })}
               onClick={() => onSelect(p.id)}
             />
           </Marker>

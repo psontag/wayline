@@ -16,9 +16,12 @@ export type ProposalDay = DayListItem;
 
 export type ProposalTag = { label: string; hint: string };
 
+/** One day of a proposal against what it should be, in km. */
+export type ProposalDayKm = { km: number; target: number };
+
 export type ProposalCardProps = {
-  /** Same number as on the map. */
-  number: number;
+  /** Same letter as on the map. Stops have numbers. */
+  letter: string;
   title: string;
   /** Small line under the title, e.g. "Via Haßfurt and Schweinfurt". */
   subtitle?: string;
@@ -30,8 +33,10 @@ export type ProposalCardProps = {
   stats: ProposalStat[];
   /** Shown as a surface bar under the stats when selected. */
   surface?: SurfaceShares;
-  /** Shown when selected, below the stats. */
-  chart?: ReactNode;
+  /** A small bar per day, so an over-long day shows at a glance. */
+  dayKm?: ProposalDayKm[];
+  /** Says what the day bars show, for screen readers. */
+  dayKmLabel?: string;
   /** Shown when selected. One row per day. */
   days?: ProposalDay[];
   selected?: boolean;
@@ -49,14 +54,15 @@ const SHOWN_TAGS = 3;
 
 /** One generated trip in the proposals list. Only the selected one is open. */
 export function ProposalCard({
-  number,
+  letter,
   title,
   subtitle,
   color,
   tags = [],
   stats,
   surface,
-  chart,
+  dayKm = [],
+  dayKmLabel,
   days = [],
   selected = false,
   onSelect,
@@ -85,9 +91,14 @@ export function ProposalCard({
           focusRing,
         )}
       >
-        <NumberBadge number={number} color={color} />
+        <LetterBadge letter={letter} color={color} />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-md font-bold">{title}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="min-w-0 flex-1 truncate text-md font-bold">
+              {title}
+            </span>
+            {dayKm.length > 1 && <DayKmBars days={dayKm} label={dayKmLabel} />}
+          </span>
           {selected ? (
             <span className="truncate text-xs text-text-muted">{subtitle}</span>
           ) : (
@@ -136,7 +147,6 @@ export function ProposalCard({
             </span>
             {surface && <SurfaceBar caption shares={surface} />}
           </div>
-          {chart}
           {days.length > 0 && <DayList days={days} onHoverDay={onHoverDay} />}
           {children}
         </div>
@@ -145,23 +155,58 @@ export function ProposalCard({
   );
 }
 
-function NumberBadge({
-  number,
+// Square, so it doesn't look like the round stop markers.
+function LetterBadge({
+  letter,
   color,
 }: {
-  number: number;
+  letter: string;
   color?: RouteColor;
 }) {
   return (
     <span
       className={cn(
-        "flex size-7 shrink-0 items-center justify-center rounded-full font-extrabold tabular-nums",
+        "flex size-7 shrink-0 items-center justify-center rounded-sm font-extrabold",
         color
           ? [routeColorClasses[color], "text-on-route"]
           : "bg-hover text-text",
       )}
     >
-      {number}
+      {letter}
+    </span>
+  );
+}
+
+/** A day this far off its target km is marked. */
+const DAY_OFF = 0.25;
+
+/** One bar per day, scaled to the longest day or target. */
+function DayKmBars({
+  days,
+  label,
+}: {
+  days: ProposalDayKm[];
+  label: string | undefined;
+}) {
+  const max = Math.max(...days.flatMap((d) => [d.km, d.target]));
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      className="flex h-5 shrink-0 items-end gap-0.5"
+    >
+      {days.map((d, i) => (
+        <span
+          key={i}
+          style={{ height: `${Math.max(15, (d.km / max) * 100)}%` }}
+          className={cn(
+            "w-1.5 rounded-t-sm",
+            Math.abs(d.km - d.target) / d.target > DAY_OFF
+              ? "bg-warning"
+              : "bg-text-muted",
+          )}
+        />
+      ))}
     </span>
   );
 }

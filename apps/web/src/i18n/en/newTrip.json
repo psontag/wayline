@@ -1,21 +1,18 @@
 {
-  "title": "New trip",
+  "title": "Trip settings",
   "step": {
-    "where": "Step 1 of 3",
-    "area": "Step 2 of 3",
-    "trip": "Step 3 of 3",
     "back": "Where"
   },
-  "suggest": {
-    "title": "Suggestions",
-    "summary": "{{days}} with dry areas",
-    "dry_one": "{{count}} dry area",
-    "dry_other": "{{count}} dry areas",
+  "best": {
+    "text_one": "Best day: {{dates}} · {{dry}}",
+    "text_other": "Best {{count}} days: {{dates}} · {{dry}}",
+    "dry_one": "{{count}} area dry",
+    "dry_other": "{{count}} areas dry",
+    "use": "Use",
     "rough": "Partly more than 10 days out, so it may change.",
     "none": "No area within your max train time is dry on enough days in a row. Try fewer days or a longer train time."
   },
   "area": {
-    "weather": "Weather",
     "rain": {
       "dry": "Dry on your days",
       "showers": "Showers on your days",
@@ -23,8 +20,8 @@
       "unknown": "No forecast for your days"
     },
     "fastest": "{{station}} in {{time}}",
-    "stationCount_one": "{{count}} station with a train from home",
-    "stationCount_other": "{{count}} stations with a train from home",
+    "stationCount_one": "{{count}} station",
+    "stationCount_other": "{{count}} stations",
     "start": "Start",
     "anyStation": "Any station",
     "anyHint": "Wayline tries the fastest stations",
@@ -33,15 +30,9 @@
     "shape": {
       "any": "Any",
       "loop": "Loop",
-      "oneWay": "One way"
-    },
-    "shapeLower": {
-      "any": "loop or one way",
-      "loop": "loop",
-      "oneWay": "one way"
+      "oneWay": "A to B"
     },
     "more": "More settings",
-    "footer": "{{days}} · {{shape}}",
     "showTrips": "Show trips"
   },
   "where": {
@@ -54,8 +45,18 @@
     "dayRain": "{{date}}: {{dry}} dry, {{showers}} showers, {{wet}} wet",
     "length": "Trip length",
     "otherDates": "Other dates",
-    "hint": "Pick an area, then a station.",
-    "choosePlace": "Choose a place",
+    "hint": "Pick an area on the map or in the list.",
+    "routeHint": "Pick a route to see the stretch to ride.",
+    "placeHint": "Pick a place to set up the trip.",
+    "startFrom": "Start from",
+    "tab": {
+      "areas": "Areas",
+      "routes": "Signed routes",
+      "place": "A place"
+    },
+    "place": "Start",
+    "placeLabel": "Town or station",
+    "placeText": "Next you set the shape, km and dates.",
     "ride_one": "Ride {{count}} day",
     "ride_other": "Ride {{count}} days"
   },
@@ -134,7 +135,7 @@
     "ride_one": "Ride {{count}} day of {{route}}",
     "ride_other": "Ride {{count}} days of {{route}}",
     "rain": "Rain",
-    "rainOn": "Rain {{days}}",
+    "rainOn": "Rain on {{days}}",
     "dry": "Dry",
     "wind": "Wind",
     "windValue": "{{kind}}, {{speed}}",
@@ -225,11 +226,11 @@
   },
   "summary_one": "{{count}} day · about {{distance}}",
   "summary_other": "{{count}} days · about {{distance}}",
-  "submit": "Find routes",
+  "submit": "Show trips",
   "missing": {
-    "start": "Choose a start to find routes.",
-    "end": "Choose an end to find routes.",
-    "startAndEnd": "Choose a start and an end to find routes."
+    "start": "Choose a start to see trips.",
+    "end": "Choose an end to see trips.",
+    "startAndEnd": "Choose a start and an end to see trips."
   },
   "errors": {
     "startRequired": "Choose a start.",
@@ -245,10 +246,7 @@
     "pickArea": "Pick an area on the map",
     "pickStart": "Pick the start on the map",
     "pickEnd": "Pick the end on the map",
-    "colorBy": "Color areas by",
-    "byReach": "Train time",
-    "byWeather": "Weather",
-    "overMax": "Over max time",
+    "overMax": "Faded: over max time",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out"
   },

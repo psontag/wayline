@@ -41,3 +41,9 @@ export function useAreaShape(id: string | undefined): MultiPolygon | undefined {
     return area ? areaShape(area) : undefined;
   }, [id, file.data]);
 }
+
+/** The name of one area, once loaded. */
+export function useAreaName(id: string | undefined): string | undefined {
+  const file = useAreasFile();
+  return id ? file.data?.areas.find((a) => a.id === id)?.name : undefined;
+}

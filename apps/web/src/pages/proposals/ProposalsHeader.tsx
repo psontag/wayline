@@ -7,7 +7,6 @@ import {
   plansWithWind,
 } from "@wayline/domain";
 import {
-  Badge,
   Button,
   type StatIcon,
   statIcons,
@@ -18,11 +17,14 @@ import {
 } from "@wayline/ui";
 import { ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useAreaName } from "../newTrip/useAreas";
 
 /** Places and dates of the search, e.g. "Würzburg → Bamberg". */
 export function useRequestSummary(
   request: GenerateRequest | undefined,
   also: GenerateRequest[] = [],
+  /** The search ran in this area: it names the search. */
+  areaName?: string,
 ) {
   const { t } = useTranslation("proposals");
   const format = useFormat();
@@ -31,8 +33,9 @@ export function useRequestSummary(
   const to = request.endStation?.name;
   const starts = new Set([request, ...also].map((r) => r.startStation?.name))
     .size;
-  const places =
-    starts > 1
+  const places = areaName
+    ? areaName
+    : starts > 1
       ? t("request.starts", { count: starts })
       : request.kind !== "one-way"
         ? from && t("request.loopFrom", { from })
@@ -73,7 +76,8 @@ export function ProposalsHeader({
 }) {
   const { t } = useTranslation("proposals");
   const format = useFormat();
-  const { places, dates } = useRequestSummary(request, also);
+  const areaName = useAreaName(area);
+  const { places, dates } = useRequestSummary(request, also, areaName);
   const mixed = also.some((r) => r.kind !== request?.kind);
 
   const chips: { text: string; icon?: StatIcon }[] = request
@@ -123,28 +127,34 @@ export function ProposalsHeader({
       </TextLink>
       <h1 className="text-md font-bold">{t("title")}</h1>
       <TopBarSpacer />
+      {/* Plain text: these say what was asked, they are not buttons. */}
       {chips.length > 0 && (
         <ul
           aria-label={t("request.label")}
-          className="hidden flex-wrap justify-end gap-1.5 lg:flex"
+          className="hidden flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm text-text-muted lg:flex"
         >
           {chips.map(({ text, icon }) => {
             const Icon = icon && statIcons[icon];
             return (
-              <li key={text}>
-                <Badge size="md" className="gap-1">
-                  {Icon && (
-                    <Icon aria-hidden className="size-3.5 text-text-muted" />
-                  )}
-                  {text}
-                </Badge>
+              <li key={text} className="flex items-center gap-1">
+                {Icon && <Icon aria-hidden className="size-3.5" />}
+                {text}
               </li>
             );
           })}
         </ul>
       )}
       <Button asChild size="sm">
-        <Link to="/new" search={request ? { request, step: "trip" } : {}}>
+        <Link
+          to="/new"
+          search={
+            request
+              ? area
+                ? { request, step: "area", area }
+                : { request, step: "trip" }
+              : {}
+          }
+        >
           {t("edit")}
         </Link>
       </Button>

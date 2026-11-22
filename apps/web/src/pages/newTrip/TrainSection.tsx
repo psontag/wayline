@@ -46,7 +46,14 @@ export function TrainSection({
     );
   }
   return (
-    <PanelSection icon="trains" title={t("reach.title")} summary={summary}>
+    // Folded: most people set the train limits once.
+    <PanelSection
+      icon="trains"
+      title={t("reach.title")}
+      summary={summary}
+      collapsible
+      defaultOpen={false}
+    >
       <FormField label={t("reach.maxTime")} labelId={`${id}-time`}>
         <SegmentedControl
           stretch

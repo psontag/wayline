@@ -184,7 +184,7 @@ A screen has at most one primary button (`variant="primary"`, accent fill). Ever
 | Screen | Primary button |
 |---|---|
 | Trip list | New trip |
-| New trip | Find routes |
+| New trip | Show trips. On Where, Ride n days once a signed route is picked. |
 | Proposals | Open trip |
 | Import | Create trip |
 | Trip editor | None. Export GPX and Booking.com are secondary. |
@@ -327,7 +327,6 @@ Exported as `sectionIcons` from `packages/ui/src/icons.ts`. One icon per kind of
 | `hotel` | `BedDouble` | Hotel |
 | `weather` | `CloudSun` | Weather on the Where step |
 | `areas` | `Map` | Areas on the Where step |
-| `suggestions` | `Sparkles` | Suggested trip windows on the Where step |
 
 ### Components
 
@@ -352,9 +351,9 @@ Click a day card, a route on the map or a day chip to open a day.
 | Panel | Header | Sections |
 |---|---|---|
 | Proposals | Places, dates | Proposals |
-| New trip, Where | Where to ride | Days, Suggestions, Train from home, Areas, Signed routes |
-| New trip, Area | All areas, area name, train time | Weather, Train from home, Start, Trip, Signed routes |
-| New trip, Trip | New trip | Trip, Start and end, When, Ride, Hotel (several days) |
+| New trip, Where | Where to ride, tabs Areas · Signed routes · A place | Days, Train from home (folded), then the tab: Areas, Signed routes or Start |
+| New trip, Area | All areas, area name, train time, a line with weather and trains, the 16-day strip | Start, Signed routes. The footer holds shape, km a day, More settings and Show trips. |
+| New trip, Trip | Where, Trip settings | Trip, Start and end, When, Ride, Hotel (several days) |
 | Import | Import GPX | Days, then once files are added: Trip, Dates, Hotel (several days) |
 
 ## Enforcement

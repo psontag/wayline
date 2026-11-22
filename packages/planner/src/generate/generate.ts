@@ -662,7 +662,20 @@ export class Planner {
         wind,
         request.route && route !== request.route ? 1 : 0,
         p === direct ? 0 : 1,
-        ...fitRank({ km: p.km, weak: p.weak ?? 0, quality }, totalKm),
+        ...fitRank(
+          {
+            km: p.km,
+            weak: p.weak ?? 0,
+            quality,
+            ...(!p.then && {
+              days: trip.stages.map((s, i) => ({
+                km: s.stats.distance / 1000,
+                target: request.kmPerDay * (request.dayShares?.[i] ?? 1),
+              })),
+            }),
+          },
+          totalKm,
+        ),
         index,
       ],
     };
