@@ -58,6 +58,11 @@ Before: test which Booking.com URL filters work.
 
 Current focus. Small fixes, look and feel.
 
+## 9. Switzerland and France
+
+- Switzerland first: routes, towns, hotels, cantons as areas, train times from home
+- Then France the same way
+
 ## Later
 
 - Open items of slices 5–7: bahn.de links with date, time and home station; climbing and hotel stops
